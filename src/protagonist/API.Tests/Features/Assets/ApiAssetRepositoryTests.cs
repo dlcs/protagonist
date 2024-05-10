@@ -9,6 +9,7 @@ using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Entities;
@@ -49,15 +50,14 @@ public class ApiAssetRepositoryTests
         
         var entityCounterRepo = new EntityCounterRepository(dbContext);
 
-        var assetRepository = new AssetRepository(
-            dbContext,
+        var assetRepositoryCachingHelper = new AssetCachingHelper(
             new MockCachingService(),
-            entityCounterRepo,
             Options.Create(new CacheSettings()),
-            new NullLogger<AssetRepository>()
+            new NullLogger<AssetCachingHelper>()
         );
 
-        sut = new ApiAssetRepository(dbContext, assetRepository, entityCounterRepo);
+        sut = new ApiAssetRepository(dbContext, entityCounterRepo, assetRepositoryCachingHelper,
+            new NullLogger<ApiAssetRepository>());
 
         dbFixture.CleanUp();
     }
@@ -357,10 +357,50 @@ public class ApiAssetRepositoryTests
         // Assert
         result.Result.Should().Be(DeleteResult.Deleted);
         result.DeletedEntity.Should()
-            .BeEquivalentTo(dbAsset.Entity, options => options.Excluding(a => a.Created),
+            .BeEquivalentTo(dbAsset.Entity, options => options
+                    .Excluding(a => a.Created)
+                    .Excluding(a => a.ImageDeliveryChannels),
                 "returned object is as deleted, exclude created as datetime can be off by a few ms");
         result.DeletedEntity.Created.Should().BeCloseTo(dbAsset.Entity.Created.Value, TimeSpan.FromSeconds(1));
 
         contextForTests.Images.Any(i => i.Id == assetId).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DeleteAsset_ReturnsImageDeliveryChannels_FromDeletedAsset()
+    {
+        // Arrange
+        var assetId = AssetId.FromString($"100/10/{nameof(DeleteAsset_ReturnsImageDeliveryChannels_FromDeletedAsset)}");
+        await contextForTests.Images.AddTestAsset(assetId, imageDeliveryChannels: new List<ImageDeliveryChannel>
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.File,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
+            }
+        });
+        await contextForTests.SaveChangesAsync();
+        
+        // Act
+        var result = await sut.DeleteAsset(assetId);
+        
+        // Assert
+        result.Result.Should().Be(DeleteResult.Deleted);
+        result.DeletedEntity!.ImageDeliveryChannels.Count.Should().Be(3);
+        result.DeletedEntity!.ImageDeliveryChannels.Should().Satisfy(
+            i => i.Channel == AssetDeliveryChannels.Image,
+            i => i.Channel == AssetDeliveryChannels.Thumbnails,
+            i => i.Channel == AssetDeliveryChannels.File
+        );
     }
 }

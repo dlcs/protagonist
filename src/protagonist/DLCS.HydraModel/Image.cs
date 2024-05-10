@@ -1,4 +1,5 @@
 using System;
+using DLCS.HydraModel.Converters;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
@@ -69,12 +70,6 @@ public class Image : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 15, PropertyName = "origin")]
     public string? Origin { get; set; }
-    
-    [RdfProperty(Description = "Endpoint to use the first time the image is retrieved. This allows an initial " +
-                               "ingest from a short term s3 bucket (for example) but subsequent references from an https URI.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 16, PropertyName = "initialOrigin")]
-    public string? InitialOrigin { get; set; }
 
     [RdfProperty(Description = "Maximum size of request allowed before roles are enforced " +
                                "- relates to the effective WHOLE image size, not the individual tile size." +
@@ -195,18 +190,16 @@ public class Image : DlcsResource
     [JsonProperty(Order = 130, PropertyName = "textType")]
     public string? TextType { get; set; } // e.g., METS-ALTO, hOCR, TEI, text/plain etc
     
-    [JsonIgnore]
-    public string[]? DeliveryChannels { get; set; }
-
     [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = true)]
+        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 140, PropertyName = "deliveryChannels")]
-    public string[]? OldDeliveryChannels { set => DeliveryChannels = value; get => DeliveryChannels; }
+    [JsonConverter(typeof(ImageDeliveryChannelsConverter))]
+    public DeliveryChannel[]? DeliveryChannels { get; set; }
     
     [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 141, PropertyName = "wcDeliveryChannels")]
-    public string[]? WcDeliveryChannels { set => DeliveryChannels = value; get => DeliveryChannels; }
+    public string[]? WcDeliveryChannels { get; set; }
     
     [RdfProperty(Description = "The role or roles that a user must possess to view this image above maxUnauthorised. " +
                                "These are URIs of roles e.g., https://api.dlcs.io/customers/1/roles/requiresRegistration",

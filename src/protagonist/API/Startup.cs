@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using API.Auth;
+using API.Features.DeliveryChannels.Converters;
+using API.Features.DeliveryChannels.Validation;
 using API.Features.Image.Ingest;
 using API.Features.OriginStrategies.Credentials;
 using API.Infrastructure;
@@ -43,7 +45,7 @@ public class Startup
         this.configuration = configuration;
         this.webHostEnvironment = webHostEnvironment;
     }
-    
+
     public void ConfigureServices(IServiceCollection services)
     {
         var cachingSection = configuration.GetSection("Caching");
@@ -73,15 +75,21 @@ public class Startup
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
             .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
             .AddScoped<AssetProcessor>()
+            .AddScoped<DeliveryChannelProcessor>()
             .AddTransient<TimingHandler>()
+            .AddScoped<DeliveryChannelPolicyDataValidator>()
+            .AddSingleton<OldHydraDeliveryChannelsConverter>()
             .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()
             .AddNamedQueriesCore()
             .AddAws(configuration, webHostEnvironment)
             .AddCorrelationIdHeaderPropagation()
             .ConfigureSwagger();
-        
-        services.AddHttpClient<IEngineClient, EngineClient>()
+
+        services.AddHttpClient<IEngineClient, EngineClient>(client =>
+            {
+                client.BaseAddress = apiSettings.DLCS.EngineRoot;
+            })
             .AddHttpMessageHandler<TimingHandler>();
 
         services.AddDlcsBasicAuth(options =>

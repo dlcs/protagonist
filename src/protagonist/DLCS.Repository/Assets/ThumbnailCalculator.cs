@@ -111,8 +111,6 @@ public static class ThumbnailCalculator
 
     private static ResizableSize GetLongestEdgeAndSize(List<Size> sizes, ImageRequest imageRequest)
     {
-        // TODO - handle there being none "open"?
-        
         var sizeCandidate = GetLongestEdge(sizes, imageRequest);
         
         if (sizeCandidate.KnownSize)

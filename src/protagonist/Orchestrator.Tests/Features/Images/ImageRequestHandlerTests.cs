@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Text.Json.Nodes;
 using System.Threading;
-using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -19,7 +18,7 @@ using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
-using Xunit;
+using Test.Helpers.Data;
 using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Tests.Features.Images;
@@ -123,6 +122,31 @@ public class ImageRequestHandlerTests
             
         // Act
         var result = await sut.HandleRequest(new DefaultHttpContext());
+            
+        // Assert
+        result.Should().BeOfType<StatusCodeResult>()
+            .Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Theory]
+    [InlineData("0,")]
+    [InlineData(",0")]
+    [InlineData("!0,0")]
+    [InlineData("20,0")]
+    [InlineData("0,20")]
+    public async Task HandleRequest_Returns400_IfInvalidSize(string size)
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+
+        // Act
+        var context = new DefaultHttpContext();
+        context.Request.Path = $"/iiif-img/{id}/full/{size}/0/default.jpg";
+
+        var sut = GetImageRequestHandlerWithMockPathParser();
+            
+        // Act
+        var result = await sut.HandleRequest(context);
             
         // Assert
         result.Should().BeOfType<StatusCodeResult>()
@@ -319,6 +343,58 @@ public class ImageRequestHandlerTests
         // Assert
         result.Target.Should().Be(ProxyDestination.Thumbs);
         result.Path.Should().Be("thumbs/2/2/test-image/full/!150,150/0/default.jpg");
+    }
+    
+    [Fact]
+    public async Task HandleRequest_ProxiesToThumbs_IfRegionEquivalentToFull_AndKnownSize()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/iiif-img/2/2/test-image/0,0,512,512/256,256/0/default.jpg";
+        
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, OpenThumbs = new List<int[]> { new[] { 256, 256 } },
+                Height = 512, Width = 512, S3Location = "s3://storage/2/2/test-image", 
+                Channels = AvailableDeliveryChannel.Image
+            });
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        // Act
+        var result = await sut.HandleRequest(context) as ProxyActionResult;
+            
+        // Assert
+        result.Target.Should().Be(ProxyDestination.Thumbs);
+        result.Path.Should().Be("thumbs/2/2/test-image/0,0,512,512/256,256/0/default.jpg");
+    }
+    
+    [Fact]
+    public async Task HandleRequest_ProxiesToThumbs_IfRegionAndOriginSquare_AndKnownSize()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/iiif-img/2/2/test-image/square/256,256/0/default.jpg";
+        
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, OpenThumbs = new List<int[]> { new[] { 256, 256 } },
+                Height = 512, Width = 512, S3Location = "s3://storage/2/2/test-image", 
+                Channels = AvailableDeliveryChannel.Image
+            });
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        // Act
+        var result = await sut.HandleRequest(context) as ProxyActionResult;
+            
+        // Assert
+        result.Target.Should().Be(ProxyDestination.Thumbs);
+        result.Path.Should().Be("thumbs/2/2/test-image/square/256,256/0/default.jpg");
     }
     
     [Theory]

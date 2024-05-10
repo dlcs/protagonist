@@ -441,7 +441,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             return spaceTestCustomer.Id;
         }
-        
+
         string spaceTestCustomerJson = $@"{{
   ""@type"": ""Customer"",
   ""name"": ""{customerName}"",

@@ -81,4 +81,12 @@ public static class CollectionX
             .GroupBy(m => m)
             .Where(g => g.Count() > 1)
             .Select(g => g.Key);
+
+    /// <summary>
+    /// Return an Array of {T} containing single item.
+    /// </summary>
+    /// <param name="item">Item to add to list</param>
+    /// <typeparam name="T">Type of item</typeparam>
+    /// <returns>List of one item</returns>
+    public static T[] AsArray<T>(this T item) => new T[] { item };
 }

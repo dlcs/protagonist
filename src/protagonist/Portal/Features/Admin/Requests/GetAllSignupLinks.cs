@@ -4,7 +4,6 @@ using System.Security.Authentication;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using API.Client;
 using DLCS.Repository;
 using DLCS.Web.Auth;
 using MediatR;

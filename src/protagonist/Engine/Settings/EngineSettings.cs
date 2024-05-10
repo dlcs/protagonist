@@ -55,9 +55,14 @@ public class ImageIngestSettings
     public bool IncludeRegionInS3Uri { get; set; } = false;
 
     /// <summary>
-    /// URI of downstream image/derivative processor
+    /// URI of downstream image processor
     /// </summary>
     public Uri ImageProcessorUrl { get; set; }
+    
+    /// <summary>
+    /// URI of downstream derivative processor
+    /// </summary>
+    public Uri ThumbsProcessorUrl { get; set; }
 
     /// <summary>
     /// How long, in ms, to delay calling Image-Processor after copying file to shared disk 
@@ -78,12 +83,12 @@ public class ImageIngestSettings
     /// Root folder for use by Image-Processor sidecar
     /// </summary>
     public string ImageProcessorRoot { get; set; }
-    
+
     /// <summary>
     /// Base url for calling orchestrator.
     /// </summary>
     public Uri OrchestratorBaseUrl { get; set; }
-        
+
     /// <summary>
     /// Timeout, in ms, to wait for calls to orchestrator
     /// </summary>
@@ -98,12 +103,16 @@ public class ImageIngestSettings
     /// The character to use when replacing an open bracket character
     /// </summary>
     public string OpenBracketReplacement { get; set; } = "_";
-    
+
     /// <summary>
     /// The character to use when replacing a closing bracket character
     /// </summary>
     public string CloseBracketReplacement { get; set; } = "_";
-    
+
+    /// <summary>
+    /// A list of thumbnails that will be added to every asset regardless of the thumbnail policy
+    /// </summary>
+    public List<string> DefaultThumbs { get; set; } = new();
 
     /// <summary>
     /// Get the root folder, if forImageProcessor will ensure that it is compatible with needs of image-processor
@@ -133,5 +142,5 @@ public class TimebasedIngestSettings
     /// <summary>
     /// Mapping of 'friendly' to 'real' transcoder names
     /// </summary>
-    public Dictionary<string, string> TranscoderMappings { get; set; } = new();
+    public Dictionary<string, string> DeliveryChannelMappings { get; set; } = new();
 }

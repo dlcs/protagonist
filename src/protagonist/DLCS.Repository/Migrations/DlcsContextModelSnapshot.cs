@@ -18,7 +18,7 @@ namespace DLCS.Repository.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .UseCollation("en_US.UTF-8")
-                .HasAnnotation("ProductVersion", "6.0.5")
+                .HasAnnotation("ProductVersion", "6.0.22")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "tablefunc");
@@ -252,6 +252,35 @@ namespace DLCS.Repository.Migrations
                     b.ToTable("CustomHeaders");
                 });
 
+            modelBuilder.Entity("DLCS.Model.Assets.ImageDeliveryChannel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("DeliveryChannelPolicyId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ImageId")
+                        .IsRequired()
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeliveryChannelPolicyId");
+
+                    b.HasIndex("ImageId");
+
+                    b.ToTable("ImageDeliveryChannels");
+                });
+
             modelBuilder.Entity("DLCS.Model.Assets.ImageLocation", b =>
                 {
                     b.Property<string>("Id")
@@ -302,6 +331,29 @@ namespace DLCS.Repository.Migrations
                     b.HasIndex(new[] { "Customer", "Space", "Id" }, "IX_ImageStorageByCustomerSpace");
 
                     b.ToTable("ImageStorage", (string)null);
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.Metadata.AssetApplicationMetadata", b =>
+                {
+                    b.Property<string>("AssetId")
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("MetadataType")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("MetadataValue")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("Modified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("AssetId", "MetadataType");
+
+                    b.ToTable("AssetApplicationMetadata");
                 });
 
             modelBuilder.Entity("DLCS.Model.Assets.NamedQueries.NamedQuery", b =>
@@ -566,6 +618,80 @@ namespace DLCS.Repository.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("DLCS.Model.DeliveryChannels.DefaultDeliveryChannel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Customer")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DeliveryChannelPolicyId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("Space")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeliveryChannelPolicyId");
+
+                    b.HasIndex("Customer", "Space", "MediaType", "DeliveryChannelPolicyId")
+                        .IsUnique();
+
+                    b.ToTable("DefaultDeliveryChannels");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Policies.DeliveryChannelPolicy", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Customer")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Modified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("PolicyData")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("System")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Customer", "Name", "Channel")
+                        .IsUnique();
+
+                    b.ToTable("DeliveryChannelPolicies");
                 });
 
             modelBuilder.Entity("DLCS.Model.Policies.ImageOptimisationPolicy", b =>
@@ -927,6 +1053,59 @@ namespace DLCS.Repository.Migrations
                     b.HasKey("Name", "Metric");
 
                     b.ToTable("MetricThresholds");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.ImageDeliveryChannel", b =>
+                {
+                    b.HasOne("DLCS.Model.Policies.DeliveryChannelPolicy", "DeliveryChannelPolicy")
+                        .WithMany("ImageDeliveryChannels")
+                        .HasForeignKey("DeliveryChannelPolicyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DLCS.Model.Assets.Asset", "Asset")
+                        .WithMany("ImageDeliveryChannels")
+                        .HasForeignKey("ImageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
+
+                    b.Navigation("DeliveryChannelPolicy");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.Metadata.AssetApplicationMetadata", b =>
+                {
+                    b.HasOne("DLCS.Model.Assets.Asset", "Asset")
+                        .WithMany("AssetApplicationMetadata")
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
+                });
+
+            modelBuilder.Entity("DLCS.Model.DeliveryChannels.DefaultDeliveryChannel", b =>
+                {
+                    b.HasOne("DLCS.Model.Policies.DeliveryChannelPolicy", "DeliveryChannelPolicy")
+                        .WithMany()
+                        .HasForeignKey("DeliveryChannelPolicyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DeliveryChannelPolicy");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.Asset", b =>
+                {
+                    b.Navigation("AssetApplicationMetadata");
+
+                    b.Navigation("ImageDeliveryChannels");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Policies.DeliveryChannelPolicy", b =>
+                {
+                    b.Navigation("ImageDeliveryChannels");
                 });
 #pragma warning restore 612, 618
         }

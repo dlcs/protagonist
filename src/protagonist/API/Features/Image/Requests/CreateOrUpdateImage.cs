@@ -26,7 +26,7 @@ public class CreateOrUpdateImage : IRequest<ModifyEntityResult<Asset>>
     /// <summary>
     /// The Asset to be updated or inserted; may contain null fields indicating no change
     /// </summary>
-    public Asset? Asset { get; }
+    public AssetBeforeProcessing? AssetBeforeProcessing { get; }
 
     /// <summary>
     /// Get a value indicating whether the asset must already exist in db (ie this only supports Update)
@@ -38,9 +38,9 @@ public class CreateOrUpdateImage : IRequest<ModifyEntityResult<Asset>>
     /// </summary>
     public bool AlwaysReingest { get; }
 
-    public CreateOrUpdateImage(Asset asset, string httpMethod)
+    public CreateOrUpdateImage(AssetBeforeProcessing assetBeforeProcessing, string httpMethod)
     {
-        Asset = asset;
+        AssetBeforeProcessing = assetBeforeProcessing;
         AssetMustExist = httpMethod == "PATCH";
         
         // treat a PUT as a re-process instruction regardless of which values are changed
@@ -78,16 +78,16 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
     
     public async Task<ModifyEntityResult<Asset>> Handle(CreateOrUpdateImage request, CancellationToken cancellationToken)
     {
-        var asset = request.Asset;
-        if (asset == null)
+        var assetBeforeProcessing = request.AssetBeforeProcessing;
+        if (assetBeforeProcessing == null)
         {
             return ModifyEntityResult<Asset>.Failure("Invalid Request", WriteResult.FailedValidation);
         }
 
-        if (!await DoesTargetSpaceExist(asset, cancellationToken))
+        if (!await DoesTargetSpaceExist(assetBeforeProcessing.Asset, cancellationToken))
         {
             return ModifyEntityResult<Asset>.Failure(
-                $"Target space for asset does not exist: {asset.Customer}/{asset.Space}",
+                $"Target space for asset does not exist: {assetBeforeProcessing.Asset.Customer}/{assetBeforeProcessing.Asset.Space}",
                 WriteResult.FailedValidation);
         }
 
@@ -95,7 +95,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
             await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         
         var processAssetResult = await assetProcessor.Process(
-            asset,
+            assetBeforeProcessing,
             request.AssetMustExist,
             request.AlwaysReingest,
             false,
@@ -174,7 +174,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
             {
                 // await call to engine, which processes synchronously (not a queue)
                 var statusCode =
-                    await ingestNotificationSender.SendImmediateIngestAssetRequest(asset, false,
+                    await ingestNotificationSender.SendImmediateIngestAssetRequest(asset,
                         cancellationToken);
                 var success = statusCode is HttpStatusCode.Created or HttpStatusCode.OK;
 

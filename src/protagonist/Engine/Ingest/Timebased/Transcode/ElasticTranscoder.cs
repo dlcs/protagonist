@@ -1,6 +1,9 @@
+using System.Text.Json;
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.Core.Guard;
+using DLCS.Model.Assets;
+using Engine.Ingest.Timebased.Models;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
 
@@ -76,24 +79,29 @@ public class ElasticTranscoder : IMediaTranscoder
     {
         var asset = context.Asset;
         var assetId = context.AssetId;
-        var technicalDetails = asset.FullImageOptimisationPolicy.TechnicalDetails;
-        var outputs = new List<CreateJobOutput>(technicalDetails.Length);
+        var timeBasedPolicies = asset.ImageDeliveryChannels.Where(i => i.Channel == AssetDeliveryChannels.Timebased)
+            .Select(x => JsonSerializer.Deserialize<List<string>>(x.DeliveryChannelPolicy.PolicyData))
+            .First()!.ToList();
+        var outputs = new List<CreateJobOutput>();
 
-        foreach (var technicalDetail in technicalDetails)
+        foreach (var timeBasedPolicy in timeBasedPolicies)
         {
             var mediaType = context.Asset.MediaType;
-            var (destinationPath, presetName) =
-                TranscoderTemplates.ProcessPreset(mediaType, assetId, technicalDetail, jobId);
+            
+            if (!settings.DeliveryChannelMappings.TryGetValue(timeBasedPolicy, out var mappedPresetName))
+            {
+                logger.LogWarning("Unable to find preset {TimeBasedPolicy} in the allowed mappings", timeBasedPolicy);
+                continue;
+            }
 
-            // TODO - handle empty path/presetname
-            var mappedPresetName = settings.TranscoderMappings.TryGetValue(presetName, out var mappedName)
-                ? mappedName
-                : presetName;
-
-            // TODO - handle not found
+            var parsedTimeBasedPolicy = new TimeBasedPolicy(timeBasedPolicy);
+            
+            var destinationPath = TranscoderTemplates.ProcessPreset(
+                mediaType, assetId, jobId, parsedTimeBasedPolicy.Extension);
+            
             if (!presets.TryGetValue(mappedPresetName, out var presetId))
             {
-                logger.LogWarning("Mapping for preset '{PresetName}' not found!", presetName);
+                logger.LogWarning("Mapping for preset '{PresetName}' not found!", mappedPresetName);
                 continue;
             }
 
@@ -104,7 +112,7 @@ public class ElasticTranscoder : IMediaTranscoder
             });
 
             logger.LogDebug("Asset {AssetId} will be output to '{Destination}' for '{TechnicalDetail}'", assetId,
-                destinationPath, technicalDetail);
+                destinationPath, timeBasedPolicy);
         }
 
         return outputs;

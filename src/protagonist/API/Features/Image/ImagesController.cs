@@ -7,6 +7,7 @@ using API.Features.Space.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Strings;
+using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests;
 using Hydra.Collections;
@@ -73,7 +74,7 @@ public class ImagesController : HydraController
         var imagesRequest = new GetSpaceImages(spaceId, customerId, assetFilter);
         return await HandlePagedFetch<Asset, GetSpaceImages, DLCS.HydraModel.Image>(
             imagesRequest,
-            image => image.ToHydra(GetUrlRoots()),
+            image => image.ToHydra(GetUrlRoots(), Settings.EmulateOldDeliveryChannelProperties),
             errorTitle: "Get Space Images failed",
             cancellationToken: cancellationToken
         );
@@ -123,7 +124,13 @@ public class ImagesController : HydraController
             try
             {
                 var asset = hydraImage.ToDlcsModel(customerId, spaceId);
-                var request = new CreateOrUpdateImage(asset, "PATCH");
+
+                var deliveryChannelsBeforeProcessing = (hydraImage.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+                    .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.Policy)).ToArray();
+
+                var assetBeforeProcessing = new AssetBeforeProcessing(asset, deliveryChannelsBeforeProcessing);
+
+                var request = new CreateOrUpdateImage(assetBeforeProcessing, "PATCH");
                 var result = await Mediator.Send(request, cancellationToken);
                 if (result.Entity != null)
                 {
@@ -152,7 +159,7 @@ public class ImagesController : HydraController
         var output = new HydraCollection<DLCS.HydraModel.Image>
         {
             WithContext = true,
-            Members = patchedAssets.Select(a => a.ToHydra(urlRoots)).ToArray(),
+            Members = patchedAssets.Select(a => a.ToHydra(urlRoots, Settings.EmulateOldDeliveryChannelProperties)).ToArray(),
             TotalItems = patchedAssets.Count,
             Id = Request.GetDisplayUrl() + "?patch_" + Guid.NewGuid()
         };

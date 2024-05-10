@@ -51,6 +51,12 @@ public class OrchestratorSettings
     /// Optional date, any info.json files generated prior to this date will be considered stale and regenerated.
     /// </summary>
     public DateTime? OldestAllowedInfoJson { get; set; }
+    
+    /// <summary>
+    /// Optional date, the point the asset metadata table was introduced, and all assets saved after this point
+    /// should retrieve thumb sizes from this table
+    /// </summary>
+    public DateTime? ThumbsMetadataDate { get; set; }
 
     /// <summary>
     /// If <see cref="OrchestrateOnInfoJson"/> is true, this is the max number of requests that will be honoured
@@ -249,6 +255,11 @@ public class NamedQuerySettings
     /// Customer-specific overrides; keyed by customer Id
     /// </summary>
     public Dictionary<string, CustomerOverride> CustomerOverrides { get; set; } = new();
+
+    /// <summary>
+    /// For NQ projection the thumbnail closest to this size will be selected
+    /// </summary>
+    public int ProjectionThumbsize { get; set; } = 1000;
 }
 
 public class CustomerOverride

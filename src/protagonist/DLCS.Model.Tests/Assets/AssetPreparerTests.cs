@@ -77,8 +77,19 @@ public class AssetPreparerTests
     {
         // Arrange
         var updateAsset = new Asset { Duration = 100 };
-        var existingAsset = new Asset { MediaType = mediaType, DeliveryChannels = new[] { "file" }, Duration = 99 };
-        
+        var existingAsset = new Asset 
+        { 
+            MediaType = mediaType, 
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+            {
+                new()
+                {
+                    Channel = AssetDeliveryChannels.File
+                }
+            }, 
+            Duration = 99 
+        };
+
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
         
@@ -117,7 +128,14 @@ public class AssetPreparerTests
     {
         // Arrange
         var updateAsset = new Asset { Width = 100 };
-        var existingAsset = new Asset { DeliveryChannels = dc.Split(","), MediaType = mediaType, Width = 99 };
+        var existingAsset = new Asset { ImageDeliveryChannels = new List<ImageDeliveryChannel>(), MediaType = mediaType, Width = 99 };
+        foreach (var channel in dc.Split(","))
+        {
+            existingAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+            {
+                Channel = channel
+            });
+        }
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
@@ -157,7 +175,14 @@ public class AssetPreparerTests
     {
         // Arrange
         var updateAsset = new Asset { Height = 100 };
-        var existingAsset = new Asset { DeliveryChannels = dc.Split(","), MediaType = mediaType, Height = 99 };
+        var existingAsset = new Asset { ImageDeliveryChannels = new List<ImageDeliveryChannel>(), MediaType = mediaType, Height = 99 };
+        foreach (var channel in dc.Split(","))
+        {
+            existingAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+            {
+                Channel = channel
+            });
+        }
         
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
@@ -245,8 +270,8 @@ public class AssetPreparerTests
         string reason)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "https://whatever", DeliveryChannels = update };
-        var existingAsset = new Asset { Origin = "https://whatever", DeliveryChannels = existing };
+        var updateAsset = new Asset { Origin = "https://whatever", ImageDeliveryChannels = GenerateImageDeliveryChannels(update) };
+        var existingAsset = new Asset { Origin = "https://whatever", ImageDeliveryChannels =  GenerateImageDeliveryChannels(existing) };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
@@ -254,7 +279,22 @@ public class AssetPreparerTests
         // Assert
         result.RequiresReingest.Should().BeTrue(reason);
     }
-    
+
+    private List<ImageDeliveryChannel> GenerateImageDeliveryChannels(string[] deliveryChannels)
+    {
+        var imageDeliveryChannels = new List<ImageDeliveryChannel>();
+
+        foreach (var deliveryChannel in deliveryChannels)
+        {
+            imageDeliveryChannels.Add(new ImageDeliveryChannel()
+            {
+                Channel = deliveryChannel
+            });
+        }
+
+        return imageDeliveryChannels;
+    }
+
     [Theory]
     [InlineData("file", AssetFamily.File)]
     [InlineData("file,iiif-img", AssetFamily.Image)]
@@ -264,7 +304,14 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_SetsAssetFamilyIfNotSet(string dc, AssetFamily expected)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "required", DeliveryChannels = dc.Split(","), Id = new AssetId(1, 1, "100")  };
+        var updateAsset = new Asset { Origin = "required", ImageDeliveryChannels = new List<ImageDeliveryChannel>(), Id = new AssetId(1, 1, "100")  };
+        foreach (var channel in dc.Split(","))
+        {
+            updateAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+            {
+                Channel = channel
+            });
+        }
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
@@ -301,10 +348,18 @@ public class AssetPreparerTests
         // Arrange
         var updateAsset = new Asset { 
             Origin = "required", 
-            DeliveryChannels = dc.Split(","), 
+            ImageDeliveryChannels =new List<ImageDeliveryChannel>(), 
             Family = current, 
             Id = new AssetId(1, 1, "100")
         };
+        
+        foreach (var channel in dc.Split(","))
+        {
+            updateAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+            {
+                Channel = channel
+            });
+        }
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
@@ -323,8 +378,25 @@ public class AssetPreparerTests
         AssetFamily expected)
     {
         // Arrange
-        var updateAsset = new Asset { Origin = "required", DeliveryChannels = dc.Split(",") };
-        var existingAsset = new Asset { Family = current, DeliveryChannels = new[] { "fake" } };
+        var updateAsset = new Asset { Origin = "required", ImageDeliveryChannels = new List<ImageDeliveryChannel>()};
+        foreach (var channel in dc.Split(","))
+        {
+            updateAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+            {
+                Channel = channel
+            });
+        }
+        
+        var existingAsset = new Asset
+        {
+            Family = current, ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+            {
+                new()
+                {
+                    Channel = "fake"
+                }
+            }
+        };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);

@@ -61,7 +61,10 @@ public class StoredNamedQueryManager
             return existingResult;
         }
 
-        var imageResults = await namedQueryResult.Results.ToListAsync(cancellationToken);
+        var imageResults = await namedQueryResult.Results
+            .IncludeDataForThumbs()
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
         if (imageResults.Count == 0)
         {
             logger.LogWarning("No results found for stored file {S3StorageKey}, aborting", parsedNamedQuery.StorageKey);

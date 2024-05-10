@@ -1,8 +1,4 @@
-﻿using System;
-using DLCS.Model.Spaces;
-using DLCS.Repository.Entities;
-using FluentAssertions;
-using Xunit;
+﻿using DLCS.Model.Spaces;
 
 namespace DLCS.Repository.Tests.Entities;
 

@@ -1,7 +1,5 @@
 ﻿using DLCS.Web.IIIF;
-using FluentAssertions;
 using IIIF.ImageApi;
-using Xunit;
 
 namespace DLCS.Web.Tests.IIIF;
 

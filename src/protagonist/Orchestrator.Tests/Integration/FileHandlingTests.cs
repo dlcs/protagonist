@@ -1,12 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Amazon.S3;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
+using DLCS.Model.Policies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,8 +29,15 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
-    private readonly IAmazonS3 amazonS3;
     private readonly string stubAddress;
+    private readonly List<ImageDeliveryChannel> deliveryChannelsForFile = new()
+    {
+        new ImageDeliveryChannel()
+        {
+            Channel = AssetDeliveryChannels.File,
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
+        }
+    };
 
     private const string ValidAuth = "Basic dW5hbWU6cHdvcmQ=";
 
@@ -36,8 +46,6 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
     public FileHandlingTests(ProtagonistAppFactory<Startup> factory, OrchestratorFixture orchestratorFixture)
     {
-        amazonS3 = orchestratorFixture.LocalStackFixture.AWSS3ClientFactory();
-        
         dbFixture = orchestratorFixture.DbFixture;
         stubAddress = orchestratorFixture.ApiStub.Address;
         httpClient = factory
@@ -119,7 +127,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotForDelivery)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true, deliveryChannels: new[] { "file" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true, imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
@@ -130,13 +138,20 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData("iiif-img")]
-    [InlineData("iiif-av")]
-    public async Task Get_Returns404_IfNotFileDeliveryChannel(string deliveryChannel)
+    [InlineData("iiif-img", 1)]
+    [InlineData("iiif-av", 6)]
+    public async Task Get_Returns404_IfNotFileDeliveryChannel(string deliveryChannel, int deliveryChannelPolicyId)
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotFileDeliveryChannel)}{deliveryChannel}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, deliveryChannels: new[] { deliveryChannel });
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = deliveryChannel,
+                DeliveryChannelPolicyId = deliveryChannelPolicyId
+            }
+        });
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
@@ -152,7 +167,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_NotOptimisedOrigin_ReturnsFileFromDLCSStorage)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "text/plain",
-            origin: $"{stubAddress}/testfile", deliveryChannels: new[] { "file" });
+            origin: $"{stubAddress}/testfile", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
 
         var expectedPath = new Uri($"https://protagonist-storage.s3.eu-west-1.amazonaws.com/{id}/original");
@@ -172,7 +187,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_NotInDlcsStorage_NotAtOrigin_Returns404)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "text/plain",
-            origin: $"{stubAddress}/not-found", deliveryChannels: new[] { "file" });
+            origin: $"{stubAddress}/not-found", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
@@ -189,7 +204,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_NotInDlcsStorage_FallsbackToHttpOrigin_ReturnsFile)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "text/plain",
-            origin: $"{stubAddress}/testfile", deliveryChannels: new[] { "file" });
+            origin: $"{stubAddress}/testfile", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
@@ -208,7 +223,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_NotInDlcsStorage_FallsbackToBasicAuthHttpOrigin_ReturnsFile)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "text/plain",
-            origin: $"{stubAddress}/authfile", deliveryChannels: new[] { "file" });
+            origin: $"{stubAddress}/authfile", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
         {
             Credentials = validCreds, Customer = 99, Id = "basic-auth-file", 
@@ -231,7 +246,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_NotInDlcsStorage_FallsbackToBasicAuthHttpOrigin_ReturnsFile)}");
         await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "application/pdf",
-            origin: $"{stubAddress}/forbiddenfile", deliveryChannels: new[] { "file" });
+            origin: $"{stubAddress}/forbiddenfile", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
         {
             Credentials = validCreds, Customer = 99, Id = "basic-forbidden-file", 
@@ -255,7 +270,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbFixture.DbContext.Images.AddTestAsset(id, 
             mediaType: "text/plain",
             origin: $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{s3Key}", 
-            deliveryChannels: new[] { "file" });
+            imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
 
         var expectedPath = new Uri($"https://s3.amazonaws.com/{LocalStackFixture.OriginBucketName}/{s3Key}");
@@ -274,7 +289,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_OptimisedOrigin_ReturnsFile)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", deliveryChannels: new[] { "file" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
         
         // Act
@@ -290,7 +305,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_RequiresAuth_Returns401_IfInvalidNoCookie)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", deliveryChannels: new[] { "file" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
         
         // Act
@@ -308,7 +323,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(Get_RequiresAuth_Returns401_IfExpiredCookie)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", deliveryChannels: new[] { "file" });
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", imageDeliveryChannels: deliveryChannelsForFile);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
                 DlcsDatabaseFixture.ClickThroughAuthService.AsList());
@@ -335,7 +350,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbFixture.DbContext.Images.AddTestAsset(id, 
             roles: "clickthrough",
             origin: $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{s3Key}", 
-            deliveryChannels: new[] { "file" });
+            imageDeliveryChannels: deliveryChannelsForFile);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
                 DlcsDatabaseFixture.ClickThroughAuthService.AsList());

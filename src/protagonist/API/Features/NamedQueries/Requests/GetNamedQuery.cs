@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using API.Infrastructure.Requests;
+﻿using API.Infrastructure.Requests;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository;
 using MediatR;

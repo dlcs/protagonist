@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Core.Tests.Collections;
 
@@ -144,5 +142,15 @@ public class CollectionXTests
         int[] coll = { 123 };
 
         coll.ContainsOnly(123).Should().BeTrue();
+    }
+    
+    [Fact]
+    public void AsArray_ReturnsExpected()
+    {
+        var item = DateTime.Now;
+
+        var list = item.AsArray();
+
+        list.Should().ContainSingle(i => i == item);
     }
 }

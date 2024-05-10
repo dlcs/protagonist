@@ -32,17 +32,15 @@ public class ModifyAssetWithoutDeliveryChannelsTests : IClassFixture<Protagonist
             });
     }
     
-    [Theory]
-    [InlineData("deliveryChannels")]
-    [InlineData("wcDeliveryChannels")]
-    public async Task Patch_Asset_Fails_When_Delivery_Channels_Are_Disabled(string deliveryChannelAlias)
+    [Fact]
+    public async Task Patch_Asset_Fails_When_Delivery_Channels_Are_Disabled()
     {
         // Arrange 
         var assetId = new AssetId(99, 1, $"{nameof(Patch_Asset_Fails_When_Delivery_Channels_Are_Disabled)}");
         var hydraImageBody = $@"{{
           ""@type"": ""Image"",
           ""string1"": ""I am edited"",
-          ""{deliveryChannelAlias}"": [
+          ""wcDeliveryChannels"": [
                 ""iiif-img""
             ]
         }}";    

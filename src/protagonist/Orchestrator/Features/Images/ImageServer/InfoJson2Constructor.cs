@@ -1,17 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using IIIF;
-using IIIF.ImageApi;
 using IIIF.ImageApi.V2;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
-using IIIFAuth2 = IIIF.Auth.V2;
 using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Features.Images.ImageServer;

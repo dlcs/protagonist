@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using API.Client;
-using DLCS.Core.Enum;
 using DLCS.HydraModel;
 using Hydra.Collections;
 using MediatR;

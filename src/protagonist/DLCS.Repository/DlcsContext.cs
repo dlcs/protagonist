@@ -9,9 +9,11 @@ using DLCS.Core.Enum;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
+using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
 using DLCS.Model.Processing;
 using DLCS.Model.Spaces;
@@ -73,7 +75,11 @@ public partial class DlcsContext : DbContext
     public virtual DbSet<StoragePolicy> StoragePolicies { get; set; }
     public virtual DbSet<ThumbnailPolicy> ThumbnailPolicies { get; set; }
     public virtual DbSet<User> Users { get; set; }
-    
+    public virtual DbSet<DeliveryChannelPolicy> DeliveryChannelPolicies { get; set; }
+    public virtual DbSet<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
+    public virtual DbSet<DefaultDeliveryChannel> DefaultDeliveryChannels { get; set; }
+    public virtual DbSet<AssetApplicationMetadata> AssetApplicationMetadata { get; set; }
+
     public virtual DbSet<SignupLink> SignupLinks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -382,8 +388,6 @@ public partial class DlcsContext : DbContext
                     dc => string.Join(',', dc.OrderBy(v => v)),
                     dc => dc.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray(),
                     stringArrayComparer);
-
-            entity.Ignore(e => e.InitialOrigin);
         });
 
         modelBuilder.Entity<ImageLocation>(entity =>
@@ -630,6 +634,68 @@ public partial class DlcsContext : DbContext
             }
         );
         
+        modelBuilder.Entity<DeliveryChannelPolicy>(entity =>
+        {
+            entity.Property(e => e.Name).IsRequired();
+            entity.Property(e => e.Customer).IsRequired();
+            entity.Property(e => e.System).IsRequired();
+
+            entity.HasIndex(e => new { e.Customer, e.Name, e.Channel }).IsUnique();
+
+            entity.Property(e => e.Name).HasMaxLength(500);
+            
+            entity.Property(e => e.Modified).HasColumnType("timestamp with time zone")
+                .IsRequired();
+
+            entity.Property(e => e.Modified).HasColumnType("timestamp with time zone")
+                .IsRequired();
+
+            entity.Property(e => e.Channel)
+                .IsRequired()
+                .HasMaxLength(100);
+        });
+        
+        modelBuilder.Entity<ImageDeliveryChannel>(entity =>
+        {
+            entity.Property(e => e.Id).HasMaxLength(100);
+
+            entity.Property(e => e.Channel).IsRequired();
+            
+            entity.Property(e => e.ImageId)
+                .IsRequired()
+                .HasConversion(
+                    aId => aId.ToString(),
+                    id => AssetId.FromString(id));
+
+            entity.HasOne(e => e.Asset)
+                .WithMany(e => e.ImageDeliveryChannels)
+                .HasForeignKey(e => e.ImageId);
+        });
+
+        modelBuilder.Entity<DefaultDeliveryChannel>(entity =>
+        {
+            entity.HasIndex(e => new {e.Customer, e.Space, e.MediaType, e.DeliveryChannelPolicyId}).IsUnique();
+            entity.Property(e => e.Customer).IsRequired();
+            entity.Property(e => e.Space).IsRequired();
+            entity.Property(e => e.DeliveryChannelPolicyId).IsRequired();
+            
+            entity.Property(e => e.MediaType).IsRequired().HasMaxLength(255);
+        });
+
+        modelBuilder.Entity<AssetApplicationMetadata>(entity =>
+        {
+            entity.HasKey(e => new { e.AssetId, e.MetadataType });
+            entity.Property(e => e.AssetId).IsRequired().HasConversion(
+                aId => aId.ToString(),
+                id => AssetId.FromString(id));
+            entity.Property(e => e.MetadataType).IsRequired();
+            entity.Property(e => e.MetadataValue).IsRequired().HasColumnType("jsonb");
+            
+            entity.HasOne(e => e.Asset)
+                .WithMany(e => e.AssetApplicationMetadata)
+                .HasForeignKey(e => e.AssetId);
+        });
+
         OnModelCreatingPartial(modelBuilder);
     }
 

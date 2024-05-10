@@ -4,17 +4,18 @@ using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.Policies;
 using DLCS.Model.Processing;
 using DLCS.Model.Storage;
 using DLCS.Repository;
+using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
-using DLCS.Repository.SFTP;
 using DLCS.Repository.Storage;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Handlers;
@@ -22,8 +23,10 @@ using Engine.Data;
 using Engine.Ingest;
 using Engine.Ingest.File;
 using Engine.Ingest.Image;
-using Engine.Ingest.Image.Appetiser;
 using Engine.Ingest.Image.Completion;
+using Engine.Ingest.Image.ImageServer;
+using Engine.Ingest.Image.ImageServer.Clients;
+using Engine.Ingest.Image.ImageServer.Measuring;
 using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased;
 using Engine.Ingest.Timebased.Completion;
@@ -85,7 +88,7 @@ public static class ServiceCollectionX
             .AddScoped<ImageIngesterWorker>()
             .AddScoped<IImageIngestPostProcessing, ImageIngestPostProcessing>()
             .AddScoped<IngestExecutor>()
-            .AddSingleton<IThumbCreator, ThumbCreator>()
+            .AddScoped<IThumbCreator, ThumbCreator>()
             .AddScoped<IWorkerBuilder, WorkerBuilder>()
             .AddSingleton<IFileSystem, FileSystem>()
             .AddSingleton<IMediaTranscoder, ElasticTranscoder>()
@@ -96,12 +99,21 @@ public static class ServiceCollectionX
 
         if (engineSettings.ImageIngest != null)
         {
-            services.AddTransient<TimingHandler>()
-                .AddHttpClient<IImageProcessor, AppetiserClient>(client =>
+            services.AddTransient<TimingHandler>();
+            services.AddScoped<IImageProcessor, ImageServerClient>()
+                .AddScoped<IImageMeasurer, ImageSharpMeasurer>();
+                
+            services.AddHttpClient<IAppetiserClient, AppetiserClient>(client =>
                 {
                     client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
                     client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
                 }).AddHttpMessageHandler<TimingHandler>();
+            
+            services.AddHttpClient<IThumbsClient, CantaloupeThumbsClient>(client =>
+            {
+                client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUrl;
+                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+            }).AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<IOrchestratorClient, InfoJsonOrchestratorClient>(client =>
             {
@@ -124,6 +136,7 @@ public static class ServiceCollectionX
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
             .AddScoped<IStorageRepository, CustomerStorageRepository>()
             .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
+            .AddScoped<IAssetApplicationMetadataRepository, AssetApplicationMetadataRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>

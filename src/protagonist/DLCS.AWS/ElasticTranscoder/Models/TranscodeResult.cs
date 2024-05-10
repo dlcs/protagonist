@@ -25,7 +25,7 @@ public class TranscodeResult
     /// <summary>
     /// Details of any error that may have occurred
     /// </summary>  
-    public string? ErrorCode { get; }
+    public int? ErrorCode { get; }
 
     /// <summary>
     /// Check if State is "COMPLETED"

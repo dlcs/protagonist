@@ -8,7 +8,6 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Strings;
 using FluentAssertions.Execution;
-using Microsoft.Extensions.Options;
 
 namespace Test.Helpers.Storage;
 

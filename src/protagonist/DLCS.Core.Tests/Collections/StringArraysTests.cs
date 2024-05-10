@@ -1,6 +1,4 @@
 ﻿using DLCS.Core.Collections;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Core.Tests.Collections;
 

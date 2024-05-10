@@ -4,10 +4,8 @@ using System.Threading.Tasks;
 using DLCS.Core.Exceptions;
 using DLCS.Web.Middleware;
 using DLCS.Web.Response;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
-using Xunit;
 
 namespace DLCS.Web.Tests.Middleware;
 

@@ -2,20 +2,16 @@
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
-using API.Client;
 using DLCS.Core.Encryption;
 using DLCS.Core.Types;
 using DLCS.Model.Customers;
 using DLCS.Web.Auth;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.API;
 using Orchestrator.Settings;
 using Test.Helpers.Http;
-using Xunit;
 
 namespace Orchestrator.Tests.Infrastructure.API;
 

@@ -135,3 +135,8 @@ Migrations are added using:
 ```bash
 dotnet ef migrations add "Table gains column" -p DLCS.Repository -s API
 ```
+if you would like to view the SQL the migration will produce, you can use the following command:
+
+```bash
+dotnet ef migrations script -i -o .\migrate.sql -p DLCS.Repository -s API
+```

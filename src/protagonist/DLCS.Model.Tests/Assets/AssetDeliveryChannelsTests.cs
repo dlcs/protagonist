@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using DLCS.Model.Assets;
 using FluentAssertions;
 using Xunit;
@@ -18,7 +19,7 @@ public class AssetDeliveryChannelsTests
     [Fact]
     public void HasDeliveryChannel_False_IfChannelsEmpty()
     {
-        var asset = new Asset { DeliveryChannels = Array.Empty<string>() };
+        var asset = new Asset { ImageDeliveryChannels = new List<ImageDeliveryChannel>() };
 
         asset.HasDeliveryChannel("anything").Should().BeFalse();
     }
@@ -26,7 +27,13 @@ public class AssetDeliveryChannelsTests
     [Fact]
     public void HasDeliveryChannel_Throws_IfUnknown()
     {
-        var asset = new Asset { DeliveryChannels = new[] { "iiif-img" } };
+        var asset = new Asset { ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image
+            }
+        } };
 
         Action action = () => asset.HasDeliveryChannel("anything");
 
@@ -39,7 +46,13 @@ public class AssetDeliveryChannelsTests
     [InlineData(AssetDeliveryChannels.Timebased)]
     public void HasDeliveryChannel_True(string channel)
     {
-        var asset = new Asset { DeliveryChannels = AssetDeliveryChannels.All };
+        var asset = new Asset { ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = channel
+            }
+        } };
 
         asset.HasDeliveryChannel(channel).Should().BeTrue();
     }
@@ -55,7 +68,7 @@ public class AssetDeliveryChannelsTests
     [Fact]
     public void HasSingleDeliveryChannel_False_IfChannelsEmpty()
     {
-        var asset = new Asset { DeliveryChannels = Array.Empty<string>() };
+        var asset = new Asset { ImageDeliveryChannels = new List<ImageDeliveryChannel>() };
 
         asset.HasSingleDeliveryChannel("anything").Should().BeFalse();
     }
@@ -66,7 +79,15 @@ public class AssetDeliveryChannelsTests
     [InlineData(AssetDeliveryChannels.Timebased)]
     public void HasSingleDeliveryChannel_False_IfContainsButNotSingle(string channel)
     {
-        var asset = new Asset { DeliveryChannels = AssetDeliveryChannels.All };
+        var asset = new Asset { ImageDeliveryChannels = new List<ImageDeliveryChannel>()};
+        
+        foreach (var deliveryChannel in AssetDeliveryChannels.All)
+        {
+            asset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+            {
+                Channel = deliveryChannel
+            });
+        }
 
         asset.HasSingleDeliveryChannel(channel).Should().BeFalse();
     }
@@ -77,8 +98,14 @@ public class AssetDeliveryChannelsTests
     [InlineData(AssetDeliveryChannels.Timebased)]
     public void HasSingleDeliveryChannel_True(string channel)
     {
-        var asset = new Asset { DeliveryChannels = new[]{channel} };
-
+        var asset = new Asset { ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = channel
+            }
+        } };
+        
         asset.HasSingleDeliveryChannel(channel).Should().BeTrue();
     }
 }

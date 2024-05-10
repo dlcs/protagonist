@@ -1,5 +1,6 @@
 ﻿using System;
 using DLCS.Core.Exceptions;
+
 // ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
 
 namespace DLCS.Core.Types;

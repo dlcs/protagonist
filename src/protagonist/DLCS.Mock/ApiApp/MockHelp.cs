@@ -51,7 +51,7 @@ public static class MockHelp
     
 
     public static Image MakeImage(string baseUrl, int customerId, int space, string modelId, 
-        DateTime created, string? origin, string? initialOrigin,
+        DateTime created, string? origin,
         int? width, int? height, int? maxUnauthorised,
         DateTime? queued, DateTime? dequeued, DateTime? finished, bool ingesting, string error,
         string[]? tags, string? string1, string? string2, string? string3,
@@ -66,7 +66,6 @@ public static class MockHelp
         image.Thumbnail400 = "https://mock.thumbs.dlcs.io" + mockDlcsPathTemplate + "/full/400,/0/default.jpg";
         image.Created = created;
         image.Origin = origin;
-        image.InitialOrigin = initialOrigin;
         image.Width = width;
         image.Height = height;
         image.MaxUnauthorised = maxUnauthorised;

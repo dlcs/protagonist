@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
@@ -21,8 +22,9 @@ public static class AssetConverter
     /// </summary>
     /// <param name="dbAsset"></param>
     /// <param name="urlRoots">The domain name of the API and orchestrator applications</param>
+    /// <param name="emulateWcDeliveryChannels">Includes delivery channels in the old format in the returned model</param>
     /// <returns></returns>
-    public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots)
+    public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots, bool emulateWcDeliveryChannels = false)
     {
         if (dbAsset.Id.Customer != dbAsset.Customer || dbAsset.Id.Space != dbAsset.Space)
         {
@@ -31,14 +33,15 @@ public static class AssetConverter
         }
 
         var modelId = dbAsset.Id.Asset;
-        
+
         var image = new Image(urlRoots.BaseUrl, dbAsset.Customer, dbAsset.Space, modelId)
         {
             ImageService = $"{urlRoots.ResourceRoot}iiif-img/{dbAsset.Id}",
-            ThumbnailImageService = $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}",
+            ThumbnailImageService = dbAsset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails)
+                ? $"{urlRoots.ResourceRoot}thumbs/{dbAsset.Id}"
+                : null,
             Created = dbAsset.Created,
             Origin = dbAsset.Origin,
-            InitialOrigin = dbAsset.InitialOrigin,
             MaxUnauthorised = dbAsset.MaxUnauthorised,
             Finished = dbAsset.Finished,
             Ingesting = dbAsset.Ingesting,
@@ -56,9 +59,8 @@ public static class AssetConverter
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
             Roles = dbAsset.RolesList.ToArray(),
-            DeliveryChannels = dbAsset.DeliveryChannels
         };
-        
+
         if (dbAsset.Batch > 0)
         {
             // TODO - this should be set by HydraProperty - but where does the template come from?
@@ -74,6 +76,25 @@ public static class AssetConverter
         {
             image.ImageOptimisationPolicy =
                 $"{urlRoots.BaseUrl}/imageOptimisationPolicies/{dbAsset.ImageOptimisationPolicy}";
+        }
+        
+        if (!dbAsset.ImageDeliveryChannels.IsNullOrEmpty())
+        {
+            image.DeliveryChannels = dbAsset.ImageDeliveryChannels.Select(c => new DeliveryChannel()
+                {
+                    Channel = c.Channel,
+                    Policy = c.DeliveryChannelPolicy.System 
+                        ? c.DeliveryChannelPolicy.Name
+                        : $"{urlRoots.BaseUrl}/customers/{c.DeliveryChannelPolicy.Customer}/deliveryChannelPolicies/{c.Channel}/{c.DeliveryChannelPolicy.Name}"
+                }).ToArray();
+            if (emulateWcDeliveryChannels)
+            {
+                image.WcDeliveryChannels = ConvertImageDeliveryChannelsToWc(dbAsset.ImageDeliveryChannels);
+            }
+        }
+        else
+        {
+            image.DeliveryChannels = Array.Empty<DeliveryChannel>();
         }
 
         return image;
@@ -270,9 +291,9 @@ public static class AssetConverter
             asset.MediaType = hydraImage.MediaType;
         }
         
-        if (hydraImage.DeliveryChannels != null)
+        if (hydraImage.WcDeliveryChannels != null)
         {
-            asset.DeliveryChannels = hydraImage.DeliveryChannels.OrderBy(dc => dc).Select(dc => dc.ToLower()).ToArray();
+            asset.DeliveryChannels = hydraImage.WcDeliveryChannels.OrderBy(dc => dc).Select(dc => dc.ToLower()).ToArray();
         }
 
         var thumbnailPolicy = hydraImage.ThumbnailPolicy.GetLastPathElement("thumbnailPolicies/");
@@ -293,12 +314,6 @@ public static class AssetConverter
         else if (hydraImage.ImageOptimisationPolicy.HasText())
         {
             asset.ImageOptimisationPolicy = hydraImage.ImageOptimisationPolicy;
-        }
-        
-        // This can only arrive on a new Asset
-        if (hydraImage.InitialOrigin != null)
-        {
-            asset.InitialOrigin = hydraImage.InitialOrigin;
         }
         
         return asset;
@@ -408,5 +423,16 @@ public static class AssetConverter
         }
 
         return assetFilter;
+    }
+    
+    /// <summary>
+    /// Converts ImageDeliveryChannels into the old format (WcDeliveryChannels)
+    /// </summary>
+    private static string[] ConvertImageDeliveryChannelsToWc(ICollection<ImageDeliveryChannel> imageDeliveryChannels)
+    {
+        return imageDeliveryChannels.Select(dc => dc.Channel)
+            // The thumbs channel should not be included when emulating the old delivery channel format
+            .Where(dc => dc != AssetDeliveryChannels.Thumbnails) 
+            .ToArray();
     }
 }

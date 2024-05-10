@@ -8,14 +8,14 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
-using DLCS.HydraModel;
-using Hydra.Collections;
-using MediatR;
-using Microsoft.AspNetCore.Http;
 using CsvHelper;
 using CsvHelper.Configuration.Attributes;
 using CsvHelper.TypeConversion;
+using DLCS.HydraModel;
 using DLCS.Web.Auth;
+using Hydra.Collections;
+using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Portal.Settings;
@@ -121,7 +121,6 @@ public class IngestFromCsvHandler : IRequestHandler<IngestFromCsv, IngestFromCsv
                         Number1 = record.Number1,
                         Number2 = record.Number2,
                         Number3 = record.Number3,
-                        InitialOrigin = record.InitialOrigin,
                         Family = AssetFamily.Image,
                         MediaType = "image/jp2"
                     });
@@ -198,7 +197,7 @@ public class ImageIngestModel
 {
     public static readonly string[] FieldNames =
     {
-        "Type", "Line", "Space", "ID", "Origin", "InitialOrigin", "Reference1", "Reference2", "Reference3", "Tags",
+        "Type", "Line", "Space", "ID", "Origin", "Reference1", "Reference2", "Reference3", "Tags",
         "Roles",
         "MaxUnauthorised", "NumberReference1", "NumberReference2", "NumberReference3"
     };
@@ -208,14 +207,13 @@ public class ImageIngestModel
     [Index(2)] public int Space { get; set; }
     [Index(3)] public string Id { get; set; }
     [Index(4)] public string Origin { get; set; }
-    [Index(5), NullValues("")] public string? InitialOrigin { get; set; }
-    [Index(6)] public string String1 { get; set; }
-    [Index(7)] public string String2 { get; set; }
-    [Index(8)] public string String3 { get; set; }
-    [Index(9)] public string Tags { get; set; }
-    [Index(10)] public string Roles { get; set; }
-    [Index(11)] public int? MaxUnauthorized { get; set; }
-    [Index(12)] public int? Number1 { get; set; }
-    [Index(13)] public int? Number2 { get; set; }
-    [Index(14)] public int? Number3 { get; set; }
+    [Index(5)] public string String1 { get; set; }
+    [Index(6)] public string String2 { get; set; }
+    [Index(7)] public string String3 { get; set; }
+    [Index(8)] public string Tags { get; set; }
+    [Index(9)] public string Roles { get; set; }
+    [Index(10)] public int? MaxUnauthorized { get; set; }
+    [Index(11)] public int? Number1 { get; set; }
+    [Index(12)] public int? Number2 { get; set; }
+    [Index(13)] public int? Number3 { get; set; }
 }

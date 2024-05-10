@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DLCS.AWS.SNS;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
@@ -18,7 +19,10 @@ public class AssetNotificationSender : IAssetNotificationSender
     private readonly ILogger<AssetNotificationSender> logger;
     private readonly ITopicPublisher topicPublisher;
     private readonly IPathCustomerRepository customerPathRepository;
-    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
+    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web)
+    {
+        ReferenceHandler = ReferenceHandler.IgnoreCycles
+    };
 
     private readonly Dictionary<int, CustomerPathElement> customerPathElements = new();
 

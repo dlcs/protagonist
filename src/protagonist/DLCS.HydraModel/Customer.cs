@@ -64,58 +64,70 @@ public class Customer : DlcsResource
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 15, PropertyName = "originStrategies")]
     public string? OriginStrategies { get; set; }
-
+    
+    [HydraLink(Description = "Collection of further collections containing your delivery channel policies. Policies will be" +
+                             " organised by their intended delivery channel.", 
+    Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 16, PropertyName = "deliveryChannelPolicies")]
+    public string? DeliveryChannelPolicies { get; set; }
+    
+    [HydraLink(Description = "Collection of default delivery channels. Assets without any delivery channels specified will be served by those" +
+                             " configured here (unless overriden by the containing space's default delivery channels). See the DeliveryChannels topic.",
+    Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 17, PropertyName = "defaultDeliveryChannels")]
+    public string? DefaultDeliveryChannels { get; set; }
+    
     [HydraLink(Description = "Collection of IIIF Authentication services available for use with your images. The images are" +
                              " associated with the auth services via Roles. An AuthService is a means of acquiring a role.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 16, PropertyName = "authServices")]
+    [JsonProperty(Order = 18, PropertyName = "authServices")]
     public string? AuthServices { get; set; }
     
     [HydraLink(Description = "Collection of external services which provide aq login page (typically) and an endpoint " +
                              " from which the DLCS acquires the user's named roles. This enables integration with external auth mechanisms.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 17, PropertyName = "roleProviders")]
+    [JsonProperty(Order = 19, PropertyName = "roleProviders")]
     public string? RoleProviders { get; set; }
     
     [HydraLink(Description = "Collection of the available roles you can assign to your images. In order for a user to see an image, the " +
                              "user must have the role associated with the image, or one of them. Users interact with an AuthService to " +
                              "acquire a role or roles.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 18, PropertyName = "roles")]
+    [JsonProperty(Order = 20, PropertyName = "roles")]
     public string? Roles { get; set; }
 
     [HydraLink(Description = "The Customer's view on the DLCS ingest queue. As well as allowing you to query the status of batches you " +
                              "have registered, you can POST new batches to the queue.",
         Range = "vocab:Queue", ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 19, PropertyName = "queue")]
+    [JsonProperty(Order = 21, PropertyName = "queue")]
     public string? Queue { get; set; }
 
     [HydraLink(Description = "Collection of all the Space resources associated with your customer. A space allows you to " +
                              "partition images, have different default roles and tags, etc. See the Space topic.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 20, PropertyName = "spaces")]
+    [JsonProperty(Order = 22, PropertyName = "spaces")]
     public string? Spaces { get; set; }
 
     [HydraLink(Description = "A paged collection of all the customer's images, regardless of space",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 21, PropertyName = "allImages")]
+    [JsonProperty(Order = 23, PropertyName = "allImages")]
     public string? AllImages { get; set; }
 
     [HydraLink(Description = "Storage policy for the Customer",
         Range = "vocab:CustomerStorage", ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 22, PropertyName = "storage")]
+    [JsonProperty(Order = 24, PropertyName = "storage")]
     public string? Storage { get; set; }
 
     [HydraLink(Description = "Api keys allocated to this customer. The accompanying secret is only available at creation time. " +
                              "To obtain a key and a secret, make an empty POST to this collection with administrator privileges and the returned " +
                              "Key object will include the generates secret.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 23, PropertyName = "keys")]
+    [JsonProperty(Order = 25, PropertyName = "keys")]
     public string? Keys { get; set; }
     
     [HydraLink(Description = "Additional HTTP headers (e.g., for caching) that will be sent for assets that match a role.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 23, PropertyName = "customHeaders")]
+    [JsonProperty(Order = 26, PropertyName = "customHeaders")]
     public string? CustomHeaders { get; set; }
 
     [RdfProperty(Description = "Is this user the admin customer?",

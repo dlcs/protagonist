@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using DLCS.Core.Collections;
-using DLCS.Core.Guard;
 using DLCS.Core.Types;
-using DLCS.Model.Policies;
+using DLCS.Model.Assets.Metadata;
 
 namespace DLCS.Model.Assets;
 
@@ -50,11 +49,11 @@ public class Asset
     /// Flags the asset as not to be delivered for viewing under any circumstances
     /// </summary>
     public bool NotForDelivery { get; set; }
-    
+
     /// <summary>
     /// A list of 1:n delivery channels for asset. Dictates which asset-delivery channels are available
     /// </summary>
-    public string[] DeliveryChannels { get; set; }
+    public string[] DeliveryChannels { get; set; } = Array.Empty<string>();
 
     private IEnumerable<string>? rolesList;
     
@@ -96,27 +95,16 @@ public class Asset
     /// OR MaxUnauthorised >= 0
     /// </summary>
     public bool RequiresAuth => !string.IsNullOrWhiteSpace(Roles) || MaxUnauthorised >= 0;
-    
-    // TODO - how to handle this? Split model + entity?
-    public string? InitialOrigin { get; set; }
-    
-    /// <summary>
-    /// Get origin to use for ingestion. This will be 'initialOrigin' if present, else origin.
-    /// </summary>
-    public string GetIngestOrigin()
-        => string.IsNullOrWhiteSpace(InitialOrigin) ? Origin : InitialOrigin;
 
     /// <summary>
-    /// Full thumbnail policy object for Asset
+    /// A list of image delivery channels attached to this asset
     /// </summary>
-    [NotMapped]
-    public ThumbnailPolicy? FullThumbnailPolicy { get; private set; }
-
+    public ICollection<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
+    
     /// <summary>
-    /// Full image optimisation policy object for Asset
+    /// A list of metadata attached to this asset
     /// </summary>
-    [NotMapped]
-    public ImageOptimisationPolicy FullImageOptimisationPolicy { get; private set; } = new();
+    public ICollection<AssetApplicationMetadata>? AssetApplicationMetadata { get; set; }
 
     public Asset()
     {
@@ -127,19 +115,5 @@ public class Asset
         Id = assetId;
         Customer = assetId.Customer;
         Space = assetId.Space;
-    }
-    
-    public Asset WithThumbnailPolicy(ThumbnailPolicy? thumbnailPolicy)
-    {
-        FullThumbnailPolicy = Family == AssetFamily.Image
-            ? thumbnailPolicy.ThrowIfNull(nameof(thumbnailPolicy))
-            : thumbnailPolicy;
-        return this;
-    }
-    
-    public Asset WithImageOptimisationPolicy(ImageOptimisationPolicy imageOptimisationPolicy)
-    {
-        FullImageOptimisationPolicy = imageOptimisationPolicy.ThrowIfNull(nameof(imageOptimisationPolicy));
-        return this;
     }
 }

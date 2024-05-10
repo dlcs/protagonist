@@ -12,4 +12,7 @@
 10. [Special Server Implementation](010-special-server-implementation.md)
 11. [PDFs and other documents as input](011-pdfs-as-input.md)
 12. [Auth Service](012-auth-service.md)
-13. [PDFs as input storage](013-013-pdfs-as-input-storage.md)
+13. [PDFs as input storage](013-pdfs-as-input-storage.md)
+14. [Delivery channel database design](014-delivery-channels-database.md)
+15. [iiif-av channel settings](015-iiif-av-delivery-channel-settings.md)
+16. [Asset Metadata](016-asset-metadata.md)

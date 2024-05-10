@@ -758,7 +758,79 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // status code correct
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
+    
+    [Fact]
+    public async Task Post_CreateBatch_400_IfThumbnailPolicySet_AndOldDeliveryChannelEmulationDisabled()
+    {
+        const int customerId = 15;
+        const int space = 4;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
 
+        // Arrange
+        var hydraImageBody = @"{
+            ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+            ""@type"": ""Collection"",
+            ""member"": [
+                {
+                  ""id"": ""one"",
+                  ""origin"": ""https://example.org/vid.mp4"",
+                  ""space"": 4,
+                  ""family"": ""T"",
+                  ""thumbnailPolicy"": ""some-thumbnail-policy""
+                  ""mediaType"": ""video/mp4""
+                }
+            ]
+        }";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_400_IfImageOptimisationPolicySet_AndOldDeliveryChannelEmulationDisabled()
+    {
+        const int customerId = 15;
+        const int space = 4;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+            ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+            ""@type"": ""Collection"",
+            ""member"": [
+                {
+                  ""id"": ""one"",
+                  ""origin"": ""https://example.org/vid.mp4"",
+                  ""space"": 4,
+                  ""family"": ""T"",
+                  ""thumbnailPolicy"": ""some-thumbnail-policy""
+                  ""mediaType"": ""video/mp4""
+                }
+            ]
+        }";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
     [Fact]
     public async Task Post_CreateBatch_UpdatesQueueAndCounts()
     {
@@ -800,7 +872,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>._, false,
+                A<IReadOnlyCollection<Asset>>._, false,
                 A<CancellationToken>._)).Returns(3);
         
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -844,7 +916,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Items queued for processing
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 3), false,
+                A<IReadOnlyCollection<Asset>>.That.Matches(i => i.Count == 3), false,
                 A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -997,14 +1069,14 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""id"": ""one"",
           ""origin"": ""https://example.org/foo.jpg"",
           ""space"": 2,
-          ""deliveryChannels"": [""iiif-img""],
+          ""wcDeliveryChannels"": [""iiif-img""],
           ""family"": ""I"",
           ""mediaType"": ""image/jpeg""
         },
         {
           ""id"": ""two"",
           ""origin"": ""https://example.org/foo.png"",
-          ""deliveryChannels"": [""iiif-img""],
+          ""wcDeliveryChannels"": [""iiif-img""],
           ""space"": 2,
           ""mediaType"": ""image/png""
         },
@@ -1026,7 +1098,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>._, true,
+                A<IReadOnlyCollection<Asset>>._, true,
                 A<CancellationToken>._)).Returns(3);
         
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -1070,7 +1142,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Items queued for processing
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
-                A<IReadOnlyCollection<IngestAssetRequest>>.That.Matches(i => i.Count == 4), true,
+                A<IReadOnlyCollection<Asset>>.That.Matches(i => i.Count == 4), true,
                 A<CancellationToken>._)).MustHaveHappened();
     }
     

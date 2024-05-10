@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using DLCS.Core.Caching;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Repository.Tests.Caching;
 

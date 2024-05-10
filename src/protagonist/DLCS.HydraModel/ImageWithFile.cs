@@ -18,7 +18,6 @@ public class ImageWithFile : Image
         StorageIdentifier = StorageIdentifier,
         Created = Created,
         Origin = Origin,
-        InitialOrigin = InitialOrigin,
         Tags = Tags,
         Roles = Roles,
         String1 = String1,

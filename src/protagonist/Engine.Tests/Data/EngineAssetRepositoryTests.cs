@@ -61,29 +61,26 @@ public class EngineAssetRepositoryTests
             ingesting: true, ref1: "foo", roles: "secret");
         var existingAsset = entry.Entity;
         await dbContext.SaveChangesAsync();
-
-        var newAsset = new Asset
-        {
-            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
-            Duration = 99, Batch = 0, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
-            Error = "broken state"
-        };
+        
+        contextForTests.Images.Attach(existingAsset);
         
         // Act
-        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
+        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
         
+        existingAsset.Width = 999;
+        existingAsset.Height = 1000;
+        existingAsset.Duration = 99;
+        existingAsset.Error = "broken state";
         // Assert
         success.Should().BeTrue();
         
-        var updatedItem = await dbContext.Images.SingleAsync(a => a.Id == assetId);
-        updatedItem.Width.Should().Be(newAsset.Width);
-        updatedItem.Height.Should().Be(newAsset.Height);
-        updatedItem.Duration.Should().Be(newAsset.Duration);
-        updatedItem.Error.Should().Be(newAsset.Error);
+        var updatedItem = await contextForTests.Images.SingleAsync(a => a.Id == assetId);
+        updatedItem.Width.Should().Be(999);
+        updatedItem.Height.Should().Be(1000);
+        updatedItem.Duration.Should().Be(99);
+        updatedItem.Error.Should().Be("broken state");
         updatedItem.Ingesting.Should().BeFalse();
         updatedItem.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
-        updatedItem.MediaType.Should().Be(existingAsset.MediaType, "MediaType not set on newAsset so not updated");
-        updatedItem.Reference1.Should().Be(existingAsset.Reference1, "Reference1 not changed");
     }
     
     [Fact]
@@ -130,66 +127,29 @@ public class EngineAssetRepositoryTests
             ingesting: true, ref1: "foo", roles: "secret");
         var existingAsset = entry.Entity;
         await dbContext.SaveChangesAsync();
+        
+        contextForTests.Images.Attach(existingAsset);
 
-        var newAsset = new Asset
-        {
-            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
-            Duration = 99, Batch = 0, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
-            Error = "broken state"
-        };
+        existingAsset.Width = 999;
+        existingAsset.Height = 1000;
+        existingAsset.Duration = 99;
+        existingAsset.Error = "broken state";
 
         // Act
-        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
+        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
         
         // Assert
         success.Should().BeTrue();
-        
-        var updatedItem = await dbContext.Images.AsNoTracking().SingleAsync(a => a.Id == assetId);
-        updatedItem.Width.Should().Be(newAsset.Width);
-        updatedItem.Height.Should().Be(newAsset.Height);
-        updatedItem.Duration.Should().Be(newAsset.Duration);
-        updatedItem.Error.Should().Be(newAsset.Error);
-        updatedItem.Ingesting.Should().BeFalse();
-        updatedItem.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
-        updatedItem.MediaType.Should().Be(existingAsset.MediaType, "MediaType not set on newAsset so not updated");
-        updatedItem.Reference1.Should().Be(existingAsset.Reference1, "Reference1 not changed");
-    }
-    
-    [Fact]
-    public async Task UpdateIngestedAsset_ModifiedExistingAsset_IgnoresMediaTypeIfDefaultValue()
-    {
-        // Arrange
-        var assetId =
-            AssetId.FromString(
-                $"99/1/{nameof(UpdateIngestedAsset_ModifiedExistingAsset_IgnoresMediaTypeIfDefaultValue)}");
-        var entry = await dbContext.Images.AddTestAsset(assetId, width: 0, height: 0, duration: 0,
-            ingesting: true, ref1: "foo", roles: "secret", mediaType: "application/json");
-        var existingAsset = entry.Entity;
-        await dbContext.SaveChangesAsync();
 
-        var newAsset = new Asset
-        {
-            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
-            Duration = 99, Batch = 0, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
-            Error = "broken state", MediaType = "unknown"
-        };
-        
-        // Act
-        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
-        
-        // Assert
-        success.Should().BeTrue();
-        
         var updatedItem = await dbContext.Images.AsNoTracking().SingleAsync(a => a.Id == assetId);
-        updatedItem.Width.Should().Be(newAsset.Width);
-        updatedItem.Height.Should().Be(newAsset.Height);
-        updatedItem.Duration.Should().Be(newAsset.Duration);
-        updatedItem.Error.Should().Be(newAsset.Error);
+        updatedItem.Width.Should().Be(999);
+        updatedItem.Height.Should().Be(1000);
+        updatedItem.Duration.Should().Be(99);
+        updatedItem.Error.Should().Be("broken state");
         updatedItem.Ingesting.Should().BeFalse();
         updatedItem.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
-        updatedItem.MediaType.Should().Be(existingAsset.MediaType, "MediaType not set on newAsset so not updated");
     }
-    
+
     [Fact]
     public async Task UpdateIngestedAsset_ModifiedExistingAsset_NoBatch_WithLocationAndStorage_NoExistingLocationOrStorage()
     {
@@ -197,16 +157,10 @@ public class EngineAssetRepositoryTests
         var assetId =
             AssetId.FromString(
                 $"99/1/{nameof(UpdateIngestedAsset_ModifiedExistingAsset_NoBatch_WithLocationAndStorage_NoExistingLocationOrStorage)}");
-        await dbContext.Images.AddTestAsset(assetId);
+        var entity = await dbContext.Images.AddTestAsset(assetId);
+        var existingAsset = entity.Entity;
         await dbContext.SaveChangesAsync();
-
-        var newAsset = new Asset
-        {
-            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
-            Duration = 99, Batch = 0, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
-            Error = "broken state", MediaType = "foo/bar"
-        };
-
+        
         var imageLocation = new ImageLocation { Id = assetId, S3 = "union-card", Nas = "wedding-coat" };
         var imageStorage = new ImageStorage
         {
@@ -215,7 +169,7 @@ public class EngineAssetRepositoryTests
         };
         
         // Act
-        var success = await sut.UpdateIngestedAsset(newAsset, imageLocation, imageStorage, true);
+        var success = await sut.UpdateIngestedAsset(existingAsset, imageLocation, imageStorage, true);
         
         // Assert
         success.Should().BeTrue();
@@ -234,19 +188,13 @@ public class EngineAssetRepositoryTests
         var assetId =
             AssetId.FromString(
                 $"99/1/{nameof(UpdateIngestedAsset_ModifiedExistingAsset_NoBatch_WithLocationAndStorage_ExistingLocationOrStorage)}");
-        await dbContext.Images.AddTestAsset(assetId);
+        var entity = await dbContext.Images.AddTestAsset(assetId);
+        var existingAsset = entity.Entity;
         await dbContext.ImageLocations.AddTestImageLocation(assetId);
         await dbContext.ImageStorages.AddTestImageStorage(assetId);
         await dbContext.CustomerStorages.AddTestCustomerStorage(sizeOfStored: 500, sizeOfThumbs: 800);
         await dbContext.SaveChangesAsync();
-
-        var newAsset = new Asset
-        {
-            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
-            Duration = 99, Batch = 0, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
-            Error = "broken state", MediaType = "foo/bar"
-        };
-
+        
         var imageLocation = new ImageLocation { Id = assetId, S3 = "union-card", Nas = "wedding-coat" };
         var imageStorage = new ImageStorage
         {
@@ -255,7 +203,7 @@ public class EngineAssetRepositoryTests
         };
         
         // Act
-        var success = await sut.UpdateIngestedAsset(newAsset, imageLocation, imageStorage, true);
+        var success = await sut.UpdateIngestedAsset(existingAsset, imageLocation, imageStorage, true);
         
         // Assert
         success.Should().BeTrue();
@@ -288,6 +236,8 @@ public class EngineAssetRepositoryTests
             Duration = 99, Batch = batchId, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
             Error = "broken state"
         };
+        
+        contextForTests.Images.Attach(newAsset);
 
         // Act
         var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
@@ -309,24 +259,24 @@ public class EngineAssetRepositoryTests
         var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_UpdatesBatch_HandlesExistingTransaction)}");
         const int batchId = -10;
         await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
-        await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var existingAsset = entity.Entity;
         await dbContext.SaveChangesAsync();
-
-        var newAsset = new Asset
-        {
-            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
-            Duration = 99, Batch = batchId, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
-            Error = "broken state"
-        };
-
+        
+        existingAsset.Width = 999;
+        existingAsset.Height = 1000;
+        existingAsset.Duration = 99;
+        existingAsset.Error = "broken state";
+        
+        contextForTests.Images.Attach(existingAsset);
+        
         // Act
         await using var transaction = await contextForTests.Database.BeginTransactionAsync();
-        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
+        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
         await transaction.CommitAsync();
         
         // Assert
         success.Should().BeTrue();
-        
         var updatedItem = await dbContext.Batches.SingleAsync(b => b.Id == batchId);
         updatedItem.Errors.Should().Be(2);
         updatedItem.Completed.Should().Be(1);
@@ -341,19 +291,20 @@ public class EngineAssetRepositoryTests
         var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_UpdatesBatch_HandlesExistingTransactionRollback)}");
         const int batchId = -10;
         await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
-        await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var existingAsset = entity.Entity;
         await dbContext.SaveChangesAsync();
-
-        var newAsset = new Asset
-        {
-            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
-            Duration = 99, Batch = batchId, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
-            Error = "broken state"
-        };
+        
+        existingAsset.Width = 999;
+        existingAsset.Height = 1000;
+        existingAsset.Duration = 99;
+        existingAsset.Error = "broken state";
+        
+        contextForTests.Images.Attach(existingAsset);
 
         // Act
         await using var transaction = await contextForTests.Database.BeginTransactionAsync();
-        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
+        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
         await transaction.RollbackAsync();
         
         // Assert
@@ -372,18 +323,18 @@ public class EngineAssetRepositoryTests
         var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_UpdatesBatch_IfComplete)}");
         const int batchId = -11;
         await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
-        await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var existingAsset = entity.Entity;
         await dbContext.SaveChangesAsync();
 
-        var newAsset = new Asset
-        {
-            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
-            Duration = 99, Batch = batchId, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
-            Error = string.Empty
-        };
+        existingAsset.Width = 999;
+        existingAsset.Height = 1000;
+        existingAsset.Duration = 99;
+
+        contextForTests.Images.Attach(existingAsset);
         
         // Act
-        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
+        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
         
         // Assert
         success.Should().BeTrue();
@@ -401,18 +352,19 @@ public class EngineAssetRepositoryTests
         var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_DoesNotUpdateBatch_IfIngestNotFinished)}");
         const int batchId = -111;
         await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
-        await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var existingAsset = entity.Entity;
         await dbContext.SaveChangesAsync();
 
-        var newAsset = new Asset
-        {
-            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
-            Duration = 99, Batch = batchId, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
-            Error = string.Empty
-        };
+        contextForTests.Images.Attach(existingAsset);
+        
+        existingAsset.Width = 999;
+        existingAsset.Height = 1000;
+        existingAsset.Duration = 99;
+        existingAsset.Ingesting = true;
         
         // Act
-        var success = await sut.UpdateIngestedAsset(newAsset, null, null, false);
+        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, false);
         
         // Assert
         success.Should().BeTrue();
@@ -437,18 +389,19 @@ public class EngineAssetRepositoryTests
             AssetId.FromString(
                 $"99/1/{nameof(UpdateIngestedAsset_MarksBatchAsComplete_IfCompletedAndError_EqualsCount)}{batchId}");
         await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 8);
-        await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var existingAsset = entity.Entity;
         await dbContext.SaveChangesAsync();
-
-        var newAsset = new Asset
-        {
-            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
-            Duration = 99, Batch = batchId, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
-            Error = string.Empty
-        };
+        
+        contextForTests.Images.Attach(existingAsset);
+        
+        existingAsset.Width = 999;
+        existingAsset.Height = 1000;
+        existingAsset.Duration = 99;
+        existingAsset.Ingesting = true;
         
         // Act
-        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
+        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
         
         // Assert
         success.Should().BeTrue();
@@ -462,18 +415,19 @@ public class EngineAssetRepositoryTests
     {
         var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_SavesError_IfBatchNotFound)}");
         const int batchId = -100;
-        await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        var existingAsset = entity.Entity;
         await dbContext.SaveChangesAsync();
+        
+        existingAsset.Width = 999;
+        existingAsset.Height = 1000;
+        existingAsset.Duration = 99;
+        existingAsset.Ingesting = true;
 
-        var newAsset = new Asset
-        {
-            Id = assetId, Reference1 = "bar", Ingesting = true, Width = 999, Height = 1000,
-            Duration = 99, Batch = batchId, Customer = 99, Space = 1, Created = new DateTime(2021, 1, 1),
-            Error = string.Empty
-        };
+        contextForTests.Images.Attach(existingAsset);
         
         // Act
-        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
+        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
         
         // Assert
         success.Should().BeTrue();

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;

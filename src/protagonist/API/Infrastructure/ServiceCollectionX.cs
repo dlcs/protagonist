@@ -1,6 +1,10 @@
 ﻿using System.IO;
 using System.Reflection;
 using API.Features.Assets;
+using API.Features.Customer;
+using API.Features.DeliveryChannels;
+using API.Features.DeliveryChannels.DataAccess;
+using API.Infrastructure.Requests.Pipelines;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
@@ -12,6 +16,7 @@ using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
+using DLCS.Model.DeliveryChannels;
 using DLCS.Model.PathElements;
 using DLCS.Model.Policies;
 using DLCS.Model.Processing;
@@ -46,14 +51,15 @@ public static class ServiceCollectionX
                 memoryCacheOptions.CompactionPercentage = cacheSettings.MemoryCacheCompactionPercentage;
             })
             .AddLazyCache();
-    
+
     /// <summary>
     /// Add MediatR services and pipeline behaviours to service collection.
     /// </summary>
     public static IServiceCollection ConfigureMediatR(this IServiceCollection services)
         => services
             .AddMediatR(typeof(Startup))
-            .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+            .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
+            .AddScoped(typeof(IPipelineBehavior<,>), typeof(CacheInvalidationBehaviour<,>));
     
     /// <summary>
     /// Add required AWS services
@@ -86,11 +92,8 @@ public static class ServiceCollectionX
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
         => services
             .AddDlcsContext(configuration)
-            .AddScoped<IAssetRepository, AssetRepository>()
-            .AddScoped<IApiAssetRepository>(provider =>
-                ActivatorUtilities.CreateInstance<ApiAssetRepository>(
-                    provider,
-                    provider.GetRequiredService<IAssetRepository>()))
+            .AddSingleton<AssetCachingHelper>()
+            .AddScoped<IApiAssetRepository, ApiAssetRepository>()
             .AddScoped<ISpaceRepository, SpaceRepository>()
             .AddScoped<IBatchRepository, BatchRepository>()
             .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
@@ -99,6 +102,10 @@ public static class ServiceCollectionX
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
             .AddSingleton<IAuthServicesRepository, DapperAuthServicesRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
+            .AddScoped<DapperNewCustomerDeliveryChannelRepository>()
+            .AddScoped<IDefaultDeliveryChannelRepository, DefaultDeliveryChannelRepository>()
+            .AddScoped<IDeliveryChannelPolicyRepository, DeliveryChannelPolicyRepository>()
+            .AddScoped<IAvChannelPolicyOptionsRepository, AvChannelPolicyOptionsRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>

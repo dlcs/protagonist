@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using IIIF;
-using IIIF.ImageApi;
 using IIIF.ImageApi.V3;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;

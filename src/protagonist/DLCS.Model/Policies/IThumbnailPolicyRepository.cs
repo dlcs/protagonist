@@ -6,7 +6,8 @@ namespace DLCS.Model.Policies;
 public interface IThumbnailPolicyRepository
 {
     /// <summary>
-    /// Get ThumbnailPolicy with specified Id.
+    /// Get a delivery channel thumbs policy for the specified id.
     /// </summary>
-    Task<ThumbnailPolicy?> GetThumbnailPolicy(string thumbnailPolicyId, CancellationToken cancellationToken = default);
+    Task<DeliveryChannelPolicy?> GetThumbnailPolicy(int deliveryChannelPolicyId, int customerId,
+        CancellationToken cancellationToken = default);
 }

@@ -1,12 +1,10 @@
-﻿using API.Features.Assets;
+﻿using API.Exceptions;
+using API.Features.Assets;
 using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
 using DLCS.Core.Collections;
-using DLCS.Core.Settings;
-using DLCS.Core.Strings;
 using DLCS.Model.Assets;
-using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using Microsoft.Extensions.Options;
 
@@ -18,27 +16,27 @@ namespace API.Features.Image.Ingest;
 /// </summary>
 public class AssetProcessor
 {
-    private readonly IPolicyRepository policyRepository;
     private readonly IApiAssetRepository assetRepository;
     private readonly IStorageRepository storageRepository;
+    private readonly DeliveryChannelProcessor deliveryChannelProcessor;
     private readonly ApiSettings settings;
     
     public AssetProcessor(
         IApiAssetRepository assetRepository,
         IStorageRepository storageRepository,
-        IPolicyRepository policyRepository,
+        DeliveryChannelProcessor deliveryChannelProcessor,
         IOptionsMonitor<ApiSettings> apiSettings)
     {
         this.assetRepository = assetRepository;
         this.storageRepository = storageRepository;
-        this.policyRepository = policyRepository;
+        this.deliveryChannelProcessor = deliveryChannelProcessor;
         settings = apiSettings.CurrentValue;
     }
 
     /// <summary>
     /// Process an asset - including validation and handling Update or Insert logic and get ready for ingestion
     /// </summary>
-    /// <param name="asset">Asset sent to API</param>
+    /// <param name="assetBeforeProcessing">Details needed to create assets</param>
     /// <param name="mustExist">If true, then only Update operations are supported</param>
     /// <param name="alwaysReingest">If true, then engine will be notified</param>
     /// <param name="isBatchUpdate">
@@ -47,14 +45,15 @@ public class AssetProcessor
     /// <param name="requiresReingestPreSave">Optional delegate for modifying asset prior to saving</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <param name="isPriorityQueue">Whether the request is for the priority queue or not</param>
-    public async Task<ProcessAssetResult> Process(Asset asset, bool mustExist, bool alwaysReingest, bool isBatchUpdate, 
+    public async Task<ProcessAssetResult> Process(AssetBeforeProcessing assetBeforeProcessing, bool mustExist, bool alwaysReingest, bool isBatchUpdate, 
         Func<Asset, Task>? requiresReingestPreSave = null, 
         CancellationToken cancellationToken = default)
     {
         Asset? existingAsset;
         try
         {
-            existingAsset = await assetRepository.GetAsset(asset.Id, noCache: true);
+            existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true);
+
             if (existingAsset == null)
             {
                 if (mustExist)
@@ -68,7 +67,8 @@ public class AssetProcessor
                     };
                 }
 
-                var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
+                var counts =
+                    await storageRepository.GetStorageMetrics(assetBeforeProcessing.Asset.Customer, cancellationToken);
                 if (!counts.CanStoreAsset())
                 {
                     return new ProcessAssetResult
@@ -79,8 +79,8 @@ public class AssetProcessor
                         )
                     };
                 }
-                
-                if (!counts.CanStoreAssetSize(0,0))
+
+                if (!counts.CanStoreAssetSize(0, 0))
                 {
                     return new ProcessAssetResult
                     {
@@ -93,9 +93,20 @@ public class AssetProcessor
 
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
+            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing.IsNullOrEmpty() && alwaysReingest)
+            {
+                return new ProcessAssetResult
+                {
+                    Result = ModifyEntityResult<Asset>.Failure(
+                        "Delivery channels are required when updating an existing Asset via PUT",
+                        WriteResult.BadRequest
+                    )
+                };
+            }
 
             var assetPreparationResult =
-                AssetPreparer.PrepareAssetForUpsert(existingAsset, asset, false, isBatchUpdate, settings.RestrictedAssetIdCharacters);
+                AssetPreparer.PrepareAssetForUpsert(existingAsset, assetBeforeProcessing.Asset, false, isBatchUpdate,
+                    settings.RestrictedAssetIdCharacters);
 
             if (!assetPreparationResult.Success)
             {
@@ -105,35 +116,15 @@ public class AssetProcessor
                         WriteResult.FailedValidation)
                 };
             }
-            
-            var updatedAsset = assetPreparationResult.UpdatedAsset!;
+
+            var updatedAsset = assetPreparationResult.UpdatedAsset!; // this is from Database
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
 
-            if (existingAsset == null)
+            var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(existingAsset,
+                updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
+            if (deliveryChannelChanged)
             {
-                var preset = settings.DLCS.IngestDefaults.GetPresets((char)updatedAsset.Family!,
-                    updatedAsset.MediaType ?? string.Empty);
-                var deliveryChannelChanged = SetDeliveryChannel(updatedAsset, preset);
-                if (deliveryChannelChanged)
-                {
-                    requiresEngineNotification = true;
-                }
-                
-                var imagePolicyChanged = await SelectImageOptimisationPolicy(updatedAsset, preset);
-                if (imagePolicyChanged)
-                {
-                    // NB the AssetPreparer has already inspected image policy, but this will pick up
-                    // a change from default.
-                    requiresEngineNotification = true;
-                }
-
-                var thumbnailPolicyChanged = await SelectThumbnailPolicy(updatedAsset, preset);
-                if (thumbnailPolicyChanged)
-                {
-                    // We won't alter the value of requiresEngineNotification
-                    // TODO thumbs will be backfilled.
-                    // This could be a config setting.
-                }
+                requiresEngineNotification = true;
             }
 
             if (requiresEngineNotification)
@@ -152,18 +143,20 @@ public class AssetProcessor
 
             var assetAfterSave = await assetRepository.Save(updatedAsset, existingAsset != null, cancellationToken);
 
-            // Restore fields that are not persisted but are required
-            if (updatedAsset.InitialOrigin.HasText())
-            {
-                assetAfterSave.InitialOrigin = asset.InitialOrigin;
-            }
-
             return new ProcessAssetResult
             {
                 ExistingAsset = existingAsset,
                 RequiresEngineNotification = requiresEngineNotification,
                 Result = ModifyEntityResult<Asset>.Success(assetAfterSave,
                     existingAsset == null ? WriteResult.Created : WriteResult.Updated)
+            };
+        }
+        catch (APIException apiEx)
+        {
+            var resultStatus = (apiEx.StatusCode ?? 500) == 400 ? WriteResult.BadRequest : WriteResult.Error;
+            return new ProcessAssetResult
+            {
+                Result = ModifyEntityResult<Asset>.Failure(apiEx.Message, resultStatus)
             };
         }
         catch (Exception e)
@@ -173,91 +166,6 @@ public class AssetProcessor
                 Result = ModifyEntityResult<Asset>.Failure(e.Message, WriteResult.Error)
             };
         }
-    }
-
-    private bool SetDeliveryChannel(Asset updatedAsset, IngestPresets preset)
-    {
-        // Creation, set DeliveryChannel to default value for Family, if not already set
-        if (updatedAsset.DeliveryChannels.IsNullOrEmpty())
-        {
-            updatedAsset.DeliveryChannels = preset.DeliveryChannel;
-            return true;
-        }
-
-        return false;
-    }
-    
-    private async Task<bool> SelectThumbnailPolicy(Asset asset, IngestPresets ingestPresets)
-    {
-        bool changed = false; 
-        if (MIMEHelper.IsImage(asset.MediaType))
-        {
-            changed = await SetThumbnailPolicy(ingestPresets.ThumbnailPolicy, asset);
-        }
-
-        return changed;
-    }
-
-    private async Task<bool> SelectImageOptimisationPolicy(Asset asset, IngestPresets ingestPresets)
-    {
-        bool changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);;
-
-        if (MIMEHelper.IsImage(asset.MediaType) && asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
-        {
-            changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
-        }
-        else if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased) && (MIMEHelper.IsAudio(asset.MediaType) || 
-                                                                               MIMEHelper.IsVideo(asset.MediaType)))
-        {
-            changed = await SetImagePolicy(ingestPresets.OptimisationPolicy, asset);
-        }
-
-        return changed;
-    }
-
-    private async Task<bool> SetImagePolicy(string? defaultKey, Asset asset)
-    {
-        string? incomingPolicy = asset.ImageOptimisationPolicy;
-        ImageOptimisationPolicy? policy = null;
-        if (incomingPolicy.HasText())
-        {
-            policy = await policyRepository.GetImageOptimisationPolicy(incomingPolicy, asset.Customer);
-        }
-
-        if (policy == null && defaultKey.HasText())
-        {
-            // The asset doesn't have a valid ImageOptimisationPolicy
-            // This is adapted from Deliverator, but there wasn't a way of 
-            // taking the policy from the incoming PUT. There now is.
-            var imagePolicy = await policyRepository.GetImageOptimisationPolicy(defaultKey, asset.Customer);
-            if (imagePolicy != null)
-            {
-                asset.ImageOptimisationPolicy = imagePolicy.Id;
-            }
-        }
-
-        return asset.ImageOptimisationPolicy != incomingPolicy;
-    }
-    
-    private async Task<bool> SetThumbnailPolicy(string defaultPolicy, Asset asset)
-    {
-        string? incomingPolicy = asset.ThumbnailPolicy;
-        ThumbnailPolicy? policy = null;
-        if (incomingPolicy.HasText())
-        {
-            policy = await policyRepository.GetThumbnailPolicy(incomingPolicy);
-        }
-
-        if (policy == null)
-        {
-            var thumbnailPolicy = await policyRepository.GetThumbnailPolicy(defaultPolicy);
-            if (thumbnailPolicy != null)
-            {
-                asset.ThumbnailPolicy = thumbnailPolicy.Id;
-            }
-        }
-
-        return asset.ThumbnailPolicy != incomingPolicy;
     }
 }
 

@@ -3,7 +3,6 @@ using System.Linq;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
-using Microsoft.Extensions.Logging;
 
 namespace DLCS.Model.Assets;
 
@@ -99,10 +98,9 @@ public static class AssetPreparer
                 requiresReingest = true;
             }
 
-            if (updateAsset.DeliveryChannels != null &&
-                !updateAsset.DeliveryChannels.SequenceEqual(existingAsset.DeliveryChannels))
+            if (updateAsset.ImageDeliveryChannels != null && !updateAsset.ImageDeliveryChannels.SequenceEqual(existingAsset.ImageDeliveryChannels))
             {
-                // Changing DeliveryChannel can alter how the image should be processed
+                // Changing ImageDeliveryChannel can alter how the image should be processed
                 requiresReingest = true;
                 reCalculateFamily = true;
             }
@@ -170,11 +168,11 @@ public static class AssetPreparer
             // However, this DOES allow the *creation* of a NotForDelivery asset.
         }
 
-        if (!updateAsset.DeliveryChannels.IsNullOrEmpty())
+        if (!updateAsset.ImageDeliveryChannels.IsNullOrEmpty())
         {
-            foreach (var dc in updateAsset.DeliveryChannels)
+            foreach (var dc in updateAsset.ImageDeliveryChannels)
             {
-                if (!AssetDeliveryChannels.All.Contains(dc))
+                if (AssetDeliveryChannels.All.All(x => x != dc.Channel))
                 {
                     return AssetPreparationResult.Failure(
                         $"'{dc}' is an invalid deliveryChannel. Valid values are: {AssetDeliveryChannels.AllString}.");
@@ -214,7 +212,7 @@ public static class AssetPreparer
         {
             // Allow updating dimensions if _existing_ channel is "file" only as these won't have been set by
             // an automated process
-            var isFileOnly = existingAsset.DeliveryChannels.ContainsOnly(AssetDeliveryChannels.File);
+            var isFileOnly = existingAsset.HasSingleDeliveryChannel(AssetDeliveryChannels.File);
             
             if (updateAsset.Width.HasValue && updateAsset.Width != 0 && updateAsset.Width != existingAsset.Width)
             {
@@ -263,11 +261,6 @@ public static class AssetPreparer
             if (updateAsset.Family != null && updateAsset.Family != existingAsset.Family)
             {
                 return AssetPreparationResult.Failure("Family cannot be edited.");
-            }
-
-            if (updateAsset.InitialOrigin != null)
-            {
-                return AssetPreparationResult.Failure("Cannot edit the InitialOrigin of an asset.");
             }
         }
 
@@ -341,7 +334,6 @@ public static class AssetPreparer
             Ingesting = false,
             ImageOptimisationPolicy = string.Empty,
             ThumbnailPolicy = string.Empty,
-            InitialOrigin = string.Empty,
             DeliveryChannels = null,
             MediaType = "unknown"
         };

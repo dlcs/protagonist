@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -64,19 +65,13 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Create_Customer_Test()
     {
-        // arrange
-        // Need to create an entity counter global for customers
-        var expectedNewCustomerId = 1;
-
         var customerCounter = await dbContext.EntityCounters.SingleOrDefaultAsync(ec
             => ec.Customer == 0 && ec.Scope == "0" && ec.Type == "customer");
-        customerCounter.Should().BeNull();
-        // this is true atm but Seed data might change this.
-        // The counter should be created on first use, see below
+         customerCounter.Should().NotBeNull();
 
-        const string newCustomerJson = @"{
+         const string newCustomerJson = @"{
   ""@type"": ""Customer"",
-  ""name"": ""my-new-customer"",
+  ""name"": ""api-test-customer-1"",
   ""displayName"": ""My New Customer""
 }";
         var content = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
@@ -88,11 +83,13 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var newCustomer = await response.ReadAsHydraResponseAsync<Customer>();
         
         // The entity counter should allocate the next available ID.
-        newCustomer.Id.Should().EndWith("customers/" + expectedNewCustomerId);
-
-        var newDbCustomer = await dbContext.Customers.SingleOrDefaultAsync(c => c.Id == expectedNewCustomerId);
+        var newDbCustomer = dbContext.Customers.FirstOrDefault(c => c.Name == "api-test-customer-1")!;
+        newDbCustomer.DisplayName.Should().Be(newCustomer.DisplayName);
+        
+        var newCustomerId = newDbCustomer.Id;
+        newCustomer.Id.Should().EndWith("customers/" + newCustomerId);
         newDbCustomer.Should().NotBeNull();
-        newDbCustomer.Name.Should().Be("my-new-customer");
+        newDbCustomer.Name.Should().Be("api-test-customer-1");
         newDbCustomer.DisplayName.Should().Be("My New Customer");
         newDbCustomer.AcceptedAgreement.Should().BeTrue();
         newDbCustomer.Administrator.Should().BeFalse();
@@ -102,17 +99,17 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
             => ec.Customer == 0 && ec.Scope == "0" && ec.Type == "customer");
 
         customerCounter.Should().NotBeNull("created on demand");
-        customerCounter.Next.Should().Be(expectedNewCustomerId + 1);
+        customerCounter.Next.Should().Be(newCustomerId + 1);
 
         // There should be a space entity counter for the new customer
         var spaceCounter = await dbContext.EntityCounters.SingleOrDefaultAsync(ec
-            => ec.Customer == expectedNewCustomerId && ec.Scope == expectedNewCustomerId.ToString() &&
+            => ec.Customer == newCustomerId && ec.Scope == newCustomerId.ToString() &&
                ec.Type == "space");
         spaceCounter.Should().NotBeNull();
         spaceCounter.Next.Should().Be(1);
 
         var customerAuthServices = await dbContext.AuthServices.Where(svc
-            => svc.Customer == expectedNewCustomerId).ToListAsync();
+            => svc.Customer == newCustomerId).ToListAsync();
         customerAuthServices.Should().HaveCount(2, "two new services created");
 
         var clickthroughService = customerAuthServices.SingleOrDefault(svc => svc.Name == "clickthrough");
@@ -128,24 +125,27 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Role: Should be a clickthrough Role for AuthService
         var roles = await dbContext.Roles.Where(role
-            => role.Customer == expectedNewCustomerId).ToListAsync();
+            => role.Customer == newCustomerId).ToListAsync();
         roles.Should().HaveCount(1); // one new role
         var clickthroughRole = roles.SingleOrDefault(role => role.Name == "clickthrough");
         clickthroughRole.Should().NotBeNull();
         clickthroughRole.AuthService.Should().Be(clickthroughService.Id);
 
         // What should this URL be? api.dlcs.io is... not right?
-        var roleId = $"https://api.dlcs.io/customers/{expectedNewCustomerId}/roles/clickthrough";
+        var roleId = $"https://api.dlcs.io/customers/{newCustomerId}/roles/clickthrough";
         clickthroughRole.Id.Should().Be(roleId);
 
         // Should be a row in Queues
         var defaultQueue =
-            await dbContext.Queues.SingleAsync(q => q.Customer == expectedNewCustomerId && q.Name == "default");
+            await dbContext.Queues.SingleAsync(q => q.Customer == newCustomerId && q.Name == "default");
         defaultQueue.Size.Should().Be(0);
         
         var priorityQueue =
-            await dbContext.Queues.SingleAsync(q => q.Customer == expectedNewCustomerId && q.Name == "priority");
+            await dbContext.Queues.SingleAsync(q => q.Customer == newCustomerId && q.Name == "priority");
         priorityQueue.Size.Should().Be(0);
+        
+        dbContext.DeliveryChannelPolicies.Count(d => d.Customer == newDbCustomer.Id).Should().Be(3);
+        dbContext.DefaultDeliveryChannels.Count(d => d.Customer == newDbCustomer.Id).Should().Be(5);
     }
 
     [Fact]
@@ -167,6 +167,48 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
     
+    [Fact]
+    public async Task NewlyCreatedCustomer_RollsBackSuccessfully_WhenDeliveryChannelsNotCreatedSuccessfully()
+    {
+        var expectedCustomerId = (int)dbContext.EntityCounters.Single(c => c.Type == "customer" && c.Scope == "0" && c.Customer == 0).Next;
+
+        const string url = "/customers";
+        const string customerJson = @"{
+  ""name"": ""customerApiTest2"",
+  ""displayName"": ""testing api customer 2""
+    }";
+        var content = new StringContent(customerJson, Encoding.UTF8, "application/json");
+
+        var test = dbContext.EntityCounters.Single(c => c.Type == "customer" && c.Scope == "0" && c.Customer == 0).Next;
+        
+        dbContext.DeliveryChannelPolicies.Add(new DLCS.Model.Policies.DeliveryChannelPolicy()
+        {
+            Id = 250,
+            DisplayName = "A default audio policy",
+            Name = "default-audio",
+            Customer = expectedCustomerId,
+            Channel = "iiif-av",
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow,
+            PolicyData = null,
+            System = false
+        }); // creates a duplicate policy, causing an error
+
+        await dbContext.SaveChangesAsync();
+
+
+        // Act
+        var response = await httpClient.AsAdmin(1).PostAsync(url, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        dbContext.DeliveryChannelPolicies.Count(d => d.Customer == expectedCustomerId).Should().Be(1); //difference of 1 due to delivery channel added above
+        dbContext.DefaultDeliveryChannels.Count(d => d.Customer == expectedCustomerId).Should().Be(0);
+        dbContext.Customers.FirstOrDefault(c => c.Id == expectedCustomerId).Should().BeNull();
+        dbContext.EntityCounters.Count(e => e.Customer == expectedCustomerId).Should().Be(0);
+        dbContext.Roles.Count(r => r.Customer == expectedCustomerId).Should().Be(0);
+    }
+
     [Fact] 
     public async Task CreateNewCustomer_Returns400_IfNameStartsWithVersion()
     {

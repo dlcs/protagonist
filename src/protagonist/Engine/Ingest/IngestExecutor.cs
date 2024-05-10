@@ -34,9 +34,26 @@ public class IngestExecutor
     public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
-        var workers = workerBuilder.GetWorkers(asset);
-        
         var context = new IngestionContext(asset);
+
+        // If the asset has the `none` delivery channel specified, skip processing and mark the ingest as being complete
+        if (asset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
+        {
+            var imageStorage = new ImageStorage
+            {
+                Id = asset.Id,
+                Customer = asset.Customer,
+                Space = asset.Space,
+                Size = 0,
+                LastChecked = DateTime.UtcNow,
+                ThumbnailSize = 0,
+            };
+            await assetRepository.UpdateIngestedAsset(context.Asset, null, imageStorage, 
+                true, cancellationToken);
+            return new IngestResult(asset.Id, IngestResultStatus.Success);
+        }
+        
+        var workers = workerBuilder.GetWorkers(asset);
         var overallStatus = IngestResultStatus.Unknown;
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
@@ -48,7 +65,7 @@ public class IngestExecutor
                 logger.LogDebug("Storage policy exceeded for customer {CustomerId} with id {Id}", asset.Customer, asset.Id);
                 asset.Error = IngestErrors.StoragePolicyExceeded;
                 var dbResponse = await CompleteAssetInDatabase(context, true, cancellationToken);
-                return new IngestResult(asset, dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
+                return new IngestResult(asset.Id, dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
             }
             
             var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
@@ -91,7 +108,7 @@ public class IngestExecutor
             await postProcessor.PostIngest(context,
                 dbSuccess && overallStatus is IngestResultStatus.Success or IngestResultStatus.QueuedForProcessing);
         }
-        return new IngestResult(asset, dbSuccess ? overallStatus : IngestResultStatus.Failed);
+        return new IngestResult(asset.Id, dbSuccess ? overallStatus : IngestResultStatus.Failed);
     }
 
     private async Task<bool> CompleteAssetInDatabase(IngestionContext context, bool ingestFinished, CancellationToken cancellationToken)

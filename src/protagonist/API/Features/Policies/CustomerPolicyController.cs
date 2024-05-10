@@ -4,7 +4,6 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;

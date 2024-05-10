@@ -50,11 +50,6 @@ Where sizes.json looks like this (for example):
 
 There are a few app settings that can control the behaviour of the application:
 
-### `Thumbs:EnsureNewThumbnailLayout`
-
-* `True` - when a request is received the `ThumbReorganiser` class will ensure that the above format exists in S3 by consulting an images `ThumbnailPolicy` and copying thumbnails from existing level 0 image API paths in same bucket.
-* `False` - when a request is received the assumption is that the above format exists in S3. If it doesn't a 404 will be returned.
-
 ### `Thumbs:Resize`
 
 * `True` - if an exact matching thumbnail is not found, we will attempt to resize the next largest thumbnail to match requirements.

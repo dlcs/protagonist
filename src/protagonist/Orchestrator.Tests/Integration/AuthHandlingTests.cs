@@ -13,7 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Stubbery;
-using Test.Helpers;
 using Test.Helpers.Integration;
 
 namespace Orchestrator.Tests.Integration;
@@ -40,7 +39,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
             .WithConnectionString(dbFixture.ConnectionString)
             .WithConfigValue("Auth:Auth2ServiceRoot", apiStub.Address)
             .CreateClient();
-        
+
         dbFixture.CleanUp();
     }
     
@@ -423,7 +422,10 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
     {
         // Arrange
         var id = AssetId.FromString($"99/1/{nameof(ProbeService_ReturnsProbeResult_FromDownstreamAuthService)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 100, roles: "test-role");
+        await dbFixture.DbContext.Images.AddTestAsset(
+            id, 
+            maxUnauthorised: 100, 
+            roles: "test-role");
         await dbFixture.DbContext.SaveChangesAsync();
 
         var downstreamProbeResult = new AuthProbeResult2 { Status = 999 };

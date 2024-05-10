@@ -1,11 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Amazon.S3;
 using API.Client;
 using API.Infrastructure.Messaging;
@@ -14,6 +14,7 @@ using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Messaging;
@@ -25,10 +26,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using AssetFamily = DLCS.Model.Assets.AssetFamily;
-using ImageOptimisationPolicy = DLCS.Model.Policies.ImageOptimisationPolicy;
 
 namespace API.Tests.Integration;
 
@@ -74,7 +75,105 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_NewImageAsset_Creates_Asset()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_Creates_Asset));
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff""
+        }}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MaxUnauthorised.Should().Be(-1);
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img");
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
+    }
+    
+    [Fact]
+    public async Task Put_NewImageAsset_Creates_Asset_WithDeliveryChannelsSetToNone()
+    {
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset_WithDeliveryChannelsSetToNone));
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"": ""none"",
+                ""policy"": ""none""
+            }}]
+        }}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MaxUnauthorised.Should().Be(-1);
+        asset.ImageDeliveryChannels
+            .Should().HaveCount(1).And.Subject
+            .Should().Satisfy(
+                i => i.Channel == AssetDeliveryChannels.None &&
+                     i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.None);
+    }
+    
+    [Fact]
+    public async Task Put_NewImageAsset_Creates_Asset_WithCustomDefaultDeliveryChannel()
+    {
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var newPolicy = await dbContext.DeliveryChannelPolicies.AddAsync(new DLCS.Model.Policies.DeliveryChannelPolicy()
+        {
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow,
+            DisplayName = "test policy - space specific",
+            PolicyData = null,
+            Name = "space-specific-image",
+            Channel = "iiif-img",
+            Customer = customerAndSpace.customer,
+            Id = 260
+        });
+
+        await dbContext.DefaultDeliveryChannels.AddAsync(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel
+        {
+            Space = customerAndSpace.space,
+            Customer = customerAndSpace.customer,
+            DeliveryChannelPolicyId = newPolicy.Entity.Id,
+            MediaType = "image/tiff"
+        });
+
+        await dbContext.SaveChangesAsync();
+
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset_WithCustomDefaultDeliveryChannel));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -83,24 +182,259 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MaxUnauthorised.Should().Be(-1);
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
+                                                                x.DeliveryChannelPolicyId == newPolicy.Entity.Id);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
+    }
+    
+    [Fact]
+    public async Task Put_NewImageAsset_Returns400_IfNoDeliveryChannelDefaults()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_Returns400_IfNoDeliveryChannelDefaults));
+        var hydraImageBody = @"{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/test"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff"",
+  ""deliveryChannels"": [{ ""channel"":""file"" } ] 
+}";
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer().PutAsync(assetId.ToApiResourcePath(), content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, "there is no default handler for image/tiff for 'file' channel");
+    }
+    
+    [Fact]
+    public async Task Put_NewImageAsset_Creates_AssetWithSpecifiedDeliveryChannels()
+    {
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_AssetWithSpecifiedDeliveryChannels));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff"",
+   ""deliveryChannels"": [
+{{
+    ""channel"":""iiif-img"",
+    ""policy"":""default""
+ }}, 
+{{
+    ""channel"":""thumbs"",
+    ""policy"":""https://some.url/customers/{customerAndSpace.customer}/deliveryChannelPolicies/thumbs/default""
+ }}
+] 
+}}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MaxUnauthorised.Should().Be(-1);
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img");
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
+    }
+    
+     [Fact]
+    public async Task Put_NewImageAsset_Creates_Asset_WhileIgnoringCustomDefaultDeliveryChannel()
+    {
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var newPolicy = await dbContext.DeliveryChannelPolicies.AddAsync(new DLCS.Model.Policies.DeliveryChannelPolicy()
+        {
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow,
+            DisplayName = "test policy - space specific",
+            PolicyData = null,
+            Name = "space-specific-image",
+            Channel = "iiif-img",
+            Customer = customerAndSpace.customer,
+            Id = 260
+        });
+
+        await dbContext.DefaultDeliveryChannels.AddAsync(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel
+        {
+            Space = customerAndSpace.space + 1,
+            Customer = customerAndSpace.customer,
+            DeliveryChannelPolicyId = newPolicy.Entity.Id,
+            MediaType = "image/tiff"
+        });
+
+        await dbContext.SaveChangesAsync();
+
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
+        var hydraImageBody = $@"{{
+  ""@type"": ""Image"",
+  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+  ""family"": ""I"",
+  ""mediaType"": ""image/tiff""
+}}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MaxUnauthorised.Should().Be(-1);
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
+    }
+
+    [Fact]
+    public async Task Put_NewImageAsset_BadRequest_WhenDeliveryChannelInvalid()
+    {
+        // arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/my-image.png"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/png"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"":""bad-delivery-channel"",
+                ""policy"":""default""
+            }}]
+        }}";  
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId);
-        asset.Id.Should().Be(assetId);
-        asset.MaxUnauthorised.Should().Be(-1);
-        asset.ThumbnailPolicy.Should().Be("default");
-        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [InlineData("T", "video/mp4", "mp4",  "iiif-img")]
+    [InlineData("T", "video/mp4", "mp4", "thumbs")]
+    [InlineData("I", "image/jpeg", "jpeg", "iiif-av")]
+    [InlineData("F", "application/pdf", "pdf", "iiif-img")]
+    [InlineData("F", "application/pdf", "pdf", "thumbs")]
+    [InlineData("F", "application/pdf", "pdf", "iiif-av")]
+    public async Task Put_NewImageAsset_BadRequest_WhenDeliveryChannelInvalidForMediaType(string family, string mediaType, string format, string deliveryChannel)
+    {
+        // arrange
+        var assetId = new AssetId(99, 1, $"{nameof(Put_NewImageAsset_BadRequest_WhenDeliveryChannelInvalidForMediaType)}-{deliveryChannel}-{format}");
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.{format}"",
+            ""family"": ""{family}"",
+            ""mediaType"": ""{mediaType}"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"":""{deliveryChannel}"",
+                ""policy"":""default""
+            }}]
+        }}";
+     
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
+    [Fact]
+    public async Task Put_NewImageAsset_BadRequest_WhenDeliveryChannels_ContainsDuplicates()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_BadRequest_WhenDeliveryChannels_ContainsDuplicates));
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"":""iiif-img"",
+                ""policy"":""default""
+            }},
+            {{
+                ""channel"":""iiif-img"",
+                ""policy"":""default""
+            }},
+            {{
+                ""channel"":""file"",
+                ""policy"":""none""
+            }}]]
+        }}";
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    private async Task<(int customer, int space)> CreateCustomerAndSpace()
+    {
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""api-test-asset-1"",
+  ""displayName"": ""My New Customer for asset""
+}";
+        var customerContent = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+        var customerResponse = await httpClient.AsAdmin().PostAsync("/customers", customerContent);
+        var customer = await customerResponse.ReadAsHydraResponseAsync<Customer>();
+        var customerId = int.Parse(customer.Id!.Split('/').Last());
+        
+        const string newSpaceJson = @"{
+  ""@type"": ""Space"",
+  ""name"": ""Test Space""
+}";
+        var spaceContent = new StringContent(newSpaceJson, Encoding.UTF8, "application/json");
+        var spacePostUrl = $"/customers/{customerId}/spaces";
+        var spaceResponse = await httpClient.AsCustomer(customerId).PostAsync(spacePostUrl, spaceContent);
+        var space = await spaceResponse.ReadAsHydraResponseAsync<Space>();
+        var spaceId = int.Parse(space.Id!.Split('/').Last());
+
+        return (customerId, spaceId);
+    }
+
     [Fact]
     public async Task Put_NewImageAsset_BadRequest_WhenCalledWithInvalidId()
     {
@@ -113,7 +447,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -126,16 +460,16 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_NewImageAsset_FailsToCreateAsset_whenMediaTypeAndFamilyNotSet()
+    public async Task Put_NewImageAsset_FailsToCreateAsset_WhenMediaTypeAndFamilyNotSet()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_FailsToCreateAsset_whenMediaTypeAndFamilyNotSet));
+        var assetId = new AssetId(99, 1, nameof(Put_NewImageAsset_FailsToCreateAsset_WhenMediaTypeAndFamilyNotSet));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff""
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -148,13 +482,51 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_NewImageAsset_CreatesAsset_whenMediaTypeAndFamilyNotSetWithLegacyEnabled()
+    public async Task Put_NewImageAsset_FailsToCreateAsset_WhenMatchingDefaultDeliveryChannelsAreInvalid()
+    {
+        // arrange
+        const int customerId = 9901;
+        var assetId = new AssetId(customerId, 1, nameof(Put_NewImageAsset_FailsToCreateAsset_WhenMatchingDefaultDeliveryChannelsAreInvalid));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+          ""mediaType"": ""application/tiff""
+        }}";
+
+        await dbContext.Spaces.AddTestSpace(customerId, 1);
+        
+        dbContext.DefaultDeliveryChannels.Add(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel()
+        {
+            Customer = customerId,
+            MediaType = "application/*",
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone,
+        });
+        dbContext.DefaultDeliveryChannels.Add(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel()
+        {
+            Customer = customerId,
+            MediaType = "application/*",
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.None,
+        });
+
+        await dbContext.SaveChangesAsync();
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }  
+    
+    [Fact]
+    public async Task Put_NewImageAsset_CreatesAsset_WhenMediaTypeAndFamilyNotSetWithLegacyEnabled()
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_whenMediaTypeAndFamilyNotSetWithLegacyEnabled));
+        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_WhenMediaTypeAndFamilyNotSetWithLegacyEnabled));
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -163,7 +535,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -174,22 +546,25 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        var asset = await dbContext.Images.FindAsync(assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(i => i.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/tiff");
         asset.Family.Should().Be(AssetFamily.Image);
-        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
-        asset.ThumbnailPolicy.Should().Be("default");
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
     }
     
     [Fact]
-    public async Task Put_NewImageAsset_CreatesAsset_whenInferringOfMediaTypeNotPossibleWithLegacyEnabled()
+    public async Task Put_NewImageAsset_CreatesAsset_WhenInferringOfMediaTypeNotPossibleWithLegacyEnabled()
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_whenMediaTypeAndFamilyNotSetWithLegacyEnabled));
+        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_WhenInferringOfMediaTypeNotPossibleWithLegacyEnabled));
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
@@ -198,7 +573,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -209,12 +584,15 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         
-        var asset = await dbContext.Images.FindAsync(assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(i => i.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("image/unknown");
         asset.Family.Should().Be(AssetFamily.Image);
-        asset.ImageOptimisationPolicy.Should().Be("fast-higher");
-        asset.ThumbnailPolicy.Should().Be("default");
+        asset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs" &&
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ThumbsDefault);
     }
     
     [Theory]
@@ -233,7 +611,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(true);
         
@@ -264,7 +642,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -298,7 +676,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -330,7 +708,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.TooManyRequests);  // Random status to verify it filters down
         
@@ -355,7 +733,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
             EngineClient.SynchronousIngest(
-                A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                A<Asset>.That.Matches(r => r.Id == assetId),
                 A<CancellationToken>._))
         .Returns(HttpStatusCode.OK);
         
@@ -390,7 +768,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.InternalServerError);
         
@@ -410,6 +788,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Put_NewAudioAsset_Creates_Asset()
     {
         var assetId = new AssetId(99, 1, nameof(Put_NewAudioAsset_Creates_Asset));
+        await dbContext.SaveChangesAsync();
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.mp4"",
@@ -418,7 +797,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(true);
         
@@ -430,17 +809,19 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
-        asset.ThumbnailPolicy.Should().BeEmpty();
-        asset.ImageOptimisationPolicy.Should().Be("audio-max");
+        asset.ImageDeliveryChannels.Count.Should().Be(1);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultAudio);
     }
     
     [Fact]
     public async Task Put_NewVideoAsset_Creates_Asset()
     {
         var assetId = new AssetId(99, 1, nameof(Put_NewVideoAsset_Creates_Asset));
+        await dbContext.SaveChangesAsync();
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.mp4"",
@@ -449,7 +830,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(true);
         
@@ -461,11 +842,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
-        asset.ThumbnailPolicy.Should().BeEmpty();
-        asset.ImageOptimisationPolicy.Should().Be("video-max");
+        asset.ImageDeliveryChannels.Count.Should().Be(1);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultVideo);
     }
     
     [Fact]
@@ -481,7 +863,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -512,7 +894,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }}";
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(false);
         
@@ -542,30 +924,28 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
-    [Theory]
-    [InlineData("deliveryChannels")]
-    [InlineData("wcDeliveryChannels")]
-    public async Task Put_New_Asset_Supports_DeliveryChannels_Aliases(string deliveryChannelAlias)
+    [Fact]
+    public async Task Put_New_Asset_Supports_WcDeliveryChannels()
     {
-        var assetId = new AssetId(99, 1, $"{nameof(Put_New_Asset_Supports_DeliveryChannels_Aliases)}-{deliveryChannelAlias}");
+        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Supports_WcDeliveryChannels));
         var hydraImageBody = $@"{{
           ""@type"": ""Image"",
           ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
           ""family"": ""I"",
           ""mediaType"": ""image/tiff"",
-          ""{deliveryChannelAlias}"": [""file""]
+          ""wcDeliveryChannels"": [""file""]
         }}";
 
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
-        
+
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var asset = await dbContext.Images.FindAsync(assetId);
@@ -573,39 +953,59 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_New_Asset_Preserves_InitialOrigin()
+    public async Task Put_Asset_Fails_When_ThumbnailPolicy_Is_Provided()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Preserves_InitialOrigin));
-        var initialOrigin = "s3://my-bucket/{assetId.Asset}.tiff";
+        // Arrange 
+        var assetId = new AssetId(99, 1, $"{nameof(Put_Asset_Fails_When_ThumbnailPolicy_Is_Provided)}");
         var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-  ""family"": ""I"",
-  ""mediaType"": ""image/tiff"",
-  ""initialOrigin"": ""{initialOrigin}""
-}}";
-
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
+          ""@type"": ""Image"",
+          ""mediaType"":""image/tiff"",
+          ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+          ""family"": ""I"",
+          ""wcDeliveryChannels"": [
+            ""iiif-img""
+            ],
+          ""thumbnailPolicy"": ""thumbs-policy""
+        }}";    
         
-        // act
+        // Act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
         
-        // assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        A.CallTo(() =>
-            EngineClient.SynchronousIngest(
-                A<IngestAssetRequest>.That.Matches(r =>
-                    r.Asset.Id == assetId && r.Asset.InitialOrigin == initialOrigin), false,
-                A<CancellationToken>._))
-            .MustHaveHappened();
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
     }
+    
+    [Fact]
+    public async Task Put_Asset_Fails_When_ImageOptimisationPolicy_Is_Provided()
+    {
+        // Arrange 
+        var assetId = new AssetId(99, 1, $"{nameof(Put_Asset_Fails_When_ThumbnailPolicy_Is_Provided)}");
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""mediaType"":""image/tiff"",
+          ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+          ""family"": ""I"",
+          ""wcDeliveryChannels"": [
+            ""iiif-img""
+            ],
+          ""imageOptimisationPolicy"": ""image-optimisation-policy""
+        }}";    
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+    }
+    
     [Fact]
     public async Task Put_Existing_Asset_ClearsError_AndMarksAsIngesting()
     {
@@ -614,15 +1014,20 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.SaveChangesAsync();
         
         var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-  ""family"": ""I"",
-  ""mediaType"": ""image/tiff""
-}}";
-        
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"": ""iiif-img"",
+                ""policy"": ""default""
+            }}]
+        }}";
+                
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -639,7 +1044,166 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_Asset_Returns_InsufficientStorage_if_Policy_Exceeded()
+    public async Task Put_Existing_Asset_Returns400_IfDeliveryChannelsNull()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_Returns400_IfDeliveryChannelsNull));
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff""
+        }}";
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Put_Existing_Asset_Returns400_IfDeliveryChannelsEmpty()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_Returns400_IfDeliveryChannelsEmpty));
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": []
+        }}";
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Put_Existing_Asset_AllowsUpdatingDeliveryChannel()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, $"{nameof(Put_Existing_Asset_AllowsUpdatingDeliveryChannel)}");
+        
+        await dbContext.Images.AddTestAsset(assetId, imageDeliveryChannels: new List<ImageDeliveryChannel>
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
+            }
+        });
+        await dbContext.SaveChangesAsync();
+        
+        // change iiif-img to 'use-original', remove thumbs, add file
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"":""iiif-img"",
+                ""policy"":""use-original""
+            }},
+            {{
+                ""channel"":""file"",
+                ""policy"":""none""
+            }}]
+        }}";
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.ImageDeliveryChannels
+            .Should().HaveCount(2).And.Subject
+            .Should().Satisfy(
+                i => i.Channel == AssetDeliveryChannels.Image &&
+                     i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageUseOriginal,
+                i => i.Channel == AssetDeliveryChannels.File);
+    }
+
+        [Fact]
+    public async Task Put_Existing_Asset_AllowsSettingDeliveryChannelsToNone()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, $"{nameof(Put_Existing_Asset_AllowsSettingDeliveryChannelsToNone)}");
+        
+        await dbContext.Images.AddTestAsset(assetId, imageDeliveryChannels: new List<ImageDeliveryChannel>
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
+            }
+        });
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"":""none"",
+                ""policy"":""none""
+            }}]
+        }}";
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.ImageDeliveryChannels
+            .Should().HaveCount(1).And.Subject
+            .Should().Satisfy(
+                i => i.Channel == AssetDeliveryChannels.None &&
+                     i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.None);
+    }
+    
+    [Fact]
+    public async Task Put_Asset_Returns_InsufficientStorage_If_Policy_Exceeded()
     {
         // This will break other tests so we need a different customer
         // This customer has maxed out their limit of 2!
@@ -669,7 +1233,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
         await dbContext.SaveChangesAsync();
 
-        var assetId = new AssetId(customer, 1, nameof(Put_Asset_Returns_InsufficientStorage_if_Policy_Exceeded));
+        var assetId = new AssetId(customer, 1, nameof(Put_Asset_Returns_InsufficientStorage_If_Policy_Exceeded));
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -709,12 +1273,63 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .MustNotHaveHappened();
         
         await dbContext.Entry(testAsset.Entity).ReloadAsync();
         testAsset.Entity.Reference1.Should().Be("I am edited");
+    }
+    
+    [Fact]
+    public async Task Patch_Asset_Leaves_ImageDeliveryChannels_Intact_WhenDeliveryChannelsNull()
+    {
+        // Arrange 
+        var assetId = new AssetId(99, 1, 
+            $"{nameof(Patch_Asset_Leaves_ImageDeliveryChannels_Intact_WhenDeliveryChannelsNull)}");
+        
+        await dbContext.Images.AddTestAsset(assetId, customer: 99, space: 1, family: AssetFamily.Image, 
+            origin: "https://files.org/example.jpeg", imageDeliveryChannels: new List<ImageDeliveryChannel>()
+            {
+                new()
+                {
+                    Channel = AssetDeliveryChannels.File,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone,
+                },
+                new()
+                {
+                    Channel = AssetDeliveryChannels.Image,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
+                },
+                new()
+                {
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
+                },               
+            });
+        await dbContext.SaveChangesAsync();
+        
+        const string hydraImageBody = @"{
+            ""mediaType"":""application/pdf"",
+            ""tags"": [""my-tag""]
+        }";    
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.File 
+                  && dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.FileNone,
+            dc => dc.Channel == AssetDeliveryChannels.Image
+                  && dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault,
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails
+                  && dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ThumbsDefault);
     }
     
     [Fact]
@@ -735,7 +1350,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -747,12 +1362,70 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .MustHaveHappened();
         
         await dbContext.Entry(testAsset.Entity).ReloadAsync();
         testAsset.Entity.Reference1.Should().Be("I am edited");
+    }
+    
+    [Fact]
+    public async Task Patch_ImageAsset_AllowsSettingDeliveryChannelsToNone()
+    {
+        var assetId = new AssetId(99, 1, nameof(Patch_ImageAsset_AllowsSettingDeliveryChannelsToNone));
+        await dbContext.Images.AddTestAsset(assetId,
+            imageDeliveryChannels: new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    Channel = AssetDeliveryChannels.Image,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
+                },
+                new()
+                {
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
+                }
+            });
+        
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"":""none"",
+                ""policy"":""none""
+            }}]
+        }}";
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .MustHaveHappened();
+
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.ImageDeliveryChannels
+            .Should().HaveCount(1).And.Subject
+            .Should().Satisfy(
+                i => i.Channel == AssetDeliveryChannels.None &&
+                     i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.None);
     }
     
     [Fact]
@@ -774,7 +1447,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId),
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(true);
 
@@ -786,56 +1459,13 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         A.CallTo(() =>
                 EngineClient.AsynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), 
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .MustHaveHappened();
         
         await dbContext.Entry(testAsset.Entity).ReloadAsync();
         testAsset.Entity.Reference1.Should().Be("I am edited");
         testAsset.Entity.Batch.Should().BeGreaterThan(0);
-    }
-    
-    [Fact]
-    public async Task Patch_Asset_Change_ImageOptimisationPolicy_Allowed()
-    {
-        var assetId = new AssetId(99, 1, nameof(Patch_Asset_Change_ImageOptimisationPolicy_Allowed));
-
-        var asset = (await dbContext.Images.AddTestAsset(assetId, origin: "https://images.org/image1.tiff")).Entity;
-        var testPolicy = new ImageOptimisationPolicy
-        {
-            Id = "test-policy",
-            Name = "Test Policy",
-            TechnicalDetails = new[] { "1010101" }
-        };
-        dbContext.ImageOptimisationPolicies.Add(testPolicy);
-        await dbContext.SaveChangesAsync();
-        
-        var hydraImageBody = $@"{{
-  ""@type"": ""Image"",
-  ""imageOptimisationPolicy"": ""http://localhost/imageOptimisationPolicies/test-policy""
-}}";
-        
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
-
-        // act
-        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
-        
-        // assert
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
-                    A<CancellationToken>._))
-            .MustHaveHappened();
-        
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
-        await dbContext.Entry(asset).ReloadAsync();
-        asset.ImageOptimisationPolicy.Should().Be("test-policy");
     }
 
     [Fact]
@@ -852,7 +1482,65 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+    
+    [Fact]
+    public async Task Patch_Asset_Returns_BadRequest_if_DeliveryChannels_Empty()
+    {
+        // arrange
+        var assetId = new AssetId(99, 1, nameof(Patch_Asset_Returns_BadRequest_if_DeliveryChannels_Empty));
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""deliveryChannels"": []
+        }}";
 
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Patch_Asset_Fails_When_ThumbnailPolicy_Is_Provided()
+    {
+        // Arrange 
+        var assetId = new AssetId(99, 1, $"{nameof(Patch_Asset_Fails_When_ThumbnailPolicy_Is_Provided)}");
+        var hydraImageBody = $@"{{
+          ""thumbnailPolicy"": ""thumbs-policy""
+        }}";    
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+    }
+    
+    [Fact]
+    public async Task Patch_Asset_Fails_When_ImageOptimisationPolicy_Is_Provided()
+    {
+        // Arrange 
+        var assetId = new AssetId(99, 1, $"{nameof(Patch_Asset_Fails_When_ThumbnailPolicy_Is_Provided)}");
+        var hydraImageBody = $@"{{
+          ""imageOptimisationPolicy"": ""image-optimisation-policy""
+        }}";    
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+    }
+    
     [Fact]
     public async Task Patch_Images_Updates_Multiple_Images()
     {
@@ -961,6 +1649,63 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Patch_Images_Leaves_ImageDeliveryChannels_Intact_WhenDeliveryChannelsNull()
+    {
+        // Arrange
+        await dbContext.Spaces.AddTestSpace(99, 3004);
+        
+        var assetId = AssetId.FromString($"99/3003/{nameof(Patch_Images_Leaves_ImageDeliveryChannels_Intact_WhenDeliveryChannelsNull)}");
+        
+        await dbContext.Images.AddTestAsset(assetId, customer: 99, space: 3004, family: AssetFamily.Image, 
+            origin: "https://files.org/example.jpeg", imageDeliveryChannels: new List<ImageDeliveryChannel>() 
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.File,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone,
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
+            },               
+        });
+        await dbContext.SaveChangesAsync();
+        
+        var hydraCollectionBody = $@"{{
+          ""@type"": ""Collection"",
+          ""member"": [
+           {{
+                ""@type"": ""Image"",
+                ""id"": ""{assetId}"",
+                ""tags"": [""my-tag""]
+           }}]
+        }}";
+                
+        // Act
+        var content = new StringContent(hydraCollectionBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync("/customers/99/spaces/3004/images", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.File 
+                  && dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.FileNone,
+            dc => dc.Channel == AssetDeliveryChannels.Image
+                  && dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault,
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails
+                  && dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ThumbsDefault);
+    }
+    
+    [Fact]
     public async Task Bulk_Patch_Prevents_Engine_Call()
     {
         var assetId = new AssetId(99, 1, nameof(Bulk_Patch_Prevents_Engine_Call));
@@ -1002,7 +1747,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // make a callback for engine
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
         
@@ -1020,7 +1765,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Engine was called during this process.
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .MustHaveHappened();
         
@@ -1229,6 +1974,44 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
+    public async Task Delete_IncludesImageDeliveryChannels_InAssetModifiedMessage()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, nameof(Delete_IncludesImageDeliveryChannels_InAssetModifiedMessage));
+        await dbContext.Images.AddTestAsset(assetId, imageDeliveryChannels: new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.Thumbnails,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
+            },
+            new()
+            {
+                Channel = AssetDeliveryChannels.File,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
+            }   
+        });
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer(99).DeleteAsync(assetId.ToApiResourcePath());
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        
+        A.CallTo(() => NotificationSender.SendAssetModifiedMessage(
+            A<AssetModificationRecord>.That.Matches(r => 
+                r.ChangeType == ChangeType.Delete &&
+                r.Before.ImageDeliveryChannels.Count == 3),
+            A<CancellationToken>._)).MustHaveHappened();
+    }
+
+    [Fact]
     public async Task Reingest_404_IfAssetNotFound()
     {
         // Arrange
@@ -1271,7 +2054,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -1286,7 +2069,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Engine called
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .MustHaveHappened();
 
@@ -1309,7 +2092,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -1324,7 +2107,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Engine called
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .MustHaveHappened();
 
@@ -1349,7 +2132,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(HttpStatusCode.OK);
 
@@ -1364,7 +2147,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Engine called
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .MustHaveHappened();
 
@@ -1391,7 +2174,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
-                    A<IngestAssetRequest>.That.Matches(r => r.Asset.Id == assetId), false,
+                    A<Asset>.That.Matches(r => r.Id == assetId),
                     A<CancellationToken>._))
             .Returns(engine);
 

@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
+using DLCS.Model.Assets;
+using AssetFamily = DLCS.HydraModel.AssetFamily;
+using DeliveryChannelPolicy = DLCS.Model.Policies.DeliveryChannelPolicy;
 
 namespace API.Tests.Converters;
 
@@ -99,7 +103,6 @@ public class AssetConverterTests
         var queued = created.AddHours(1);
         var dequeued = queued.AddHours(1);
         var finished = dequeued.AddHours(1);
-        var initialOrigin = "https://example.org/initial-origin";
         var origin = "https://example.org/origin";
         var roles = new[] { "role1", "role2" };
         var tags = new[] { "tag1", "tag2" };
@@ -126,14 +129,13 @@ public class AssetConverterTests
             String1 = "1",
             String2 = "2",
             String3 = "3",
-            InitialOrigin = initialOrigin,
             Origin = origin,
             Roles = roles,
             Tags = tags,
             MaxUnauthorised = 400,
             MediaType = mediaType,
             ThumbnailPolicy = thumbnailPolicy,
-            DeliveryChannels = deliveryChannel
+            WcDeliveryChannels = deliveryChannel
         };
 
         var asset = hydraImage.ToDlcsModel(1);
@@ -149,7 +151,6 @@ public class AssetConverterTests
         asset.Family.Should().Be(DLCS.Model.Assets.AssetFamily.Image);
         asset.Ingesting.Should().Be(true);
         asset.Origin.Should().Be(origin);
-        asset.InitialOrigin.Should().Be(initialOrigin); // not patchable but still carried on the Asset class.
         asset.NumberReference1.Should().Be(1);
         asset.NumberReference2.Should().Be(2);
         asset.NumberReference3.Should().Be(3);
@@ -174,7 +175,7 @@ public class AssetConverterTests
         {
             Id = AssetApiId,
             Space = 99,
-            DeliveryChannels = deliveryChannel
+            WcDeliveryChannels = deliveryChannel
         };
         
         // Act
@@ -182,5 +183,56 @@ public class AssetConverterTests
         
         // Assert
         asset.DeliveryChannels.Should().BeInAscendingOrder();
+    }
+    
+    [Fact]
+    public void ToHydraModel_Converts_ImageDeliveryChannels_To_WcDeliveryChannels()
+    {
+        // Arrange
+        var dlcsAssetId = new AssetId(0, 1, "test-asset");
+        var dlcsAssetUrlRoot = new UrlRoots()
+        {
+            BaseUrl = "https://api.example.com/",
+            ResourceRoot = "https://resource.example.com/"
+        };
+        var dlcsAsset = new Asset(dlcsAssetId)
+        {
+            Origin = "https://example-origin.com/my-image.jpeg",
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+            {
+                new()
+                {
+                    Channel = "iiif-img",
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                    {
+                        Name = "img-policy"
+                    }
+                },
+                new()
+                {
+                    Channel = "thumbs",
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                    {
+                        Name = "thumbs-policy"
+                    }
+                },
+                new()
+                {
+                    Channel = "file",
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                    {
+                        Name = "none",
+                    }
+                }
+            }
+        };
+        var assetPreparationResult = AssetPreparer.PrepareAssetForUpsert(null, dlcsAsset, false,
+            false, new []{' '});
+        
+        // Act
+        var hydraAsset = assetPreparationResult.UpdatedAsset!.ToHydra(dlcsAssetUrlRoot, true);
+        
+        // Assert
+        hydraAsset.WcDeliveryChannels.Should().BeEquivalentTo("iiif-img", "file");
     }
 }

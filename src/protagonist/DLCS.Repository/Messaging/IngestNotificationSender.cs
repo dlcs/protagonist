@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
@@ -34,8 +32,7 @@ public class IngestNotificationSender : IIngestNotificationSender
         await customerQueueRepository.IncrementSize(assetToIngest.Customer, QueueNames.Default,
             cancellationToken: cancellationToken);
         
-        var ingestAssetRequest = new IngestAssetRequest(assetToIngest, DateTime.UtcNow);
-        var success = await engineClient.AsynchronousIngest(ingestAssetRequest, cancellationToken);
+        var success = await engineClient.AsynchronousIngest(assetToIngest, cancellationToken);
         
         if (!success)
         {
@@ -59,8 +56,7 @@ public class IngestNotificationSender : IIngestNotificationSender
         var customerId = assets[0].Customer;
         await customerQueueRepository.IncrementSize(customerId, queue, assets.Count, cancellationToken);
         
-        var ingestAssetRequests = assets.Select(a => new IngestAssetRequest(a, DateTime.UtcNow)).ToList();
-        var sentCount = await engineClient.AsynchronousIngestBatch(ingestAssetRequests, isPriority, cancellationToken);
+        var sentCount = await engineClient.AsynchronousIngestBatch(assets, isPriority, cancellationToken);
 
         if (sentCount != assets.Count)
         {
@@ -74,11 +70,10 @@ public class IngestNotificationSender : IIngestNotificationSender
         return sentCount;
     }
 
-    public async Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, bool derivativesOnly,
+    public async Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, 
         CancellationToken cancellationToken = default)
     {
-        var ingestAssetRequest = new IngestAssetRequest(assetToIngest, DateTime.UtcNow);
-        var statusCode = await engineClient.SynchronousIngest(ingestAssetRequest, derivativesOnly, cancellationToken);
+        var statusCode = await engineClient.SynchronousIngest(assetToIngest, cancellationToken);
         return statusCode;
     }
 }

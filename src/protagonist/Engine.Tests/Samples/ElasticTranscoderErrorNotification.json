@@ -1,0 +1,12 @@
+{
+  "Type": "Notification",
+  "MessageId": "bf2dc336-5276-5ceb-b1c9-948911b8e8b5",
+  "TopicArn": "arn:aws:sns:eu-west-1:111222333444:sns-test-notification",
+  "Subject": "Amazon Elastic Transcoder has finished transcoding job 1598374269794-x3aftt.",
+  "Message": "{\n  \"state\": \"ERROR\",\n  \"errorCode\": 4000,\n  \"messageDetails\": \"\",\n  \"version\": \"2012-09-25\",\n  \"jobId\": \"000000000-job\",\n  \"pipelineId\": \"000000000-pipeline\",\n  \"input\": {\n    \"key\": \"2/13/error-test/6301\",\n    \"frameRate\": \"auto\",\n    \"resolution\": \"auto\",\n    \"aspectRatio\": \"auto\",\n    \"interlaced\": \"auto\",\n    \"container\": \"auto\"\n  },\n  \"inputCount\": 1,\n  \"outputs\": [\n    {\n      \"id\": \"1\",\n      \"presetId\": \"1351620000001-000010\",\n      \"key\": \"00000000-0000-0000-0000-000000000000/2/13/error-test/full/full/max/max/0/default.mp4\",\n      \"status\": \"Error\",\n      \"statusDetail\": \"\",\n      \"errorCode\": 4000\n    }\n  ],\n  \"userMetadata\": {\n    \"jobId\": \"00000000-0000-0000-0000-000000000000\",\n    \"startTime\": \"0\"\n,  \"dlcsId\":\"2/13/mp4-test\",\n   \"storedOriginSize\":\"0\"\n}\n}",
+  "Timestamp": "2022-07-29T11:51:26.616Z",
+  "SignatureVersion": "1",
+  "Signature": "_ignored_",
+  "SigningCertURL": "https://sns.eu-west-1.amazonaws.com/SimpleNotificationService-aaabbcdb4e1f29c941702d737128f7b6.pem",
+  "UnsubscribeURL": "https://sns.eu-west-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-west-1:111222333444:sns-test-notification:c24f06ac-f817-4755-9998-8d5924532874"
+}

@@ -1,5 +1,4 @@
 ﻿using Test.Helpers.Integration;
-using Xunit;
 
 namespace Orchestrator.Tests.Integration.Infrastructure;
 

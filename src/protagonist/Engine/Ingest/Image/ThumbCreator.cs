@@ -3,22 +3,29 @@ using DLCS.Core;
 using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Repository.Assets;
-using DLCS.Repository.Assets.Thumbs;
+using DLCS.Model.Assets.Metadata;
 using IIIF;
+using Newtonsoft.Json;
 
 namespace Engine.Ingest.Image;
 
-public class ThumbCreator : ThumbsManager, IThumbCreator
+public class ThumbCreator : IThumbCreator
 {
+    private readonly IBucketWriter bucketWriter;
+    private readonly IStorageKeyGenerator storageKeyGenerator;
+    private readonly IAssetApplicationMetadataRepository assetApplicationMetadataRepository;
     private readonly ILogger<ThumbCreator> logger;
     private readonly AsyncKeyedLock asyncLocker = new();
 
     public ThumbCreator(
         IBucketWriter bucketWriter,
         IStorageKeyGenerator storageKeyGenerator,
-        ILogger<ThumbCreator> logger) : base(bucketWriter, storageKeyGenerator)
+        IAssetApplicationMetadataRepository assetApplicationMetadataRepository,
+        ILogger<ThumbCreator> logger)
     {
+        this.bucketWriter = bucketWriter;
+        this.storageKeyGenerator = storageKeyGenerator;
+        this.assetApplicationMetadataRepository = assetApplicationMetadataRepository;
         this.logger = logger;
     }
 
@@ -31,25 +38,21 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
             logger.LogDebug("No thumbs to process for {AssetId}, aborting", assetId);
             return 0;
         }
-        
-        var expectedSizes = asset.GetAvailableThumbSizes(asset.FullThumbnailPolicy!, out var maxDimensions, true);
-        if (expectedSizes.Count == 0)
-        {
-            logger.LogDebug("No expected thumb sizes for {AssetId}, aborting", assetId);
-            return 0;
-        }
 
-        var imageShape = expectedSizes[0].GetShape();
-        var maxAvailableThumb = Size.Square(maxDimensions.maxBoundedSize);
+        // Images processed Largest->Smallest. This is how they are stored in S3 + DB as it saves reordering on read 
+        var orderedThumbs = thumbsToProcess.OrderByDescending(i => Math.Max(i.Height, i.Width)).ToList();
+
+        var maxAvailableThumb = GetMaxThumbnailSize(asset, orderedThumbs);
         var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
         var processedWidths = new List<int>(thumbsToProcess.Count);
         
         using var processLock = await asyncLocker.LockAsync($"create:{assetId}");
 
         // First is always largest
-        bool processingLargest = true;
-        foreach (var thumbCandidate in thumbsToProcess)
+        foreach (var thumbCandidate in orderedThumbs)
         {
+            if (thumbCandidate.Width > asset.Width || thumbCandidate.Height > asset.Height) continue;
+            
             // Safety check for duplicate
             if (processedWidths.Contains(thumbCandidate.Width))
             {
@@ -58,7 +61,7 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
                 continue;
             }
 
-            var thumb = GetThumbnailSize(thumbCandidate, imageShape, expectedSizes, assetId);
+            var thumb = new Size(thumbCandidate.Width, thumbCandidate.Height);
             
             bool isOpen;
             if (thumb.IsConfinedWithin(maxAvailableThumb))
@@ -72,49 +75,42 @@ public class ThumbCreator : ThumbsManager, IThumbCreator
                 isOpen = false;
             }
             
-            await UploadThumbs(processingLargest, assetId, thumbCandidate, thumb, isOpen);
+            await UploadThumbs(assetId, thumbCandidate, thumb, isOpen);
 
-            processingLargest = false;
             processedWidths.Add(thumbCandidate.Width);
         }
             
         await CreateSizesJson(assetId, thumbnailSizes);
         return thumbnailSizes.Count;
     }
-
-    /// <summary>
-    /// Find matching size from pre-calculated thumbs. We use these rather than sizes returned by image-processor to
-    /// avoid rounding issues
-    /// </summary>
-    private Size GetThumbnailSize(ImageOnDisk imageOnDisk, ImageShape imageShape, IEnumerable<Size> expectedSizes,
-        AssetId assetId)
+    
+    private Size GetMaxThumbnailSize(Asset asset, List<ImageOnDisk> orderedThumbsToProcess)
     {
-        try
+        if (asset.MaxUnauthorised == 0) return new Size(0, 0);
+        if ((asset.MaxUnauthorised ?? -1) == -1) return new Size(orderedThumbsToProcess[0].Width, orderedThumbsToProcess[0].Height);
+
+        foreach (var thumb in orderedThumbsToProcess)
         {
-            return imageShape == ImageShape.Landscape
-                ? expectedSizes.Single(s => s.Width == imageOnDisk.Width)
-                : expectedSizes.Single(s => s.Height == imageOnDisk.Height);
+            if (asset.MaxUnauthorised > Math.Max(thumb.Width, thumb.Height)) return new Size(thumb.Width, thumb.Height);
         }
-        catch (InvalidOperationException ex)
-        {
-            logger.LogError("Unable to find expected thumbnail size {Width},{Height} for asset {AssetId}. {Path}",
-                imageOnDisk.Width, imageOnDisk.Height, assetId, imageOnDisk.Path);
-            throw new ApplicationException(
-                $"Unable to find expected thumbnail size {imageOnDisk.Width},{imageOnDisk.Height}", ex);
-        }
+
+        return new Size(0, 0);
     }
 
-    private async Task UploadThumbs(bool processingLargest, AssetId assetId, ImageOnDisk thumbCandidate, Size thumb,
-        bool isOpen)
+    private async Task UploadThumbs(AssetId assetId, ImageOnDisk thumbCandidate, Size thumb, bool isOpen)
     {
-        if (processingLargest)
-        {
-            // The largest thumb always goes to low.jpg as well as the 'normal' place
-            var lowKey = StorageKeyGenerator.GetLargestThumbnailLocation(assetId);
-            await BucketWriter.WriteFileToBucket(lowKey, thumbCandidate.Path, MIMEHelper.JPEG);
-        }
-
-        var thumbKey = StorageKeyGenerator.GetThumbnailLocation(assetId, thumb.MaxDimension, isOpen);
-        await BucketWriter.WriteFileToBucket(thumbKey, thumbCandidate.Path, MIMEHelper.JPEG);
+        var thumbKey = storageKeyGenerator.GetThumbnailLocation(assetId, thumb.MaxDimension, isOpen);
+        await bucketWriter.WriteFileToBucket(thumbKey, thumbCandidate.Path, MIMEHelper.JPEG);
+    }
+    
+    private async Task CreateSizesJson(AssetId assetId, ThumbnailSizes thumbnailSizes)
+    {
+        // NOTE - this data is read via AssetApplicationMetadataX.GetThumbsMetadata
+        var serializedThumbnailSizes = JsonConvert.SerializeObject(thumbnailSizes);
+        var sizesDest = storageKeyGenerator.GetThumbsSizesJsonLocation(assetId);
+        await bucketWriter.WriteToBucket(sizesDest, serializedThumbnailSizes,
+            "application/json");
+        await assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId,
+            AssetApplicationMetadataTypes.ThumbSizes, serializedThumbnailSizes);
     }
 }

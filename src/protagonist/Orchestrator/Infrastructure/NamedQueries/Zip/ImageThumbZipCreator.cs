@@ -5,8 +5,11 @@ using System.IO.Compression;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
+using DLCS.Core.Collections;
+using DLCS.Core.Streams;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
+using DLCS.Model.IIIF;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.NamedQueries.Persistence;
@@ -20,11 +23,17 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip;
 /// </summary>
 public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
 {
-    public ImageThumbZipCreator(IBucketReader bucketReader, IBucketWriter bucketWriter,
-        IOptions<NamedQuerySettings> namedQuerySettings, IStorageKeyGenerator storageKeyGenerator,
+    private readonly IThumbSizeProvider thumbSizeProvider;
+    public ImageThumbZipCreator(
+        IBucketReader bucketReader, 
+        IBucketWriter bucketWriter,
+        IThumbSizeProvider thumbSizeProvider,
+        IOptions<NamedQuerySettings> namedQuerySettings, 
+        IStorageKeyGenerator storageKeyGenerator,
         ILogger<ImageThumbZipCreator> logger) :
         base(bucketReader, bucketWriter, namedQuerySettings, storageKeyGenerator, logger)
     {
+        this.thumbSizeProvider = thumbSizeProvider;
     }
 
     protected override async Task<CreateProjectionResult> CreateFile(ZipParsedNamedQuery parsedNamedQuery,
@@ -95,21 +104,20 @@ public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
     {
         if (image.RequiresAuth)
         {
-            Logger.LogDebug("Image {Image} of {S3Key} has roles, redacting", image.Id, storageKey);
+            Logger.LogDebug("Image {Image} of {S3Key} requires auth, redacting", image.Id, storageKey);
             return;
         }
 
-        var largestThumb = StorageKeyGenerator.GetLargestThumbnailLocation(image.Id);
-        var largestThumbStream = await BucketReader.GetObjectContentFromBucket(largestThumb);
-        if (largestThumbStream == null || largestThumbStream == Stream.Null)
+        var thumbStream = await GetThumbnailStream(image);
+        if (thumbStream.IsNull())
         {
-            Logger.LogWarning("Could not find largest thumb for {Image} of {S3Key}", image.Id, storageKey);
+            Logger.LogWarning("Could not find thumb for {Image} of {S3Key}", image.Id, storageKey);
             return;
         }
 
         var archiveEntry = zipArchive.CreateEntry($"{image.Id.Asset}.jpg");
         await using var archiveEntryStream = archiveEntry.Open();
-        await largestThumbStream.CopyToAsync(archiveEntryStream);
+        await thumbStream.CopyToAsync(archiveEntryStream);
     }
 
     private static void DeleteZipFileIfExists(string zipFilePath)
@@ -126,5 +134,19 @@ public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
         return NamedQuerySettings.ZipFolderTemplate
             .Replace("{customer}", parsedNamedQuery.Customer.ToString())
             .Replace("{storage-key}", pathSafeStorageKey);
+    }
+    
+    private async Task<Stream?> GetThumbnailStream(Asset asset)
+    {
+        var availableSizes = await thumbSizeProvider.GetThumbSizesForImage(asset, false);
+        
+        if (availableSizes.IsNullOrEmpty()) return null;
+        
+        var selectedSize = availableSizes.SizeClosestTo(NamedQuerySettings.ProjectionThumbsize);
+        Logger.LogTrace("Using thumbnail {ThumbnailSize} for asset {AssetId}", selectedSize, asset.Id);
+        var thumbnailLocation = StorageKeyGenerator.GetThumbnailLocation(asset.Id, selectedSize.MaxDimension);
+        
+        var thumbStream = await BucketReader.GetObjectContentFromBucket(thumbnailLocation);
+        return thumbStream;
     }
 }

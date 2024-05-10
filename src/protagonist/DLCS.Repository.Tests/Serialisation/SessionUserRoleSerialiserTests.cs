@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
 using DLCS.Repository.Serialisation;
-using FluentAssertions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Xunit;
 
 namespace DLCS.Repository.Tests.Serialisation;
 

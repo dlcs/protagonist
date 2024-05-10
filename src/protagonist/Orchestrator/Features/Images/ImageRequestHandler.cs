@@ -70,6 +70,12 @@ public class ImageRequestHandler
         {
             return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
         }
+
+        if (!IsSizeValid(assetRequest.IIIFImageRequest.Size))
+        {
+            logger.LogDebug("Request for {Path}: invalid size", httpContext.Request.Path);
+            return new StatusCodeResult(HttpStatusCode.BadRequest);
+        }
         
         var orchestrationImage = await assetRequestProcessor.GetAsset<OrchestrationImage>(httpContext, assetRequest);
         if (orchestrationImage == null)
@@ -105,6 +111,8 @@ public class ImageRequestHandler
         return proxyActionResult;
     }
 
+    private bool IsSizeValid(SizeParameter size) => (size.Width ?? 1) > 0 && (size.Height ?? 1) > 0;
+
     private async Task<IProxyActionResult> HandleRequestInternal(HttpContext httpContext,
         OrchestrationImage orchestrationImage, ImageAssetDeliveryRequest assetRequest)
     {
@@ -115,32 +123,31 @@ public class ImageRequestHandler
                 return new StatusCodeResult(HttpStatusCode.Unauthorized);
             }
         }
-
-        // /full/ request but not /full/max/ - can it be handled by thumbnail service?
-        if (RegionFullNotMax(assetRequest))
+        
+        if (IsRequestedRegionFullOrEquivalent(assetRequest.IIIFImageRequest.Region, orchestrationImage))
         {
-            var canHandleByThumbResponse = CanRequestBeHandledByThumb(assetRequest, orchestrationImage);
-            if (canHandleByThumbResponse.CanHandle)
+            // /full/ request but not /full/max/ - can it be handled by thumbnail service?
+            if (!assetRequest.IIIFImageRequest.Size.Max)
             {
-                logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs. IsResize: {IsResize}",
-                    httpContext.Request.Path, canHandleByThumbResponse.IsResize);
+                var canHandleByThumbResponse = CanRequestBeHandledByThumb(assetRequest, orchestrationImage);
+                if (canHandleByThumbResponse.CanHandle)
+                {
+                    logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs. IsResize: {IsResize}",
+                        httpContext.Request.Path, canHandleByThumbResponse.IsResize);
 
-                var pathReplacement = canHandleByThumbResponse.IsResize
-                    ? orchestratorSettings.Value.Proxy.ThumbResizePath
-                    : orchestratorSettings.Value.Proxy.ThumbsPath;
-                var proxyDestination = canHandleByThumbResponse.IsResize
-                    ? ProxyDestination.ResizeThumbs
-                    : ProxyDestination.Thumbs;
-                var proxyResult = new ProxyActionResult(proxyDestination,
-                    orchestrationImage.RequiresAuth,
-                    httpContext.Request.Path.ToString().Replace("iiif-img", pathReplacement));
-                return proxyResult;
+                    var pathReplacement = canHandleByThumbResponse.IsResize
+                        ? orchestratorSettings.Value.Proxy.ThumbResizePath
+                        : orchestratorSettings.Value.Proxy.ThumbsPath;
+                    var proxyDestination = canHandleByThumbResponse.IsResize
+                        ? ProxyDestination.ResizeThumbs
+                        : ProxyDestination.Thumbs;
+                    var proxyResult = new ProxyActionResult(proxyDestination,
+                        orchestrationImage.RequiresAuth,
+                        httpContext.Request.Path.ToString().Replace("iiif-img", pathReplacement));
+                    return proxyResult;
+                } 
             }
-        }
-
-        // /full/ that cannot be handled by thumbs (e.g. format, size, rotation, quality), handle with special-server
-        if (assetRequest.IIIFImageRequest.Region.Full)
-        {
+            // /full/ that cannot be handled by thumbs (e.g. format, size, rotation, quality), handle with special-server
             if (orchestrationImage.S3Location.IsNullOrEmpty())
             {
                 // Rare occurence - fall through to image server which will handle reingest request
@@ -152,14 +159,36 @@ public class ImageRequestHandler
                 return GenerateImageServerProxyResult(orchestrationImage, assetRequest, specialServer: true);
             }
         }
-
+        
         // Fallback to image-server, with orchestration if required
         return GenerateImageServerProxyResult(orchestrationImage, assetRequest, specialServer: false);
     }
+    
+    private static bool IsRequestedRegionFullOrEquivalent(RegionParameter requestedRegion,
+        OrchestrationImage orchestrationImage)
+    {
+        if (requestedRegion.Full)
+        {
+            return true;
+        }
 
-    private static bool RegionFullNotMax(ImageAssetDeliveryRequest assetRequest) 
-        => assetRequest.IIIFImageRequest.Region.Full && !assetRequest.IIIFImageRequest.Size.Max;
+        if (requestedRegion.Square &&
+            orchestrationImage.Width == orchestrationImage.Height)
+        {
+            return true;
+        }
 
+        if (!requestedRegion.Percent &&
+            requestedRegion.X + requestedRegion.Y == 0 &&
+            orchestrationImage.Width == (int)requestedRegion.W &&
+            orchestrationImage.Height == (int)requestedRegion.H)
+        {
+            return true;
+        }
+
+        return false;
+    }
+    
     private async Task<bool> IsRequestUnauthorised(ImageAssetDeliveryRequest assetRequest,
         OrchestrationImage orchestrationImage)
     {

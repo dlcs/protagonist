@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.IIIF;
 using DLCS.Model.PathElements;
-using DLCS.Model.Policies;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
@@ -20,7 +19,6 @@ using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Options;
 using Orchestrator.Settings;
-using Presi = IIIF.Presentation;
 using ImageApi = IIIF.ImageApi;
 using IIIF2 = IIIF.Presentation.V2;
 using IIIF3 = IIIF.Presentation.V3;
@@ -33,18 +31,17 @@ namespace Orchestrator.Infrastructure.IIIF;
 public class IIIFCanvasFactory
 {
     private readonly IAssetPathGenerator assetPathGenerator;
-    private readonly IPolicyRepository policyRepository;
     private readonly OrchestratorSettings orchestratorSettings;
-    private readonly Dictionary<string, ThumbnailPolicy> thumbnailPolicies = new();
+    private readonly IThumbSizeProvider thumbSizeProvider;
     private const string MetadataLanguage = "none";
     
     public IIIFCanvasFactory(
         IAssetPathGenerator assetPathGenerator,
         IOptions<OrchestratorSettings> orchestratorSettings,
-        IPolicyRepository policyRepository)
+        IThumbSizeProvider thumbSizeProvider)
     {
         this.assetPathGenerator = assetPathGenerator;
-        this.policyRepository = policyRepository;
+        this.thumbSizeProvider = thumbSizeProvider;
         this.orchestratorSettings = orchestratorSettings.Value;
     }
 
@@ -56,19 +53,19 @@ public class IIIFCanvasFactory
     {
         int counter = 0;
         var canvases = new List<IIIF3.Canvas>(results.Count);
-        foreach (var i in results)
+        foreach (var asset in results)
         {
-            var fullyQualifiedImageId = GetFullyQualifiedId(i, customerPathElement, false);
+            var fullyQualifiedImageId = GetFullyQualifiedId(asset, customerPathElement, false);
             var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/", ++counter);
-            var thumbnailSizes = await GetThumbnailSizesForImage(i);
+            var thumbnailSizes = await RetrieveThumbnails(asset);
 
             var canvas = new IIIF3.Canvas
             {
                 Id = canvasId,
                 Label = new LanguageMap("en", $"Canvas {counter}"),
-                Width = i.Width,
-                Height = i.Height,
-                Metadata = GetImageMetadata(i)
+                Width = asset.Width,
+                Height = asset.Height,
+                Metadata = GetImageMetadata(asset)
                     .Select(m => 
                         new LabelValuePair(new LanguageMap(MetadataLanguage, m.Key), 
                             new LanguageMap(MetadataLanguage, m.Value)))
@@ -82,24 +79,24 @@ public class IIIFCanvasFactory
                         Id = $"{canvasId}/page/image",
                         Body = new Image
                         {
-                            Id = GetFullQualifiedImagePath(i, customerPathElement,
+                            Id = GetFullQualifiedImagePath(asset, customerPathElement,
                                 thumbnailSizes.MaxDerivativeSize, false),
                             Format = "image/jpeg",
                             Width = thumbnailSizes.MaxDerivativeSize.Width,
                             Height = thumbnailSizes.MaxDerivativeSize.Height,
-                            Service = GetImageServices(i, customerPathElement, authProbeServices)
-                        }
+                            Service = GetImageServices(asset, customerPathElement, authProbeServices)
+                        } 
                     }.AsListOf<IAnnotation>()
                 }.AsList()
             };
 
-            if (!thumbnailSizes.OpenThumbnails.IsNullOrEmpty())
+            if (ShouldAddThumbs(asset, thumbnailSizes))
             {
                 canvas.Thumbnail = new IIIF3.Content.Image
                 {
-                    Id = GetFullQualifiedThumbPath(i, customerPathElement, thumbnailSizes.OpenThumbnails),
+                    Id = GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
                     Format = "image/jpeg",
-                    Service = GetImageServiceForThumbnail(i, customerPathElement,
+                    Service = GetImageServiceForThumbnail(asset, customerPathElement,
                         thumbnailSizes.OpenThumbnails)
                 }.AsListOf<ExternalResource>();
             }
@@ -118,19 +115,19 @@ public class IIIFCanvasFactory
     {
         int counter = 0;
         var canvases = new List<IIIF2.Canvas>(results.Count);
-        foreach (var i in results)
+        foreach (var asset in results)
         {
-            var fullyQualifiedImageId = GetFullyQualifiedId(i, customerPathElement, false);
+            var fullyQualifiedImageId = GetFullyQualifiedId(asset, customerPathElement, false);
             var canvasId = string.Concat(fullyQualifiedImageId, "/canvas/c/", ++counter);
-            var thumbnailSizes = await GetThumbnailSizesForImage(i);
+            var thumbnailSizes = await RetrieveThumbnails(asset);
 
             var canvas = new IIIF2.Canvas
             {
                 Id = canvasId,
                 Label = new MetaDataValue($"Canvas {counter}"),
-                Width = i.Width,
-                Height = i.Height,
-                Metadata = GetImageMetadata(i)
+                Width = asset.Width,
+                Height = asset.Height,
+                Metadata = GetImageMetadata(asset)
                     .Select(m => new IIIF2.Metadata()
                     {
                         Label = new MetaDataValue(m.Key),
@@ -143,21 +140,21 @@ public class IIIFCanvasFactory
                     On = canvasId,
                     Resource = new IIIF2.ImageResource
                     {
-                        Id = GetFullQualifiedImagePath(i, customerPathElement,
+                        Id = GetFullQualifiedImagePath(asset, customerPathElement,
                             thumbnailSizes.MaxDerivativeSize, false),
                         Width = thumbnailSizes.MaxDerivativeSize.Width,
                         Height = thumbnailSizes.MaxDerivativeSize.Height,
-                        Service = GetImageServices(i, customerPathElement, null)
+                        Service = GetImageServices(asset, customerPathElement, null)
                     },
                 }.AsList()
             };
 
-            if (!thumbnailSizes.OpenThumbnails.IsNullOrEmpty())
+            if (ShouldAddThumbs(asset, thumbnailSizes))
             {
                 canvas.Thumbnail = new IIIF2.Thumbnail
                 {
-                    Id = GetFullQualifiedThumbPath(i, customerPathElement, thumbnailSizes.OpenThumbnails),
-                    Service = GetImageServiceForThumbnail(i, customerPathElement, thumbnailSizes.OpenThumbnails)
+                    Id = GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
+                    Service = GetImageServiceForThumbnail(asset, customerPathElement, thumbnailSizes.OpenThumbnails)
                 }.AsList();
             }
 
@@ -165,6 +162,21 @@ public class IIIFCanvasFactory
         }
 
         return canvases;
+    }
+    
+    private async Task<ImageSizeDetails?> RetrieveThumbnails(Asset asset)
+    {
+        var thumbnailSizes = await thumbSizeProvider.GetThumbSizesForImage(asset, true);
+
+        var maxDerivativeSize = thumbnailSizes.IsNullOrEmpty()
+            ? Size.Confine(orchestratorSettings.TargetThumbnailSize, new Size(asset.Width ?? 0, asset.Height ?? 0))
+            : thumbnailSizes.MaxBy(s => s.MaxDimension)!;
+        
+        return new ImageSizeDetails
+        {
+            MaxDerivativeSize = maxDerivativeSize,
+            OpenThumbnails = thumbnailSizes,
+        };
     }
     
     private List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
@@ -196,53 +208,13 @@ public class IIIFCanvasFactory
         return services;
     }
 
-    private async Task<ImageSizeDetails> GetThumbnailSizesForImage(Asset image)
-    {
-        var thumbnailPolicy = await GetThumbnailPolicyForImage(image);
-        var thumbnailSizesForImage = image.GetAvailableThumbSizes(thumbnailPolicy, out var maxDimensions);
-
-        if (thumbnailSizesForImage.IsNullOrEmpty())
-        {
-            var largestThumbnail = thumbnailPolicy.SizeList.MaxBy(s => s);
-
-            return new ImageSizeDetails
-            {
-                OpenThumbnails = new List<Size>(0),
-                IsDerivativeOpen = false,
-                MaxDerivativeSize = Size.Confine(largestThumbnail, new Size(image.Width.Value, image.Height.Value))
-            };
-        }
-
-        return new ImageSizeDetails
-        {
-            OpenThumbnails = thumbnailSizesForImage,
-            IsDerivativeOpen = true,
-            MaxDerivativeSize = new Size(maxDimensions.maxAvailableWidth, maxDimensions.maxAvailableHeight)
-        };
-    }
-
-    private async Task<ThumbnailPolicy> GetThumbnailPolicyForImage(Asset image)
-    {
-        if (thumbnailPolicies.TryGetValue(image.ThumbnailPolicy, out var thumbnailPolicy))
-        {
-            return thumbnailPolicy;
-        }
-
-        var thumbnailPolicyFromDb = await policyRepository.GetThumbnailPolicy(image.ThumbnailPolicy);
-        thumbnailPolicies[image.ThumbnailPolicy] = thumbnailPolicyFromDb;
-        return thumbnailPolicyFromDb;
-    }
-
     private string GetFullQualifiedThumbPath(Asset asset, CustomerPathElement customerPathElement,
         List<Size> availableThumbs)
     {
         var targetThumb = orchestratorSettings.TargetThumbnailSize;
 
         // Get the thumbnail size that is closest to the system-wide TargetThumbnailSize
-        var closestSize = availableThumbs
-            .OrderBy(s => s.MaxDimension)
-            .Aggregate((x, y) =>
-                Math.Abs(x.MaxDimension - targetThumb) < Math.Abs(y.MaxDimension - targetThumb) ? x : y);
+        var closestSize = availableThumbs.SizeClosestTo(targetThumb);
 
         return GetFullQualifiedImagePath(asset, customerPathElement, closestSize, true);
     }
@@ -257,7 +229,7 @@ public class IIIFCanvasFactory
             RoutePrefix = isThumb ? orchestratorSettings.Proxy.ThumbsPath : orchestratorSettings.Proxy.ImagePath,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(request, true);
+        return assetPathGenerator.GetFullPathForRequest(request, true, false);
     }
 
     private string GetFullyQualifiedId(Asset asset, CustomerPathElement customerPathElement,
@@ -280,7 +252,7 @@ public class IIIFCanvasFactory
             RoutePrefix = routePrefix,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(imageRequest, true);
+        return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
     }
 
     private List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement,
@@ -342,6 +314,11 @@ public class IIIFCanvasFactory
         };
     }
     
+    private static bool ShouldAddThumbs(Asset asset, ImageSizeDetails thumbnailSizes)
+    {
+        return asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails) && !thumbnailSizes.OpenThumbnails.IsNullOrEmpty();
+    }
+    
     /// <summary>
     /// Class containing details of available thumbnail sizes
     /// </summary>
@@ -356,10 +333,5 @@ public class IIIFCanvasFactory
         /// The size of the largest derivative, according to thumbnail policy.
         /// </summary>
         public Size MaxDerivativeSize { get; set; }
-
-        /// <summary>
-        /// Whether the <see cref="MaxDerivativeSize"/> is open.
-        /// </summary>
-        public bool IsDerivativeOpen { get; set; }
     }
 }

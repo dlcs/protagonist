@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Amazon.CloudFront.Model;
 using DLCS.Core;
 using DLCS.Core.Caching;
 using DLCS.Core.Strings;

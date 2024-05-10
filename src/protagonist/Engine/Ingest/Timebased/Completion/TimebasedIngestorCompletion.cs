@@ -1,5 +1,4 @@
-﻿using System.Text;
-using DLCS.AWS.ElasticTranscoder;
+﻿using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.S3;
 using DLCS.Core.Types;
@@ -44,8 +43,8 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         if (!transcodeResult.IsComplete())
         {
             transcodeSuccess = false;
-            errors.Add(
-                $"Transcode failed with status: {transcodeResult.State}. Error: {transcodeResult.ErrorCode ?? "unknown"}");
+            var errorCode = transcodeResult.ErrorCode.HasValue ? transcodeResult.ErrorCode.ToString() : "unknown";
+            errors.Add($"Transcode failed with status: {transcodeResult.State}. Error: {errorCode}");
         }
 
         var copyTasks = CopyTranscodeOutputs(transcodeResult, errors, asset, cancellationToken);

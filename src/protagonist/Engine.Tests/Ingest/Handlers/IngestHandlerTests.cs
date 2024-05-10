@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Nodes;
 using DLCS.AWS.SQS;
-using DLCS.Model.Assets;
+using DLCS.Core.Types;
 using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
 using Engine.Ingest;
@@ -21,73 +21,6 @@ public class IngestHandlerTests
         assetIngester = A.Fake<IAssetIngester>();
         customerQueueRepository = A.Fake<ICustomerQueueRepository>();
         sut = new IngestHandler(assetIngester, customerQueueRepository, new NullLogger<IngestHandler>());
-    }
-    
-    [Fact]
-    public async Task HandleMessage_ReturnsFalse_IfInvalidJsonType_LegacyMessage()
-    {
-        // Arrange
-        var body = new JsonObject
-        {
-            ["_type"] = "type",
-            ["_created"] = "not-a-date"
-        };
-        var queueMessage = new QueueMessage { Body = body };
-
-        // Act
-        var success = await sut.HandleMessage(queueMessage, CancellationToken.None);
-        
-        // Assert
-        A.CallTo(() => assetIngester.Ingest(A<LegacyIngestEvent>._, A<CancellationToken>._)).MustNotHaveHappened();
-        success.Should().BeFalse();
-    }
-    
-    [Theory]
-    [InlineData(IngestResultStatus.Failed)]
-    [InlineData(IngestResultStatus.Unknown)]
-    public async Task HandleMessage_ReturnsTrue_IfFailedOrUnknown_LegacyMessage(IngestResultStatus result)
-    {
-        // Arrange
-        var body = new JsonObject
-        {
-            ["_type"] = "type"
-        };
-        var queueMessage = new QueueMessage { Body = body, QueueName = "test" };
-        A.CallTo(() => assetIngester.Ingest(A<LegacyIngestEvent>._, A<CancellationToken>._))
-            .Returns(new IngestResult(new Asset(), result));
-        
-        // Act
-        var success = await sut.HandleMessage(queueMessage, CancellationToken.None);
-        
-        // Assert
-        A.CallTo(() => assetIngester.Ingest(A<LegacyIngestEvent>._, A<CancellationToken>._)).MustHaveHappened();
-        A.CallTo(() => customerQueueRepository.DecrementSize(A<int>._, A<string>._, A<int>._, A<CancellationToken>._))
-            .MustHaveHappened();
-        success.Should().BeTrue();
-    }
-    
-    [Theory]
-    [InlineData(IngestResultStatus.Success)]
-    [InlineData(IngestResultStatus.QueuedForProcessing)]
-    public async Task HandleMessage_ReturnsTrue_IfSuccessOrQueued_LegacyMessage(IngestResultStatus result)
-    {
-        // Arrange
-        var body = new JsonObject
-        {
-            ["_type"] = "type"
-        };
-        var queueMessage = new QueueMessage { Body = body, QueueName = "test" };
-        A.CallTo(() => assetIngester.Ingest(A<LegacyIngestEvent>._, A<CancellationToken>._))
-            .Returns(new IngestResult(new Asset(), result));
-        
-        // Act
-        var success = await sut.HandleMessage(queueMessage, CancellationToken.None);
-        
-        // Assert
-        A.CallTo(() => assetIngester.Ingest(A<LegacyIngestEvent>._, A<CancellationToken>._)).MustHaveHappened();
-        A.CallTo(() => customerQueueRepository.DecrementSize(A<int>._, A<string>._, A<int>._, A<CancellationToken>._))
-            .MustHaveHappened();
-        success.Should().BeTrue();
     }
     
     [Fact]
@@ -120,7 +53,7 @@ public class IngestHandlerTests
         };
         var queueMessage = new QueueMessage { Body = body, QueueName = "test" };
         A.CallTo(() => assetIngester.Ingest(A<IngestAssetRequest>._, A<CancellationToken>._))
-            .Returns(new IngestResult(new Asset(), result));
+            .Returns(new IngestResult(new AssetId(1 , 2, "fake"), result));
         
         // Act
         var success = await sut.HandleMessage(queueMessage, CancellationToken.None);
@@ -144,7 +77,7 @@ public class IngestHandlerTests
         };
         var queueMessage = new QueueMessage { Body = body, QueueName = "test" };
         A.CallTo(() => assetIngester.Ingest(A<IngestAssetRequest>._, A<CancellationToken>._))
-            .Returns(new IngestResult(new Asset(), result));
+            .Returns(new IngestResult(new AssetId(1 , 2, "fake"), result));
         
         // Act
         var success = await sut.HandleMessage(queueMessage, CancellationToken.None);

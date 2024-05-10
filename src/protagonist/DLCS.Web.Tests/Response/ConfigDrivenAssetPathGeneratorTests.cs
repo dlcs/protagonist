@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using DLCS.Core;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
-using Xunit;
 
 namespace DLCS.Web.Tests.Response;
 

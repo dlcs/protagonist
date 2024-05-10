@@ -1,18 +1,14 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Customers;
-using DLCS.Model.Storage;
 using DLCS.Repository.Strategy;
 using FakeItEasy;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers;
-using Xunit;
 
 namespace DLCS.Repository.Tests.Strategy;
 
