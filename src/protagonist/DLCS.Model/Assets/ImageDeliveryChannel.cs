@@ -15,8 +15,6 @@ public class ImageDeliveryChannel
     /// The image id for the attached asset
     /// </summary>
     public AssetId ImageId { get; set; }
-    
-    public Asset Asset { get; set; }
 
     /// <summary>
     /// The channel this policy applies to
