@@ -57,7 +57,7 @@ public class TopicPublisher : ITopicPublisher
         {
             TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
             Message = message.MessageContents,
-            MessageAttributes = GetMessageAttributes(message.ChangeType)
+            MessageAttributes = GetMessageAttributes(message.Attributes)
         };
 
         try
@@ -83,7 +83,7 @@ public class TopicPublisher : ITopicPublisher
                 TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
                 PublishBatchRequestEntries = chunk.Select(m => new PublishBatchRequestEntry
                 {
-                    MessageAttributes = GetMessageAttributes(m.ChangeType),
+                    MessageAttributes = GetMessageAttributes(m.Attributes),
                     Message = m.MessageContents,
                     Id = $"{batchIdPrefix}_{batchNumber}_{batchCount++}",
                 }).ToList()
@@ -99,16 +99,19 @@ public class TopicPublisher : ITopicPublisher
         }
     }
 
-    private static Dictionary<string, MessageAttributeValue> GetMessageAttributes(ChangeType changeType)
+    private static Dictionary<string, MessageAttributeValue> GetMessageAttributes(Dictionary<string, string> attributes)
     {
-        var attributeValue = new MessageAttributeValue
+        var messageAttributes = new Dictionary<string, MessageAttributeValue>();
+        foreach (var attribute in attributes)
         {
-            StringValue = changeType.ToString(),
-            DataType = "String"
-        };
-        return new Dictionary<string, MessageAttributeValue>
-        {
-            { "messageType", attributeValue }
-        };
+            messageAttributes.Add(attribute.Key,
+                new MessageAttributeValue()
+                {
+                    DataType = "String",
+                    StringValue = attribute.Value
+                });
+        }
+
+        return messageAttributes;
     }
 }
