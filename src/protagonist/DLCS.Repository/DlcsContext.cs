@@ -667,7 +667,7 @@ public partial class DlcsContext : DbContext
                     aId => aId.ToString(),
                     id => AssetId.FromString(id));
 
-            entity.HasOne(e => e.Asset)
+            entity.HasOne<Asset>()
                 .WithMany(e => e.ImageDeliveryChannels)
                 .HasForeignKey(e => e.ImageId);
         });

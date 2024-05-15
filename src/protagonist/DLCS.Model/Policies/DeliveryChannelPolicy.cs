@@ -54,11 +54,6 @@ public class DeliveryChannelPolicy
     /// The custom policy 
     /// </summary>
     public string PolicyData { get; set; }
-    
-    /// <summary>
-    /// List of delivery channels attached to the image
-    /// </summary>
-    public List<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
 }
 
 public static class KnownDeliveryChannelPolicies
