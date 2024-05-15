@@ -192,6 +192,51 @@ public class ThumbCreatorTests
     }
     
     [Fact]
+    public async Task CreateNewThumbs_UploadsExpected_AuthMatchesImageSize()
+    {
+        // Arrange
+        var assetId = new AssetId(10, 20, "foo");
+        var asset = new Asset(assetId)
+        {
+            Width = 3030, Height = 5000, MaxUnauthorised = 500,
+            ImageDeliveryChannels = thumbsDeliveryChannel
+        };
+
+        var imagesOnDisk = new List<ImageOnDisk>
+        {
+            new() { Width = 606, Height = 1000, Path = "1000.jpg" },
+            new() { Width = 302, Height = 500, Path = "500.jpg" },
+            new() { Width = 60, Height = 100, Path = "100.jpg" }
+        };
+        
+        const string thumbSizes = "{\"o\":[[302,500],[60,100]],\"a\":[[606,1000]]}";
+        
+        // Act
+        var thumbsCreated = await sut.CreateNewThumbs(asset, imagesOnDisk);
+        
+        // Assert
+        thumbsCreated.Should().Be(3);
+        
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/a/1000.jpg")
+            .WithFilePath("1000.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/o/500.jpg")
+            .WithFilePath("500.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/o/100.jpg")
+            .WithFilePath("100.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/s.json")
+            .WithContents(thumbSizes);
+        
+        bucketWriter.ShouldHaveNoUnverifiedPaths();
+        A.CallTo(() =>
+            assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId, "ThumbSizes", thumbSizes,
+                A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Fact]
     public async Task CreateNewThumbs_UploadsExpected_ImageSmallerThanThumbnail()
     {
         // Arrange

@@ -91,7 +91,7 @@ public class ThumbCreator : IThumbCreator
 
         foreach (var thumb in orderedThumbsToProcess)
         {
-            if (asset.MaxUnauthorised > Math.Max(thumb.Width, thumb.Height)) return new Size(thumb.Width, thumb.Height);
+            if (asset.MaxUnauthorised >= Math.Max(thumb.Width, thumb.Height)) return new Size(thumb.Width, thumb.Height);
         }
 
         return new Size(0, 0);
