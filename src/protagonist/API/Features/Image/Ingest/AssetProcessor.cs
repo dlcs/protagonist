@@ -50,12 +50,12 @@ public class AssetProcessor
         Func<Asset, Task>? requiresReingestPreSave = null, 
         CancellationToken cancellationToken = default)
     {
-        Asset? existingAsset;
         try
         {
-            existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true, true);
+            var assetFromDatabase = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true, true);
+            var existingAsset = assetFromDatabase?.Clone();
 
-            if (existingAsset == null)
+            if (assetFromDatabase == null)
             {
                 if (mustExist)
                 {
@@ -106,7 +106,7 @@ public class AssetProcessor
             }
 
             var assetPreparationResult =
-                AssetPreparer.PrepareAssetForUpsert(existingAsset, assetBeforeProcessing.Asset, false, isBatchUpdate,
+                AssetPreparer.PrepareAssetForUpsert(assetFromDatabase, assetBeforeProcessing.Asset, false, isBatchUpdate,
                     settings.RestrictedAssetIdCharacters);
 
             if (!assetPreparationResult.Success)
@@ -121,7 +121,7 @@ public class AssetProcessor
             var updatedAsset = assetPreparationResult.UpdatedAsset!; // this is from Database
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
 
-            var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(existingAsset,
+            var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(assetFromDatabase,
                 updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
             if (deliveryChannelChanged)
             {
@@ -142,14 +142,14 @@ public class AssetProcessor
                 updatedAsset.MarkAsFinished();
             }
 
-            var assetAfterSave = await assetRepository.Save(updatedAsset, existingAsset != null, cancellationToken);
+            var assetAfterSave = await assetRepository.Save(updatedAsset, assetFromDatabase != null, cancellationToken);
 
             return new ProcessAssetResult
             {
                 ExistingAsset = existingAsset,
                 RequiresEngineNotification = requiresEngineNotification,
                 Result = ModifyEntityResult<Asset>.Success(assetAfterSave,
-                    existingAsset == null ? WriteResult.Created : WriteResult.Updated)
+                    assetFromDatabase == null ? WriteResult.Created : WriteResult.Updated)
             };
         }
         catch (APIException apiEx)
