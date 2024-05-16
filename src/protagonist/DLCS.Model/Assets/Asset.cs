@@ -11,7 +11,7 @@ namespace DLCS.Model.Assets;
 /// <summary>
 /// Represents an Asset that is stored in the DLCS database.
 /// </summary>
-public class Asset
+public class Asset : ICloneable
 {
     public AssetId Id { get; set; }
     public int Customer { get; set; }
@@ -116,4 +116,17 @@ public class Asset
         Customer = assetId.Customer;
         Space = assetId.Space;
     }
+
+    public Asset Clone()
+    {
+        var asset = (Asset)MemberwiseClone();
+
+        var deliveryChannels = new ImageDeliveryChannel[asset.ImageDeliveryChannels.Count];
+
+        asset.ImageDeliveryChannels.CopyTo(deliveryChannels, 0);
+        asset.ImageDeliveryChannels = deliveryChannels;
+
+        return asset;
+    }
+    object ICloneable.Clone() { return Clone(); }
 }
