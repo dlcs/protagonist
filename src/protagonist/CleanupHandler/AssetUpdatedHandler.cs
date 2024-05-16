@@ -65,7 +65,7 @@ public class AssetUpdatedHandler  : IMessageHandler
         if (request?.AssetBeforeUpdate?.Id == null) return false;
 
         var assetBefore = request.AssetBeforeUpdate;
-        var assetAfter = await assetRepository.GetAsset(request.AssetBeforeUpdate.Id);
+        var assetAfter = await assetRepository.GetAsset(request.AssetBeforeUpdate.Id); // TODO: don't cache
         
         // no changes that need to be cleaned up, or the asset has been deleted before cleanup handling
         if (assetAfter == null || !message.Attributes.Keys.Contains("engineNotified") || 
