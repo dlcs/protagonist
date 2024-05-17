@@ -46,6 +46,16 @@ public class IngestController : Controller
     {
         return Ok(timebasedIngestSettings.DeliveryChannelMappings.Keys.ToList());
     }
+    
+    /// <summary>
+    /// Retrieve av option presets
+    /// </summary>
+    [HttpGet]
+    [Route("av-presets")]
+    public IActionResult GetAllowedAvPresetOptions()
+    {
+        return Ok(timebasedIngestSettings.DeliveryChannelMappings);
+    }
 
     private IActionResult ConvertToStatusCode(object message, IngestResultStatus result)
         => result switch

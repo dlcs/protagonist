@@ -38,7 +38,7 @@ public class Program
                 services
                     .Configure<CleanupHandlerSettings>(hostContext.Configuration)
                     .AddAws(hostContext.Configuration, hostContext.HostingEnvironment)
-                    .AddDataAccess(hostContext.Configuration)
+                    .AddDataAccess(hostContext.Configuration, hostContext.Configuration.Get<CleanupHandlerSettings>())
                     .AddCaching(hostContext.Configuration.GetSection("Caching").Get<CacheSettings>())
                     .AddQueueMonitoring();
             })

@@ -146,6 +146,22 @@ public class EngineClient : IEngineClient
         }
     }
     
+    public async Task<IReadOnlyDictionary<string, string>?> GetAvPresets(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync("av-presets", cancellationToken);
+            return await response.Content.ReadFromJsonAsync<IReadOnlyDictionary<string, string>>(
+                cancellationToken: cancellationToken);
+            
+        }
+        catch(Exception ex)
+        {
+            logger.LogError(ex, "Failed to retrieve allowed iiif-av policy options from Engine");
+            return null;
+        }
+    }
+    
     private string GetJsonString(Asset asset)
     {
         var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);

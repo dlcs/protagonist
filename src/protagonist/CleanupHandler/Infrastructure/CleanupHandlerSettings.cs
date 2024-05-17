@@ -35,7 +35,7 @@ public class AssetModifiedSettings
     public ImageServer ImageServer { get; set; } = ImageServer.Cantaloupe;
     
     /// <summary>
-    /// A list of thumbnails that will be added to every asset regardless of the thumbnail policy
+    /// Root URL of the engine
     /// </summary>
-    public List<string> DefaultThumbs { get; set; } = new();
+    public Uri EngineRoot { get; set; }
 }

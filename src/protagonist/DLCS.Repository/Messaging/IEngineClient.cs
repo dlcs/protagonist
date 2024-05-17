@@ -42,4 +42,11 @@ public interface IEngineClient
     /// </summary>
     /// <param name="cancellationToken">Current cancellation token</param>
     Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves av presets
+    /// </summary>
+    /// <param name="cancellationToken">a cancellation token</param>
+    /// <returns>A dictionary of identifiers and presets</returns>
+    Task<IReadOnlyDictionary<string, string>?> GetAvPresets(CancellationToken cancellationToken = default);
 }

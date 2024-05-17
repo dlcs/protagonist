@@ -17,6 +17,14 @@ public interface IElasticTranscoderWrapper
     Task<Dictionary<string, string>> GetPresetIdLookup(CancellationToken token = default);
 
     /// <summary>
+    /// Gets details of a preset based on the name
+    /// </summary>
+    /// <param name="name">The name of the preset</param>
+    /// <param name="token">Cancellation token</param>
+    /// <returns>Details of a single preset</returns>
+    public Task<Preset?> GetPresetDetails(string name, CancellationToken token = default);
+
+    /// <summary>
     /// Get ElasticTranscoder Pipeline Id from name. 
     /// </summary>
     /// <param name="pipelineName">Preconfigured pipeline Id</param>
