@@ -76,6 +76,37 @@ public class ElasticTranscoderWrapper : IElasticTranscoderWrapper
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.Low));
     }
     
+    public Task<Preset?> GetPresetDetails(string name, CancellationToken token)
+    {
+        string presetLookupKey = $"MediaTranscode:Presets:{name}";
+
+        return cache.GetOrAddAsync(presetLookupKey, async entry =>
+        {
+            
+            var response = new ListPresetsResponse();
+            Preset? preset;
+            
+            do
+            {
+                var request = new ListPresetsRequest {PageToken = response.NextPageToken};
+                response = await elasticTranscoder.ListPresetsAsync(request, token);
+
+                preset = response.Presets.FirstOrDefault(p => p.Name == name);
+
+                if (preset is not null) break;
+
+            } while (response.NextPageToken != null);
+            
+            if (preset is null)
+            {
+                logger.LogWarning("No preset found for name {Name}", name);
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+            }
+
+            return preset;
+        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.Low));
+    }
+    
     public async Task<string?> GetPipelineId(string pipelineName, CancellationToken token)
     {
         const string nullObject = "__notfound__";

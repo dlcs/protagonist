@@ -1,5 +1,6 @@
 ﻿using DLCS.AWS.Cloudfront;
 using DLCS.AWS.Configuration;
+using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
@@ -8,6 +9,8 @@ using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Messaging;
+using DLCS.Web.Handlers;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -26,14 +29,18 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IBucketReader, S3BucketReader>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
+            .AddSingleton<IQueueLookup, SqsQueueLookup>()
+            .AddSingleton<IQueueSender, SqsQueueSender>()
             .AddSingleton<SqsListenerManager>()
             .AddTransient(typeof(SqsListener<>))
             .AddSingleton<ICacheInvalidator, CloudfrontInvalidator>()
+            .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
             .AddSingleton<SqsQueueUtilities>()
             .SetupAWS(configuration, hostEnvironment)
             .WithAmazonS3()
             .WithAmazonCloudfront()
-            .WithAmazonSQS();
+            .WithAmazonSQS()
+            .WithAmazonElasticTranscoder();
 
         return services;
     }
@@ -53,18 +60,30 @@ public static class ServiceCollectionX
             .AddScoped<AssetUpdatedHandler>()
             .AddSingleton<IFileSystem, FileSystem>()
             .AddHostedService<CleanupHandlerQueueMonitor>();
-    
+
     /// <summary>
     /// Add all dataaccess dependencies, including repositories and DLCS context 
     /// </summary>
-    public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
-        => services
+    public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration, 
+        CleanupHandlerSettings cleanupHandlerSettings)
+    {
+        services
             .AddSingleton<IAssetRepository, DapperAssetRepository>()
             .AddScoped<IAssetApplicationMetadataRepository, AssetApplicationMetadataRepository>()
             .AddSingleton<IThumbRepository, ThumbRepository>()
             .AddSingleton<AssetCachingHelper>()
+            .AddTransient<TimingHandler>()
             .AddDlcsContext(configuration);
-    
+
+        services.AddHttpClient<IEngineClient, EngineClient>(client =>
+            {
+                client.BaseAddress = cleanupHandlerSettings.AssetModifiedSettings.EngineRoot;
+            })
+            .AddHttpMessageHandler<TimingHandler>();
+
+        return services;
+    }
+
     /// <summary>
     /// Add required caching dependencies
     /// </summary>

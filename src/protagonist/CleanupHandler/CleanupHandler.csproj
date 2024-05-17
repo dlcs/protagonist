@@ -21,6 +21,7 @@
     <ItemGroup>
       <ProjectReference Include="..\DLCS.AWS\DLCS.AWS.csproj" />
       <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
+      <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
     </ItemGroup>
 
     <ItemGroup>
