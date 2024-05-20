@@ -44,12 +44,21 @@ public static class AssetDeliveryChannels
         => asset.ImageDeliveryChannels != null &&
            asset.ImageDeliveryChannels.Count == 1 && 
            asset.HasDeliveryChannel(deliveryChannel);
-    
+
     /// <summary>
     /// Checks if an asset has any delivery channel specified in a list
     /// </summary>
     public static bool HasAnyDeliveryChannel(this Asset asset, params string[] deliveryChannels)
-        => deliveryChannels.Any(asset.HasDeliveryChannel);
+    {
+        if (asset.ImageDeliveryChannels.IsNullOrEmpty() || deliveryChannels.IsNullOrEmpty()) return false;
+        if (deliveryChannels.Any(dc => !All.Contains(dc)))
+        {
+            throw new ArgumentOutOfRangeException(nameof(deliveryChannels), deliveryChannels,
+                $"Acceptable delivery-channels are: {AllString}");
+        }
+        
+        return asset.ImageDeliveryChannels.Any(dc => deliveryChannels.Contains(dc.Channel));
+    }
 
     /// <summary>
     /// Checks if string is a valid delivery channel
