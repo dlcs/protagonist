@@ -21,30 +21,7 @@ public static class AssetDeliveryChannels
     /// All possible delivery channels as a comma-delimited string
     /// </summary>
     public static readonly string AllString = string.Join(',', All);
-
-    /// <summary>
-    /// Check if asset has specified deliveryChannel
-    /// </summary>
-    public static bool HasDeliveryChannel(this Asset asset, string deliveryChannel)
-    {
-        if (asset.ImageDeliveryChannels.IsNullOrEmpty()) return false;
-        if (!All.Contains(deliveryChannel))
-        {
-            throw new ArgumentOutOfRangeException(nameof(deliveryChannel), deliveryChannel,
-                $"Acceptable delivery-channels are: {AllString}");
-        }
-
-        return asset.ImageDeliveryChannels.Any(i => i.Channel == deliveryChannel);
-    }
-
-    /// <summary>
-    /// Checks if asset has specified deliveryChannel only (e.g. 1 channel and it matches specified value
-    /// </summary>
-    public static bool HasSingleDeliveryChannel(this Asset asset, string deliveryChannel)
-        => asset.ImageDeliveryChannels != null &&
-           asset.ImageDeliveryChannels.Count == 1 && 
-           asset.HasDeliveryChannel(deliveryChannel);
-
+    
     /// <summary>
     /// Checks if an asset has any delivery channel specified in a list
     /// </summary>
@@ -59,7 +36,21 @@ public static class AssetDeliveryChannels
         
         return asset.ImageDeliveryChannels.Any(dc => deliveryChannels.Contains(dc.Channel));
     }
-
+    
+    /// <summary>
+    /// Check if asset has specified deliveryChannel
+    /// </summary>
+    public static bool HasDeliveryChannel(this Asset asset, string deliveryChannel)
+        => HasAnyDeliveryChannel(asset, deliveryChannel);
+        
+    /// <summary>
+    /// Checks if asset has specified deliveryChannel only (e.g. 1 channel and it matches specified value
+    /// </summary>
+    public static bool HasSingleDeliveryChannel(this Asset asset, string deliveryChannel)
+        => asset.ImageDeliveryChannels != null &&
+           asset.ImageDeliveryChannels.Count == 1 && 
+           asset.HasDeliveryChannel(deliveryChannel);
+    
     /// <summary>
     /// Checks if string is a valid delivery channel
     /// </summary>
