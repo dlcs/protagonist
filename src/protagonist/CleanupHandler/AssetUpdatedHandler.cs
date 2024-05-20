@@ -102,14 +102,14 @@ public class AssetUpdatedHandler  : IMessageHandler
             {
                 if (assetAfter.ImageDeliveryChannels.All(x => x.Channel != deliveryChannel.Channel))
                 {
-                    await CleanupRemoved(deliveryChannel, assetBefore);
+                    await CleanupRemoved(deliveryChannel, assetAfter);
                 }
             }
         }
         
         if (modifiedOrAdded.Any())
         {
-            await CleanupModified(modifiedOrAdded, assetBefore);
+            await CleanupModified(modifiedOrAdded, assetBefore, assetAfter);
         }
 
         if (assetBefore.Roles != null && !assetBefore.Roles.Equals(assetAfter.Roles))
@@ -125,7 +125,7 @@ public class AssetUpdatedHandler  : IMessageHandler
         throw new NotImplementedException();
     }
 
-    private async Task CleanupModified(List<ImageDeliveryChannel> modifiedOrAdded, Asset assetBefore)
+    private async Task CleanupModified(List<ImageDeliveryChannel> modifiedOrAdded, Asset assetBefore, Asset assetAfter)
     {
         foreach (var deliveryChannel in modifiedOrAdded)
         {
@@ -136,32 +136,32 @@ public class AssetUpdatedHandler  : IMessageHandler
 
                 if (policyModified.Id != deliveryChannel.Id || policyModified.DeliveryChannelPolicy.Modified > assetBefore.Finished)
                 {
-                    await CleanupChangedPolicy(deliveryChannel, assetBefore);
+                    await CleanupChangedPolicy(deliveryChannel, assetBefore, assetAfter);
                 }
             }
         }
     }
     
-    private async Task CleanupRemoved(ImageDeliveryChannel deliveryChannel, Asset assetBefore)
+    private async Task CleanupRemoved(ImageDeliveryChannel deliveryChannel, Asset assetAfter)
     {
         switch (deliveryChannel.Channel)
         {
             case AssetDeliveryChannels.Image:
-                CleanupRemovedImageDeliveryChannel(assetBefore);
+                CleanupRemovedImageDeliveryChannel(assetAfter);
                 break;
             case AssetDeliveryChannels.Thumbnails:
-                await CleanupRemovedThumbnailDeliveryChannel(assetBefore);
+                await CleanupRemovedThumbnailDeliveryChannel(assetAfter);
                 break;
             case AssetDeliveryChannels.Timebased:
-                CleanupRemovedTimebasedDeliveryChannel(assetBefore);
+                await CleanupRemovedTimebasedDeliveryChannel(assetAfter);
                 break;
             case AssetDeliveryChannels.File:
-                CleanupFileDeliveryChannel(assetBefore);
+                CleanupFileDeliveryChannel(assetAfter);
                 break;
         }
     }
 
-    private async Task CleanupChangedPolicy(ImageDeliveryChannel newDeliveryChannel, Asset assetBefore)
+    private async Task CleanupChangedPolicy(ImageDeliveryChannel newDeliveryChannel, Asset assetBefore, Asset assetAfter)
     {
         switch (newDeliveryChannel.Channel)
         {
@@ -172,10 +172,10 @@ public class AssetUpdatedHandler  : IMessageHandler
                 await CleanupChangedThumbnailDeliveryChannel(assetBefore);
                 break;
             case AssetDeliveryChannels.Timebased:
-                CleanupChangedTimebasedDeliveryChannel(newDeliveryChannel, assetBefore);
+                await CleanupChangedTimebasedDeliveryChannel(newDeliveryChannel, assetBefore);
                 break;
             case AssetDeliveryChannels.File:
-                CleanupFileDeliveryChannel(assetBefore);
+                CleanupFileDeliveryChannel(assetAfter);
                 break;
         }
     }
@@ -244,13 +244,13 @@ public class AssetUpdatedHandler  : IMessageHandler
         RemoveObjectsFromBucket(bucketObjectsTobeRemoved);
     }
 
-    private void CleanupFileDeliveryChannel(Asset assetBefore)
+    private void CleanupFileDeliveryChannel(Asset assetAfter)
     {
-        if (assetBefore.ImageDeliveryChannels.All(i => i.Id != KnownDeliveryChannelPolicies.ImageUseOriginal))
+        if (assetAfter.ImageDeliveryChannels.All(i => i.DeliveryChannelPolicyId != KnownDeliveryChannelPolicies.ImageUseOriginal))
         {
             List<ObjectInBucket> bucketObjectsTobeRemoved = new()
             {
-                storageKeyGenerator.GetStoredOriginalLocation(assetBefore.Id)
+                storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id)
             };
 
             RemoveObjectsFromBucket(bucketObjectsTobeRemoved);
@@ -278,27 +278,27 @@ public class AssetUpdatedHandler  : IMessageHandler
         RemoveObjectsFromBucket(bucketObjectsTobeRemoved);
     }
 
-    private async Task CleanupRemovedThumbnailDeliveryChannel(Asset assetBefore)
+    private async Task CleanupRemovedThumbnailDeliveryChannel(Asset assetAfter)
     {
         List<ObjectInBucket> bucketObjectsTobeRemoved = new()
         {
-            storageKeyGenerator.GetInfoJsonLocation(assetBefore.Id,
+            storageKeyGenerator.GetInfoJsonLocation(assetAfter.Id,
                 handlerSettings.AssetModifiedSettings.ImageServer.ToString(), Version.Unknown)
         };
 
-        if (assetBefore.ImageDeliveryChannels.All(i => i.Channel != AssetDeliveryChannels.Image))
+        if (assetAfter.ImageDeliveryChannels.All(i => i.Channel != AssetDeliveryChannels.Image))
         {
-            RemoveObjectsFromFolderInBucket(storageKeyGenerator.GetThumbnailsRoot(assetBefore.Id));
+            RemoveObjectsFromFolderInBucket(storageKeyGenerator.GetThumbnailsRoot(assetAfter.Id));
 
             if (!handlerSettings.AssetModifiedSettings.DryRun)
             {
-                await assetMetadataRepository.DeleteAssetApplicationMetadata(assetBefore.Id,
+                await assetMetadataRepository.DeleteAssetApplicationMetadata(assetAfter.Id,
                     AssetApplicationMetadataTypes.ThumbSizes);
             }
         }
         else
         {
-            var thumbsToDelete = await ThumbsToBeDeleted(assetBefore);
+            var thumbsToDelete = await ThumbsToBeDeleted(assetAfter);
 
             bucketObjectsTobeRemoved.AddRange(thumbsToDelete);
         }
@@ -314,41 +314,36 @@ public class AssetUpdatedHandler  : IMessageHandler
         var thumbsBucketSizes = GetThumbSizesFromKeys(thumbsBucketKeys);
         var convertedInfoJsonSizes = infoJsonSizes.Select(t => t[0].ToString());
 
-        var thumbsToDelete = convertedInfoJsonSizes.Where(t => !thumbsBucketSizes.ContainsKey(t))
-            .Select(t => new ObjectInBucket(handlerSettings.AWS.S3.ThumbsBucket, t)).ToList();
+        var thumbsToDelete = thumbsBucketSizes.Where(t => !convertedInfoJsonSizes.Contains(t.size))
+            .Select(t => new ObjectInBucket(handlerSettings.AWS.S3.ThumbsBucket, t.path)).ToList();
         return thumbsToDelete;
     }
 
-    private Dictionary<string, string> GetThumbSizesFromKeys(string[] thumbsBucketKeys)
+    private List<(string size, string path)> GetThumbSizesFromKeys(string[] thumbsBucketKeys)
     {
         var filteredFilenames = thumbsBucketKeys.Where(t => FileSystemName.MatchesSimpleExpression("*.jpg", t));
 
         var thumbBucketSizes = filteredFilenames
-            .Select(x => new { Key = x.Split("/").Last().Split('.').First(), Value = x })
-            .ToDictionary(pair => pair.Key, pair => pair.Value);
+            .Select(f => (f.Split("/").Last().Split('.').First(), f)).ToList();
 
         return thumbBucketSizes;
     }
 
-    private void CleanupRemovedImageDeliveryChannel(Asset assetBefore)
+    private void CleanupRemovedImageDeliveryChannel(Asset assetAfter)
     {
         List<ObjectInBucket> bucketObjectsTobeRemoved = new()
         {
-            storageKeyGenerator.GetStorageLocation(assetBefore.Id),
-            storageKeyGenerator.GetInfoJsonLocation(assetBefore.Id,
+            storageKeyGenerator.GetStorageLocation(assetAfter.Id),
+            storageKeyGenerator.GetInfoJsonLocation(assetAfter.Id,
                 handlerSettings.AssetModifiedSettings.ImageServer.ToString(), Version.Unknown)
         };
 
         RegionalisedObjectInBucket? originalLocation = null;
 
-        if (assetBefore.ImageDeliveryChannels.All(i => i.Channel == AssetDeliveryChannels.File))
+        if (assetAfter.ImageDeliveryChannels.All(i => i.Channel != AssetDeliveryChannels.File) && 
+            assetAfter.ImageDeliveryChannels.All(i => i.Channel != AssetDeliveryChannels.Thumbnails))
         {
-            bucketObjectsTobeRemoved.Add(storageKeyGenerator.GetStoredOriginalLocation(assetBefore.Id));
-        }
-        
-        if (assetBefore.ImageDeliveryChannels.All(i => i.Channel == AssetDeliveryChannels.Thumbnails))
-        {
-            bucketObjectsTobeRemoved.Add(storageKeyGenerator.GetStoredOriginalLocation(assetBefore.Id));
+            bucketObjectsTobeRemoved.Add(storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id));
         }
 
         RemoveObjectsFromBucket(bucketObjectsTobeRemoved);
@@ -360,10 +355,7 @@ public class AssetUpdatedHandler  : IMessageHandler
         
         if (handlerSettings.AssetModifiedSettings.DryRun) return;
 
-        foreach (var objectInBucket in bucketObjectsTobeRemoved)
-        {
-            bucketWriter.DeleteFromBucket(objectInBucket);
-        }
+        bucketWriter.DeleteFromBucket(bucketObjectsTobeRemoved.ToArray());
     }
     
     private void RemoveObjectsFromFolderInBucket(ObjectInBucket bucketFolderToBeRemoved)
