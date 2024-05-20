@@ -16,7 +16,6 @@ using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using NuGet.Packaging;
 using Test.Helpers.Data;
 
 namespace Test.Helpers.Integration;
@@ -216,12 +215,6 @@ public static class DatabaseTestDataPopulation
         string deliveryChannel,
         int? policyId = null)
     {
-        if (!AssetDeliveryChannels.IsValidChannel(deliveryChannel))
-        {
-            throw new ArgumentOutOfRangeException(nameof(deliveryChannel), deliveryChannel,
-                $"Acceptable delivery-channels are: {AssetDeliveryChannels.AllString}");
-        }
-
         asset.Result.Entity.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
         {
             Channel = deliveryChannel,
@@ -234,7 +227,7 @@ public static class DatabaseTestDataPopulation
                     : KnownDeliveryChannelPolicies.AvDefaultAudio,
                 AssetDeliveryChannels.File => KnownDeliveryChannelPolicies.FileNone,
                 _ => throw new ArgumentOutOfRangeException(nameof(deliveryChannel), deliveryChannel,
-                    "Unable to assign default delivery channel policy to asset")
+                    $"Unable to assign default delivery channel policy for channel {deliveryChannel} for asset")
             }
         });
         
