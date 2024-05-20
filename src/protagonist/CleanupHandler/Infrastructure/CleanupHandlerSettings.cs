@@ -38,4 +38,9 @@ public class AssetModifiedSettings
     /// Root URL of the engine
     /// </summary>
     public Uri EngineRoot { get; set; }
+
+    /// <summary>
+    /// indicates asset is on a timebased path
+    /// </summary>
+    public string TimebasedKeyIndicator = "full/full/max/max/0";
 }
