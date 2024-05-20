@@ -1,4 +1,5 @@
-﻿using DLCS.AWS.Cloudfront;
+﻿using CleanupHandler.Repository;
+using DLCS.AWS.Cloudfront;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
@@ -73,6 +74,7 @@ public static class ServiceCollectionX
             .AddSingleton<IThumbRepository, ThumbRepository>()
             .AddSingleton<AssetCachingHelper>()
             .AddTransient<TimingHandler>()
+            .AddScoped<ICleanupHandlerAssetRepository, CleanupHandlerAssetRepository>()
             .AddDlcsContext(configuration);
 
         services.AddHttpClient<IEngineClient, EngineClient>(client =>
