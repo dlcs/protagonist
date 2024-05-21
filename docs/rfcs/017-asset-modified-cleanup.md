@@ -115,7 +115,7 @@ This is that the delivery channel stays the same, but the id of the policy has c
 - iiif-av changed
   - Old transcode derivative removed if the file extension is no longer required
 - File changed
-  - The asset at origin should be removed if there's an asset on the `/original` path - should only be removed if `iiif-img` is not using it
+  - do nothing
 
 #### Roles changed
 
@@ -136,7 +136,7 @@ The policy data being updated can be found from the date that the delivery chann
 - iiif-av changed
   - Old transcode derivative removed if the file extension is no longer required
 - File changed
-  - The asset at origin should be removed if there's an asset on the `/original` path - should only be removed if `iiif-img` is not using it
+  - do nothing
 
   ## General comments
 
