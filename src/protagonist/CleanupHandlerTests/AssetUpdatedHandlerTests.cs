@@ -1092,6 +1092,29 @@ public class AssetUpdatedHandlerTests
     }
     
     // roles
+    
+    [Fact]
+    public async Task Handle_DeletesInfoJson_WhenRolesChanged()
+    {
+        // Arrange
+        var requestDetails = CreateMinimalRequestDetails(
+            new List<ImageDeliveryChannel>() { imageDeliveryChannelUseOriginalImage }, new List<ImageDeliveryChannel>() { imageDeliveryChannelUseOriginalImage },
+            string.Empty, "new role");
+
+        A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
+            .Returns(requestDetails.assetAfter);
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(requestDetails.queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        A.CallTo(() =>
+                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo/info/Cantaloupe/v3/info.json")))
+            .MustHaveHappened();
+        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
+    }
 
     
     // helper functions

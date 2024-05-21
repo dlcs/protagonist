@@ -77,8 +77,8 @@ public class AssetUpdatedHandler  : IMessageHandler
         var assetAfter = cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(assetBefore.Id);
         
         // no changes that need to be cleaned up, or the asset has been deleted before cleanup handling
-        if (assetAfter == null || !message.Attributes.Keys.Contains("engineNotified") || 
-            (assetBefore.Roles ?? string.Empty) != (assetAfter.Roles ?? string.Empty)) return true;
+        if (assetAfter == null || !message.Attributes.Keys.Contains("engineNotified") && 
+            (assetBefore.Roles ?? string.Empty) == (assetAfter.Roles ?? string.Empty)) return true;
 
         // still ingesting, so just put it back on the queue
         if (assetAfter.Ingesting == true || assetBefore.Finished > assetAfter.Finished)  return false;
@@ -115,15 +115,21 @@ public class AssetUpdatedHandler  : IMessageHandler
 
         if (assetBefore.Roles != null && !assetBefore.Roles.Equals(assetAfter.Roles))
         {
-            await CleanupRolesChanged(assetBefore, assetAfter);
+            CleanupRolesChanged(assetBefore, assetAfter);
         }
 
         return true;
     }
 
-    private async Task CleanupRolesChanged(Asset assetBefore, Asset assetAfter)
+    private void CleanupRolesChanged(Asset assetBefore, Asset assetAfter)
     {
-        throw new NotImplementedException();
+        List<ObjectInBucket> bucketObjectsTobeRemoved = new()
+        {
+            storageKeyGenerator.GetInfoJsonLocation(assetAfter.Id,
+                handlerSettings.AssetModifiedSettings.ImageServer.ToString(), Version.Unknown)
+        };
+
+        RemoveObjectsFromBucket(bucketObjectsTobeRemoved);
     }
 
     private async Task CleanupModified(List<ImageDeliveryChannel> modifiedOrAdded, Asset assetBefore, Asset assetAfter)
