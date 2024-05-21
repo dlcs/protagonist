@@ -7,6 +7,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.SQS;
 using DLCS.Core.Collections;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Messaging;
@@ -88,7 +89,7 @@ public class AssetUpdatedHandler  : IMessageHandler
                     z.DeliveryChannelPolicyId != y.DeliveryChannelPolicyId ||
                     z.DeliveryChannelPolicy.Modified != y.DeliveryChannelPolicy.Modified)).ToList();
         var removed = assetBefore.ImageDeliveryChannels.Where(y =>
-            assetAfter.ImageDeliveryChannels.All(z => z.DeliveryChannelPolicyId != y.DeliveryChannelPolicyId)).ToList();
+            assetAfter.ImageDeliveryChannels.All(z => z.Channel != y.Channel)).ToList();
         
         if (handlerSettings.AssetModifiedSettings.DryRun)
         {
@@ -129,15 +130,9 @@ public class AssetUpdatedHandler  : IMessageHandler
     {
         foreach (var deliveryChannel in modifiedOrAdded)
         {
-            if (assetBefore.ImageDeliveryChannels.Any(x => x.Channel == deliveryChannel.Channel))
+            if (assetBefore.ImageDeliveryChannels.Any(x => x.Channel == deliveryChannel.Channel)) // checks for updated rather than added
             {
-                var policyModified =
-                    assetBefore.ImageDeliveryChannels.First(i => i.Channel == deliveryChannel.Channel);
-
-                if (policyModified.Id != deliveryChannel.Id || policyModified.DeliveryChannelPolicy.Modified > assetBefore.Finished)
-                {
-                    await CleanupChangedPolicy(deliveryChannel, assetBefore, assetAfter);
-                }
+                await CleanupChangedPolicy(deliveryChannel, assetAfter);
             }
         }
     }
@@ -161,29 +156,32 @@ public class AssetUpdatedHandler  : IMessageHandler
         }
     }
 
-    private async Task CleanupChangedPolicy(ImageDeliveryChannel newDeliveryChannel, Asset assetBefore, Asset assetAfter)
+    private async Task CleanupChangedPolicy(ImageDeliveryChannel newDeliveryChannel, Asset assetAfter)
     {
         switch (newDeliveryChannel.Channel)
         {
             case AssetDeliveryChannels.Image:
-                CleanupChangedImageDeliveryChannel(newDeliveryChannel, assetBefore);
+                CleanupChangedImageDeliveryChannel(newDeliveryChannel, assetAfter.Id);
                 break;
             case AssetDeliveryChannels.Thumbnails:
-                await CleanupChangedThumbnailDeliveryChannel(assetBefore);
+                await CleanupChangedThumbnailDeliveryChannel(assetAfter);
                 break;
             case AssetDeliveryChannels.Timebased:
-                await CleanupChangedTimebasedDeliveryChannel(newDeliveryChannel, assetBefore);
+                await CleanupChangedTimebasedDeliveryChannel(newDeliveryChannel, assetAfter.Id);
                 break;
-            case AssetDeliveryChannels.File:
-                CleanupFileDeliveryChannel(assetAfter);
+            default:
+                logger.LogDebug("policy {PolicyName} does not require any changes for asset {AssetId}",
+                    newDeliveryChannel.DeliveryChannelPolicy.Name, assetAfter.Id);
                 break;
         }
     }
 
-    private async Task CleanupChangedTimebasedDeliveryChannel(ImageDeliveryChannel imageDeliveryChannel, Asset assetBefore)
+    private async Task CleanupChangedTimebasedDeliveryChannel(ImageDeliveryChannel imageDeliveryChannel, AssetId assetId)
     {
         var presetList = JsonSerializer.Deserialize<List<string>>(imageDeliveryChannel.DeliveryChannelPolicy.PolicyData);
         List<ObjectInBucket> assetsToDelete;
+        var keys = new List<string>();
+        var containers = new List<string>();
 
         foreach (var presetIdentifier in presetList)
         {
@@ -195,66 +193,62 @@ public class AssetUpdatedHandler  : IMessageHandler
 
                 if (presetDetails is not null)
                 {
-                    var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetBefore.Id);
+                    var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetId);
 
-                    var keys = await bucketReader.GetMatchingKeys(timebasedFolder);
-
-                    assetsToDelete = keys.Where(k => k.Contains($".{presetDetails.Container}"))
-                        .Select(k => new ObjectInBucket(handlerSettings.AWS.S3.StorageBucket, k)).ToList();
+                    var keysFromAws = await bucketReader.GetMatchingKeys(timebasedFolder);
                     
-                    RemoveObjectsFromBucket(assetsToDelete);
+                    keys.AddRange(keysFromAws);
+                    containers.Add(presetDetails.Container);
                 }
             }
         }
+
+        assetsToDelete = keys.Where(k =>
+                !containers.Contains(k.Split('.').Last()) &&
+                k.Contains(handlerSettings.AssetModifiedSettings.TimebasedKeyIndicator))
+            .Select(k => new ObjectInBucket(handlerSettings.AWS.S3.StorageBucket, k)).ToList();
+                    
+        RemoveObjectsFromBucket(assetsToDelete);
     }
 
-    private async Task CleanupChangedThumbnailDeliveryChannel(Asset assetBefore)
+    private async Task CleanupChangedThumbnailDeliveryChannel(Asset assetAfter)
     {
         List<ObjectInBucket> bucketObjectsTobeRemoved = new()
         {
-            storageKeyGenerator.GetInfoJsonLocation(assetBefore.Id,
+            storageKeyGenerator.GetInfoJsonLocation(assetAfter.Id,
                 handlerSettings.AssetModifiedSettings.ImageServer.ToString(), Version.Unknown)
         };
         
-        var thumbsToDelete = await ThumbsToBeDeleted(assetBefore);
+        var thumbsToDelete = await ThumbsToBeDeleted(assetAfter);
         
         bucketObjectsTobeRemoved.AddRange(thumbsToDelete);
         RemoveObjectsFromBucket(bucketObjectsTobeRemoved);
     }
 
-    private void CleanupChangedImageDeliveryChannel( ImageDeliveryChannel newDeliveryChannel, Asset assetBefore)
+    private void CleanupChangedImageDeliveryChannel( ImageDeliveryChannel modifiedDeliveryChannel, AssetId assetId)
     {
-        var oldPolicy = assetBefore.ImageDeliveryChannels.First(x => x.Channel == newDeliveryChannel.Channel);
-        
         List<ObjectInBucket> bucketObjectsTobeRemoved = new()
         {
-            storageKeyGenerator.GetInfoJsonLocation(assetBefore.Id,
+            storageKeyGenerator.GetInfoJsonLocation(assetId,
                 handlerSettings.AssetModifiedSettings.ImageServer.ToString(), Version.Unknown)
         };
 
-        if (newDeliveryChannel.Id == KnownDeliveryChannelPolicies.ImageUseOriginal)
-        {
-            bucketObjectsTobeRemoved.Add(storageKeyGenerator.GetStorageLocation(assetBefore.Id));
-        }
-        else
-        {
-            bucketObjectsTobeRemoved.Add(storageKeyGenerator.GetStoredOriginalLocation(assetBefore.Id));
-        }
+        bucketObjectsTobeRemoved.Add(modifiedDeliveryChannel.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageUseOriginal
+            ? storageKeyGenerator.GetStorageLocation(assetId)
+            : storageKeyGenerator.GetStoredOriginalLocation(assetId));
 
         RemoveObjectsFromBucket(bucketObjectsTobeRemoved);
     }
 
     private void CleanupFileDeliveryChannel(Asset assetAfter)
     {
-        if (assetAfter.ImageDeliveryChannels.All(i => i.DeliveryChannelPolicyId != KnownDeliveryChannelPolicies.ImageUseOriginal))
+        if (assetAfter.ImageDeliveryChannels.Any(i => i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageUseOriginal)) return;
+        List<ObjectInBucket> bucketObjectsTobeRemoved = new()
         {
-            List<ObjectInBucket> bucketObjectsTobeRemoved = new()
-            {
-                storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id)
-            };
+            storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id)
+        };
 
-            RemoveObjectsFromBucket(bucketObjectsTobeRemoved);
-        }
+        RemoveObjectsFromBucket(bucketObjectsTobeRemoved);
     }
 
     private async Task CleanupRemovedTimebasedDeliveryChannel(Asset assetBefore)
@@ -306,10 +300,10 @@ public class AssetUpdatedHandler  : IMessageHandler
         RemoveObjectsFromBucket(bucketObjectsTobeRemoved);
     }
 
-    private async Task<List<ObjectInBucket>> ThumbsToBeDeleted(Asset assetBefore)
+    private async Task<List<ObjectInBucket>> ThumbsToBeDeleted(Asset assetAfter)
     {
-        var infoJsonSizes = await thumbRepository.GetAllSizes(assetBefore.Id) ?? new List<int[]>();
-        var thumbsBucketKeys = await bucketReader.GetMatchingKeys(storageKeyGenerator.GetThumbnailsRoot(assetBefore.Id));
+        var infoJsonSizes = await thumbRepository.GetAllSizes(assetAfter.Id) ?? new List<int[]>();
+        var thumbsBucketKeys = await bucketReader.GetMatchingKeys(storageKeyGenerator.GetThumbnailsRoot(assetAfter.Id));
 
         var thumbsBucketSizes = GetThumbSizesFromKeys(thumbsBucketKeys);
         var convertedInfoJsonSizes = infoJsonSizes.Select(t => t[0].ToString());
