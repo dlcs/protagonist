@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
@@ -9,6 +10,7 @@ using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.DeliveryChannels;
+using DLCS.Model.Policies;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
@@ -205,6 +207,30 @@ public static class DatabaseTestDataPopulation
         string metadataValue = "{\"a\": [], \"o\": [[769,1024],[300,400],[150,200],[75,100]]}")
     {
         asset.Result.Entity.WithTestThumbnailMetadata(metadataValue);
+        return asset;
+    }
+
+    public static ValueTask<EntityEntry<Asset>> WithTestDeliveryChannel(
+        this ValueTask<EntityEntry<Asset>> asset,
+        string deliveryChannel,
+        int? policyId = null)
+    {
+        asset.Result.Entity.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+        {
+            Channel = deliveryChannel,
+            DeliveryChannelPolicyId = policyId ?? deliveryChannel switch
+            {
+                AssetDeliveryChannels.Image => KnownDeliveryChannelPolicies.ImageDefault,
+                AssetDeliveryChannels.Thumbnails => KnownDeliveryChannelPolicies.ThumbsDefault,
+                AssetDeliveryChannels.Timebased => MIMEHelper.IsVideo(asset.Result.Entity.Origin)
+                    ? KnownDeliveryChannelPolicies.AvDefaultVideo
+                    : KnownDeliveryChannelPolicies.AvDefaultAudio,
+                AssetDeliveryChannels.File => KnownDeliveryChannelPolicies.FileNone,
+                _ => throw new ArgumentOutOfRangeException(nameof(deliveryChannel), deliveryChannel,
+                    $"Unable to assign default delivery channel policy for channel {deliveryChannel} for asset")
+            }
+        });
+        
         return asset;
     }
 }

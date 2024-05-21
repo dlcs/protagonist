@@ -77,15 +77,17 @@ public class IIIFCanvasFactory
                     {
                         Target = new IIIF3.Canvas { Id = canvasId },
                         Id = $"{canvasId}/page/image",
-                        Body = new Image
-                        {
-                            Id = GetFullQualifiedImagePath(asset, customerPathElement,
-                                thumbnailSizes.MaxDerivativeSize, false),
-                            Format = "image/jpeg",
-                            Width = thumbnailSizes.MaxDerivativeSize.Width,
-                            Height = thumbnailSizes.MaxDerivativeSize.Height,
-                            Service = GetImageServices(asset, customerPathElement, authProbeServices)
-                        } 
+                        Body = asset.HasDeliveryChannel(AssetDeliveryChannels.Image)
+                            ? new Image
+                                {
+                                    Id = GetFullQualifiedImagePath(asset, customerPathElement,
+                                        thumbnailSizes.MaxDerivativeSize, false),
+                                    Format = "image/jpeg",
+                                    Width = thumbnailSizes.MaxDerivativeSize.Width,
+                                    Height = thumbnailSizes.MaxDerivativeSize.Height,
+                                    Service = GetImageServices(asset, customerPathElement, authProbeServices)
+                                }
+                            : null,
                     }.AsListOf<IAnnotation>()
                 }.AsList()
             };
@@ -138,14 +140,16 @@ public class IIIFCanvasFactory
                 {
                     Id = string.Concat(fullyQualifiedImageId, "/imageanno/0"),
                     On = canvasId,
-                    Resource = new IIIF2.ImageResource
-                    {
-                        Id = GetFullQualifiedImagePath(asset, customerPathElement,
-                            thumbnailSizes.MaxDerivativeSize, false),
-                        Width = thumbnailSizes.MaxDerivativeSize.Width,
-                        Height = thumbnailSizes.MaxDerivativeSize.Height,
-                        Service = GetImageServices(asset, customerPathElement, null)
-                    },
+                    Resource = asset.HasDeliveryChannel(AssetDeliveryChannels.Image) 
+                        ? new IIIF2.ImageResource
+                            {
+                                Id = GetFullQualifiedImagePath(asset, customerPathElement,
+                                    thumbnailSizes.MaxDerivativeSize, false),
+                                Width = thumbnailSizes.MaxDerivativeSize.Width,
+                                Height = thumbnailSizes.MaxDerivativeSize.Height,
+                                Service = GetImageServices(asset, customerPathElement, null)
+                            }
+                        : null,
                 }.AsList()
             };
 

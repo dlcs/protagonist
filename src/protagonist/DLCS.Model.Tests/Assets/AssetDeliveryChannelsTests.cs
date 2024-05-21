@@ -108,4 +108,35 @@ public class AssetDeliveryChannelsTests
         
         asset.HasSingleDeliveryChannel(channel).Should().BeTrue();
     }
+    
+    [Theory]
+    [InlineData(AssetDeliveryChannels.File)]
+    [InlineData(AssetDeliveryChannels.Image)]
+    [InlineData(AssetDeliveryChannels.Timebased)]
+    public void HasAnyDeliveryChannel_True(string channel)
+    {
+        var asset = new Asset { ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = channel,
+            }
+        } };
+        
+        asset.HasAnyDeliveryChannel(AssetDeliveryChannels.All).Should().BeTrue();
+    }
+    
+    [Fact]
+    public void HasAnyDeliveryChannel_False()
+    {
+        var asset = new Asset { ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = "not-a-channel",
+            }
+        } };
+
+        asset.HasAnyDeliveryChannel(AssetDeliveryChannels.All).Should().BeFalse();
+    }
 }

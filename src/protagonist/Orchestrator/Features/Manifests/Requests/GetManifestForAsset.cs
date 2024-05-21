@@ -65,12 +65,14 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
         var asset = await dlcsContext.Images
             .IncludeDataForThumbs()
             .FirstOrDefaultAsync(a => a.Id == assetId, cancellationToken);
-
-        if (asset is not { Family: AssetFamily.Image, NotForDelivery: false })
+        
+        if (asset == null || asset.NotForDelivery ||
+            !asset.HasAnyDeliveryChannel(AssetDeliveryChannels.Image, AssetDeliveryChannels.Thumbnails))
         {
-            logger.LogDebug("Request iiif-manifest for asset {AssetId} but is not found or not an image", assetId);
+            logger.LogDebug("Attempted to request an iiif-manifest for {AssetId}, but it was not found or is unavailable on any image delivery channel.",
+                assetId);
             return DescriptionResourceResponse.Empty;
-        }
+        }    
 
         JsonLdBase manifest = request.IIIFPresentationVersion == Version.V3
             ? await GenerateV3Manifest(request.AssetRequest, asset, cancellationToken)
