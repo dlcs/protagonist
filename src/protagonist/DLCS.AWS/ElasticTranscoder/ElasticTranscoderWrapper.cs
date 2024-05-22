@@ -51,31 +51,15 @@ public class ElasticTranscoderWrapper : IElasticTranscoderWrapper
 
         return cache.GetOrAddAsync(presetLookupKey, async entry =>
         {
-            var presets = new Dictionary<string, string>();
-            var response = new ListPresetsResponse();
-                
-            do
-            {
-                var request = new ListPresetsRequest {PageToken = response.NextPageToken};
-                response = await elasticTranscoder.ListPresetsAsync(request, token);
+            var presets = await RetrievePresets(token, entry);
 
-                foreach (var preset in response.Presets)
-                {
-                    presets.Add(preset.Name, preset.Id);
-                }
+            var presetsDictionary = presets.Select(p => new { Key = p.Name, Value = p.Id })
+                .ToDictionary(pair => pair.Key, pair => pair.Value);
 
-            } while (response.NextPageToken != null);
-
-            if (presets.Count == 0)
-            {
-                logger.LogWarning("No ElasticTranscoder presets found");
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
-            }
-
-            return presets;
+            return presetsDictionary;
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.Low));
     }
-    
+
     public Task<Preset?> GetPresetDetails(string name, CancellationToken token)
     {
         string presetLookupKey = $"MediaTranscode:Presets:{name}";
@@ -83,28 +67,34 @@ public class ElasticTranscoderWrapper : IElasticTranscoderWrapper
         return cache.GetOrAddAsync(presetLookupKey, async entry =>
         {
             
-            var response = new ListPresetsResponse();
-            Preset? preset;
+            var presets = await RetrievePresets(token, entry);
             
-            do
-            {
-                var request = new ListPresetsRequest {PageToken = response.NextPageToken};
-                response = await elasticTranscoder.ListPresetsAsync(request, token);
-
-                preset = response.Presets.FirstOrDefault(p => p.Name == name);
-
-                if (preset is not null) break;
-
-            } while (response.NextPageToken != null);
+            var preset = presets.FirstOrDefault(p => p.Name == name);
             
-            if (preset is null)
-            {
-                logger.LogWarning("No preset found for name {Name}", name);
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
-            }
-
             return preset;
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.Low));
+    }
+    
+    private async Task<List<Preset>> RetrievePresets(CancellationToken token, ICacheEntry entry)
+    {
+        var presets = new List<Preset>();
+        var response = new ListPresetsResponse();
+        
+        do
+        {
+            var request = new ListPresetsRequest { PageToken = response.NextPageToken };
+            response = await elasticTranscoder.ListPresetsAsync(request, token);
+
+            presets.AddRange(response.Presets);
+        } while (response.NextPageToken != null);
+
+        if (presets.Count == 0)
+        {
+            logger.LogWarning("No ElasticTranscoder presets found");
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+        }
+
+        return presets;
     }
     
     public async Task<string?> GetPipelineId(string pipelineName, CancellationToken token)
