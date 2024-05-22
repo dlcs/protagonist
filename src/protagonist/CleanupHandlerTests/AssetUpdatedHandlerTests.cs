@@ -453,8 +453,6 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
     
-    // TODO: tests for old style thumbs removal
-
     // modified
     
     [Fact]
@@ -683,7 +681,7 @@ public class AssetUpdatedHandlerTests
             .Returns(new[]
             {
                 "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg",
-                "1/99/foo/stuff/2048.jpg"
+                "1/99/foo/stuff/2048.jpg" , "1/99/full/100,200/0/default.jpg"
             });
 
         // Act
@@ -704,6 +702,16 @@ public class AssetUpdatedHandlerTests
                         o[1].Key == "1/99/foo/stuff/2048.jpg" &&
                         o[1].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
+        A.CallTo(() =>
+                bucketWriter.DeleteFromBucket(
+                    A<ObjectInBucket[]>.That.Matches(o =>
+                        o[2].Key == "1/99/full/100,200/0/default.jpg" &&
+                        o[2].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
+            .MustHaveHappened();
+        A.CallTo(() =>
+                bucketWriter.DeleteFromBucket(
+                    A<ObjectInBucket[]>.That.Matches(o => o.Any(x => x.Key == "1/99/foo/stuff/200.jpg"))))
+            .MustNotHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
     
@@ -987,7 +995,7 @@ public class AssetUpdatedHandlerTests
             .Returns(new[]
             {
                 "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg",
-                "1/99/foo/stuff/2048.jpg"
+                "1/99/foo/stuff/2048.jpg", "1/99/full/100,200/0/default.jpg"
             });
 
         // Act
@@ -1008,6 +1016,16 @@ public class AssetUpdatedHandlerTests
                         o[1].Key == "1/99/foo/stuff/2048.jpg" &&
                         o[1].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
+        A.CallTo(() =>
+                bucketWriter.DeleteFromBucket(
+                    A<ObjectInBucket[]>.That.Matches(o =>
+                        o[2].Key == "1/99/full/100,200/0/default.jpg" &&
+                        o[2].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
+            .MustHaveHappened();
+        A.CallTo(() =>
+                bucketWriter.DeleteFromBucket(
+                    A<ObjectInBucket[]>.That.Matches(o => o.Any(x => x.Key == "1/99/foo/stuff/200.jpg"))))
+            .MustNotHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
     
