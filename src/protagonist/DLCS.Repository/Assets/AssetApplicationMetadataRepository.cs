@@ -57,16 +57,17 @@ public class AssetApplicationMetadataRepository : IAssetApplicationMetadataRepos
     public async Task<bool> DeleteAssetApplicationMetadata(AssetId assetId, string metadataType,
         CancellationToken cancellationToken = default)
     {
-        var asset = await dlcsContext.AssetApplicationMetadata
+        var assetApplicationMetadata = await dlcsContext.AssetApplicationMetadata
             .SingleOrDefaultAsync(i => i.AssetId == assetId && i.MetadataType == metadataType, cancellationToken);
         
-        if (asset == null)
+        if (assetApplicationMetadata == null)
         {
             logger.LogDebug("Attempt to delete non-existent asset metadata {MetadataType} for {AssetId}", metadataType,
                 assetId);
             return false;
         }
 
+        dlcsContext.AssetApplicationMetadata.Remove(assetApplicationMetadata);
         await dlcsContext.SaveChangesAsync(cancellationToken);
         return true;
     }
