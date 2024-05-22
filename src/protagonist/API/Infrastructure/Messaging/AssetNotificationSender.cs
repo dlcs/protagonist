@@ -54,6 +54,7 @@ public class AssetNotificationSender : IAssetNotificationSender
                 {
                     { "messageType", notification.ChangeType.ToString() }
                 };
+                
                 if (notification.EngineNotified)
                 {
                     attributes.Add("engineNotified", "True");
