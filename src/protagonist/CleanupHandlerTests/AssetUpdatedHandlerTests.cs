@@ -291,12 +291,6 @@ public class AssetUpdatedHandlerTests
         
         // Assert
         response.Should().BeTrue();
-        A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(
-                    A<ObjectInBucket[]>.That.Matches(o =>
-                        o[0].Key == "1/99/foo/info/Cantaloupe/v3/info.json" &&
-                        o[0].Bucket == handlerSettings.AWS.S3.StorageBucket)))
-            .MustHaveHappened();
         A.CallTo(() => assetMetadataRepository.DeleteAssetApplicationMetadata(A<AssetId>._, A<string>._, A<CancellationToken>._)).MustHaveHappened();
         A.CallTo(() =>
             bucketWriter.DeleteFolder(
@@ -341,14 +335,8 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
-                        o[0].Key == "1/99/foo/info/Cantaloupe/v3/info.json" &&
-                        o[0].Bucket == handlerSettings.AWS.S3.StorageBucket)))
-            .MustHaveHappened();
-        A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(
-                    A<ObjectInBucket[]>.That.Matches(o =>
-                        o[1].Key == "1/99/foo/stuff/2048.jpg" &&
-                        o[1].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
+                        o[0].Key == "1/99/foo/stuff/2048.jpg" &&
+                        o[0].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
@@ -374,11 +362,8 @@ public class AssetUpdatedHandlerTests
                 bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo")))
             .MustHaveHappened();
         A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[1].Key == "1/99/foo/info/Cantaloupe/v3/info.json")))
-            .MustHaveHappened();
-        A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
-                    A<ObjectInBucket[]>.That.Matches(o => o[2].Key == "1/99/foo/original")))
+                    A<ObjectInBucket[]>.That.Matches(o => o[1].Key == "1/99/foo/original")))
             .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
@@ -407,9 +392,6 @@ public class AssetUpdatedHandlerTests
         response.Should().BeTrue();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo")))
-            .MustHaveHappened();
-        A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[1].Key == "1/99/foo/info/Cantaloupe/v3/info.json")))
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
@@ -442,9 +424,6 @@ public class AssetUpdatedHandlerTests
         response.Should().BeTrue();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo")))
-            .MustHaveHappened();
-        A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[1].Key == "1/99/foo/info/Cantaloupe/v3/info.json")))
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
@@ -693,20 +672,14 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
-                        o[0].Key == "1/99/foo/info/Cantaloupe/v3/info.json" &&
-                        o[0].Bucket == handlerSettings.AWS.S3.StorageBucket)))
+                        o[0].Key == "1/99/foo/stuff/2048.jpg" &&
+                        o[0].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
-                        o[1].Key == "1/99/foo/stuff/2048.jpg" &&
+                        o[1].Key == "1/99/full/100,200/0/default.jpg" &&
                         o[1].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
-            .MustHaveHappened();
-        A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(
-                    A<ObjectInBucket[]>.That.Matches(o =>
-                        o[2].Key == "1/99/full/100,200/0/default.jpg" &&
-                        o[2].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
@@ -733,10 +706,7 @@ public class AssetUpdatedHandlerTests
         // Assert
         response.Should().BeTrue();
         A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo/info/Cantaloupe/v3/info.json")))
-            .MustHaveHappened();
-        A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[1].Key == "1/99/foo/original")))
+                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo/original")))
             .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
@@ -759,10 +729,7 @@ public class AssetUpdatedHandlerTests
         // Assert
         response.Should().BeTrue();
         A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo/info/Cantaloupe/v3/info.json")))
-            .MustHaveHappened();
-        A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[1].Key == "1/99/foo")))
+                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo")))
             .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
@@ -1007,20 +974,14 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
-                        o[0].Key == "1/99/foo/info/Cantaloupe/v3/info.json" &&
-                        o[0].Bucket == handlerSettings.AWS.S3.StorageBucket)))
+                        o[0].Key == "1/99/foo/stuff/2048.jpg" &&
+                        o[0].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
-                        o[1].Key == "1/99/foo/stuff/2048.jpg" &&
+                        o[1].Key == "1/99/full/100,200/0/default.jpg" &&
                         o[1].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
-            .MustHaveHappened();
-        A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(
-                    A<ObjectInBucket[]>.That.Matches(o =>
-                        o[2].Key == "1/99/full/100,200/0/default.jpg" &&
-                        o[2].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
@@ -1061,10 +1022,7 @@ public class AssetUpdatedHandlerTests
         // Assert
         response.Should().BeTrue();
         A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo/info/Cantaloupe/v3/info.json")))
-            .MustHaveHappened();
-        A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[1].Key == "1/99/foo/original")))
+                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo/original")))
             .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
@@ -1101,10 +1059,7 @@ public class AssetUpdatedHandlerTests
         // Assert
         response.Should().BeTrue();
         A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo/info/Cantaloupe/v3/info.json")))
-            .MustHaveHappened();
-        A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[1].Key == "1/99/foo")))
+                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo")))
             .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
@@ -1129,9 +1084,8 @@ public class AssetUpdatedHandlerTests
         // Assert
         response.Should().BeTrue();
         A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo/info/Cantaloupe/v3/info.json")))
-            .MustHaveHappened();
-        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
+                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
+        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(o => o.Key == "1/99/foo/info/"), A<bool>._)).MustHaveHappened();
     }
 
     

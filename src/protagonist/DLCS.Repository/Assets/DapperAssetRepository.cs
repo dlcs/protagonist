@@ -23,16 +23,6 @@ public class DapperAssetRepository : IAssetRepository, IDapperConfigRepository
         this.assetCachingHelper = assetCachingHelper;
     }
 
-    public Task<Asset?> GetAsset(AssetId assetId, bool noCache)
-    {
-        if (noCache)
-        {
-            assetCachingHelper.RemoveAssetFromCache(assetId);
-        }
-
-        return GetAsset(assetId);
-    }
-
     public async Task<ImageLocation?> GetImageLocation(AssetId assetId)
         => await this.QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql, new {Id = assetId.ToString()});
     

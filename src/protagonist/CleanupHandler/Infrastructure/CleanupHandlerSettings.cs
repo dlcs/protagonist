@@ -15,6 +15,9 @@ public class CleanupHandlerSettings
     /// </summary>
     public AWSSettings AWS { get; set; }
 
+    /// <summary>
+    /// Asset modified settings
+    /// </summary>
     public AssetModifiedSettings AssetModifiedSettings { get; set; }
 }
 

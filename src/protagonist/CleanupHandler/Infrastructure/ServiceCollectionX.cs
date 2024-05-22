@@ -63,7 +63,7 @@ public static class ServiceCollectionX
             .AddHostedService<CleanupHandlerQueueMonitor>();
 
     /// <summary>
-    /// Add all dataaccess dependencies, including repositories and DLCS context 
+    /// Add all data access dependencies, including repositories and DLCS context 
     /// </summary>
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration, 
         CleanupHandlerSettings cleanupHandlerSettings)

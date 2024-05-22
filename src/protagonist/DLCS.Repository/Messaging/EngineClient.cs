@@ -153,7 +153,6 @@ public class EngineClient : IEngineClient
             var response = await httpClient.GetAsync("av-presets", cancellationToken);
             return await response.Content.ReadFromJsonAsync<IReadOnlyDictionary<string, string>>(
                 cancellationToken: cancellationToken);
-            
         }
         catch(Exception ex)
         {
