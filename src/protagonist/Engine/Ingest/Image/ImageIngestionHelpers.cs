@@ -10,10 +10,10 @@ internal static class ImageIngestionHelpers
     /// <summary>
     /// Get folder location where working assets are to be saved to
     /// </summary>
-    public static string GetSourceFolder(Asset asset, EngineSettings engineSettings)
+    public static string GetSourceFolder(Asset asset, string ingestId, EngineSettings engineSettings)
     {
         var imageIngest = engineSettings.ImageIngest;
-        var root = imageIngest.GetRoot();
+        var root = Path.Combine(imageIngest.GetRoot(), ingestId);
             
         // source is the main folder for storing downloaded image
         var assetId = new AssetId(asset.Id.Customer, asset.Id.Space,

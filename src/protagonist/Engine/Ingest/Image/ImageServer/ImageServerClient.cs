@@ -53,11 +53,11 @@ public class ImageServerClient : IImageProcessor
         var modifiedAssetId = new AssetId(context.AssetId.Customer, context.AssetId.Space,
             context.AssetId.Asset.Replace("(", engineSettings.ImageIngest.OpenBracketReplacement)
                 .Replace(")", engineSettings.ImageIngest.CloseBracketReplacement));
-        var (dest, thumb) = CreateRequiredFolders(modifiedAssetId);
+        var (dest, thumb) = CreateRequiredFolders(modifiedAssetId, context.IngestId);
 
         try
         {
-            var flags = new ImageProcessorFlags(context, appetiserClient.GetJP2FilePath(modifiedAssetId, false));
+            var flags = new ImageProcessorFlags(context, appetiserClient.GetJP2FilePath(modifiedAssetId, context.IngestId, false));
             logger.LogDebug("Got flags '{@Flags}' for {AssetId}", flags, context.AssetId);
             var responseModel = await appetiserClient.GenerateJP2(context, modifiedAssetId);
 
@@ -89,10 +89,10 @@ public class ImageServerClient : IImageProcessor
         }
     }
 
-    private (string dest, string thumb) CreateRequiredFolders(AssetId assetId)
+    private (string dest, string thumb) CreateRequiredFolders(AssetId assetId, string ingestId)
     {
         var imageIngest = engineSettings.ImageIngest;
-        var root = imageIngest.GetRoot();
+        var root = Path.Combine(imageIngest.GetRoot(), ingestId);
 
         // dest is the folder where appetiser will copy output to
         var dest = TemplatedFolders.GenerateFolderTemplate(imageIngest.DestinationTemplate, assetId, root: root);

@@ -16,6 +16,8 @@ public class IngestionContext
     
     public AssetId AssetId { get; }
     
+    public string IngestId { get; }
+    
     public AssetFromOrigin? AssetFromOrigin { get; private set; }
         
     public ImageLocation? ImageLocation { get; private set; }
@@ -29,10 +31,11 @@ public class IngestionContext
     /// </summary>
     public Dictionary<ObjectInBucket, long> StoredObjects { get; } = new();
     
-    public IngestionContext(Asset asset)
+    public IngestionContext(Asset asset, string ingestId)
     {
         Asset = asset;
         AssetId = asset.Id;
+        IngestId = ingestId;
     }
 
     public IngestionContext WithAssetFromOrigin(AssetFromOrigin assetFromOrigin)
