@@ -34,8 +34,7 @@ public class IngestExecutor
     public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
-        var ingestId = DateTime.Now.Ticks.ToString();
-        var context = new IngestionContext(asset, ingestId);
+        var context = new IngestionContext(asset);
 
         // If the asset has the `none` delivery channel specified, skip processing and mark the ingest as being complete
         if (asset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))

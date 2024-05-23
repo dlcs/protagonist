@@ -31,13 +31,13 @@ public class IngestionContext
     /// </summary>
     public Dictionary<ObjectInBucket, long> StoredObjects { get; } = new();
     
-    public IngestionContext(Asset asset, string ingestId)
+    public IngestionContext(Asset asset)
     {
         Asset = asset;
         AssetId = asset.Id;
-        IngestId = ingestId;
+        IngestId = DateTime.Now.Ticks.ToString();
     }
-
+    
     public IngestionContext WithAssetFromOrigin(AssetFromOrigin assetFromOrigin)
     {
         AssetFromOrigin = assetFromOrigin;

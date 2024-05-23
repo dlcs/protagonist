@@ -37,7 +37,8 @@ public class ImageIngestPostProcessingTests
             ImageIngest = new ImageIngestSettings
             {
                 SourceTemplate = "{customer}_{space}_{image}",
-                OrchestrateImageAfterIngest = orchestrateAfterIngest
+                OrchestrateImageAfterIngest = orchestrateAfterIngest,
+                ScratchRoot = "scratch/"
             },
         };
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
