@@ -92,13 +92,13 @@ public class ImageServerClient : IImageProcessor
     private (string dest, string thumb) CreateRequiredFolders(AssetId assetId, string ingestId)
     {
         var imageIngest = engineSettings.ImageIngest;
-        var root = Path.Combine(imageIngest.GetRoot(), ingestId);
+        var workingFolder = ImageIngestionHelpers.GetWorkingFolder(ingestId, imageIngest);
 
         // dest is the folder where appetiser will copy output to
-        var dest = TemplatedFolders.GenerateFolderTemplate(imageIngest.DestinationTemplate, assetId, root: root);
+        var dest = TemplatedFolders.GenerateFolderTemplate(imageIngest.DestinationTemplate, assetId, root: workingFolder);
 
         // thumb is the folder where generated thumbnails will be output to
-        var thumb = TemplatedFolders.GenerateFolderTemplate(imageIngest.ThumbsTemplate, assetId, root: root);
+        var thumb = TemplatedFolders.GenerateFolderTemplate(imageIngest.ThumbsTemplate, assetId, root: workingFolder);
 
         fileSystem.CreateDirectory(dest);
         fileSystem.CreateDirectory(thumb);
