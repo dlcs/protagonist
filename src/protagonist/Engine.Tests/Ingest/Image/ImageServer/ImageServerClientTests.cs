@@ -91,10 +91,13 @@ public class ImageServerClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => fileSystem.CreateDirectory( $"scratch/{context.IngestId}1/2/some_id_/output")).MustHaveHappenedOnceExactly();
+        var expectedDirectory = $"scratch/{context.IngestId}/1/2/some_id_/output";
+        A.CallTo(() => fileSystem.CreateDirectory( 
+            // Account for backslashes being used to separate directories when running on Windows
+            A<string>.That.Matches(x => x.Replace("\\", "/") == expectedDirectory ))).MustHaveHappenedOnceExactly();
         A.CallTo(() => fileSystem.DeleteDirectory(A<string>._, true, true)).MustHaveHappenedTwiceExactly();
     }
-
+    
     [Fact]
     public async Task ProcessImage_False_IfImageProcessorCallFails()
     {

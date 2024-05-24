@@ -133,11 +133,15 @@ public class ImageIngestPostProcessingTests
         var assetId = AssetId.FromString("2/1/avalon");
         var asset = new Asset(assetId);
         var sut = GetSut(true);
-
+        var context = new IngestionContext(asset);
+        
         // Act
-        await sut.CompleteIngestion(new IngestionContext(asset), success);
+        await sut.CompleteIngestion(context, success);
         
         // Assert
-        fileSystem.DeletedDirectories.Should().Contain("2_1_avalon");
+        var expectedWorkingFolder = $"scratch/{context.IngestId}/";
+        fileSystem.DeletedDirectories.Should().Contain(d => 
+            // Account for backslashes being used to separate directories when running on Windows
+            d.Replace("\\", "/") == expectedWorkingFolder);
     }
 }

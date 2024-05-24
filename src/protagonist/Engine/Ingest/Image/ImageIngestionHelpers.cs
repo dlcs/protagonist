@@ -18,14 +18,14 @@ internal static class ImageIngestionHelpers
     /// <summary>
     /// Get folder location where working assets are to be saved to
     /// </summary>
-    public static string GetSourceFolder(Asset asset, string ingestId, EngineSettings engineSettings)
+    public static string GetSourceFolder(IngestionContext ingestionContext, EngineSettings engineSettings)
     {
         var imageIngest = engineSettings.ImageIngest;
-        var workingFolder = GetWorkingFolder(ingestId, imageIngest);
+        var workingFolder = GetWorkingFolder(ingestionContext.IngestId, imageIngest);
         
         // source is the main folder for storing downloaded image
-        var assetId = new AssetId(asset.Id.Customer, asset.Id.Space,
-            asset.Id.Asset.Replace("(", imageIngest.OpenBracketReplacement)
+        var assetId = new AssetId(ingestionContext.AssetId.Customer, ingestionContext.AssetId.Space,
+            ingestionContext.AssetId.Asset.Replace("(", imageIngest.OpenBracketReplacement)
                 .Replace(")", imageIngest.CloseBracketReplacement));
         var source = TemplatedFolders.GenerateFolderTemplate(imageIngest.SourceTemplate, assetId, root: workingFolder);
         return source;
