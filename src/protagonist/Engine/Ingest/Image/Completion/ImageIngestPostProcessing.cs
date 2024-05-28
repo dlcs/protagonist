@@ -86,7 +86,7 @@ public class ImageIngestPostProcessing : IImageIngestPostProcessing
 
     private void DeleteWorkingFolder(IngestionContext ingestionContext)
     {
-        var sourceTemplate = ImageIngestionHelpers.GetSourceFolder(ingestionContext.Asset, engineSettings);
+        var sourceTemplate = ImageIngestionHelpers.GetWorkingFolder(ingestionContext.IngestId, engineSettings.ImageIngest);
         fileSystem.DeleteDirectory(sourceTemplate, true);
     }
 }

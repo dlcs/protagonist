@@ -28,7 +28,8 @@ public class ImageIngesterWorkerTests
             ImageIngest = new ImageIngestSettings
             {
                 SourceTemplate = "{root}",
-                OrchestrateImageAfterIngest = true
+                OrchestrateImageAfterIngest = true,
+                ScratchRoot = "scratch/"
             },
         };
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);

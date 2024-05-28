@@ -21,7 +21,8 @@ public interface IAppetiserClient
     /// Retrieves a JP2 filepath for an image
     /// </summary>
     /// <param name="assetId">The asset id used to retrieve the JP2 filepath</param>
+    /// <param name="ingestId">The id for the ingest operation associated with this image</param>
     /// <param name="forImageProcessor">Whether this is for the image processor or not</param>
     /// <returns></returns>
-    public string GetJP2FilePath(AssetId assetId, bool forImageProcessor);
+    public string GetJP2FilePath(AssetId assetId, string ingestId, bool forImageProcessor);
 }

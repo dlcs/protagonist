@@ -44,7 +44,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProce
     {
         bool ingestSuccess;
         var asset = ingestionContext.Asset;
-        var sourceTemplate = ImageIngestionHelpers.GetSourceFolder(asset, engineSettings);
+        var sourceTemplate = ImageIngestionHelpers.GetSourceFolder(ingestionContext, engineSettings);
 
         try
         {

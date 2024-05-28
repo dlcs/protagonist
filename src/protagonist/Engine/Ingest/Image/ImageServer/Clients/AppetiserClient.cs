@@ -23,7 +23,7 @@ public class AppetiserClient : IAppetiserClient
 
     public async Task<IAppetiserResponse> GenerateJP2(
         IngestionContext context, 
-        AssetId modifiedAssetId, 
+        AssetId modifiedAssetId,
         CancellationToken cancellationToken = default)
     {
         var requestModel = CreateModel(context, modifiedAssetId);
@@ -58,7 +58,7 @@ public class AppetiserClient : IAppetiserClient
     {
         var requestModel = new AppetiserRequestModel
         {
-            Destination = GetJP2FilePath(modifiedAssetId, true),
+            Destination = GetJP2FilePath(modifiedAssetId, context.IngestId, true),
             Operation = "image-only",
             Optimisation = "kdu_max",
             Origin = context.Asset.Origin,
@@ -76,7 +76,8 @@ public class AppetiserClient : IAppetiserClient
         var extension = assetOnDisk.EverythingAfterLast('.');
 
         // this is to get it working nice locally as appetiser/tizer root needs to be unix + relative to it
-        var imageProcessorRoot = engineSettings.ImageIngest.GetRoot(true);
+        
+        var imageProcessorRoot = ImageIngestionHelpers.GetWorkingFolder(context.IngestId, engineSettings.ImageIngest, true);
         var unixPath = TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.SourceTemplate, modifiedAssetId,
             root: imageProcessorRoot);
 
@@ -84,15 +85,15 @@ public class AppetiserClient : IAppetiserClient
         return unixPath;
     }
     
-    public string GetJP2FilePath(AssetId assetId, bool forImageProcessor)
+    public string GetJP2FilePath(AssetId assetId, string ingestId, bool forImageProcessor)
     {
         // Appetiser/Tizer want unix paths relative to mount share.
         // This logic allows handling when running locally on win/unix and when deployed to unix
         var destFolder = forImageProcessor
             ? TemplatedFolders.GenerateTemplateForUnix(engineSettings.ImageIngest.DestinationTemplate,
-                assetId, root: engineSettings.ImageIngest.GetRoot(true))
+                assetId, root: ImageIngestionHelpers.GetWorkingFolder(ingestId, engineSettings.ImageIngest, true))
             : TemplatedFolders.GenerateFolderTemplate(engineSettings.ImageIngest.DestinationTemplate,
-                assetId, root: engineSettings.ImageIngest.GetRoot());
+                assetId, root: ImageIngestionHelpers.GetWorkingFolder(ingestId, engineSettings.ImageIngest));
 
         return $"{destFolder}{assetId.Asset}.jp2";
     }
