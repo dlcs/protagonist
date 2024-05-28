@@ -1,6 +1,7 @@
 ﻿using System.Xml.Linq;
 using Amazon.ElasticTranscoder;
 using Amazon.ElasticTranscoder.Model;
+using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.ElasticTranscoder.Models.Job;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -45,56 +46,48 @@ public class ElasticTranscoderWrapper : IElasticTranscoderWrapper
         this.storageKeyGenerator = storageKeyGenerator;
     }
     
-    public Task<Dictionary<string, string>> GetPresetIdLookup(CancellationToken token)
+    public async Task<Dictionary<string, TranscoderPreset>> GetPresetIdLookup(CancellationToken token)
     {
-        const string presetLookupKey = "MediaTranscode:Presets";
+        var presets = await RetrievePresets(token);
+        
+        var presetsDictionary = presets.ToDictionary(pair => pair.Name, pair => pair);
 
-        return cache.GetOrAddAsync(presetLookupKey, async entry =>
-        {
-            var presets = await RetrievePresets(token, entry);
-
-            var presetsDictionary = presets.Select(p => new { Key = p.Name, Value = p.Id })
-                .ToDictionary(pair => pair.Key, pair => pair.Value);
-
-            return presetsDictionary;
-        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.Low));
+        return presetsDictionary;
     }
 
-    public Task<Preset?> GetPresetDetails(string name, CancellationToken token)
+    public async Task<TranscoderPreset?> GetPresetDetails(string name, CancellationToken token)
     {
-        string presetLookupKey = $"MediaTranscode:Presets:{name}";
-
-        return cache.GetOrAddAsync(presetLookupKey, async entry =>
-        {
-            
-            var presets = await RetrievePresets(token, entry);
-            
-            var preset = presets.FirstOrDefault(p => p.Name == name);
-            
-            return preset;
-        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.Low));
+        var presets = await RetrievePresets(token);
+        
+        return presets.FirstOrDefault(p => p.Name == name);
     }
     
-    private async Task<List<Preset>> RetrievePresets(CancellationToken token, ICacheEntry entry)
+    private Task<List<TranscoderPreset>> RetrievePresets(CancellationToken token)
     {
-        var presets = new List<Preset>();
-        var response = new ListPresetsResponse();
+        const string presetLookupKey = "MediaTranscode:Presets";
         
-        do
+        return cache.GetOrAddAsync(presetLookupKey, async entry =>
         {
-            var request = new ListPresetsRequest { PageToken = response.NextPageToken };
-            response = await elasticTranscoder.ListPresetsAsync(request, token);
+            var presets = new List<TranscoderPreset>();
+            var response = new ListPresetsResponse();
+            
+            do
+            {
+                var request = new ListPresetsRequest { PageToken = response.NextPageToken };
+                response = await elasticTranscoder.ListPresetsAsync(request, token);
 
-            presets.AddRange(response.Presets);
-        } while (response.NextPageToken != null);
+                presets.AddRange(response.Presets.Select(r => new TranscoderPreset(r.Id, r.Name, r.Container))
+                    .ToList());
+            } while (response.NextPageToken != null);
 
-        if (presets.Count == 0)
-        {
-            logger.LogWarning("No ElasticTranscoder presets found");
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
-        }
+            if (presets.Count == 0)
+            {
+                logger.LogWarning("No ElasticTranscoder presets found");
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+            }
 
-        return presets;
+            return presets;
+        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.Low));
     }
     
     public async Task<string?> GetPipelineId(string pipelineName, CancellationToken token)

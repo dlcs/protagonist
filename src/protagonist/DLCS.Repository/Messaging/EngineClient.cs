@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.SQS;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
@@ -146,12 +147,12 @@ public class EngineClient : IEngineClient
         }
     }
     
-    public async Task<IReadOnlyDictionary<string, string>?> GetAvPresets(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyDictionary<string, TranscoderPreset>?> GetAvPresets(CancellationToken cancellationToken = default)
     {
         try
         {
             var response = await httpClient.GetAsync("av-presets", cancellationToken);
-            return await response.Content.ReadFromJsonAsync<IReadOnlyDictionary<string, string>>(
+            return await response.Content.ReadFromJsonAsync<IReadOnlyDictionary<string, TranscoderPreset>>(
                 cancellationToken: cancellationToken);
         }
         catch(Exception ex)

@@ -29,21 +29,7 @@ public class AssetModifiedSettings
     public bool DryRun { get; set; } = false;
     
     /// <summary>
-    /// Which image-server is handling downstream tile requests
-    /// </summary>
-    /// <remarks>
-    /// Ideally the Orchestrator should be agnostic to this but, for now at least, the downstream image server will
-    /// be useful to know for toggling some functionality
-    /// </remarks>
-    public ImageServer ImageServer { get; set; } = ImageServer.Cantaloupe;
-    
-    /// <summary>
     /// Root URL of the engine
     /// </summary>
     public Uri EngineRoot { get; set; }
-
-    /// <summary>
-    /// indicates asset is on a timebased path
-    /// </summary>
-    public string TimebasedKeyIndicator = "full/full/max/max/0";
 }
