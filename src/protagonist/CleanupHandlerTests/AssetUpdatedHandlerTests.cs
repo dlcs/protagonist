@@ -5,6 +5,7 @@ using CleanupHandler;
 using CleanupHandler.Infrastructure;
 using CleanupHandler.Repository;
 using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
@@ -32,7 +33,6 @@ public class AssetUpdatedHandlerTests
     private readonly IAssetApplicationMetadataRepository assetMetadataRepository;
     private readonly IEngineClient engineClient;
     private readonly IThumbRepository thumbRepository;
-    private readonly IElasticTranscoderWrapper elasticTranscoderWrapper;
     private readonly ICleanupHandlerAssetRepository cleanupHandlerAssetRepository;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
@@ -130,7 +130,6 @@ public class AssetUpdatedHandlerTests
         engineClient = A.Fake<IEngineClient>();
         assetMetadataRepository = A.Fake<IAssetApplicationMetadataRepository>();
         thumbRepository = A.Fake<IThumbRepository>();
-        elasticTranscoderWrapper = A.Fake<IElasticTranscoderWrapper>();
         cleanupHandlerAssetRepository = A.Fake<ICleanupHandlerAssetRepository>();
         
         A.CallTo(() => thumbRepository.GetAllSizes(A<AssetId>._)).Returns(new List<int[]>()
@@ -157,7 +156,7 @@ public class AssetUpdatedHandlerTests
 
     private AssetUpdatedHandler GetSut()
         => new(storageKeyGenerator, bucketWriter, bucketReader, assetMetadataRepository, thumbRepository,
-            Options.Create(handlerSettings), elasticTranscoderWrapper, engineClient, cleanupHandlerAssetRepository,
+            Options.Create(handlerSettings), engineClient, cleanupHandlerAssetRepository,
             new NullLogger<AssetUpdatedHandler>());
     
     [Fact]
@@ -237,7 +236,7 @@ public class AssetUpdatedHandlerTests
         // Arrange
         var requestDetails = CreateMinimalRequestDetails(
             new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased }, new List<ImageDeliveryChannel>(),
-            string.Empty, string.Empty);
+            string.Empty, string.Empty, "video/mp3");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -492,27 +491,16 @@ public class AssetUpdatedHandlerTests
         var requestDetails = CreateMinimalRequestDetails(
             new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
             new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty);
+            string.Empty, string.Empty, "video/*");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
         
-        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, string>()
+        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, TranscoderPreset>()
         {
-            { "webm-policy", "some-webm-preset" },
-            { "oga-policy", "some-oga-preset" }
+            { "webm-policy", new ("", "some-webm-preset", "oga") },
+            { "oga-policy", new ("", "some-oga-preset", "webm") }
         });
-
-        A.CallTo(() => elasticTranscoderWrapper.GetPresetDetails(A<string>.That.Matches(x => x == "some-oga-preset"), A<CancellationToken>._)).Returns(
-            new Preset()
-            {
-                Container = "oga"
-            });
-        A.CallTo(() => elasticTranscoderWrapper.GetPresetDetails(A<string>.That.Matches(x => x == "some-webm-preset"), A<CancellationToken>._)).Returns(
-            new Preset()
-            {
-                Container = "webm"
-            });
         
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
             .Returns(new []{ "1/99/foo/full/full/max/max/0/default.mp4", "1/99/foo/some/other/key", "1/99/foo/full/full/max/max/0/default.webm", "1/99/foo/full/full/max/max/0/default.oga" });
@@ -563,16 +551,11 @@ public class AssetUpdatedHandlerTests
         var requestDetails = CreateMinimalRequestDetails(
             new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
             new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty);
+            string.Empty, string.Empty, "video/*");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
         
-        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, string>()
-        {
-            { "some-policy", "some-transcode-preset" }
-        });
-
         // Act
         var sut = GetSut();
         var response = await sut.HandleMessage(requestDetails.queueMessage);
@@ -605,14 +588,14 @@ public class AssetUpdatedHandlerTests
         var requestDetails = CreateMinimalRequestDetails(
             new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
             new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty);
+            string.Empty, string.Empty, "video/*");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
         
-        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, string>()
+        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, TranscoderPreset>()
         {
-            { "some-policy", "some-transcode-preset" }
+            { "some-policy", new ("", "some-transcode-preset", "") }
         });
 
         // Act
@@ -794,28 +777,17 @@ public class AssetUpdatedHandlerTests
         var requestDetails = CreateMinimalRequestDetails(
             new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
             new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty);
+            string.Empty, string.Empty, "video/*");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
         
-        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, string>()
+        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, TranscoderPreset>()
         {
-            { "webm-policy", "some-webm-preset" },
-            { "oga-policy", "some-oga-preset" }
+            { "webm-policy", new ("", "some-webm-preset", "oga") },
+            { "oga-policy", new ("", "some-oga-preset", "webm") }
         });
 
-        A.CallTo(() => elasticTranscoderWrapper.GetPresetDetails(A<string>.That.Matches(x => x == "some-oga-preset"), A<CancellationToken>._)).Returns(
-            new Preset()
-            {
-                Container = "oga"
-            });
-        A.CallTo(() => elasticTranscoderWrapper.GetPresetDetails(A<string>.That.Matches(x => x == "some-webm-preset"), A<CancellationToken>._)).Returns(
-            new Preset()
-            {
-                Container = "webm"
-            });
-        
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
             .Returns(new []{ "1/99/foo/full/full/max/max/0/default.mp4", "1/99/foo/some/other/key", "1/99/foo/full/full/max/max/0/default.webm", "1/99/foo/full/full/max/max/0/default.oga" });
 
@@ -865,14 +837,14 @@ public class AssetUpdatedHandlerTests
         var requestDetails = CreateMinimalRequestDetails(
             new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
             new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty);
+            string.Empty, string.Empty, "video/*");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
         
-        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, string>()
+        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, TranscoderPreset>()
         {
-            { "some-policy", "some-transcode-preset" }
+            { "some-policy", new ("some-transcode-preset", "", "") }
         });
 
         // Act
@@ -907,14 +879,14 @@ public class AssetUpdatedHandlerTests
         var requestDetails = CreateMinimalRequestDetails(
             new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
             new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty);
+            string.Empty, string.Empty, "video/*");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
         
-        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, string>()
+        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, TranscoderPreset>()
         {
-            { "some-policy", "some-transcode-preset" }
+            { "some-policy", new ("", "some-transcode-preset", "") }
         });
 
         // Act
@@ -1092,20 +1064,22 @@ public class AssetUpdatedHandlerTests
     // helper functions
     
     private (QueueMessage queueMessage, Asset assetAfter) CreateMinimalRequestDetails(List<ImageDeliveryChannel> imageDeliveryChannelsBefore, 
-        List<ImageDeliveryChannel> imageDeliveryChannelsAfter, string rolesBefore, string rolesAfter)
+        List<ImageDeliveryChannel> imageDeliveryChannelsAfter, string rolesBefore, string rolesAfter, string mediaType = "image/jpg")
     {
         var assetBefore = new Asset()
         {
             Id = new AssetId(1, 99, "foo"),
             ImageDeliveryChannels = imageDeliveryChannelsBefore,
-            Roles = rolesBefore
+            Roles = rolesBefore,
+            MediaType = mediaType
         };
 
         var assetAfter = new Asset()
         {
             Id = new AssetId(1, 99, "foo"),
             ImageDeliveryChannels = imageDeliveryChannelsAfter,
-            Roles = rolesAfter
+            Roles = rolesAfter,
+            MediaType = mediaType
         };
         
         var cleanupRequest = new AssetUpdatedNotificationRequest()
@@ -1120,7 +1094,7 @@ public class AssetUpdatedHandlerTests
         var queueMessage = new QueueMessage
         {
             Body = JsonNode.Parse(serialized)!.AsObject(),
-            Attributes = new Dictionary<string, string>()
+            MessageAttributes = new Dictionary<string, string>()
             {
                 { "engineNotified", "True" }
             }

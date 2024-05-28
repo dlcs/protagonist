@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.S3;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
@@ -71,10 +72,10 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         A.CallTo(() => ElasticTranscoderWrapper.GetPipelineId("protagonist-pipeline", A<CancellationToken>._))
             .Returns("pipeline-id-1234");
         A.CallTo(() => ElasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
-            .Returns(new Dictionary<string, string>
+            .Returns(new Dictionary<string, TranscoderPreset>
             {
-                ["System preset: Generic 720p"] = "123-123",
-                ["System preset: Audio MP3 - 128k"] = "456-456"
+                ["System preset: Generic 720p"] = new ("123-123", "System preset: Generic 720p", ""),
+                ["System preset: Audio MP3 - 128k"] = new ("456-456", "System preset: Audio MP3 - 128k", "")
             });
     }
 

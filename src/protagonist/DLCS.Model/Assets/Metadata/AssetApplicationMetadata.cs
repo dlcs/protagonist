@@ -3,7 +3,7 @@ using DLCS.Core.Types;
 
 namespace DLCS.Model.Assets.Metadata;
 
-public class AssetApplicationMetadata
+public class AssetApplicationMetadata : ICloneable
 {
     /// <summary>
     /// The image id for the attached asset
@@ -31,4 +31,9 @@ public class AssetApplicationMetadata
     /// When the metadata was last modified
     /// </summary>
     public DateTime Modified { get; set; }
+
+    public object Clone()
+    {
+        return (AssetApplicationMetadata)MemberwiseClone();
+    }
 }

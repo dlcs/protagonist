@@ -121,12 +121,18 @@ public class Asset : ICloneable
     {
         var asset = (Asset)MemberwiseClone();
 
-        var deliveryChannels = new ImageDeliveryChannel[asset.ImageDeliveryChannels.Count];
-
-        asset.ImageDeliveryChannels.CopyTo(deliveryChannels, 0);
+        var deliveryChannels = asset.ImageDeliveryChannels.Select(d => (ImageDeliveryChannel)d.Clone()).ToList();
         asset.ImageDeliveryChannels = deliveryChannels;
+        
+        if (asset.AssetApplicationMetadata != null)
+        {
+            var assetApplicationMetadata =
+                asset.AssetApplicationMetadata.Select(a => (AssetApplicationMetadata)a.Clone()).ToList();
+            asset.AssetApplicationMetadata = assetApplicationMetadata;
+        }
 
         return asset;
     }
+    
     object ICloneable.Clone() { return Clone(); }
 }

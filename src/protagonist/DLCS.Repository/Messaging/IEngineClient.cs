@@ -2,6 +2,7 @@
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 
@@ -48,5 +49,5 @@ public interface IEngineClient
     /// </summary>
     /// <param name="cancellationToken">a cancellation token</param>
     /// <returns>A dictionary of identifiers and presets</returns>
-    Task<IReadOnlyDictionary<string, string>?> GetAvPresets(CancellationToken cancellationToken = default);
+    Task<IReadOnlyDictionary<string, TranscoderPreset>?> GetAvPresets(CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,6 @@
-﻿using Engine.Ingest;
+﻿using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.ElasticTranscoder.Models;
+using Engine.Ingest;
 using Engine.Settings;
 using FakeItEasy;
 using Microsoft.AspNetCore.Mvc;
@@ -10,10 +12,12 @@ public class IngestControllerTests
 {
     private IngestController sut;
     private IAssetIngester ingester;
+    private IElasticTranscoderWrapper elasticTranscoderWrapper;
 
     public IngestControllerTests()
     {
-        ingester =  A.Fake<IAssetIngester>();
+        ingester = A.Fake<IAssetIngester>();
+        elasticTranscoderWrapper = A.Fake<IElasticTranscoderWrapper>();
         var engineSettings = new EngineSettings
         {
             TimebasedIngest = new TimebasedIngestSettings()
@@ -26,7 +30,14 @@ public class IngestControllerTests
             }
         };
 
-        sut = new IngestController(ingester, Options.Create(engineSettings));
+        A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._)).Returns(
+            new Dictionary<string, TranscoderPreset>()
+            {
+                { "An amazon policy", new TranscoderPreset("some-id", "An amazon policy", ".ext") },
+                { "An amazon policy 2", new TranscoderPreset("some-id-2", "An amazon policy 2", ".ext2") }
+            });
+
+        sut = new IngestController(ingester, elasticTranscoderWrapper, Options.Create(engineSettings));
     }
 
     [Fact]
@@ -54,7 +65,7 @@ public class IngestControllerTests
             TimebasedIngest = new TimebasedIngestSettings()
         };
         
-        var ingestController = new IngestController(ingester, Options.Create(engineSettings));
+        var ingestController = new IngestController(ingester, elasticTranscoderWrapper, Options.Create(engineSettings));
         
         // Act
         var avReturn = ingestController.GetAllowedAvOptions();
@@ -68,25 +79,25 @@ public class IngestControllerTests
     }
     
     [Fact]
-    public void GetAllowedAvPresetOptions_ReturnsAvOptions_WhenCalled()
+    public async Task GetAllowedAvPresetOptions_ReturnsAvOptions_WhenCalled()
     {
         // Arrange and Act
-        var avReturn = sut.GetAllowedAvPresetOptions();
+        var avReturn = await sut.GetAllowedAvPresetOptions();
         
         var options = avReturn as OkObjectResult;
-        var avOptions = options.Value as Dictionary<string, string>;
+        var avOptions = options.Value as Dictionary<string, TranscoderPreset>;
 
         // Assert
         options.StatusCode.Should().Be(200);
         avOptions.Count.Should().Be(2);
         avOptions.Keys.Should().Contain("somePolicy");
         avOptions.Keys.Should().Contain("somePolicy");
-        avOptions.Values.Should().Contain("An amazon policy");
-        avOptions.Values.Should().Contain("An amazon policy 2");
+        avOptions.Values.Any(x => x.Name == "An amazon policy").Should().BeTrue();
+        avOptions.Values.Any(x => x.Name == "An amazon policy 2").Should().BeTrue();
     }
     
     [Fact]
-    public void GetAllowedAvPresetOptions_ReturnsEmptyList_WhenCalledWithDefaultSettings()
+    public async Task GetAllowedAvPresetOptions_ReturnsEmptyList_WhenCalledWithDefaultSettings()
     {
         // Arrange and
         var engineSettings = new EngineSettings()
@@ -94,13 +105,13 @@ public class IngestControllerTests
             TimebasedIngest = new TimebasedIngestSettings()
         };
         
-        var ingestController = new IngestController(ingester, Options.Create(engineSettings));
+        var ingestController = new IngestController(ingester, elasticTranscoderWrapper, Options.Create(engineSettings));
         
         // Act
-        var avReturn = ingestController.GetAllowedAvPresetOptions();
+        var avReturn = await ingestController.GetAllowedAvPresetOptions();
         
         var options = avReturn as OkObjectResult;
-        var avOptions = options.Value as Dictionary<string, string>;
+        var avOptions = options.Value as Dictionary<string, TranscoderPreset>;
 
         // Assert
         options.StatusCode.Should().Be(200);

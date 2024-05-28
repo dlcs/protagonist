@@ -37,7 +37,7 @@ public static class TranscoderTemplates
     public static string GetFinalDestinationKey(string outputKey) =>
         outputKey.Substring(outputKey.IndexOf("/", StringComparison.Ordinal) + 1);
 
-    private static string GetDestinationTemplate(string mediaType)
+    public static string GetDestinationTemplate(string mediaType)
     {
         // audio: {customer}/{space}/{image}/full/max/default.{extension} (mediatype like audio/)
         // video: {customer}/{space}/{image}/full/full/max/max/0/default.{extension} (mediatype like video/)

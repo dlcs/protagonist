@@ -160,9 +160,8 @@ public class SqsListener<TMessageType> : IQueueListener
 
             var queueMessage = new QueueMessage
             {
-                Attributes = message.Attributes.Concat(messageAttributes)
-                    .ToLookup(x => x.Key, x => x.Value)
-                    .ToDictionary(x => x.Key, g => g.First()),
+                MessageAttributes = messageAttributes,
+                Attributes = message.Attributes,
                 Body = JsonNode.Parse(message.Body)!.AsObject(),
                 MessageId = message.MessageId,
                 QueueName = QueueName

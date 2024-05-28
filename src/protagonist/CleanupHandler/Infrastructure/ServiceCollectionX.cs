@@ -35,7 +35,6 @@ public static class ServiceCollectionX
             .AddSingleton<SqsListenerManager>()
             .AddTransient(typeof(SqsListener<>))
             .AddSingleton<ICacheInvalidator, CloudfrontInvalidator>()
-            .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
             .AddSingleton<SqsQueueUtilities>()
             .SetupAWS(configuration, hostEnvironment)
             .WithAmazonS3()

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using Engine.Ingest.Timebased.Models;
@@ -75,7 +76,7 @@ public class ElasticTranscoder : IMediaTranscoder
     }
 
     private List<CreateJobOutput> GetJobOutputs(IngestionContext context, string jobId,
-        TimebasedIngestSettings settings, Dictionary<string, string> presets)
+        TimebasedIngestSettings settings, Dictionary<string, TranscoderPreset> presets)
     {
         var asset = context.Asset;
         var assetId = context.AssetId;
@@ -99,7 +100,7 @@ public class ElasticTranscoder : IMediaTranscoder
             var destinationPath = TranscoderTemplates.ProcessPreset(
                 mediaType, assetId, jobId, parsedTimeBasedPolicy.Extension);
             
-            if (!presets.TryGetValue(mappedPresetName, out var presetId))
+            if (!presets.TryGetValue(mappedPresetName, out var transcoderPreset))
             {
                 logger.LogWarning("Mapping for preset '{PresetName}' not found!", mappedPresetName);
                 continue;
@@ -107,7 +108,7 @@ public class ElasticTranscoder : IMediaTranscoder
 
             outputs.Add(new CreateJobOutput
             {
-                PresetId = presetId,
+                PresetId = transcoderPreset.Id,
                 Key = destinationPath,
             });
 
