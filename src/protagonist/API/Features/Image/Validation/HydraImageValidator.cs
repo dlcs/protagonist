@@ -31,6 +31,9 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         When(a => !a.DeliveryChannels.IsNullOrEmpty(), ImageDeliveryChannelDependantValidation);
         
         // System edited fields
+        RuleFor(a => a.Width).Empty().WithMessage("Should not include width");
+        RuleFor(a => a.Height).Empty().WithMessage("Should not include height");
+        RuleFor(a => a.Duration).Empty().WithMessage("Should not include duration");
         RuleFor(a => a.Batch).Empty().WithMessage("Should not include batch");
         RuleFor(a => a.Finished).Empty().WithMessage("Should not include finished");
         RuleFor(a => a.Created).Empty().WithMessage("Should not include created");

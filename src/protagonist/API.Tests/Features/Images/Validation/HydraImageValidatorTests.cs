@@ -2,7 +2,6 @@
 using API.Features.Image.Validation;
 using API.Settings;
 using DLCS.HydraModel;
-using DLCS.Model.Policies;
 using FluentValidation.TestHelper;
 using Microsoft.Extensions.Options;
 
@@ -14,7 +13,7 @@ public class HydraImageValidatorTests
 
     public HydraImageValidatorTests()
     {
-        var apiSettings = new ApiSettings() { DeliveryChannelsEnabled = true, RestrictedAssetIdCharacterString = "\\ "};
+        var apiSettings = new ApiSettings() { RestrictedAssetIdCharacterString = "\\ "};
         sut = new HydraImageValidator(Options.Create(apiSettings));
     }
 
@@ -46,36 +45,6 @@ public class HydraImageValidatorTests
             .ShouldHaveValidationErrorFor(a => a.Width)
             .WithErrorMessage("Should not include width");
     }
-    
-    [Theory]
-    [InlineData("image/jpeg", "file,iiif-img")]
-    [InlineData("video/mp4", "file,iiif-av")]
-    [InlineData("audio/mp4", "file")]
-    public void Width_Provided_NotFileOnly_OrAudio(string mediaType, string dc)
-    {
-        var model = new Image
-        {
-            Width = 10, WcDeliveryChannels = dc.Split(","), MediaType = mediaType
-        };
-        var result = sut.TestValidate(model);
-        result
-            .ShouldHaveValidationErrorFor(a => a.Width)
-            .WithErrorMessage("Should not include width");
-    }
-    
-    [Theory]
-    [InlineData("image/jpeg")]
-    [InlineData("video/mp4")]
-    [InlineData("application/pdf")]
-    public void Width_Allowed_IfFileOnly_AndVideoOrImage(string mediaType)
-    {
-        var model = new Image
-        {
-            MediaType = mediaType, WcDeliveryChannels = new[] { "file" }, Width = 10
-        };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.Width);
-    }
 
     [Fact]
     public void Height_Provided()
@@ -87,36 +56,6 @@ public class HydraImageValidatorTests
             .WithErrorMessage("Should not include height");
     }
     
-    [Theory]
-    [InlineData("image/jpeg", "file,iiif-img")]
-    [InlineData("video/mp4", "file,iiif-av")]
-    [InlineData("audio/mp4", "file")]
-    public void Height_Provided_NotFileOnly_OrAudio(string mediaType, string dc)
-    {
-        var model = new Image
-        {
-            Height = 10, WcDeliveryChannels = dc.Split(","), MediaType = mediaType
-        };
-        var result = sut.TestValidate(model);
-        result
-            .ShouldHaveValidationErrorFor(a => a.Height)
-            .WithErrorMessage("Should not include height");
-    }
-    
-    [Theory]
-    [InlineData("image/jpeg")]
-    [InlineData("video/mp4")]
-    [InlineData("application/pdf")]
-    public void Height_Allowed_IfFileOnly_AndVideoOrImage(string mediaType)
-    {
-        var model = new Image
-        {
-            MediaType = mediaType, WcDeliveryChannels = new[] { "file" }, Height = 10
-        };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.Height);
-    }
-    
     [Fact]
     public void Duration_Provided()
     {
@@ -126,37 +65,7 @@ public class HydraImageValidatorTests
             .ShouldHaveValidationErrorFor(a => a.Duration)
             .WithErrorMessage("Should not include duration");
     }
-   
-    [Theory]
-    [InlineData("image/jpeg", "file")]
-    [InlineData("video/mp4", "file,iiif-av")]
-    [InlineData("audio/mp4", "file,iiif-av")]
-    public void Duration_Provided_NotFileOnly_OrImage(string mediaType, string dc)
-    {
-        var model = new Image
-        {
-            Duration = 10, WcDeliveryChannels = dc.Split(","), MediaType = mediaType
-        };
-        var result = sut.TestValidate(model);
-        result
-            .ShouldHaveValidationErrorFor(a => a.Duration)
-            .WithErrorMessage("Should not include duration");
-    }
     
-    [Theory]
-    [InlineData("audio/mp4")]
-    [InlineData("video/mp4")]
-    [InlineData("application/pdf")]
-    public void Duration_Allowed_IfFileOnly_AndVideoOrAudio(string mediaType)
-    {
-        var model = new Image
-        {
-            MediaType = mediaType, WcDeliveryChannels = new[] { "file" }, Duration = 10
-        };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.Duration);
-    }
-
     [Fact]
     public void Finished_Provided()
     {
@@ -171,87 +80,6 @@ public class HydraImageValidatorTests
         var model = new Image { Created = DateTime.Today };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Created);
-    }
-
-    [Theory]
-    [InlineData("file")]
-    [InlineData("file,iiif-av")]
-    [InlineData("iiif-av")]
-    public void UseOriginalPolicy_NotImage(string dc)
-    {
-        var model = new Image
-        {
-            WcDeliveryChannels = dc.Split(","),
-            MediaType = "image/jpeg",
-            ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId
-        };
-        var result = sut.TestValidate(model);
-        result
-            .ShouldHaveValidationErrorFor(a => a.ImageOptimisationPolicy)
-            .WithErrorMessage("ImageOptimisationPolicy 'use-original' only valid for image delivery-channel");
-    }
-    
-    [Theory]
-    [InlineData("iiif-img")]
-    [InlineData("file,iiif-img")]
-    public void UseOriginalPolicy_Image(string dc)
-    {
-        var model = new Image
-        {
-            WcDeliveryChannels = dc.Split(","),
-            MediaType = "image/jpeg",
-            ImageOptimisationPolicy = KnownImageOptimisationPolicy.UseOriginalId
-        };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.ImageOptimisationPolicy);
-    }
-    
-    [Fact]
-    public void WcDeliveryChannel_CanBeEmpty()
-    {
-        var model = new Image();
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.WcDeliveryChannels);
-    }
-    
-    [Theory]
-    [InlineData("file")]
-    [InlineData("iiif-av")]
-    [InlineData("iiif-img")]
-    [InlineData("file,iiif-av,iiif-img")]
-    public void WcDeliveryChannel_CanContainKnownValues(string knownValues)
-    {
-        var model = new Image { WcDeliveryChannels = knownValues.Split(',') };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.WcDeliveryChannels);
-    }
-    
-    [Fact]
-    public void WcDeliveryChannel_UnknownValue()
-    {
-        var model = new Image { WcDeliveryChannels = new[] { "foo" } };
-        var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(a => a.WcDeliveryChannels);
-    }
-    
-    [Fact]
-    public void WcDeliveryChannel_ValidationError_WhenDeliveryChannelsDisabled()
-    {
-        var apiSettings = new ApiSettings();
-        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
-        var model = new Image { WcDeliveryChannels = new[] { "iiif-img" } };
-        var result = imageValidator.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(a => a.WcDeliveryChannels);
-    }
-    
-    [Fact]
-    public void WcDeliveryChannel_NoValidationError_WhenDeliveryChannelsDisabled()
-    {
-        var apiSettings = new ApiSettings();
-        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
-        var model = new Image();
-        var result = imageValidator.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.WcDeliveryChannels);
     }
     
     [Fact]

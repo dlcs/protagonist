@@ -133,17 +133,6 @@ public class ImageBatchPatchValidatorTests
     }
     
     [Fact]
-    public void Member_WcDeliveryChannels_Provided()
-    {
-        var model = new HydraCollection<Image> { Members = new[]
-        {
-            new Image { WcDeliveryChannels = new []{"iiif-img","thumbs"}}
-        } };
-        var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("Members[0].WcDeliveryChannels");
-    }
-    
-    [Fact]
     public void Member_ThumbnailPolicy_Provided()
     {
         var model = new HydraCollection<Image> { Members = new[]

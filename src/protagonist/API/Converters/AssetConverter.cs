@@ -22,7 +22,6 @@ public static class AssetConverter
     /// </summary>
     /// <param name="dbAsset"></param>
     /// <param name="urlRoots">The domain name of the API and orchestrator applications</param>
-    /// <param name="emulateWcDeliveryChannels">Includes delivery channels in the old format in the returned model</param>
     /// <returns></returns>
     public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots)
     {
@@ -414,16 +413,5 @@ public static class AssetConverter
         }
 
         return assetFilter;
-    }
-    
-    /// <summary>
-    /// Converts ImageDeliveryChannels into the old format (WcDeliveryChannels)
-    /// </summary>
-    private static string[] ConvertImageDeliveryChannelsToWc(ICollection<ImageDeliveryChannel> imageDeliveryChannels)
-    {
-        return imageDeliveryChannels.Select(dc => dc.Channel)
-            // The thumbs channel should not be included when emulating the old delivery channel format
-            .Where(dc => dc != AssetDeliveryChannels.Thumbnails) 
-            .ToArray();
     }
 }
