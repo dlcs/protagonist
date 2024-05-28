@@ -49,15 +49,8 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
                 
         var thumbsPolicy = dbFixture.DbContext.DeliveryChannelPolicies.Single(d =>
             d.Channel == AssetDeliveryChannels.Thumbnails && d.Customer == 99);
-        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-1"), num1: 2, ref1: "my-ref",
-            imageDeliveryChannels: new List<ImageDeliveryChannel>
-            {
-                new()
-                {
-                    Channel = AssetDeliveryChannels.Thumbnails,
-                    DeliveryChannelPolicyId = thumbsPolicy.Id,
-                }
-            });
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-1"), num1: 2, ref1: "my-ref")
+            .WithTestDeliveryChannel(AssetDeliveryChannels.Thumbnails, thumbsPolicy.Id);
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-2"), num1: 1, ref1: "my-ref")
             .WithTestThumbnailMetadata();
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-nothumbs"), num1: 3, ref1: "my-ref",
@@ -66,10 +59,15 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
             notForDelivery: true).WithTestThumbnailMetadata();
 
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/auth-1"), num1: 2, ref1: "auth-ref",
-            roles: "clickthrough").WithTestThumbnailMetadata();
+            roles: "clickthrough")
+            .WithTestDeliveryChannel(AssetDeliveryChannels.Image)
+            .WithTestThumbnailMetadata();
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/auth-2"), num1: 1, ref1: "auth-ref",
-            roles: "clickthrough").WithTestThumbnailMetadata();
+            roles: "clickthrough")
+            .WithTestDeliveryChannel(AssetDeliveryChannels.Image)
+            .WithTestThumbnailMetadata();
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("100/1/no-auth"), num1: 3, ref1: "auth-ref")
+            .WithTestDeliveryChannel(AssetDeliveryChannels.Image)
             .WithTestThumbnailMetadata();
 
         dbFixture.DbContext.SaveChanges();

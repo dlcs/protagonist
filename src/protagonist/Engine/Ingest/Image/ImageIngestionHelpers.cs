@@ -8,18 +8,26 @@ namespace Engine.Ingest.Image;
 internal static class ImageIngestionHelpers
 {
     /// <summary>
+    /// Get the top level working directory for an ingest request
+    /// </summary>
+    public static string GetWorkingFolder(string ingestId, ImageIngestSettings imageIngestSettings, bool forImageProcessor = false)
+    {
+        return $"{Path.Combine(imageIngestSettings.GetRoot(forImageProcessor), ingestId)}{Path.DirectorySeparatorChar}";
+    }
+    
+    /// <summary>
     /// Get folder location where working assets are to be saved to
     /// </summary>
-    public static string GetSourceFolder(Asset asset, EngineSettings engineSettings)
+    public static string GetSourceFolder(IngestionContext ingestionContext, EngineSettings engineSettings)
     {
         var imageIngest = engineSettings.ImageIngest;
-        var root = imageIngest.GetRoot();
-            
+        var workingFolder = GetWorkingFolder(ingestionContext.IngestId, imageIngest);
+        
         // source is the main folder for storing downloaded image
-        var assetId = new AssetId(asset.Id.Customer, asset.Id.Space,
-            asset.Id.Asset.Replace("(", imageIngest.OpenBracketReplacement)
+        var assetId = new AssetId(ingestionContext.AssetId.Customer, ingestionContext.AssetId.Space,
+            ingestionContext.AssetId.Asset.Replace("(", imageIngest.OpenBracketReplacement)
                 .Replace(")", imageIngest.CloseBracketReplacement));
-        var source = TemplatedFolders.GenerateFolderTemplate(imageIngest.SourceTemplate, assetId, root: root);
+        var source = TemplatedFolders.GenerateFolderTemplate(imageIngest.SourceTemplate, assetId, root: workingFolder);
         return source;
     }
 }

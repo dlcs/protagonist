@@ -16,6 +16,8 @@ public class IngestionContext
     
     public AssetId AssetId { get; }
     
+    public string IngestId { get; }
+    
     public AssetFromOrigin? AssetFromOrigin { get; private set; }
         
     public ImageLocation? ImageLocation { get; private set; }
@@ -33,8 +35,9 @@ public class IngestionContext
     {
         Asset = asset;
         AssetId = asset.Id;
+        IngestId = DateTime.Now.Ticks.ToString();
     }
-
+    
     public IngestionContext WithAssetFromOrigin(AssetFromOrigin assetFromOrigin)
     {
         AssetFromOrigin = assetFromOrigin;

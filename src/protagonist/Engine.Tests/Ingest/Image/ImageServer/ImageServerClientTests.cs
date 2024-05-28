@@ -91,10 +91,13 @@ public class ImageServerClientTests
         await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => fileSystem.CreateDirectory( "scratch/1/2/some_id_/output")).MustHaveHappenedOnceExactly();
+        var expectedDirectory = $"scratch/{context.IngestId}/1/2/some_id_/output";
+        A.CallTo(() => fileSystem.CreateDirectory( 
+            // Account for backslashes being used to separate directories when running on Windows
+            A<string>.That.Matches(x => x.Replace("\\", "/") == expectedDirectory ))).MustHaveHappenedOnceExactly();
         A.CallTo(() => fileSystem.DeleteDirectory(A<string>._, true, true)).MustHaveHappenedTwiceExactly();
     }
-
+    
     [Fact]
     public async Task ProcessImage_False_IfImageProcessorCallFails()
     {
@@ -178,13 +181,13 @@ public class ImageServerClientTests
     {
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel();
-
+        var context = IngestionContextFactory.GetIngestionContext("/1/2/test");
+        
         A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
             .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-        A.CallTo(() => appetiserClient.GetJP2FilePath(A<AssetId>._, A<bool>._))
-            .Returns("scratch/1/2/test/outputtest.jp2");
-
-        var context = IngestionContextFactory.GetIngestionContext("/1/2/test");
+        A.CallTo(() => appetiserClient.GetJP2FilePath(A<AssetId>._, context.IngestId, A<bool>._))
+            .Returns($"scratch/{context.IngestId}/1/2/test/outputtest.jp2");
+        
         context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy
         {
             Optimised = optimised,
@@ -201,7 +204,7 @@ public class ImageServerClientTests
         // Assert
         bucketWriter
             .ShouldHaveKey("1/2/test")
-            .WithFilePath("scratch/1/2/test/outputtest.jp2")
+            .WithFilePath($"scratch/{context.IngestId}/1/2/test/outputtest.jp2")
             .WithContentType("image/jp2");
         context.ImageLocation.S3.Should().Be(expected);
         context.StoredObjects.Should().NotBeEmpty();

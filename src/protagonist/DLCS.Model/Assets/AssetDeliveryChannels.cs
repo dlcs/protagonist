@@ -21,22 +21,28 @@ public static class AssetDeliveryChannels
     /// All possible delivery channels as a comma-delimited string
     /// </summary>
     public static readonly string AllString = string.Join(',', All);
-
+    
+    /// <summary>
+    /// Checks if an asset has any delivery channel specified in a list
+    /// </summary>
+    public static bool HasAnyDeliveryChannel(this Asset asset, params string[] deliveryChannels)
+    {
+        if (asset.ImageDeliveryChannels.IsNullOrEmpty() || deliveryChannels.IsNullOrEmpty()) return false;
+        if (deliveryChannels.Any(dc => !All.Contains(dc)))
+        {
+            throw new ArgumentOutOfRangeException(nameof(deliveryChannels), deliveryChannels,
+                $"Acceptable delivery-channels are: {AllString}");
+        }
+        
+        return asset.ImageDeliveryChannels.Any(dc => deliveryChannels.Contains(dc.Channel));
+    }
+    
     /// <summary>
     /// Check if asset has specified deliveryChannel
     /// </summary>
     public static bool HasDeliveryChannel(this Asset asset, string deliveryChannel)
-    {
-        if (asset.ImageDeliveryChannels.IsNullOrEmpty()) return false;
-        if (!All.Contains(deliveryChannel))
-        {
-            throw new ArgumentOutOfRangeException(nameof(deliveryChannel), deliveryChannel,
-                $"Acceptable delivery-channels are: {AllString}");
-        }
-
-        return asset.ImageDeliveryChannels.Any(i => i.Channel == deliveryChannel);
-    }
-
+        => HasAnyDeliveryChannel(asset, deliveryChannel);
+        
     /// <summary>
     /// Checks if asset has specified deliveryChannel only (e.g. 1 channel and it matches specified value
     /// </summary>
