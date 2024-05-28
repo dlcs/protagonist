@@ -78,7 +78,6 @@ public class Startup
             .AddScoped<DeliveryChannelProcessor>()
             .AddTransient<TimingHandler>()
             .AddScoped<DeliveryChannelPolicyDataValidator>()
-            .AddSingleton<OldHydraDeliveryChannelsConverter>()
             .AddValidatorsFromAssemblyContaining<Startup>()
             .ConfigureMediatR()
             .AddNamedQueriesCore()

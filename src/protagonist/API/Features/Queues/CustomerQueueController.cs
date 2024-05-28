@@ -28,13 +28,8 @@ namespace API.Features.Queues;
 [ApiController]
 public class CustomerQueueController : HydraController
 {
-    private readonly ApiSettings apiSettings;
-    private readonly OldHydraDeliveryChannelsConverter oldHydraDcConverter;   
-    public CustomerQueueController(IOptions<ApiSettings> settings, IMediator mediator, 
-        OldHydraDeliveryChannelsConverter oldHydraDcConverter) : base(settings.Value, mediator)
+    public CustomerQueueController(IOptions<ApiSettings> settings, IMediator mediator) : base(settings.Value, mediator)
     {
-        apiSettings = settings.Value;
-        this.oldHydraDcConverter = oldHydraDcConverter;
     }
 
     /// <summary>
@@ -225,7 +220,7 @@ public class CustomerQueueController : HydraController
 
         return await HandlePagedFetch<Asset, GetBatchImages, DLCS.HydraModel.Image>(
             getCustomerRequest,
-            image => image.ToHydra(GetUrlRoots(), apiSettings.EmulateOldDeliveryChannelProperties),
+            image => image.ToHydra(GetUrlRoots()),
             errorTitle: "Get Batch Images failed",
             cancellationToken: cancellationToken
         );
@@ -370,11 +365,11 @@ public class CustomerQueueController : HydraController
     {
         if (members == null) return;
         
-        if (apiSettings.LegacyModeEnabledForCustomer(customerId))
+        if (Settings.LegacyModeEnabledForCustomer(customerId))
         {
             for (int i = 0; i < members.Count; i++)
             {
-                if (apiSettings.LegacyModeEnabledForSpace(customerId, members[i].Space))
+                if (Settings.LegacyModeEnabledForSpace(customerId, members[i].Space))
                 {
                     members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(members[i]);
                 }
@@ -384,24 +379,6 @@ public class CustomerQueueController : HydraController
         foreach (var image in members.Where(image => string.IsNullOrEmpty(image.ModelId)))
         {
             image.ModelId = Guid.NewGuid().ToString();
-        }
-            
-        if (apiSettings.EmulateOldDeliveryChannelProperties)
-        {
-            ConvertOldDeliveryChannelsForMembers(members);
-        }
-    }
-
-    /// <summary>
-    /// Converts WcDeliveryChannels (if set) to DeliveryChannels for a list of assets
-    /// </summary>
-    /// <param name="members">The assets to update</param>
-    private void ConvertOldDeliveryChannelsForMembers(IList<DLCS.HydraModel.Image> members)
-    {
-        foreach (var hydraAsset in members)
-        {
-            if (hydraAsset.WcDeliveryChannels.IsNullOrEmpty()) continue;
-            hydraAsset.DeliveryChannels = oldHydraDcConverter.Convert(hydraAsset);
         }
     }
 }
