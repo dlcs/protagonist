@@ -83,11 +83,6 @@ public class ApiSettings
             : DefaultLegacySupport;
     
     /// <summary>
-    /// Whether the delivery channel feature is enabled
-    /// </summary>
-    public bool DeliveryChannelsEnabled { get; set; }
-
-    /// <summary>
     /// Characters that are not allowed in an asset id
     /// </summary>
     public char[] RestrictedAssetIdCharacters => restrictedAssetIdCharacters;
