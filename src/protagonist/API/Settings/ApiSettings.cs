@@ -106,8 +106,8 @@ public class ApiSettings
     }
     
     /// <summary>
-    /// Whether incoming old delivery channel properties (e.g wcDeliveryChannels, imageOptimisationPolicy,
-    /// thumbnailPolicy) are supported and translated into the new format
+    /// Whether old delivery channel properties (e.g imageOptimisationPolicy, thumbnailPolicy)
+    /// on legacy payloads are supported and translated into the new format
     /// </summary>
-    public bool EmulateOldDeliveryChannelProperties { get; set; } = false;
+    public bool EmulateOldDeliveryChannelProperties { get; set; }
 }

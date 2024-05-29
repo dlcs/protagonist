@@ -30,6 +30,17 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         
         When(a => !a.DeliveryChannels.IsNullOrEmpty(), ImageDeliveryChannelDependantValidation);
         
+        // Legacy policy fields
+        RuleFor(a => a.ImageOptimisationPolicy)
+            .Null()
+            .When(_ => !apiSettings.Value.EmulateOldDeliveryChannelProperties)
+            .WithMessage("'ImageOptimisationPolicy' is disabled");
+
+        RuleFor(a => a.ThumbnailPolicy)
+            .Null()
+            .When(_ => !apiSettings.Value.EmulateOldDeliveryChannelProperties)
+            .WithMessage("'ThumbnailPolicy' is disabled");
+        
         // System edited fields
         RuleFor(a => a.Width).Empty().WithMessage("Should not include width");
         RuleFor(a => a.Height).Empty().WithMessage("Should not include height");

@@ -100,12 +100,6 @@ public class ImageController : HydraController
             hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
         }
         
-        if(hydraAsset.ImageOptimisationPolicy != null || hydraAsset.ThumbnailPolicy != null)
-        {
-            return this.HydraProblem("ImageOptimisationPolicy and ThumbnailPolicy are disabled", null,
-                400, "Bad Request");
-        }
-        
         if (hydraAsset.ModelId == null)
         {
             hydraAsset.ModelId = imageId;
