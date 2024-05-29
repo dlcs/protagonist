@@ -159,7 +159,7 @@ public class EngineClient : IEngineClient
     public async Task<IReadOnlyDictionary<string, TranscoderPreset>?> GetAvPresets(CancellationToken cancellationToken = default)
     {
         const string key = "avPresetList";
-        return await appCache.GetOrAddAsync(key, async entry =>
+        return await appCache.GetOrAddAsync(key, async () =>
         {
             try
             {
