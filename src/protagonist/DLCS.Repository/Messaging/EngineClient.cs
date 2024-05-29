@@ -11,9 +11,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.SQS;
+using DLCS.Core.Caching;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using LazyCache;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Messaging;
 
@@ -25,6 +28,8 @@ public class EngineClient : IEngineClient
     private readonly IQueueLookup queueLookup;
     private readonly IQueueSender queueSender;
     private readonly HttpClient httpClient;
+    private readonly CacheSettings cacheSettings;
+    private readonly IAppCache appCache;
     private readonly ILogger<EngineClient> logger;
 
     private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web)
@@ -36,11 +41,15 @@ public class EngineClient : IEngineClient
         IQueueLookup queueLookup,
         IQueueSender queueSender,
         HttpClient httpClient,
+        IAppCache appCache,
+        IOptions<CacheSettings> cacheOptions,
         ILogger<EngineClient> logger)
     {
         this.queueLookup = queueLookup;
         this.queueSender = queueSender;
         this.httpClient = httpClient;
+        this.appCache = appCache;
+        cacheSettings = cacheOptions.Value;
         this.logger = logger;
     }
     
@@ -149,17 +158,21 @@ public class EngineClient : IEngineClient
     
     public async Task<IReadOnlyDictionary<string, TranscoderPreset>?> GetAvPresets(CancellationToken cancellationToken = default)
     {
-        try
+        const string key = "avPresetList";
+        return await appCache.GetOrAddAsync(key, async entry =>
         {
-            var response = await httpClient.GetAsync("av-presets", cancellationToken);
-            return await response.Content.ReadFromJsonAsync<IReadOnlyDictionary<string, TranscoderPreset>>(
-                cancellationToken: cancellationToken);
-        }
-        catch(Exception ex)
-        {
-            logger.LogError(ex, "Failed to retrieve allowed iiif-av policy options from Engine");
-            return null;
-        }
+            try
+            {
+                var response = await httpClient.GetAsync("av-presets", cancellationToken);
+                return await response.Content.ReadFromJsonAsync<IReadOnlyDictionary<string, TranscoderPreset>>(
+                    cancellationToken: cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to retrieve allowed iiif-av policy options from Engine");
+                return null;
+            }
+        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
     }
     
     private string GetJsonString(Asset asset)
