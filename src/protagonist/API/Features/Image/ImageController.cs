@@ -155,12 +155,6 @@ public class ImageController : HydraController
         [FromServices] HydraImageValidator validator,
         CancellationToken cancellationToken)
     {
-        if(hydraAsset.ImageOptimisationPolicy != null || hydraAsset.ThumbnailPolicy != null)
-        {
-            return this.HydraProblem("ImageOptimisationPolicy and ThumbnailPolicy are disabled", null,
-                400, "Bad Request");
-        }
-        
         var validationResult = await validator.ValidateAsync(hydraAsset, 
             strategy => strategy.IncludeRuleSets("default", "patch"), cancellationToken);
         if (!validationResult.IsValid)
