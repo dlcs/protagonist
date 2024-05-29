@@ -1484,7 +1484,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+        body.Should().Contain("'ThumbnailPolicy' is disabled");
     }
     
     [Fact]
@@ -1504,7 +1504,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+        body.Should().Contain("'ImageOptimisationPolicy' is disabled");
     }
     
     [Fact]

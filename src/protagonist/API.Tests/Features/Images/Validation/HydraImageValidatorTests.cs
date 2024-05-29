@@ -9,20 +9,24 @@ namespace API.Tests.Features.Images.Validation;
 
 public class HydraImageValidatorTests
 {
-    private readonly HydraImageValidator sut;
-
-    public HydraImageValidatorTests()
+    public HydraImageValidator GetSut(bool emulateOldDeliveryChannelProperties = false)
     {
-        var apiSettings = new ApiSettings() { RestrictedAssetIdCharacterString = "\\ "};
-        sut = new HydraImageValidator(Options.Create(apiSettings));
+        var apiSettings = new ApiSettings()
+        {
+            RestrictedAssetIdCharacterString = "\\ ",
+            EmulateOldDeliveryChannelProperties = emulateOldDeliveryChannelProperties
+        };
+        return new HydraImageValidator(Options.Create(apiSettings));
     }
 
+    
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
     public void MediaType_NullOrEmpty_OnCreate(string mediaType)
     {
+        var sut = GetSut();
         var model = new Image { MediaType = mediaType };
         var result = sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(a => a.MediaType);
@@ -31,6 +35,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Batch_Provided()
     {
+        var sut = GetSut();
         var model = new Image { Batch = "10" };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Batch);
@@ -39,6 +44,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Width_Provided()
     {
+        var sut = GetSut();
         var model = new Image { Width = 10 };
         var result = sut.TestValidate(model);
         result
@@ -49,6 +55,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Height_Provided()
     {
+        var sut = GetSut();
         var model = new Image { Height = 10 };
         var result = sut.TestValidate(model);
         result
@@ -59,6 +66,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Duration_Provided()
     {
+        var sut = GetSut();
         var model = new Image { Duration = 10 };
         var result = sut.TestValidate(model);
         result
@@ -69,6 +77,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Finished_Provided()
     {
+        var sut = GetSut();
         var model = new Image { Finished = DateTime.Today };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Finished);
@@ -77,6 +86,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void Created_Provided()
     {
+        var sut = GetSut();
         var model = new Image { Created = DateTime.Today };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Created);
@@ -85,8 +95,7 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_DeliveryChannelMissingChannel()
     {
-        var apiSettings = new ApiSettings();
-        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var sut = GetSut();
         var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
@@ -98,15 +107,14 @@ public class HydraImageValidatorTests
                 Channel = "file"
             }
         } };
-        var result = imageValidator.TestValidate(model);
+        var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
     [Fact]
     public void DeliveryChannel_ValidationError_WhenNoneAndMoreDeliveryChannels()
     {
-        var apiSettings = new ApiSettings();
-        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var sut = GetSut();
         var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
@@ -118,15 +126,14 @@ public class HydraImageValidatorTests
                 Channel = "file"
             }
         } };
-        var result = imageValidator.TestValidate(model);
+        var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
     [Fact]
     public void DeliveryChannel_NoValidationError_WhenDeliveryChannelsWithNoNone()
     {
-        var apiSettings = new ApiSettings();
-        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var sut = GetSut();
         var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
@@ -138,15 +145,14 @@ public class HydraImageValidatorTests
                 Channel = "file"
             }
         } };
-        var result = imageValidator.TestValidate(model);
+        var result = sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
     [Fact]
     public void DeliveryChannel_NoValidationError_WhenOnlyNone()
     {
-        var apiSettings = new ApiSettings();
-        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var sut = GetSut();
         var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
@@ -154,7 +160,7 @@ public class HydraImageValidatorTests
                 Channel = "none"
             }
         } };
-        var result = imageValidator.TestValidate(model);
+        var result = sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
@@ -173,8 +179,7 @@ public class HydraImageValidatorTests
     [InlineData("application/pdf", "none")]
     public void DeliveryChannel_NoValidationError_WhenChannelValidForMediaType(string mediaType, string channel)
     {
-        var apiSettings = new ApiSettings();
-        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var sut = GetSut();
         var model = new Image { 
             MediaType = mediaType,
             DeliveryChannels = new[]
@@ -184,7 +189,7 @@ public class HydraImageValidatorTests
                     Channel = channel,
                 }
             } };
-        var result = imageValidator.TestValidate(model);
+        var result = sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
@@ -197,8 +202,7 @@ public class HydraImageValidatorTests
     [InlineData("application/pdf", "iiif-av")]
     public void DeliveryChannel_ValidationError_WhenWrongChannelForMediaType(string mediaType, string channel)
     {
-        var apiSettings = new ApiSettings();
-        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var sut = GetSut();
         var model = new Image { 
             MediaType = mediaType,
             DeliveryChannels = new[]
@@ -208,21 +212,68 @@ public class HydraImageValidatorTests
                 Channel = channel,
             }
         } };
-        var result = imageValidator.TestValidate(model);
+        var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
 
     [Fact]
     public void DeliveryChannel_ValidationError_WhenEmpty_OnPatch()
     {
-        var apiSettings = new ApiSettings();
-        var imageValidator = new HydraImageValidator(Options.Create(apiSettings));
+        var sut = GetSut();
         var model = new Image
         {
             DeliveryChannels = Array.Empty<DeliveryChannel>()
         };
-        var result = imageValidator.TestValidate(model, options => 
+        var result = sut.TestValidate(model, options => 
             options.IncludeRuleSets("default", "patch"));
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
+    }
+    
+    [Fact]
+    public void ImageOptimisationPolicy_ValidationError_WhenOldDeliveryChannelEmulationDisabled()
+    {
+        var sut = GetSut();
+        var model = new Image
+        {
+            ImageOptimisationPolicy = "some-iop-policy"
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.ImageOptimisationPolicy);
+    }
+    
+    [Fact]
+    public void ThumbnailPolicy_ValidationError_WhenOldDeliveryChannelEmulationDisabled()
+    {
+        var sut = GetSut();
+        var model = new Image
+        {
+            ThumbnailPolicy = "some-tp-policy"
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.ThumbnailPolicy);
+    }
+    
+    [Fact]
+    public void ImageOptimisationPolicy_NoValidationError_WhenOldDeliveryChannelEmulationEnabled()
+    {
+        var sut = GetSut(true);
+        var model = new Image
+        {
+            ImageOptimisationPolicy = "some-iop-policy"
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.ImageOptimisationPolicy);
+    }
+    
+    [Fact]
+    public void ThumbnailPolicy_NoValidationError_WhenOldDeliveryChannelEmulationEnabled()
+    {
+        var sut = GetSut(true);
+        var model = new Image
+        {
+            ThumbnailPolicy = "some-tp-policy"
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.ThumbnailPolicy);
     }
 }
