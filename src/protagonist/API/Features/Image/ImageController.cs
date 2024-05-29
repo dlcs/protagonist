@@ -97,7 +97,8 @@ public class ImageController : HydraController
     {
         if (Settings.LegacyModeEnabledForSpace(customerId, spaceId))
         {
-            hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
+            hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset,
+                Settings.EmulateOldDeliveryChannelProperties);
         }
         
         if (hydraAsset.ModelId == null)
