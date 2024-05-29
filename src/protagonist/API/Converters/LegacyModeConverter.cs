@@ -18,8 +18,8 @@ public static class LegacyModeConverter
     /// Converts from legacy format to new format
     /// </summary>
     /// <param name="image">The image to convert</param>
-    /// <param name="emulateOldDeliveryChannelProperties">Whether old thumbnailPolicy/imageOptimisation behaviour
-    /// should be emulated </param>
+    /// <param name="emulateOldDeliveryChannelProperties">Whether old thumbnailPolicy/imageOptimisationPolicy fields
+    /// should be emulated and translated into delivery channels</param>
     /// <returns>A converted image</returns>
     public static T VerifyAndConvertToModernFormat<T>(T image, bool emulateOldDeliveryChannelProperties)
         where T : Image
@@ -32,7 +32,7 @@ public static class LegacyModeConverter
             
             if (image.Origin is not null && image.Family is null)
             {
-                  image.Family = DLCS.HydraModel.AssetFamily.Image;
+                  image.Family = AssetFamily.Image;
             }
         }
         
