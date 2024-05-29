@@ -64,6 +64,4 @@ public interface IElasticTranscoderWrapper
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Job details, if found. Else null</returns>
     Task<TranscoderJob?> GetTranscoderJob(AssetId assetId, CancellationToken cancellationToken);
-    
-    
 }
