@@ -111,13 +111,110 @@ public class LegacyModeConverterTests
     }
 
     [Fact]
-    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelEmulationDisabled()
+    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_ForImage()
     {
         // Arrange
         var hydraImage = new Image()
         {
             Family = AssetFamily.Image,
             Origin = "something.jpg",
+        };
+
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
+
+        // Assert
+        convertedImage.DeliveryChannels.Should().BeNullOrEmpty();
+    }
+    
+    [Theory]
+    [InlineData("fast-higher")]
+    [InlineData("https://api.dlc.services/imageOptimisationPolicies/fast-higher")]
+    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_AndImageOptimisationPolicyValid_ForImage(
+        string imageOptimisationPolicy)
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Family = AssetFamily.Image,
+            Origin = "something.jpg",
+            ImageOptimisationPolicy = imageOptimisationPolicy
+        };
+
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
+
+        // Assert
+        convertedImage.DeliveryChannels.Should().BeNullOrEmpty();
+    }
+    
+    [Fact]
+    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_ForVideo()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Family = AssetFamily.Timebased,
+            Origin = "something.mp4",
+        };
+
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
+
+        // Assert
+        convertedImage.DeliveryChannels.Should().BeNullOrEmpty();
+    }
+    
+    [Theory]
+    [InlineData("video-max")]
+    [InlineData("https://api.dlc.services/imageOptimisationPolicies/video-max")]
+    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_AndImageOptimisationPolicyValid_ForVideo(
+        string imageOptimisationPolicy)
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Family = AssetFamily.Timebased,
+            Origin = "something.mp4",
+            ImageOptimisationPolicy = imageOptimisationPolicy
+        };
+
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
+
+        // Assert
+        convertedImage.DeliveryChannels.Should().BeNullOrEmpty();
+    }
+    
+    [Fact]
+    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_ForAudio()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Family = AssetFamily.Timebased,
+            Origin = "something.mp3",
+        };
+
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
+
+        // Assert
+        convertedImage.DeliveryChannels.Should().BeNullOrEmpty();
+    }
+    
+    [Theory]
+    [InlineData("audio-max")]
+    [InlineData("https://api.dlc.services/imageOptimisationPolicies/audio-max")]
+    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_AndImageOptimisationPolicyValid_ForAudio(
+        string imageOptimisationPolicy)
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Family = AssetFamily.Timebased,
+            Origin = "something.mp3",
+            ImageOptimisationPolicy = imageOptimisationPolicy
         };
 
         // Act
