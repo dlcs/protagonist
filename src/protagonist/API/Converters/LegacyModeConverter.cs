@@ -1,4 +1,5 @@
-﻿using DLCS.Core;
+﻿using API.Exceptions;
+using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
@@ -57,57 +58,88 @@ public static class LegacyModeConverter
     public static DeliveryChannel[]? GetDeliveryChannelsForLegacyAsset<T>(T image)
         where T : Image
     {
-        var thumbnailPolicy = image.ThumbnailPolicy.GetLastPathElement() ?? image.ThumbnailPolicy;
         var imageOptimisationPolicy = image.ImageOptimisationPolicy.GetLastPathElement() ?? image.ImageOptimisationPolicy;
-        
+        var thumbnailPolicy = image.ThumbnailPolicy.GetLastPathElement() ?? image.ThumbnailPolicy;
+     
         if (image.Family == AssetFamily.Image)
         {
+            string? imageChannelPolicy = null;
+            if (!imageOptimisationPolicy.IsNullOrEmpty())
+            {
+                if (imageOptimisationPolicy == "fast-higher")
+                {
+                    imageChannelPolicy = "default";
+                }
+                else
+                {
+                    throw new APIException($"'{imageOptimisationPolicy}' is not a valid imageOptimisationPolicy")
+                    {
+                        StatusCode = 400
+                    };
+                }
+            }
+            
+            string? thumbsChannelPolicy = null;
+            if (!thumbnailPolicy.IsNullOrEmpty())
+            {
+                if (thumbnailPolicy == "default")
+                {
+                    thumbsChannelPolicy = "default";
+                }
+                else
+                {
+                    throw new APIException($"'{thumbnailPolicy}' is not a valid thumbnailPolicy")
+                    {
+                        StatusCode = 400
+                    };
+                }
+            }
+            
             return new DeliveryChannel[]
             {
                 new()
                 {
                     Channel = AssetDeliveryChannels.Image,
-                    Policy = imageOptimisationPolicy == "fast-higher" 
-                        ? "default" 
-                        : null
+                    Policy = imageChannelPolicy
                 },
                 new()
                 {
                     Channel = AssetDeliveryChannels.Thumbnails,
-                    Policy = thumbnailPolicy == "default"
-                        ? "default"
-                        : null
+                    Policy = thumbsChannelPolicy
                 },
             };
         }
+        
         if (image.Family == AssetFamily.Timebased)
         {
-            if(MIMEHelper.IsVideo(image.MediaType))
+            string? avChannelPolicy = null;
+            if (!imageOptimisationPolicy.IsNullOrEmpty())
             {
-                return new DeliveryChannel[]
+                if (imageOptimisationPolicy == "video-max")
                 {
-                    new()
+                    avChannelPolicy = "default-video";
+                }
+                else if (imageOptimisationPolicy == "audio-max")
+                {
+                    avChannelPolicy = "default-audio";
+                }
+                else
+                {
+                    throw new APIException($"'{avChannelPolicy}' is not a valid imageOptimisationPolicy for a timebased asset")
                     {
-                        Channel = AssetDeliveryChannels.Timebased,
-                        Policy = imageOptimisationPolicy == "video-max" 
-                            ? "default-video"
-                            : null
-                    }
-                };       
+                        StatusCode = 400
+                    };
+                }
             }
-            if (MIMEHelper.IsAudio(image.MediaType))
+
+            return new DeliveryChannel[]
             {
-                return new DeliveryChannel[]
+                new()
                 {
-                    new()
-                    {
-                        Channel = AssetDeliveryChannels.Timebased,
-                        Policy = imageOptimisationPolicy == "audio-max"
-                            ? "default-audio"
-                            : null
-                    }
-                };        
-            }    
+                    Channel = AssetDeliveryChannels.Timebased,
+                    Policy = avChannelPolicy
+                }
+            };
         }
         if (image.Family == AssetFamily.File)
         {
@@ -123,5 +155,4 @@ public static class LegacyModeConverter
 
         return Array.Empty<DeliveryChannel>();
     }
-    
 }
