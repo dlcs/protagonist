@@ -72,7 +72,7 @@ public static class LegacyModeConverter
                 }
                 else
                 {
-                    throw new APIException($"'{imageOptimisationPolicy}' is not a valid imageOptimisationPolicy")
+                    throw new APIException($"'{imageOptimisationPolicy}' is not a valid imageOptimisationPolicy for an image")
                     {
                         StatusCode = 400
                     };
@@ -88,7 +88,7 @@ public static class LegacyModeConverter
                 }
                 else
                 {
-                    throw new APIException($"'{thumbnailPolicy}' is not a valid thumbnailPolicy")
+                    throw new APIException($"'{thumbnailPolicy}' is not a valid thumbnailPolicy for an image")
                     {
                         StatusCode = 400
                     };
@@ -125,7 +125,7 @@ public static class LegacyModeConverter
                 }
                 else
                 {
-                    throw new APIException($"'{avChannelPolicy}' is not a valid imageOptimisationPolicy for a timebased asset")
+                    throw new APIException($"'{imageOptimisationPolicy}' is not a valid imageOptimisationPolicy for a timebased asset")
                     {
                         StatusCode = 400
                     };

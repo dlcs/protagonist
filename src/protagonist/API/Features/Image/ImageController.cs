@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using API.Converters;
-using API.Features.DeliveryChannels.Converters;
+using API.Exceptions;
 using API.Features.Image.Requests;
 using API.Features.Image.Validation;
 using API.Infrastructure;
@@ -97,8 +97,16 @@ public class ImageController : HydraController
     {
         if (Settings.LegacyModeEnabledForSpace(customerId, spaceId))
         {
-            hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset,
-                Settings.EmulateOldDeliveryChannelProperties);
+            try
+            {
+                hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset,
+                    Settings.EmulateOldDeliveryChannelProperties);
+            }
+            catch (APIException apiEx)
+            {
+                return this.HydraProblem(apiEx.Message, null,
+                    (int?)HttpStatusCode.BadRequest, "Failed to convert legacy asset");
+            }
         }
         
         if (hydraAsset.ModelId == null)
