@@ -93,8 +93,6 @@ public class ModifyAssetWithOldDeliveryChannelPropertiesTests : IClassFixture<Pr
         var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
 
         // assert
-        var test = response.Content.ReadAsStringAsync();
-        
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)

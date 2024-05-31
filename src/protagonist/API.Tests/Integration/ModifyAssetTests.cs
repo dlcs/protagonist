@@ -594,6 +594,51 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ThumbsDefault);
     }
     
+    [Fact]
+    public async Task Put_Existing_Asset_UpdatesAsset_IfIncomingDeliveryChannelsNull_AndLegacyEnabled()
+    {
+        const int customer = 325665;
+        const int space = 2;
+        var assetId = new AssetId(customer, space, nameof(Put_Existing_Asset_UpdatesAsset_IfIncomingDeliveryChannelsNull_AndLegacyEnabled));
+        
+        await dbContext.Customers.AddTestCustomer(customer);
+        await dbContext.Spaces.AddTestSpace(customer, space);
+
+        var expectedDeliveryChannels = new List<ImageDeliveryChannel>()
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.File,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
+            }
+        };
+        
+        var testAsset = await dbContext.Images.AddTestAsset(assetId, customer: customer, space: space, 
+            imageDeliveryChannels: expectedDeliveryChannels);
+        
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = @"{
+            ""string1"": ""my-string""
+        }";
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        await dbContext.Entry(testAsset.Entity).ReloadAsync();
+        testAsset.Entity.Reference1.Should().Be("my-string");
+        testAsset.Entity.ImageDeliveryChannels.Should().BeEquivalentTo(expectedDeliveryChannels); // Should be unchanged
+    }
+    
     [Theory]
     [InlineData("audio/mp3", AssetFamily.Timebased)]
     [InlineData("video/mp4", AssetFamily.Timebased)]
@@ -1029,6 +1074,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Delivery channels are required when updating an existing Asset via PUT");
     }
     
     [Fact]
@@ -1052,6 +1099,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Delivery channels are required when updating an existing Asset via PUT");
     }
 
     [Fact]
