@@ -43,6 +43,8 @@ public class CustomerQueueWithOldDeliveryChannelPropertiesTests : IClassFixture<
             {
                 AllowAutoRedirect = false
             });
+        
+        dbFixture.CleanUp();
     }
 
     [Fact]

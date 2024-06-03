@@ -58,6 +58,7 @@ public static class LegacyModeConverter
     public static DeliveryChannel[]? GetDeliveryChannelsForLegacyAsset<T>(T image)
         where T : Image
     {
+        // Retrieve the name, if it is a path to a DLCS IOP/TP policy resource
         var imageOptimisationPolicy = image.ImageOptimisationPolicy.GetLastPathElement() ?? image.ImageOptimisationPolicy;
         var thumbnailPolicy = image.ThumbnailPolicy.GetLastPathElement() ?? image.ThumbnailPolicy;
      

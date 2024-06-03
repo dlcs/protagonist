@@ -1,4 +1,6 @@
-﻿using API.Converters;
+﻿using System;
+using API.Converters;
+using API.Exceptions;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using AssetFamily = DLCS.HydraModel.AssetFamily;
@@ -441,5 +443,66 @@ public class LegacyModeConverterTests
         convertedImage.DeliveryChannels.Should().Satisfy(
             dc => dc.Channel == AssetDeliveryChannels.Timebased && 
                   dc.Policy == "default-audio");
+    }
+    
+    [Fact]
+    public void VerifyAndConvertToModernFormat_Fails_WhenInvalidImageOptimisationPolicySpecified_ForImageAsset()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Origin = "something.tiff",
+            ImageOptimisationPolicy = "not-a-policy"
+        };
+
+        // Act
+        Action action = () =>
+            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+
+        // Assert
+        action.Should()
+            .ThrowExactly<APIException>()
+            .WithMessage($"'not-a-policy' is not a valid imageOptimisationPolicy for an image");
+    }
+
+    [Fact]
+    public void VerifyAndConvertToModernFormat_Fails_WhenInvalidThumbnailPolicySpecified_ForImageAsset()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Origin = "something.tiff",
+            ThumbnailPolicy = "not-a-policy"
+        };
+
+        // Act
+        Action action = () =>
+            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+
+        // Assert
+        action.Should()
+            .ThrowExactly<APIException>()
+            .WithMessage($"'not-a-policy' is not a valid thumbnailPolicy for an image");
+    }
+ 
+    [Fact]
+    public void VerifyAndConvertToModernFormat_Fails_WhenImageOptimisationPolicySpecified_ForTimebasedAsset()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Family = AssetFamily.Timebased,
+            Origin = "something.mp4",
+            ImageOptimisationPolicy= "not-a-policy"
+        };
+
+        // Act
+        Action action = () =>
+            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+
+        // Assert
+        action.Should()
+            .ThrowExactly<APIException>()
+            .WithMessage($"'not-a-policy' is not a valid imageOptimisationPolicy for a timebased asset");
     }
 }
