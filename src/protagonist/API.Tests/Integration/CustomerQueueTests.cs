@@ -10,6 +10,7 @@ using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Messaging;
 using FakeItEasy;
@@ -535,6 +536,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 2);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
         await dbContext.SaveChangesAsync();
 
         // Arrange
@@ -544,8 +546,9 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     ""member"": [
         {
           ""id"": ""one"",
+          ""family"": ""T"",
           ""origin"": ""https://example.org/vid.mp4"",
-          ""space"": 2,
+          ""space"": 2
         }
     ]
 }";
@@ -555,7 +558,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
-
+ 
         // Assert
         // status code correct
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -569,6 +572,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, space);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
         await dbContext.SaveChangesAsync();
 
         // Arrange
@@ -578,6 +582,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     ""member"": [
         {
           ""@id"": ""https://test/customers/15/spaces/200/images/one"",
+          ""family"": ""T"",
           ""origin"": ""https://example.org/vid.mp4"",
           ""space"": 200,
         }
@@ -967,6 +972,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 5);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
         await dbContext.SaveChangesAsync();
 
         // Arrange
@@ -1259,5 +1265,191 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbBatch.Superseded.Should().BeFalse();
         dbBatch.Finished.Should().BeCloseTo(finished, TimeSpan.FromMinutes((1)));
         dbBatch.Count.Should().Be(3);
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_201_IfImageOptimisationPolicySetForImage_AndLegacyEnabled()
+    {
+        const int customerId = 325665;
+        const int space = 201;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+            ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+            ""@type"": ""Collection"",
+            ""member"": [
+                {
+                  ""@id"": ""https://test/customers/325665/spaces/201/images/one"",
+                  ""origin"": ""https://example.org/my-image.png"",
+                  ""imageOptimisationPolicy"": ""fast-higher"",
+                  ""space"": 201,
+                },
+            ]
+        }";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+  
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var image = dbContext.Images
+            .Include(a => a.ImageDeliveryChannels!)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .Single(i => i.Customer == customerId && i.Space == space);
+        
+        image.ImageDeliveryChannels!.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Image && 
+                  dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault,
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails && 
+                  dc.DeliveryChannelPolicy.Name == "default");
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_201_IfThumbnailPolicySetForImage_AndLegacyEnabled()
+    {
+        const int customerId = 325665;
+        const int space = 201;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+            ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+            ""@type"": ""Collection"",
+            ""member"": [
+                {
+                  ""@id"": ""https://test/customers/325665/spaces/201/images/one"",
+                  ""origin"": ""https://example.org/my-image.png"",
+                  ""thumbnailPolicy"": ""default"",
+                  ""space"": 201,
+                },
+            ]
+        }";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+  
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var image = dbContext.Images
+            .Include(a => a.ImageDeliveryChannels!)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .Single(i => i.Customer == customerId && i.Space == space);
+        
+        image.ImageDeliveryChannels!.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Image && 
+                  dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault,
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails && 
+                  dc.DeliveryChannelPolicy.Name == "default");
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_201_IfImageOptimisationPolicySetForVideo_AndLegacyEnabled()
+    {
+        const int customerId = 325665;
+        const int space = 201;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+            ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+            ""@type"": ""Collection"",
+            ""member"": [
+                {
+                  ""@id"": ""https://test/customers/325665/spaces/201/images/one"",
+                  ""family"": ""T"",
+                  ""origin"": ""https://example.org/my-video.mp4"",
+                  ""imageOptimisationPolicy"": ""video-max"",
+                  ""space"": 201,
+                },
+            ]
+        }";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+  
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var image = dbContext.Images
+            .Include(a => a.ImageDeliveryChannels!)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .Single(i => i.Customer == customerId && i.Space == space);
+
+        image.ImageDeliveryChannels!.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Timebased &&
+                  dc.DeliveryChannelPolicy.Name == "default-video");
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_201_IfImageOptimisationPolicySetForAudio_AndLegacyEnabled()
+    {
+        const int customerId = 325665;
+        const int space = 201;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, space);
+        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.SaveChangesAsync();
+
+        // Arrange
+        var hydraImageBody = @"{
+            ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+            ""@type"": ""Collection"",
+            ""member"": [
+                {
+                  ""@id"": ""https://test/customers/325665/spaces/201/images/one"",
+                  ""family"": ""T"",
+                  ""origin"": ""https://example.org/my-audio.mp3"",
+                  ""imageOptimisationPolicy"": ""audio-max"",
+                  ""space"": 201,
+                },
+            ]
+        }";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+  
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var image = dbContext.Images
+            .Include(a => a.ImageDeliveryChannels!)
+            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .Single(i => i.Customer == customerId && i.Space == space);
+
+        image.ImageDeliveryChannels!.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Timebased &&
+                  dc.DeliveryChannelPolicy.Name == "default-audio");
     }
 }

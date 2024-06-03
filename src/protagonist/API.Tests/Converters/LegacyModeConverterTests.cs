@@ -16,7 +16,7 @@ public class LegacyModeConverterTests
         var hydraImage = new Image{ MediaType = "type", MaxUnauthorised = 5, Family = AssetFamily.File};
         
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.MediaType.Should().Be(hydraImage.MediaType);
@@ -31,7 +31,7 @@ public class LegacyModeConverterTests
         var hydraImage = new Image{ MaxUnauthorised = 5, Family = AssetFamily.File};
         
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.MediaType.Should().Be("image/unknown");
@@ -46,7 +46,7 @@ public class LegacyModeConverterTests
         var hydraImage = new Image{ Origin = "something.jpg",MaxUnauthorised = 5, Family = AssetFamily.File};
         
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage,false);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.MediaType.Should().Be("image/jpeg");
@@ -61,7 +61,7 @@ public class LegacyModeConverterTests
         var hydraImage = new Image{ Origin = "something.jpg",MaxUnauthorised = 0, Family = AssetFamily.File};
         
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.MediaType.Should().Be("image/jpeg");
@@ -76,7 +76,7 @@ public class LegacyModeConverterTests
         var hydraImage = new Image{ Origin = "something.jpg"};
         
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.MediaType.Should().Be("image/jpeg");
@@ -91,7 +91,7 @@ public class LegacyModeConverterTests
         var hydraImage = new Image{ Origin = "something.jpg", Roles = new []{ "some role" }};
         
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.MediaType.Should().Be("image/jpeg");
@@ -106,124 +106,10 @@ public class LegacyModeConverterTests
         var hydraImage = new Image{ Id = "https://test/someId", MediaType = "something"};
         
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.ModelId.Should().Be("someId");
-    }
-
-    [Fact]
-    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_ForImage()
-    {
-        // Arrange
-        var hydraImage = new Image()
-        {
-            Family = AssetFamily.Image,
-            Origin = "something.jpg",
-        };
-
-        // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
-
-        // Assert
-        convertedImage.DeliveryChannels.Should().BeNullOrEmpty();
-    }
-    
-    [Theory]
-    [InlineData("fast-higher")]
-    [InlineData("https://api.dlc.services/imageOptimisationPolicies/fast-higher")]
-    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_AndImageOptimisationPolicyValid_ForImage(
-        string imageOptimisationPolicy)
-    {
-        // Arrange
-        var hydraImage = new Image()
-        {
-            Family = AssetFamily.Image,
-            Origin = "something.jpg",
-            ImageOptimisationPolicy = imageOptimisationPolicy
-        };
-
-        // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
-
-        // Assert
-        convertedImage.DeliveryChannels.Should().BeNullOrEmpty();
-    }
-    
-    [Fact]
-    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_ForVideo()
-    {
-        // Arrange
-        var hydraImage = new Image()
-        {
-            Family = AssetFamily.Timebased,
-            Origin = "something.mp4",
-        };
-
-        // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
-
-        // Assert
-        convertedImage.DeliveryChannels.Should().BeNullOrEmpty();
-    }
-    
-    [Theory]
-    [InlineData("video-max")]
-    [InlineData("https://api.dlc.services/imageOptimisationPolicies/video-max")]
-    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_AndImageOptimisationPolicyValid_ForVideo(
-        string imageOptimisationPolicy)
-    {
-        // Arrange
-        var hydraImage = new Image()
-        {
-            Family = AssetFamily.Timebased,
-            Origin = "something.mp4",
-            ImageOptimisationPolicy = imageOptimisationPolicy
-        };
-
-        // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
-
-        // Assert
-        convertedImage.DeliveryChannels.Should().BeNullOrEmpty();
-    }
-    
-    [Fact]
-    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_ForAudio()
-    {
-        // Arrange
-        var hydraImage = new Image()
-        {
-            Family = AssetFamily.Timebased,
-            Origin = "something.mp3",
-        };
-
-        // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
-
-        // Assert
-        convertedImage.DeliveryChannels.Should().BeNullOrEmpty();
-    }
-    
-    [Theory]
-    [InlineData("audio-max")]
-    [InlineData("https://api.dlc.services/imageOptimisationPolicies/audio-max")]
-    public void VerifyAndConvertToModernFormat_AddsNoDeliveryChannels_WhenOldDeliveryChannelPropertiesDisabled_AndImageOptimisationPolicyValid_ForAudio(
-        string imageOptimisationPolicy)
-    {
-        // Arrange
-        var hydraImage = new Image()
-        {
-            Family = AssetFamily.Timebased,
-            Origin = "something.mp3",
-            ImageOptimisationPolicy = imageOptimisationPolicy
-        };
-
-        // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, false);
-
-        // Assert
-        convertedImage.DeliveryChannels.Should().BeNullOrEmpty();
     }
     
     [Fact]
@@ -237,7 +123,7 @@ public class LegacyModeConverterTests
         };
 
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
@@ -258,7 +144,7 @@ public class LegacyModeConverterTests
         };
 
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
@@ -277,7 +163,7 @@ public class LegacyModeConverterTests
         };
 
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
@@ -296,7 +182,7 @@ public class LegacyModeConverterTests
         };
 
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
@@ -317,7 +203,7 @@ public class LegacyModeConverterTests
         };
 
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
@@ -339,7 +225,7 @@ public class LegacyModeConverterTests
         };
 
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
@@ -363,7 +249,7 @@ public class LegacyModeConverterTests
         };
 
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
@@ -389,7 +275,7 @@ public class LegacyModeConverterTests
         };
 
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
@@ -414,7 +300,7 @@ public class LegacyModeConverterTests
         };
 
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
@@ -437,7 +323,7 @@ public class LegacyModeConverterTests
         };
 
         // Act
-        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         convertedImage.DeliveryChannels.Should().Satisfy(
@@ -457,7 +343,7 @@ public class LegacyModeConverterTests
 
         // Act
         Action action = () =>
-            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         action.Should()
@@ -477,7 +363,7 @@ public class LegacyModeConverterTests
 
         // Act
         Action action = () =>
-            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         action.Should()
@@ -498,7 +384,7 @@ public class LegacyModeConverterTests
 
         // Act
         Action action = () =>
-            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage, true);
+            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         action.Should()

@@ -99,8 +99,7 @@ public class ImageController : HydraController
         {
             try
             {
-                hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset,
-                    Settings.EmulateOldDeliveryChannelProperties);
+                hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
             }
             catch (APIException apiEx)
             {

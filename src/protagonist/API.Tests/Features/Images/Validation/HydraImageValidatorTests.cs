@@ -9,16 +9,14 @@ namespace API.Tests.Features.Images.Validation;
 
 public class HydraImageValidatorTests
 {
-    public HydraImageValidator GetSut(bool emulateOldDeliveryChannelProperties = false)
+    public HydraImageValidator GetSut()
     {
         var apiSettings = new ApiSettings()
         {
-            RestrictedAssetIdCharacterString = "\\ ",
-            EmulateOldDeliveryChannelProperties = emulateOldDeliveryChannelProperties
+            RestrictedAssetIdCharacterString = "\\ "
         };
         return new HydraImageValidator(Options.Create(apiSettings));
     }
-
     
     [Theory]
     [InlineData(null)]
@@ -230,7 +228,7 @@ public class HydraImageValidatorTests
     }
     
     [Fact]
-    public void ImageOptimisationPolicy_ValidationError_WhenOldDeliveryChannelEmulationDisabled()
+    public void ImageOptimisationPolicy_ValidationError()
     {
         var sut = GetSut();
         var model = new Image
@@ -242,7 +240,7 @@ public class HydraImageValidatorTests
     }
     
     [Fact]
-    public void ThumbnailPolicy_ValidationError_WhenOldDeliveryChannelEmulationDisabled()
+    public void ThumbnailPolicy_ValidationError()
     {
         var sut = GetSut();
         var model = new Image
@@ -251,29 +249,5 @@ public class HydraImageValidatorTests
         };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.ThumbnailPolicy);
-    }
-    
-    [Fact]
-    public void ImageOptimisationPolicy_NoValidationError_WhenOldDeliveryChannelEmulationEnabled()
-    {
-        var sut = GetSut(true);
-        var model = new Image
-        {
-            ImageOptimisationPolicy = "some-iop-policy"
-        };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.ImageOptimisationPolicy);
-    }
-    
-    [Fact]
-    public void ThumbnailPolicy_NoValidationError_WhenOldDeliveryChannelEmulationEnabled()
-    {
-        var sut = GetSut(true);
-        var model = new Image
-        {
-            ThumbnailPolicy = "some-tp-policy"
-        };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(a => a.ThumbnailPolicy);
     }
 }

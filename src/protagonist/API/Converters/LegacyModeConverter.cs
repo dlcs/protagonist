@@ -19,10 +19,9 @@ public static class LegacyModeConverter
     /// Converts from legacy format to new format
     /// </summary>
     /// <param name="image">The image to convert</param>
-    /// <param name="emulateOldDeliveryChannelProperties">Whether old thumbnailPolicy/imageOptimisationPolicy fields
     /// should be emulated and translated into delivery channels</param>
     /// <returns>A converted image</returns>
-    public static T VerifyAndConvertToModernFormat<T>(T image, bool emulateOldDeliveryChannelProperties)
+    public static T VerifyAndConvertToModernFormat<T>(T image)
         where T : Image
     {
         if (image.MediaType.IsNullOrEmpty())
@@ -46,12 +45,13 @@ public static class LegacyModeConverter
         {
             image.MaxUnauthorised = -1;
         }
-
-        if (emulateOldDeliveryChannelProperties)
-        {
-            image.DeliveryChannels = GetDeliveryChannelsForLegacyAsset(image);
-        }
-      
+        
+        image.DeliveryChannels = GetDeliveryChannelsForLegacyAsset(image);
+        
+        // Clear IOP and TP after we've matched them to the appropriate delivery channels
+        image.ImageOptimisationPolicy = null;
+        image.ThumbnailPolicy = null;
+        
         return image;
     }
 
@@ -153,7 +153,7 @@ public static class LegacyModeConverter
                 }       
             };
         }
-
+        
         return Array.Empty<DeliveryChannel>();
     }
 }

@@ -371,8 +371,7 @@ public class CustomerQueueController : HydraController
             {
                 if (Settings.LegacyModeEnabledForSpace(customerId, members[i].Space))
                 {
-                    members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(members[i], 
-                        Settings.EmulateOldDeliveryChannelProperties);
+                    members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(members[i]);
                 }
             }
         }
