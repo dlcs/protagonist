@@ -99,9 +99,9 @@ public class ModifyAssetWithOldDeliveryChannelPropertiesTests : IClassFixture<Pr
         asset.ImageOptimisationPolicy.Should().Be("fast-higher");
         asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageDeliveryChannels.Count.Should().Be(2);
-        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == "iiif-img" &&
+        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Image &&
                                                                 dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
-        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == "thumbs" &&
+        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Thumbnails &&
                                                                 dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ThumbsDefault);
     }
     
@@ -175,9 +175,9 @@ public class ModifyAssetWithOldDeliveryChannelPropertiesTests : IClassFixture<Pr
         asset.ThumbnailPolicy.Should().Be("default");
         asset.ImageOptimisationPolicy.Should().BeEmpty();
         asset.ImageDeliveryChannels.Count.Should().Be(2);
-        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == "iiif-img" &&
+        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Image &&
                                                                 dc.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
-        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == "thumbs" &&
+        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Thumbnails &&
                                                                 dc.DeliveryChannelPolicy.Name == "default");
     }
     
@@ -250,7 +250,7 @@ public class ModifyAssetWithOldDeliveryChannelPropertiesTests : IClassFixture<Pr
         asset.ImageOptimisationPolicy.Should().Be(imageOptimisationPolicy);
         asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageDeliveryChannels.Count.Should().Be(1);
-        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == "iiif-av" &&
+        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                                                                 dc.DeliveryChannelPolicy.Name == "default-video");
     }
     
@@ -324,7 +324,7 @@ public class ModifyAssetWithOldDeliveryChannelPropertiesTests : IClassFixture<Pr
         asset.ImageOptimisationPolicy.Should().Be(imageOptimisationPolicy);
         asset.ThumbnailPolicy.Should().BeEmpty();
         asset.ImageDeliveryChannels.Count.Should().Be(1);
-        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == "iiif-av" &&
+        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                                                                 dc.DeliveryChannelPolicy.Name == "default-audio");
     }
     
@@ -355,5 +355,49 @@ public class ModifyAssetWithOldDeliveryChannelPropertiesTests : IClassFixture<Pr
        
         var body = await response.Content.ReadAsStringAsync();
         body.Should().Contain("'foo' is not a valid imageOptimisationPolicy for a timebased asset");
+    }
+    
+    [Fact]
+    public async Task Put_NewFileAsset_Creates_Asset_WhenLegacyEnabled()
+    {
+        const int customer = 325665;
+        const int space = 2;
+        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_WithThumbnailPolicy_Creates_Asset_WhenLegacyEnabled));
+
+        await dbContext.Customers.AddTestCustomer(customer);
+        await dbContext.Spaces.AddTestSpace(customer, space);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
+        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
+        await dbContext.SaveChangesAsync();
+
+        var hydraImageBody = $@"{{
+          ""@type"": ""Image"",
+          ""family"": ""F"",
+          ""origin"": ""https://example.org/{assetId.Asset}.pdf"",
+        }}";
+
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(i => i.DeliveryChannelPolicy).Single(i => i.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MediaType.Should().Be("application/pdf");
+        asset.Family.Should().Be(AssetFamily.File);
+        asset.ThumbnailPolicy.Should().BeEmpty();
+        asset.ImageOptimisationPolicy.Should().BeEmpty();
+        asset.ImageDeliveryChannels.Count.Should().Be(1);
+        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.File &&
+                                                                dc.DeliveryChannelPolicy.Name == "none");
     }
 }
