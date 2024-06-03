@@ -10,5 +10,5 @@ public interface ICleanupHandlerAssetRepository
     /// </summary>
     /// <param name="assetId">The asset id to retrieve details for</param>
     /// <returns>an asset</returns>
-    Asset? RetrieveAssetWithDeliveryChannels(AssetId assetId);
+    Task<Asset?> RetrieveAssetWithDeliveryChannels(AssetId assetId);
 }

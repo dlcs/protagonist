@@ -32,8 +32,7 @@ public class AssetApplicationMetadata : ICloneable
     /// </summary>
     public DateTime Modified { get; set; }
 
-    public object Clone()
-    {
-        return (AssetApplicationMetadata)MemberwiseClone();
-    }
+    public AssetApplicationMetadata Clone() => (AssetApplicationMetadata)MemberwiseClone();
+
+    object ICloneable.Clone() => Clone();
 }

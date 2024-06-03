@@ -155,8 +155,7 @@ public class SqsListener<TMessageType> : IQueueListener
             }
 
             var messageAttributes = message.MessageAttributes
-                .Select(x => new KeyValuePair<string, string>(x.Key, x.Value.StringValue))
-                .ToDictionary(pair => pair.Key, pair => pair.Value);
+                .ToDictionary(pair => pair.Key, pair => pair.Value.StringValue);
 
             var queueMessage = new QueueMessage
             {

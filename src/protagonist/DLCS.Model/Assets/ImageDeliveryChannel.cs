@@ -29,8 +29,7 @@ public class ImageDeliveryChannel : ICloneable
     /// </summary>
     public int DeliveryChannelPolicyId { get; set; }
 
-    public object Clone()
-    {
-        return (ImageDeliveryChannel)MemberwiseClone();
-    }
+    public ImageDeliveryChannel Clone() => (ImageDeliveryChannel)MemberwiseClone();
+
+    object ICloneable.Clone() => Clone();
 }

@@ -36,6 +36,9 @@ public class EngineClient : IEngineClient
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
+
+    private static readonly IReadOnlyDictionary<string, TranscoderPreset> NullPresetDictionary =
+        new Dictionary<string, TranscoderPreset>();
     
     public EngineClient(
         IQueueLookup queueLookup,
@@ -159,18 +162,19 @@ public class EngineClient : IEngineClient
     public async Task<IReadOnlyDictionary<string, TranscoderPreset>?> GetAvPresets(CancellationToken cancellationToken = default)
     {
         const string key = "avPresetList";
-        return await appCache.GetOrAddAsync(key, async () =>
+        return await appCache.GetOrAddAsync(key, async entry =>
         {
             try
             {
                 var response = await httpClient.GetAsync("av-presets", cancellationToken);
                 return await response.Content.ReadFromJsonAsync<IReadOnlyDictionary<string, TranscoderPreset>>(
-                    cancellationToken: cancellationToken);
+                    cancellationToken: cancellationToken) ?? new Dictionary<string, TranscoderPreset>();
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to retrieve allowed iiif-av policy options from Engine");
-                return null;
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+                return NullPresetDictionary;
             }
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
     }
