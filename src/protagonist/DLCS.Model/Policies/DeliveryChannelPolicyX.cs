@@ -41,8 +41,10 @@ public static class DeliveryChannelPolicyX
         {
             throw new InvalidOperationException("Policy is not for timebased channel");
         }
+
+        var timeBasedPresets = deliveryChannelPolicy.PolicyDataAs<List<string>>();
         
-        return deliveryChannelPolicy.PolicyDataAs<List<string>>() ?? new List<string>();
+        return timeBasedPresets.ThrowIfNull(nameof(timeBasedPresets));
     }
     
     /// <summary>

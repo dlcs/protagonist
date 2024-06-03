@@ -576,6 +576,12 @@ public class AssetUpdatedHandlerTests
             },
             DeliveryChannelPolicyId = 8239
         };
+        
+        A.CallTo(() => engineClient.GetAvPresets(A<CancellationToken>._)).Returns(new Dictionary<string, TranscoderPreset>()
+        {
+            { "webm-policy", new ("", "some-webm-preset", "oga") },
+            { "oga-policy", new ("", "some-oga-preset", "webm") }
+        });
 
         var requestDetails = CreateMinimalRequestDetails(
             new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
@@ -591,6 +597,43 @@ public class AssetUpdatedHandlerTests
         
         // Assert
         response.Should().BeTrue();
+        A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
+        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_ReturnsFalse_WhenTimebasedChannelUpdatedWithNoAvPresets()
+    {
+        // Arrange
+        var imageDeliveryChannelAfter = new ImageDeliveryChannel()
+        {
+            Channel = AssetDeliveryChannels.Timebased,
+            Id = 23456,
+            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            {
+                Id = 8239,
+                Channel = AssetDeliveryChannels.Timebased,
+                Created = DateTime.MinValue,
+                Modified = DateTime.MinValue,
+                PolicyData = "[\"policy-not-found\"]"
+            },
+            DeliveryChannelPolicyId = 8239
+        };
+        
+        var requestDetails = CreateMinimalRequestDetails(
+            new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
+            new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
+            string.Empty, string.Empty, "video/*");
+
+        A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
+            .Returns(requestDetails.assetAfter);
+        
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(requestDetails.queueMessage);
+        
+        // Assert
+        response.Should().BeFalse();
         A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
