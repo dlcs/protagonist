@@ -1,6 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.IO.Enumeration;
-using System.Text.Json;
 using CleanupHandler.Infrastructure;
 using CleanupHandler.Repository;
 using DLCS.AWS.ElasticTranscoder;
@@ -71,12 +70,16 @@ public class AssetUpdatedHandler  : IMessageHandler
 
         var assetBefore = request.AssetBeforeUpdate;
 
-        var assetAfter = cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(assetBefore.Id);
+        var assetAfter = await cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(assetBefore.Id);
+
+        if (assetAfter == null)
+        {
+            logger.LogInformation("Asset {AssetId} was not found in the database for use in after calculation",
+                assetBefore.Id);
+            return false;
+        }
         
         if (NoCleanupRequired(message, assetAfter, assetBefore)) return true;
-        
-        Debug.Assert(assetAfter != null, nameof(assetAfter) + " != null");
-        
         if (AssetStillIngesting(assetAfter, assetBefore)) return false;
 
         var (modifiedOrAdded, removed) = GetChangeSets(assetAfter, assetBefore);
@@ -139,10 +142,10 @@ public class AssetUpdatedHandler  : IMessageHandler
     {
         return assetAfter.Ingesting == true && assetBefore.Finished > assetAfter.Finished;
     }
-
-    private static bool NoCleanupRequired(QueueMessage message, Asset? assetAfter, Asset assetBefore)
+    
+    private static bool NoCleanupRequired([NotNullWhen(true)] QueueMessage message, Asset? assetAfter, Asset assetBefore)
     {
-        return assetAfter == null || !message.MessageAttributes.Keys.Contains("engineNotified") &&
+        return !message.MessageAttributes.Keys.Contains("engineNotified") &&
             (assetBefore.Roles ?? string.Empty) == (assetAfter.Roles ?? string.Empty);
     }
 
@@ -209,18 +212,27 @@ public class AssetUpdatedHandler  : IMessageHandler
         }
     }
 
-    private async Task CleanupChangedTimebasedDeliveryChannel(ImageDeliveryChannel imageDeliveryChannel, Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+    private async Task CleanupChangedTimebasedDeliveryChannel(ImageDeliveryChannel imageDeliveryChannel,
+        Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
-        var presetList = JsonSerializer.Deserialize<List<string>>(imageDeliveryChannel.DeliveryChannelPolicy.PolicyData);
+        var presetList = imageDeliveryChannel.DeliveryChannelPolicy.AsTimebasedPresets();
         var keys = new List<string>();
         var extensions = new List<string>();
         var mediaPath = RetrieveMediaPath(assetAfter);
         
         var presetDictionary = await engineClient.GetAvPresets();
 
+        if (presetDictionary.IsNullOrEmpty())
+        {
+            logger.LogWarning(
+                "retrieved no timebased presets from engine, {AssetId} will not be cleaned up for the timebased channel",
+                assetAfter.Id);
+            return;
+        }
+
         foreach (var presetIdentifier in presetList ?? new List<string>())
         {
-            if (!presetDictionary.IsNullOrEmpty() && presetDictionary.TryGetValue(presetIdentifier, out var transcoderPreset))
+            if (presetDictionary.TryGetValue(presetIdentifier, out var transcoderPreset))
             {
                 var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetAfter.Id);
 

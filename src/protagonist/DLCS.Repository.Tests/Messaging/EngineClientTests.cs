@@ -173,11 +173,10 @@ public class EngineClientTests
     }
     
     [Fact]
-    public async Task GetAvPresets_ReturnsEmpty_IfEngineAvPolicyEndpointUnreachable()
+    public async Task GetAvPresets_ReturnsEmpty_IfEngineAvPolicyEndpointThrowsError()
     {
         // Arrange
-        HttpRequestMessage message = null;
-        httpHandler.RegisterCallback(r => message = r);
+        httpHandler.RegisterCallback(r => throw new Exception("error"));
         httpHandler.GetResponseMessage("Not found", HttpStatusCode.NotFound);
         
         // Act
@@ -185,7 +184,6 @@ public class EngineClientTests
         
         // Assert
         httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/av-presets");
-        message.Method.Should().Be(HttpMethod.Get);
-        returnedAvPresets.Should().BeNull();
+        returnedAvPresets.Should().BeEmpty();
     }
 }

@@ -1,7 +1,6 @@
 ﻿using CleanupHandler.Repository;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.Configuration;
-using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
@@ -39,8 +38,7 @@ public static class ServiceCollectionX
             .SetupAWS(configuration, hostEnvironment)
             .WithAmazonS3()
             .WithAmazonCloudfront()
-            .WithAmazonSQS()
-            .WithAmazonElasticTranscoder();
+            .WithAmazonSQS();
 
         return services;
     }
@@ -68,10 +66,8 @@ public static class ServiceCollectionX
         CleanupHandlerSettings cleanupHandlerSettings)
     {
         services
-            .AddSingleton<IAssetRepository, DapperAssetRepository>()
             .AddScoped<IAssetApplicationMetadataRepository, AssetApplicationMetadataRepository>()
             .AddSingleton<IThumbRepository, ThumbRepository>()
-            .AddSingleton<AssetCachingHelper>()
             .AddTransient<TimingHandler>()
             .AddScoped<ICleanupHandlerAssetRepository, CleanupHandlerAssetRepository>()
             .AddDlcsContext(configuration);

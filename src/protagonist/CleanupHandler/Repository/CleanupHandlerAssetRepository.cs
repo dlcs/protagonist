@@ -2,6 +2,7 @@
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using Microsoft.EntityFrameworkCore;
 
 namespace CleanupHandler.Repository;
 
@@ -14,8 +15,8 @@ public class CleanupHandlerAssetRepository : ICleanupHandlerAssetRepository
         this.dbContext = dbContext;
     }
     
-    public Asset? RetrieveAssetWithDeliveryChannels(AssetId assetId)
+    public async Task<Asset?> RetrieveAssetWithDeliveryChannels(AssetId assetId)
     {
-        return dbContext.Images.IncludeDeliveryChannelsWithPolicy().SingleOrDefault(x => x.Id == assetId);
+        return await dbContext.Images.IncludeDeliveryChannelsWithPolicy().SingleOrDefaultAsync(x => x.Id == assetId);
     }
 }

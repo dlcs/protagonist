@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using API.Exceptions;
+﻿using API.Exceptions;
 using API.Features.Assets;
 using API.Infrastructure.Requests;
 using API.Settings;
@@ -53,7 +52,6 @@ public class AssetProcessor
         try
         {
             var assetFromDatabase = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true, true);
-            var existingAsset = assetFromDatabase?.Clone();
 
             if (assetFromDatabase == null)
             {
@@ -104,7 +102,8 @@ public class AssetProcessor
                     )
                 };
             }
-
+            
+            var existingAsset = assetFromDatabase?.Clone();
             var assetPreparationResult =
                 AssetPreparer.PrepareAssetForUpsert(assetFromDatabase, assetBeforeProcessing.Asset, false, isBatchUpdate,
                     settings.RestrictedAssetIdCharacters);
