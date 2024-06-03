@@ -104,7 +104,15 @@ public class AssetUpdatedHandler  : IMessageHandler
         
         if (modifiedOrAdded.Any())
         {
-            await CleanupModified(modifiedOrAdded, assetBefore, assetAfter, s3Objects);
+            try
+            {
+                await CleanupModified(modifiedOrAdded, assetBefore, assetAfter, s3Objects);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error cleaning modified delivery channels");
+                return false;
+            }
         }
         
         if (!Equals(assetAfter.Roles ?? string.Empty, assetBefore.Roles ?? string.Empty))
@@ -215,7 +223,7 @@ public class AssetUpdatedHandler  : IMessageHandler
     private async Task CleanupChangedTimebasedDeliveryChannel(ImageDeliveryChannel imageDeliveryChannel,
         Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
-        var presetList = imageDeliveryChannel.DeliveryChannelPolicy.AsTimebasedPresets();
+        var presetList = imageDeliveryChannel.DeliveryChannelPolicy.AsTimebasedPresets(); 
         var keys = new List<string>();
         var extensions = new List<string>();
         var mediaPath = RetrieveMediaPath(assetAfter);
@@ -227,7 +235,7 @@ public class AssetUpdatedHandler  : IMessageHandler
             logger.LogWarning(
                 "retrieved no timebased presets from engine, {AssetId} will not be cleaned up for the timebased channel",
                 assetAfter.Id);
-            return;
+            throw new ArgumentNullException(nameof(presetDictionary), "Failed to retrieve any preset values");
         }
 
         foreach (var presetIdentifier in presetList ?? new List<string>())
