@@ -24,16 +24,20 @@ public static class LegacyModeConverter
     public static T VerifyAndConvertToModernFormat<T>(T image)
         where T : Image
     {
+        if (image.Origin is null)
+        {
+            throw new APIException($"An origin is required when legacy mode is enabled")
+            {
+                StatusCode = 400
+            };  
+        }
+        
         if (image.MediaType.IsNullOrEmpty())
         {
             var contentType = image.Origin?.Split('.').Last() ?? string.Empty;
             
             image.MediaType = MIMEHelper.GetContentTypeForExtension(contentType) ?? DefaultMediaType;
-            
-            if (image.Origin is not null && image.Family is null)
-            {
-                  image.Family = AssetFamily.Image;
-            }
+            image.Family ??= AssetFamily.Image;
         }
         
         if (image.ModelId is null && image.Id is not null)

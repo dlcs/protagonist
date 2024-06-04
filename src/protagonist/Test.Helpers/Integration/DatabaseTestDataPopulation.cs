@@ -45,6 +45,7 @@ public static class DatabaseTestDataPopulation
         bool ingesting = false,
         string error = "",
         string imageOptimisationPolicy = "",
+        string thumbnailPolicy = "default",
         DateTime? finished = null,
         List<ImageDeliveryChannel> imageDeliveryChannels = null)
     {
@@ -52,7 +53,7 @@ public static class DatabaseTestDataPopulation
         {
             Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
             Width = width, Height = height, Roles = roles, Family = family, MediaType = mediaType,
-            ThumbnailPolicy = "default", MaxUnauthorised = maxUnauthorised,
+            ThumbnailPolicy = thumbnailPolicy, MaxUnauthorised = maxUnauthorised,
             Reference1 = ref1, Reference2 = ref2, Reference3 = ref3,
             NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
             NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = error,
