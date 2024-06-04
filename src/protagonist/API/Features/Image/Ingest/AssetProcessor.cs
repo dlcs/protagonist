@@ -93,8 +93,7 @@ public class AssetProcessor
 
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
-            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing.IsNullOrEmpty() && alwaysReingest
-                     && !settings.LegacyModeEnabledForSpace(assetBeforeProcessing.Asset.Customer, assetBeforeProcessing.Asset.Space))
+            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing.IsNullOrEmpty() && alwaysReingest)
             {
                 return new ProcessAssetResult
                 {
