@@ -13,7 +13,8 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_ChangesNothing_WithNewFormat()
     {
         // Arrange
-        var hydraImage = new Image{ MediaType = "type", MaxUnauthorised = 5, Family = AssetFamily.File};
+        var hydraImage = new Image{ MediaType = "type", Origin = "https://example.org/my-asset",
+            MaxUnauthorised = 5, Family = AssetFamily.File };
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
@@ -25,10 +26,30 @@ public class LegacyModeConverterTests
     }
     
     [Fact]
+    public void VerifyAndConvertToModernFormat_Fails_WhenOriginNotSpecified()
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Family = AssetFamily.Timebased
+        };
+
+        // Act
+        Action action = () =>
+            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+
+        // Assert
+        action.Should()
+            .ThrowExactly<APIException>()
+            .WithMessage("An origin is required when legacy mode is enabled");
+    }
+    
+    [Fact]
     public void VerifyAndConvertToModernFormat_SetsMediaType_WithNotSet()
     {
         // Arrange
-        var hydraImage = new Image{ MaxUnauthorised = 5, Family = AssetFamily.File};
+        var hydraImage = new Image{ MaxUnauthorised = 5, Family = AssetFamily.File,
+            Origin = "https://example.org/my-asset"};
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
@@ -103,7 +124,8 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_ModelIdSet_WhenNoModelId()
     {
         // Arrange
-        var hydraImage = new Image{ Id = "https://test/someId", MediaType = "something"};
+        var hydraImage = new Image{ Id = "https://test/someId", MediaType = "something", 
+            Origin = "https://example.org/my-asset" };
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);

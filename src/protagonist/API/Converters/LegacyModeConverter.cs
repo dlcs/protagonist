@@ -26,7 +26,7 @@ public static class LegacyModeConverter
     {
         if (image.Origin is null)
         {
-            throw new APIException($"An origin is required when legacy mode is enabled")
+            throw new APIException("An origin is required when legacy mode is enabled")
             {
                 StatusCode = 400
             };  
