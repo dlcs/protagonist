@@ -599,7 +599,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_Existing_Asset_UpdatesAsset_IfIncomingDeliveryChannelsNull_AndLegacyEnabled));
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
@@ -1273,7 +1273,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled));
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -1317,7 +1317,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_WithImageOptimisationPolicy_Returns400_IfInvalid_AndLegacyEnabled));
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -1347,7 +1347,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_ExistingImageAsset_WithImageOptimisationPolicy_AddsDeliveryChannelsToAsset_WhenLegacyEnabled));
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
@@ -1397,7 +1397,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_WithThumbnailPolicy_Creates_Asset_WhenLegacyEnabled));
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
 
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
@@ -1443,7 +1443,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_WithImageOptimisationPolicy_Returns400_IfInvalid_AndLegacyEnabled));
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -1473,7 +1473,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_ExistingImageAsset_WithThumbnailPolicy_AddsDeliveryChannelsToAsset_WhenLegacyEnabled));
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
@@ -1522,7 +1522,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewVideoAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled));
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -1565,7 +1565,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewVideoAsset_WithImageOptimisationPolicy_Returns400_IfInvalid_AndLegacyEnabled));
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -1596,8 +1596,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_ExistingVideoAsset_WithImageOptimisationPolicy_AddsDeliveryChannelsToAsset_WhenLegacyEnabled));
-        
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -1644,7 +1643,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewAudioAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled));
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -1687,7 +1686,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewAudioAsset_WithImageOptimisationPolicy_Returns400_IfInvalid_AndLegacyEnabled));
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -1718,8 +1717,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_ExistingAudioAsset_WithImageOptimisationPolicy_AddsDeliveryChannelsToAsset_WhenLegacyEnabled));
-        
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
@@ -1764,8 +1762,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         const int customer = 325665;
         const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_WithThumbnailPolicy_Creates_Asset_WhenLegacyEnabled));
-
+        var assetId = AssetIdGenerator.GetAssetId(customer, space);
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
         await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
