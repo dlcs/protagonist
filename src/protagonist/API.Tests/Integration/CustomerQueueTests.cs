@@ -6,12 +6,10 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Messaging;
 using FakeItEasy;
@@ -42,7 +40,6 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbContext = dbFixture.DbContext;
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
-            .WithConfigValue("DeliveryChannelsEnabled", "true")
             .WithTestServices(services =>
             {
                 services.AddScoped<IEngineClient>(_ => EngineClient);
@@ -760,7 +757,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Post_CreateBatch_400_IfThumbnailPolicySet_AndOldDeliveryChannelEmulationDisabled()
+    public async Task Post_CreateBatch_400_IfThumbnailPolicySet()
     {
         const int customerId = 15;
         const int space = 4;
@@ -796,7 +793,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Post_CreateBatch_400_IfImageOptimisationPolicySet_AndOldDeliveryChannelEmulationDisabled()
+    public async Task Post_CreateBatch_400_IfImageOptimisationPolicySet()
     {
         const int customerId = 15;
         const int space = 4;
@@ -1057,45 +1054,46 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         const int customerId = 1900;
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 2);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
         await dbContext.SaveChangesAsync();
 
         // a batch of 4 images - 1 with Family, 1 with DC, 1 with both, and 1 without
         var hydraImageBody = @"{
-    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
-    ""@type"": ""Collection"",
-    ""member"": [
-        {
-          ""id"": ""one"",
-          ""origin"": ""https://example.org/foo.jpg"",
-          ""space"": 2,
-          ""wcDeliveryChannels"": [""iiif-img""],
-          ""family"": ""I"",
-          ""mediaType"": ""image/jpeg""
-        },
-        {
-          ""id"": ""two"",
-          ""origin"": ""https://example.org/foo.png"",
-          ""wcDeliveryChannels"": [""iiif-img""],
-          ""space"": 2,
-          ""mediaType"": ""image/png""
-        },
-        {
-          ""id"": ""three"",
-          ""origin"": ""https://example.org/foo.tiff"",
-          ""family"": ""I"",
-          ""space"": 2,
-          ""mediaType"": ""image/tiff""
-        },
-        {
-          ""id"": ""four"",
-          ""origin"": ""https://example.org/foo.tiff"",
-          ""space"": 2,
-          ""mediaType"": ""image/tiff""
-        }
-    ]
-}";
-        
+            ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+            ""@type"": ""Collection"",
+            ""member"": [
+                {
+                  ""id"": ""one"",
+                  ""origin"": ""https://example.org/foo.jpg"",
+                  ""space"": 2,
+                  ""deliveryChannels"": [""iiif-img""],
+                  ""family"": ""I"",
+                  ""mediaType"": ""image/jpeg""
+                },
+                {
+                  ""id"": ""two"",
+                  ""origin"": ""https://example.org/foo.png"",
+                  ""deliveryChannels"": [""iiif-img""],
+                  ""space"": 2,
+                  ""mediaType"": ""image/png""
+                },
+                {
+                  ""id"": ""three"",
+                  ""origin"": ""https://example.org/foo.tiff"",
+                  ""family"": ""I"",
+                  ""space"": 2,
+                  ""mediaType"": ""image/tiff""
+                },
+                {
+                  ""id"": ""four"",
+                  ""origin"": ""https://example.org/foo.tiff"",
+                  ""space"": 2,
+                  ""mediaType"": ""image/tiff""
+                }
+            ]
+        }";
+                
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(
                 A<IReadOnlyCollection<Asset>>._, true,

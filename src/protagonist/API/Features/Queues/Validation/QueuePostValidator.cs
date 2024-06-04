@@ -43,12 +43,12 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
             members.RuleFor(a => a.ImageOptimisationPolicy)
                 .Null()
                 .When(_ => !apiSettings.Value.EmulateOldDeliveryChannelProperties)
-                .WithMessage("ImageOptimisationPolicy is disabled");
+                .WithMessage("'ImageOptimisationPolicy' is disabled");
             
             members.RuleFor(a => a.ThumbnailPolicy)
                 .Null()
                 .When(_ => !apiSettings.Value.EmulateOldDeliveryChannelProperties)
-                .WithMessage("ThumbnailPolicy is disabled");
+                .WithMessage("'ThumbnailPolicy' is disabled");
         });
     }
 }

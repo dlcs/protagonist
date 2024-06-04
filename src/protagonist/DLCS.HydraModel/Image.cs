@@ -196,11 +196,6 @@ public class Image : DlcsResource
     [JsonConverter(typeof(ImageDeliveryChannelsConverter))]
     public DeliveryChannel[]? DeliveryChannels { get; set; }
     
-    [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 141, PropertyName = "wcDeliveryChannels")]
-    public string[]? WcDeliveryChannels { get; set; }
-    
     [RdfProperty(Description = "The role or roles that a user must possess to view this image above maxUnauthorised. " +
                                "These are URIs of roles e.g., https://api.dlcs.io/customers/1/roles/requiresRegistration",
         Range = "vocab:Role", ReadOnly = false, WriteOnly = false, SetManually = true)]

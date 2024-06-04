@@ -83,11 +83,6 @@ public class ApiSettings
             : DefaultLegacySupport;
     
     /// <summary>
-    /// Whether the delivery channel feature is enabled
-    /// </summary>
-    public bool DeliveryChannelsEnabled { get; set; }
-
-    /// <summary>
     /// Characters that are not allowed in an asset id
     /// </summary>
     public char[] RestrictedAssetIdCharacters => restrictedAssetIdCharacters;
@@ -106,8 +101,8 @@ public class ApiSettings
     }
     
     /// <summary>
-    /// Whether incoming old delivery channel properties (e.g wcDeliveryChannels, imageOptimisationPolicy,
-    /// thumbnailPolicy) are supported and translated into the new format
+    /// Whether old delivery channel properties (e.g imageOptimisationPolicy, thumbnailPolicy)
+    /// on legacy payloads are supported and translated into the new format
     /// </summary>
-    public bool EmulateOldDeliveryChannelProperties { get; set; } = false;
+    public bool EmulateOldDeliveryChannelProperties { get; set; }
 }

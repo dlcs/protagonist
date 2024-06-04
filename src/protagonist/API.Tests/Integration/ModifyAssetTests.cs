@@ -63,7 +63,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                         "API-Test", _ => { });
             })
-            .WithConfigValue("DeliveryChannelsEnabled", "true")
             .CreateClient(new WebApplicationFactoryClientOptions
             {
                 AllowAutoRedirect = false
@@ -925,34 +924,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_New_Asset_Supports_WcDeliveryChannels()
-    {
-        var assetId = new AssetId(99, 1, nameof(Put_New_Asset_Supports_WcDeliveryChannels));
-        var hydraImageBody = $@"{{
-          ""@type"": ""Image"",
-          ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-          ""family"": ""I"",
-          ""mediaType"": ""image/tiff"",
-          ""wcDeliveryChannels"": [""file""]
-        }}";
-
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<Asset>.That.Matches(r => r.Id == assetId),
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
-        
-        // act
-        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
-
-        // assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var asset = await dbContext.Images.FindAsync(assetId);
-        asset.DeliveryChannels.Should().BeEquivalentTo("file");
-    }
-    
-    [Fact]
     public async Task Put_Asset_Fails_When_ThumbnailPolicy_Is_Provided()
     {
         // Arrange 
@@ -962,9 +933,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""mediaType"":""image/tiff"",
           ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
           ""family"": ""I"",
-          ""wcDeliveryChannels"": [
-            ""iiif-img""
-            ],
           ""thumbnailPolicy"": ""thumbs-policy""
         }}";    
         
@@ -976,7 +944,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+        body.Should().Contain("'ThumbnailPolicy' is disabled");
     }
     
     [Fact]
@@ -989,9 +957,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""mediaType"":""image/tiff"",
           ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
           ""family"": ""I"",
-          ""wcDeliveryChannels"": [
-            ""iiif-img""
-            ],
+          ""deliveryChannels"": [""iiif-img""],
           ""imageOptimisationPolicy"": ""image-optimisation-policy""
         }}";    
         
@@ -1003,7 +969,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+        body.Should().Contain("'ImageOptimisationPolicy' is disabled");
     }
     
     [Fact]
@@ -1518,7 +1484,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+        body.Should().Contain("'ThumbnailPolicy' is disabled");
     }
     
     [Fact]
@@ -1538,7 +1504,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("ImageOptimisationPolicy and ThumbnailPolicy are disabled");
+        body.Should().Contain("'ImageOptimisationPolicy' is disabled");
     }
     
     [Fact]

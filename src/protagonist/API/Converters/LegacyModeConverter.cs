@@ -26,7 +26,7 @@ public static class LegacyModeConverter
             
             image.MediaType = MIMEHelper.GetContentTypeForExtension(contentType) ?? DefaultMediaType;
             
-            if (image.Origin is not null && image.Family is null && image.WcDeliveryChannels.IsNullOrEmpty())
+            if (image.Origin is not null && image.Family is null)
             {
                   image.Family = AssetFamily.Image;
             }

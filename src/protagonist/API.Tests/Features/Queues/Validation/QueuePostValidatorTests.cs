@@ -10,12 +10,12 @@ namespace API.Tests.Features.Queues.Validation;
 
 public class QueuePostValidatorTests
 {
-    private QueuePostValidator GetSut(bool emulateOldDeliveryChannels)
+    private QueuePostValidator GetSut(bool emulateOldDeliveryChannelProperties = false)
     {
         var apiSettings = new ApiSettings
         {
-            MaxBatchSize = 4,
-            EmulateOldDeliveryChannelProperties = emulateOldDeliveryChannels
+            EmulateOldDeliveryChannelProperties = emulateOldDeliveryChannelProperties,
+            MaxBatchSize = 4
         };
         
         return new QueuePostValidator(Options.Create(apiSettings));
@@ -24,7 +24,7 @@ public class QueuePostValidatorTests
     [Fact]
     public void Members_Null()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image>();
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(r => r.Members);
@@ -33,7 +33,7 @@ public class QueuePostValidatorTests
     [Fact]
     public void Members_Empty()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = Array.Empty<Image>() };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(r => r.Members);
@@ -42,7 +42,7 @@ public class QueuePostValidatorTests
     [Fact]
     public void Members_GreaterThanMaxBatchSize()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image>
         {
             Members = new[]
@@ -62,7 +62,7 @@ public class QueuePostValidatorTests
     [Fact]
     public void Members_EqualMaxBatchSize_Valid()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image>
         {
             Members = new[]
@@ -80,7 +80,7 @@ public class QueuePostValidatorTests
     [Fact]
     public void Members_ContainsDuplicateIds()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image>
         {
             Members = new[]
@@ -102,7 +102,7 @@ public class QueuePostValidatorTests
     [InlineData(" ")]
     public void Member_ModelId_NullOrEmpty(string id)
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { ModelId = id } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].ModelId");
@@ -111,7 +111,7 @@ public class QueuePostValidatorTests
     [Fact]
     public void Member_Space_Default()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { Space = 0 } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].Space");
@@ -123,7 +123,7 @@ public class QueuePostValidatorTests
     [InlineData(" ")]
     public void Member_MediaType_NullOrEmpty(string mediaType)
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { MediaType = mediaType } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].MediaType");
@@ -132,7 +132,7 @@ public class QueuePostValidatorTests
     [Fact]
     public void Member_Batch_Provided()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { Batch = "10" } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].Batch");
@@ -141,7 +141,7 @@ public class QueuePostValidatorTests
     [Fact]
     public void Member_Width_Provided()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { Width = 10 } } };
         var result = sut.TestValidate(model);
         result
@@ -152,7 +152,7 @@ public class QueuePostValidatorTests
     [Fact]
     public void Member_Height_Provided()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { Height = 10 } } };
         var result = sut.TestValidate(model);
         result
@@ -163,7 +163,7 @@ public class QueuePostValidatorTests
     [Fact]
     public void Member_Duration_Provided()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { Duration = 10 } } };
         var result = sut.TestValidate(model);
         result
@@ -174,7 +174,7 @@ public class QueuePostValidatorTests
     [Fact]
     public void Member_Finished_Provided()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { Finished = DateTime.Today } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].Finished");
@@ -183,25 +183,25 @@ public class QueuePostValidatorTests
     [Fact]
     public void Member_Created_Provided()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { Created = DateTime.Today } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].Created");
     }
     
     [Fact]
-    public void Member_ImageOptimisationPolicy_Null_WhenOldDeliveryChannelEmulationDisabled()
+    public void Member_ImageOptimisationPolicy_Provided()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { ImageOptimisationPolicy = "my-policy" } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].ImageOptimisationPolicy");
     }
-    
+
     [Fact]
-    public void Member_ThumbnailPolicy_Null_WhenOldDeliveryChannelEmulationDisabled()
+    public void Member_ThumbnailPolicy_Provided()
     {
-        var sut = GetSut(false);
+        var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { ThumbnailPolicy = "my-policy" } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].ThumbnailPolicy");
@@ -215,7 +215,7 @@ public class QueuePostValidatorTests
         var result = sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor("Members[0].ImageOptimisationPolicy");
     }
-    
+
     [Fact]
     public void Member_ThumbnailPolicy_Allowed_WhenOldDeliveryChannelEmulationEnabled()
     {
