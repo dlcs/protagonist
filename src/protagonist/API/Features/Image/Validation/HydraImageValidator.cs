@@ -32,10 +32,10 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         
         // Legacy policy fields
         RuleFor(a => a.ImageOptimisationPolicy).Null()
-            .WithMessage("'ImageOptimisationPolicy' can only be specified when legacy mode is enabled");
+            .WithMessage("'imageOptimisationPolicy' is deprecated. Use 'deliveryChannels' instead.");
         
         RuleFor(a => a.ThumbnailPolicy).Null()
-            .WithMessage("'ThumbnailPolicy' can only be specified when legacy mode is enabled");
+            .WithMessage("'thumbnailPolicy' is deprecated. Use 'deliveryChannels' instead.");
         
         // System edited fields
         RuleFor(a => a.Width).Empty().WithMessage("Should not include width");

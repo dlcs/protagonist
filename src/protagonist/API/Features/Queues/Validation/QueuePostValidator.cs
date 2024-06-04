@@ -41,10 +41,10 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
             members.RuleFor(a => a.Space).NotEmpty().WithMessage("Space cannot be empty");
             
             members.RuleFor(a => a.ImageOptimisationPolicy).Null()
-                .WithMessage("'ImageOptimisationPolicy' can only be specified when legacy mode is enabled");
+                .WithMessage("'imageOptimisationPolicy' is deprecated. Use 'deliveryChannels' instead.");
             
             members.RuleFor(a => a.ThumbnailPolicy).Null()
-                .WithMessage("'ThumbnailPolicy' can only be specified when legacy mode is enabled");
+                .WithMessage("'thumbnailPolicy' is deprecated. Use 'deliveryChannels' instead.");
         });
     }
 }

@@ -991,7 +991,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("'ThumbnailPolicy' can only be specified when legacy mode is enabled");
+        body.Should().Contain("'thumbnailPolicy' is deprecated. Use 'deliveryChannels' instead.");
     }
     
     [Fact]
@@ -1016,7 +1016,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("'ImageOptimisationPolicy' can only be specified when legacy mode is enabled");
+        body.Should().Contain("'imageOptimisationPolicy' is deprecated. Use 'deliveryChannels' instead.");
     }
     
     [Fact]
@@ -2069,7 +2069,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("'ThumbnailPolicy' can only be specified when legacy mode is enabled");
+        body.Should().Contain("'thumbnailPolicy' is deprecated. Use 'deliveryChannels' instead.");
     }
     
     [Fact]
@@ -2089,7 +2089,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("'ImageOptimisationPolicy' can only be specified when legacy mode is enabled");
+        body.Should().Contain("'imageOptimisationPolicy' is deprecated. Use 'deliveryChannels' instead.");
     }
     
     [Fact]
