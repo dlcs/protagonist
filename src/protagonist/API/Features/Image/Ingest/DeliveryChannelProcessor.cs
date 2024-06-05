@@ -45,12 +45,9 @@ public class DeliveryChannelProcessor
                     deliveryChannelsBeforeProcessing, existingAsset != null);
                 return deliveryChannelChanged;
             }
-            catch (InvalidOperationException)
+            catch (InvalidOperationException ioEx)
             {
-                throw new APIException("Failed to match delivery channel policy")
-                {
-                    StatusCode = 400
-                };
+                throw new BadRequestException("Failed to match delivery channel policy", ioEx);
             }
         }
 
@@ -160,7 +157,7 @@ public class DeliveryChannelProcessor
     private async Task<DeliveryChannelPolicy> GetDeliveryChannelPolicy(Asset asset, DeliveryChannelsBeforeProcessing deliveryChannel)
     {
         DeliveryChannelPolicy deliveryChannelPolicy;
-        if (deliveryChannel.Policy.IsNullOrEmpty())
+        if (string.IsNullOrEmpty(deliveryChannel.Policy))
         {
             deliveryChannelPolicy = await defaultDeliveryChannelRepository.MatchDeliveryChannelPolicyForChannel(
                 asset.MediaType!, asset.Space, asset.Customer, deliveryChannel.Channel);
@@ -201,11 +198,9 @@ public class DeliveryChannelProcessor
         if (matchedDeliveryChannels.Any(x => x.Channel == AssetDeliveryChannels.None) &&
             matchedDeliveryChannels.Count != 1)
         {
-            throw new APIException("An asset can only be automatically assigned a delivery channel of type 'None' when it is the only one available. " +
-                                   "Please check your default delivery channel configuration.")
-            {
-                StatusCode = 400
-            };
+            throw new BadRequestException(
+                "An asset can only be automatically assigned a delivery channel of type 'None' when it is the only one available. " +
+                "Please check your default delivery channel configuration.");
         }
         
         foreach (var deliveryChannel in matchedDeliveryChannels)

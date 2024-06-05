@@ -49,10 +49,9 @@ public class AssetProcessor
         Func<Asset, Task>? requiresReingestPreSave = null, 
         CancellationToken cancellationToken = default)
     {
-        Asset? existingAsset;
         try
         {
-            existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true);
+            var existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true);
 
             if (existingAsset == null)
             {
@@ -98,7 +97,7 @@ public class AssetProcessor
                 return new ProcessAssetResult
                 {
                     Result = ModifyEntityResult<Asset>.Failure(
-                        "Delivery channels are required when updating an existing Asset via PUT",
+                        "Delivery channels are required when updating an existing Asset",
                         WriteResult.BadRequest
                     )
                 };
