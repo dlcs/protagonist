@@ -115,11 +115,12 @@ public static class AssetQueryX
 
         return filtered;
     }
-    
+
     /// <summary>
     /// Include asset delivery channels and their associated policies.
     /// </summary>
     public static IQueryable<Asset> IncludeDeliveryChannelsWithPolicy(this IQueryable<Asset> assetQuery)
-        => assetQuery.Include(a => a.ImageDeliveryChannels)
+        => assetQuery
+            .Include(a => a.ImageDeliveryChannels.OrderBy(idc => idc.Channel))
             .ThenInclude(dc => dc.DeliveryChannelPolicy);
 }
