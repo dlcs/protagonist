@@ -26,7 +26,7 @@ public static class AssetQueryX
     /// The orderBy field can be the API version of property or the full property version.
     /// Defaults to "Created" field ordering if no field specified.
     /// </summary>
-    public static IQueryable<Asset> AsOrderedAssetQuery(this IQueryable<Asset> assetQuery, string? orderBy,
+    private static IQueryable<Asset> AsOrderedAssetQuery(this IQueryable<Asset> assetQuery, string? orderBy,
         bool descending = false)
     {
         var field = GetPropertyName(orderBy);
@@ -56,7 +56,6 @@ public static class AssetQueryX
             _ => pascalCase
         };
     }
-
 
     // Create an Expression from the PropertyName. 
     // I think Split(".") handles nested properties maybe - seems unnecessary but from an SO post
@@ -115,11 +114,12 @@ public static class AssetQueryX
 
         return filtered;
     }
-    
+
     /// <summary>
     /// Include asset delivery channels and their associated policies.
     /// </summary>
     public static IQueryable<Asset> IncludeDeliveryChannelsWithPolicy(this IQueryable<Asset> assetQuery)
-        => assetQuery.Include(a => a.ImageDeliveryChannels)
+        => assetQuery
+            .Include(a => a.ImageDeliveryChannels.OrderBy(idc => idc.Channel))
             .ThenInclude(dc => dc.DeliveryChannelPolicy);
 }
