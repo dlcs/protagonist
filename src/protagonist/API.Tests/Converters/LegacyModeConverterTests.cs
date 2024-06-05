@@ -40,8 +40,9 @@ public class LegacyModeConverterTests
 
         // Assert
         action.Should()
-            .ThrowExactly<APIException>()
-            .WithMessage("An origin is required when legacy mode is enabled");
+            .Throw<APIException>()
+            .WithMessage("An origin is required when legacy mode is enabled")
+            .And.StatusCode.Should().Be(400);
     }
     
     [Fact]
@@ -142,6 +143,32 @@ public class LegacyModeConverterTests
         {
             Family = AssetFamily.Image,
             Origin = "something.jpg",
+        };
+
+        // Act
+        var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+
+        // Assert
+        convertedImage.DeliveryChannels.Should().Satisfy(
+            dc => dc.Channel == AssetDeliveryChannels.Image && 
+                  dc.Policy == null,
+            dc => dc.Channel == AssetDeliveryChannels.Thumbnails &&
+                  dc.Policy == null);
+    }
+    
+    [Theory]
+    [InlineData("", "")]
+    [InlineData(null, null)]
+    [InlineData("http://dlc.io/imageOptimisationPolicies/", "http://dlc.io/thumbnailPolicies/")]
+    public void VerifyAndConvertToModernFormat_AddsDeliveryChannels_WhenProvidedWithoutPolicy_ForImage(string iop, string tp)
+    {
+        // Arrange
+        var hydraImage = new Image()
+        {
+            Family = AssetFamily.Image,
+            Origin = "something.jpg",
+            ImageOptimisationPolicy = iop,
+            ThumbnailPolicy = tp
         };
 
         // Act
@@ -309,7 +336,7 @@ public class LegacyModeConverterTests
 
     [Theory]
     [InlineData("video-max")]
-    [InlineData("https://api.dlc.services/imageOptimisationPolicy/video-max")]
+    [InlineData("https://api.dlc.services/imageOptimisationPolicies/video-max")]
     public void VerifyAndConvertToModernFormat_AddsTimebasedDeliveryChannelWithPolicy_WhenVideoMaxSpecified(
         string imageOptimisationPolicy)
     {
@@ -332,7 +359,7 @@ public class LegacyModeConverterTests
 
     [Theory]
     [InlineData("audio-max")]
-    [InlineData("https://api.dlc.services/imageOptimisationPolicy/audio-max")]
+    [InlineData("https://api.dlc.services/imageOptimisationPolicies/audio-max")]
     public void VerifyAndConvertToModernFormat_AddsTimebasedDeliveryChannelWithPolicy_WhenAudioMaxSpecified(
         string imageOptimisationPolicy)
     {
@@ -369,8 +396,9 @@ public class LegacyModeConverterTests
 
         // Assert
         action.Should()
-            .ThrowExactly<APIException>()
-            .WithMessage($"'not-a-policy' is not a valid imageOptimisationPolicy for an image");
+            .Throw<APIException>()
+            .WithMessage($"'not-a-policy' is not a valid imageOptimisationPolicy for an image")
+            .And.StatusCode.Should().Be(400);
     }
 
     [Fact]
@@ -389,8 +417,9 @@ public class LegacyModeConverterTests
 
         // Assert
         action.Should()
-            .ThrowExactly<APIException>()
-            .WithMessage($"'not-a-policy' is not a valid thumbnailPolicy for an image");
+            .Throw<APIException>()
+            .WithMessage($"'not-a-policy' is not a valid thumbnailPolicy for an image")
+            .And.StatusCode.Should().Be(400);
     }
  
     [Fact]
@@ -410,7 +439,8 @@ public class LegacyModeConverterTests
 
         // Assert
         action.Should()
-            .ThrowExactly<APIException>()
-            .WithMessage($"'not-a-policy' is not a valid imageOptimisationPolicy for a timebased asset");
+            .Throw<APIException>()
+            .WithMessage($"'not-a-policy' is not a valid imageOptimisationPolicy for a timebased asset")
+            .And.StatusCode.Should().Be(400);
     }
 }

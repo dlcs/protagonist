@@ -1517,7 +1517,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     
     [Theory]
     [InlineData("video-max")]
-    [InlineData("https://api.dlc.services/imageOptimisationPolicy/video-max")]
+    [InlineData("https://api.dlc.services/imageOptimisationPolicies/video-max")]
     public async Task Put_NewVideoAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled(string imageOptimisationPolicy)
     {
         const int customer = 325665;
@@ -1638,7 +1638,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     
     [Theory]
     [InlineData("audio-max")]
-    [InlineData("https://api.dlc.services/imageOptimisationPolicy/audio-max")]
+    [InlineData("https://api.dlc.services/imageOptimisationPolicies/audio-max")]
     public async Task Put_NewAudioAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled(string imageOptimisationPolicy)
     {
         const int customer = 325665;
