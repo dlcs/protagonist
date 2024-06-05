@@ -104,7 +104,7 @@ public class ImageController : HydraController
             catch (APIException apiEx)
             {
                 return this.HydraProblem(apiEx.Message, null,
-                    (int?)HttpStatusCode.BadRequest, "Failed to convert legacy asset");
+                    apiEx.StatusCode, "Failed to convert legacy asset");
             }
         }
         
