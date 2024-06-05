@@ -1,10 +1,8 @@
-﻿using API.Settings;
-using DLCS.Core;
+﻿using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using FluentValidation;
-using Microsoft.Extensions.Options;
 
 namespace API.Features.Image.Validation;
 
@@ -13,7 +11,7 @@ namespace API.Features.Image.Validation;
 /// </summary>
 public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 {
-    public HydraImageValidator(IOptions<ApiSettings> apiSettings)
+    public HydraImageValidator()
     {
         RuleSet("patch", () =>
         {

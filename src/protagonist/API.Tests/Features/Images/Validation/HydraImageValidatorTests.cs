@@ -3,7 +3,6 @@ using API.Features.Image.Validation;
 using API.Settings;
 using DLCS.HydraModel;
 using FluentValidation.TestHelper;
-using Microsoft.Extensions.Options;
 
 namespace API.Tests.Features.Images.Validation;
 
@@ -15,7 +14,7 @@ public class HydraImageValidatorTests
         {
             RestrictedAssetIdCharacterString = "\\ "
         };
-        return new HydraImageValidator(Options.Create(apiSettings));
+        return new HydraImageValidator();
     }
     
     [Theory]
