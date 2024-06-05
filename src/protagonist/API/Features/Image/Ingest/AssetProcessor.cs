@@ -44,7 +44,6 @@ public class AssetProcessor
     /// </param>
     /// <param name="requiresReingestPreSave">Optional delegate for modifying asset prior to saving</param>
     /// <param name="cancellationToken">Current cancellation token</param>
-    /// <param name="isPriorityQueue">Whether the request is for the priority queue or not</param>
     public async Task<ProcessAssetResult> Process(AssetBeforeProcessing assetBeforeProcessing, bool mustExist, bool alwaysReingest, bool isBatchUpdate, 
         Func<Asset, Task>? requiresReingestPreSave = null, 
         CancellationToken cancellationToken = default)

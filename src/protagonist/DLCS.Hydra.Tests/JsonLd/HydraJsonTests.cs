@@ -16,7 +16,6 @@ public class HydraJsonTests
         operation.Type.Should().Be("hydra:Operation");
     }
     
-    
     [Theory]
     [InlineData(false, null)]
     [InlineData(true, HydraContext)]
@@ -28,7 +27,6 @@ public class HydraJsonTests
         };
         operation.Context.Should().Be(expectedContext);
     }
-    
     
     [Fact]
     public void HydraContext_Not_Overwritten()
