@@ -42,7 +42,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private static readonly IAssetNotificationSender NotificationSender = A.Fake<IAssetNotificationSender>();
     private readonly IAmazonS3 amazonS3;
     private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
-    
+
     public ModifyAssetTests(
         StorageFixture storageFixture, 
         ProtagonistAppFactory<Startup> factory)
@@ -69,6 +69,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             });
         
         dbFixture.CleanUp();
+
+        LegacyModeHelpers.SetupLegacyCustomer(dbContext).Wait();
     }
 
     [Fact]
@@ -266,10 +268,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_NewImageAsset_Creates_Asset_WhileIgnoringCustomDefaultDeliveryChannel()
+    public async Task Put_NewImageAsset_CreatesAsset_WhileIgnoringDefaultDeliveryChannelForDifferentSpace()
     {
         var customerAndSpace = await CreateCustomerAndSpace();
 
+        // Create a new policy and DefaultDeliveryChannel for a space that isn't the one used. Meaning we fallback to
+        // the system defaultDeliveryChannel
         var newPolicy = await dbContext.DeliveryChannelPolicies.AddAsync(new DLCS.Model.Policies.DeliveryChannelPolicy()
         {
             Created = DateTime.UtcNow,
@@ -279,9 +283,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             Name = "space-specific-image",
             Channel = "iiif-img",
             Customer = customerAndSpace.customer,
-            Id = 260
+            Id = 9988
         });
-
         await dbContext.DefaultDeliveryChannels.AddAsync(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel
         {
             Space = customerAndSpace.space + 1,
@@ -292,7 +295,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.SaveChangesAsync();
 
-        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, customerAndSpace.space);
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
   ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -317,7 +320,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
-                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault);
+                                                                x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault, 
+            "Default DeliveryChannelPolicyId used as new DefaultDeliveryChannel is for a different space");
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
     }
 
@@ -520,13 +524,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_NewImageAsset_CreatesAsset_WhenMediaTypeAndFamilyNotSetWithLegacyEnabled()
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_WhenMediaTypeAndFamilyNotSetWithLegacyEnabled));
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.SaveChangesAsync();
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
         
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -540,7 +538,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -558,13 +556,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_NewImageAsset_CreatesAsset_WhenInferringOfMediaTypeNotPossibleWithLegacyEnabled()
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = new AssetId(customer, space, nameof(Put_NewImageAsset_CreatesAsset_WhenInferringOfMediaTypeNotPossibleWithLegacyEnabled));
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.SaveChangesAsync();
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
         
         var hydraImageBody = $@"{{
   ""@type"": ""Image"",
@@ -578,7 +570,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -597,13 +589,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_Existing_Asset_UpdatesAsset_IfIncomingDeliveryChannelsNull_AndLegacyEnabled()
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
         
         var expectedDeliveryChannels = new List<ImageDeliveryChannel>()
         {
@@ -614,7 +600,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             }
         };
         
-        var testAsset = await dbContext.Images.AddTestAsset(assetId, customer: customer, space: space, 
+        var testAsset = await dbContext.Images.AddTestAsset(assetId, customer: LegacyModeHelpers.LegacyCustomer, space: LegacyModeHelpers.LegacySpace, 
             origin: $"https://example.org/{assetId.Asset}.tiff", imageDeliveryChannels: expectedDeliveryChannels);
         
         await dbContext.SaveChangesAsync();
@@ -632,7 +618,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
        
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -1271,14 +1257,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("https://api.dlc.services/imageOptimisationPolicies/fast-higher")]
     public async Task Put_NewImageAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled(string imageOptimisationPolicy)
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.SaveChangesAsync();
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
 
         var hydraImageBody = $@"{{
           ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -1293,7 +1272,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
 
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -1315,14 +1294,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_NewImageAsset_WithImageOptimisationPolicy_Returns400_IfInvalid_AndLegacyEnabled()
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.SaveChangesAsync();
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
 
         var hydraImageBody = $@"{{
           ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -1331,7 +1303,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -1345,15 +1317,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("https://api.dlc.services/imageOptimisationPolicies/fast-higher")]
     public async Task Put_ExistingImageAsset_WithImageOptimisationPolicy_AddsDeliveryChannelsToAsset_WhenLegacyEnabled(string imageOptimisationPolicy)
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.Images.AddTestAsset(assetId, customer: customer, space: space,
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
+        await dbContext.Images.AddTestAsset(assetId, customer: LegacyModeHelpers.LegacyCustomer, space: LegacyModeHelpers.LegacySpace,
             family: AssetFamily.Image, origin: "https://images.org/image.tiff", mediaType: "image/tiff",
             imageOptimisationPolicy: string.Empty, thumbnailPolicy: string.Empty);
         await dbContext.SaveChangesAsync();
@@ -1371,7 +1336,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -1395,15 +1360,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("https://api.dlc.services/thumbnailPolicies/default")]
     public async Task Put_NewImageAsset_WithThumbnailPolicy_Creates_Asset_WhenLegacyEnabled(string thumbnailPolicy)
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.SaveChangesAsync();
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
 
         var hydraImageBody = $@"{{
           ""@type"": ""Image"",
@@ -1419,7 +1376,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
 
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -1441,14 +1398,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_NewImageAsset_WithThumbnailPolicy_Returns400_IfInvalid_AndLegacyEnabled()
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.SaveChangesAsync();
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
 
         var hydraImageBody = $@"{{
           ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -1457,7 +1407,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -1471,15 +1421,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("https://api.dlc.services/thumbnailPolicies/default")]
     public async Task Put_ExistingImageAsset_WithThumbnailPolicy_AddsDeliveryChannelsToAsset_WhenLegacyEnabled(string thumbnailPolicy)
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.Images.AddTestAsset(assetId, customer: customer, space: space,
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
+        await dbContext.Images.AddTestAsset(assetId, customer: LegacyModeHelpers.LegacyCustomer, space: LegacyModeHelpers.LegacySpace,
             family: AssetFamily.Image, origin: "https://images.org/image.tiff", mediaType: "image/tiff",
             imageOptimisationPolicy: string.Empty, thumbnailPolicy: string.Empty);
         await dbContext.SaveChangesAsync();
@@ -1497,7 +1440,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -1520,14 +1463,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("https://api.dlc.services/imageOptimisationPolicies/video-max")]
     public async Task Put_NewVideoAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled(string imageOptimisationPolicy)
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.SaveChangesAsync();
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
 
         var hydraImageBody = $@"{{
           ""family"": ""T"",
@@ -1543,7 +1479,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -1563,14 +1499,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_NewVideoAsset_WithImageOptimisationPolicy_Returns400_IfInvalid_AndLegacyEnabled()
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.SaveChangesAsync();
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
 
         var hydraImageBody = $@"{{
           ""family"": ""T"",
@@ -1580,7 +1509,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -1594,14 +1523,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("https://api.dlc.services/imageOptimisationPolicies/video-max")]
     public async Task Put_ExistingVideoAsset_WithImageOptimisationPolicy_AddsDeliveryChannelsToAsset_WhenLegacyEnabled(string imageOptimisationPolicy)
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.Images.AddTestAsset(assetId, customer: customer, space: space,
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
+        await dbContext.Images.AddTestAsset(assetId, customer: LegacyModeHelpers.LegacyCustomer, space: LegacyModeHelpers.LegacySpace,
             family: AssetFamily.Timebased, origin: "https://images.org/image.mp4", mediaType: "video/mp4",
             imageOptimisationPolicy: string.Empty, thumbnailPolicy: string.Empty);
         await dbContext.SaveChangesAsync();
@@ -1620,7 +1543,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -1641,14 +1564,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("https://api.dlc.services/imageOptimisationPolicies/audio-max")]
     public async Task Put_NewAudioAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabled(string imageOptimisationPolicy)
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.SaveChangesAsync();
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
 
         var hydraImageBody = $@"{{
           ""family"": ""T"",
@@ -1664,7 +1580,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -1684,14 +1600,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_NewAudioAsset_WithImageOptimisationPolicy_Returns400_IfInvalid_AndLegacyEnabled()
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.SaveChangesAsync();
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
 
         var hydraImageBody = $@"{{
           ""family"": ""T"",
@@ -1701,7 +1610,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -1715,14 +1624,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("https://api.dlc.services/imageOptimisationPolicies/audio-max")]
     public async Task Put_ExistingAudioAsset_WithImageOptimisationPolicy_AddsDeliveryChannelsToAsset_WhenLegacyEnabled(string imageOptimisationPolicy)
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.Images.AddTestAsset(assetId, customer: customer, space: space,
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
+        await dbContext.Images.AddTestAsset(assetId, customer: LegacyModeHelpers.LegacyCustomer, space: LegacyModeHelpers.LegacySpace,
             family: AssetFamily.Timebased, origin: "https://images.org/image.mp3", mediaType: "audio/mp3",
             imageOptimisationPolicy: string.Empty, thumbnailPolicy: string.Empty);
         await dbContext.SaveChangesAsync();
@@ -1741,7 +1644,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -1760,14 +1663,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_NewFileAsset_Creates_Asset_WhenLegacyEnabled()
     {
-        const int customer = 325665;
-        const int space = 2;
-        var assetId = AssetIdGenerator.GetAssetId(customer, space);
-        await dbContext.Customers.AddTestCustomer(customer);
-        await dbContext.Spaces.AddTestSpace(customer, space);
-        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customer);
-        await dbContext.DeliveryChannelPolicies.AddTestDeliveryChannelPolicies(customer);
-        await dbContext.SaveChangesAsync();
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
 
         var hydraImageBody = $@"{{
           ""@type"": ""Image"",
@@ -1783,7 +1679,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
 
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
