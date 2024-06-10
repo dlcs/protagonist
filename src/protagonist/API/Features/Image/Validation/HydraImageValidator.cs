@@ -1,10 +1,8 @@
-﻿using API.Settings;
-using DLCS.Core;
+﻿using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using FluentValidation;
-using Microsoft.Extensions.Options;
 
 namespace API.Features.Image.Validation;
 
@@ -13,7 +11,7 @@ namespace API.Features.Image.Validation;
 /// </summary>
 public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 {
-    public HydraImageValidator(IOptions<ApiSettings> apiSettings)
+    public HydraImageValidator()
     {
         RuleSet("patch", () =>
         {
@@ -31,15 +29,11 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         When(a => !a.DeliveryChannels.IsNullOrEmpty(), ImageDeliveryChannelDependantValidation);
         
         // Legacy policy fields
-        RuleFor(a => a.ImageOptimisationPolicy)
-            .Null()
-            .When(_ => !apiSettings.Value.EmulateOldDeliveryChannelProperties)
-            .WithMessage("'ImageOptimisationPolicy' is disabled");
-
-        RuleFor(a => a.ThumbnailPolicy)
-            .Null()
-            .When(_ => !apiSettings.Value.EmulateOldDeliveryChannelProperties)
-            .WithMessage("'ThumbnailPolicy' is disabled");
+        RuleFor(a => a.ImageOptimisationPolicy).Null()
+            .WithMessage("'imageOptimisationPolicy' is deprecated. Use 'deliveryChannels' instead.");
+        
+        RuleFor(a => a.ThumbnailPolicy).Null()
+            .WithMessage("'thumbnailPolicy' is deprecated. Use 'deliveryChannels' instead.");
         
         // System edited fields
         RuleFor(a => a.Width).Empty().WithMessage("Should not include width");

@@ -99,10 +99,4 @@ public class ApiSettings
             restrictedAssetIdCharacters = restrictedAssetIdCharacterString.ToCharArray();
         }
     }
-    
-    /// <summary>
-    /// Whether old delivery channel properties (e.g imageOptimisationPolicy, thumbnailPolicy)
-    /// on legacy payloads are supported and translated into the new format
-    /// </summary>
-    public bool EmulateOldDeliveryChannelProperties { get; set; }
 }

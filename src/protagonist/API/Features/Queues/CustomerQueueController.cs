@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
+using System.Net;
 using API.Converters;
-using API.Features.DeliveryChannels.Converters;
+using API.Exceptions;
 using API.Features.Image;
 using API.Features.Queues.Converters;
 using API.Features.Queues.Requests;
 using API.Features.Queues.Validation;
 using API.Infrastructure;
 using API.Settings;
-using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
@@ -328,7 +328,15 @@ public class CustomerQueueController : HydraController
     private async Task<IActionResult> CreateBatchInternal(int customerId, HydraCollection<DLCS.HydraModel.Image> images,
         QueuePostValidator validator, string queueName, CancellationToken cancellationToken)
     {
-        UpdateMembers(customerId, images.Members);
+        try
+        {
+            UpdateMembers(customerId, images.Members);
+        }
+        catch (APIException apiEx)
+        {
+            return this.HydraProblem(apiEx.Message, null,
+                apiEx.StatusCode, "Failed to convert legacy asset");
+        }
 
         var validationResult = await validator.ValidateAsync(images, cancellationToken);
         if (!validationResult.IsValid)
