@@ -1045,7 +1045,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_Existing_Asset_Returns400_IfDeliveryChannelsNull()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_Returns400_IfDeliveryChannelsNull));
+        var assetId = AssetIdGenerator.GetAssetId();
         await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
         
@@ -1063,13 +1063,13 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("Delivery channels are required when updating an existing Asset via PUT");
+        body.Should().Contain("Delivery channels are required when updating an existing Asset");
     }
     
     [Fact]
     public async Task Put_Existing_Asset_Returns400_IfDeliveryChannelsEmpty()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_Returns400_IfDeliveryChannelsEmpty));
+        var assetId = AssetIdGenerator.GetAssetId();
         await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
         
@@ -1088,7 +1088,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("Delivery channels are required when updating an existing Asset via PUT");
+        body.Should().Contain("Delivery channels are required when updating an existing Asset");
     }
 
     [Fact]
