@@ -9,15 +9,20 @@
 
     <ItemGroup>
       <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.150" />
+      <PackageReference Include="LazyCache" Version="2.4.0" />
+      <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
       <PackageReference Include="Serilog" Version="2.10.0" />
       <PackageReference Include="Serilog.Extensions.Hosting" Version="4.2.0" />
       <PackageReference Include="Serilog.Settings.Configuration" Version="3.3.0" />
       <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
+      <PackageReference Include="xunit.extensibility.core" Version="2.4.1" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\DLCS.AWS\DLCS.AWS.csproj" />
+      <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
+      <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
     </ItemGroup>
 
     <ItemGroup>

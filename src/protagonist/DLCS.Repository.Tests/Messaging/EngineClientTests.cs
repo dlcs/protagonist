@@ -1,16 +1,21 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.SQS;
+using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository.Messaging;
 using FakeItEasy;
+using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Test.Helpers.Http;
 
 namespace DLCS.Repository.Tests.Messaging;
@@ -33,8 +38,9 @@ public class EngineClientTests
 
         queueLookup = A.Fake<IQueueLookup>();
         queueSender = A.Fake<IQueueSender>();
-        
-        sut = new EngineClient(queueLookup, queueSender, httpClient, new NullLogger<EngineClient>());
+
+        sut = new EngineClient(queueLookup, queueSender, httpClient, new MockCachingService(), Options.Create(new CacheSettings()),
+            new NullLogger<EngineClient>());
     }
     
     [Fact]
@@ -138,5 +144,46 @@ public class EngineClientTests
         httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/allowed-av");
         message.Method.Should().Be(HttpMethod.Get);
         returnedAvPolicyOptions.Should().BeNull();
+    }
+    
+    [Fact]
+    public async Task GetAvPresets_RetrievesAllowedAvPresets()
+    {
+        // Arrange
+        HttpRequestMessage message = null;
+        httpHandler.RegisterCallback(r => message = r);
+        
+        var response = JsonSerializer.Serialize(new Dictionary<string, TranscoderPreset>()
+        {
+            { "webm-policy", new("webm-policy", "some-webm-preset", "oga") },
+            { "oga-policy", new("oga-policy", "some-oga-preset", "webm") }
+        });
+        
+        httpHandler.GetResponseMessage(response, HttpStatusCode.OK);
+        
+        // Act
+        var returnedAvPresets = await sut.GetAvPresets();
+        
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/av-presets");
+        message.Method.Should().Be(HttpMethod.Get);
+        returnedAvPresets!.Count.Should().Be(2);
+        returnedAvPresets!.Keys.Should().BeEquivalentTo("webm-policy", "oga-policy");
+        returnedAvPresets!.Values.Should().Contain(new TranscoderPreset("webm-policy", "some-webm-preset", "oga"));
+    }
+    
+    [Fact]
+    public async Task GetAvPresets_ReturnsEmpty_IfEngineAvPolicyEndpointThrowsError()
+    {
+        // Arrange
+        httpHandler.RegisterCallback(r => throw new Exception("error"));
+        httpHandler.GetResponseMessage("Not found", HttpStatusCode.NotFound);
+        
+        // Act
+        var returnedAvPresets = await sut.GetAvPresets();
+        
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/av-presets");
+        returnedAvPresets.Should().BeEmpty();
     }
 }

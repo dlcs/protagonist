@@ -35,7 +35,7 @@ public class ControllableHttpMessageHandler : HttpMessageHandler
         };
         return response;
     }
-    
+
     /// <summary>
     /// Set a pre-canned response 
     /// </summary>

@@ -1,6 +1,7 @@
 ﻿using System.Xml.Linq;
 using Amazon.ElasticTranscoder;
 using Amazon.ElasticTranscoder.Model;
+using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.ElasticTranscoder.Models.Job;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -45,25 +46,38 @@ public class ElasticTranscoderWrapper : IElasticTranscoderWrapper
         this.storageKeyGenerator = storageKeyGenerator;
     }
     
-    public Task<Dictionary<string, string>> GetPresetIdLookup(CancellationToken token)
+    public async Task<Dictionary<string, TranscoderPreset>> GetPresetIdLookup(CancellationToken token)
+    {
+        var presets = await RetrievePresets(token);
+        
+        var presetsDictionary = presets.ToDictionary(pair => pair.Name, pair => pair);
+
+        return presetsDictionary;
+    }
+
+    public async Task<TranscoderPreset?> GetPresetDetails(string name, CancellationToken token)
+    {
+        var presets = await RetrievePresets(token);
+        
+        return presets.FirstOrDefault(p => p.Name == name);
+    }
+    
+    private Task<List<TranscoderPreset>> RetrievePresets(CancellationToken token)
     {
         const string presetLookupKey = "MediaTranscode:Presets";
-
+        
         return cache.GetOrAddAsync(presetLookupKey, async entry =>
         {
-            var presets = new Dictionary<string, string>();
+            var presets = new List<TranscoderPreset>();
             var response = new ListPresetsResponse();
-                
+            
             do
             {
-                var request = new ListPresetsRequest {PageToken = response.NextPageToken};
+                var request = new ListPresetsRequest { PageToken = response.NextPageToken };
                 response = await elasticTranscoder.ListPresetsAsync(request, token);
 
-                foreach (var preset in response.Presets)
-                {
-                    presets.Add(preset.Name, preset.Id);
-                }
-
+                presets.AddRange(response.Presets.Select(r => new TranscoderPreset(r.Id, r.Name, r.Container))
+                    .ToList());
             } while (response.NextPageToken != null);
 
             if (presets.Count == 0)

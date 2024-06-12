@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DLCS.Core.Settings;
 using DLCS.Core.Types;
 using IIIF.ImageApi;
 using Orchestrator.Settings;

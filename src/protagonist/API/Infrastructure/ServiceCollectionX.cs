@@ -73,7 +73,7 @@ public static class ServiceCollectionX
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .AddSingleton<IQueueLookup, SqsQueueLookup>()
             .AddSingleton<IQueueSender, SqsQueueSender>()
-            .AddSingleton<ITopicPublisher, TopicPublisher>()
+            .AddScoped<ITopicPublisher, TopicPublisher>()
             .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
             .AddSingleton<SqsQueueUtilities>()
             .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
