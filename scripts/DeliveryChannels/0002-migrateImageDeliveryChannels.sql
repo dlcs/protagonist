@@ -32,6 +32,7 @@ WHERE i."Family" = 'I'
   AND i."NotForDelivery" = false;
 
 -- convert timebased
+INSERT INTO "ImageDeliveryChannels" ("ImageId", "Channel", "DeliveryChannelPolicyId")
 SELECT i."Id",
        'iiif-av',
        CASE

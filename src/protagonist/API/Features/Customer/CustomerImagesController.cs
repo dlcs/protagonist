@@ -62,7 +62,7 @@ public class CustomerImagesController : HydraController
 
         return await HandleListFetch<Asset, GetMultipleImagesById, DLCS.HydraModel.Image>(
             request,
-            a => a.ToHydra(GetUrlRoots(), Settings.EmulateOldDeliveryChannelProperties),
+            a => a.ToHydra(GetUrlRoots()),
             "Get customer images failed",
             cancellationToken: cancellationToken);
     }
