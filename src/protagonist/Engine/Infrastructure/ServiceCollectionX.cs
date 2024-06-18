@@ -1,4 +1,3 @@
-using System.Net;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
