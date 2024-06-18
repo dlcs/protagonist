@@ -17,6 +17,7 @@ public class CantaloupeThumbsClientTests
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly CantaloupeThumbsClient sut;
     private readonly IImageMeasurer imageMeasurer;
+    private readonly HttpClient httpClient;
 
     private readonly List<string> defaultThumbs = new()
     {
@@ -33,7 +34,7 @@ public class CantaloupeThumbsClientTests
 
         A.CallTo(() => imageMeasurer.MeasureImage(A<string>._, A<CancellationToken>._)).Returns(new ImageOnDisk());
 
-        var httpClient = new HttpClient(httpHandler);
+        httpClient = new HttpClient(httpHandler);
         httpClient.BaseAddress = new Uri("http://image-processor/");
         sut = new CantaloupeThumbsClient(httpClient, fileSystem, imageMeasurer, new NullLogger<CantaloupeThumbsClient>());
     }
@@ -299,6 +300,42 @@ public class CantaloupeThumbsClientTests
             "Landscape images - invalid sizes altered",
         },
     };
+    
+    [Fact]
+    public async Task GenerateThumbnails_UpdatesHandlerWithCookies()
+    {
+        // Arrange
+        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsThumbForSuccessfulResponse));
+        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+
+        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        response.Headers.Add("Set-Cookie", new List<string?>()
+        {
+            "AWSALBAPP-0=_remove_; Expires=Tue, 25 Jun 2024 10:56:45 GMT; Path=/",
+            "AWSALBAPP-1=_remove_; Expires=Tue, 25 Jun 2024 10:56:45 GMT; Path=/",
+            "AWSALBAPP-2=_remove_; Expires=Tue, 25 Jun 2024 10:56:45 GMT; Path=/"
+        });
+        httpHandler.SetResponse(response);
+        context.Asset.Width = 2000;
+        context.Asset.Height = 2000;
+
+        context.WithLocation(new ImageLocation
+        {
+            S3 = "//some/location/with/s3"
+        });
+        
+        // Act
+        await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+
+        var cookies = httpClient.DefaultRequestHeaders.GetCookies();
+
+        // Assert
+        cookies.Count.Should().Be(3);
+        cookies[0].Cookies[0].Name.Should().Be("AWSALBAPP-0");
+        cookies[0].Cookies[0].Value.Should().Be("_remove_");
+        cookies[1].Cookies[0].Name.Should().Be("AWSALBAPP-1");
+        cookies[2].Cookies[0].Name.Should().Be("AWSALBAPP-2");
+    }
 
     public class ImageOnDiskResults
     {

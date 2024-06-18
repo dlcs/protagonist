@@ -1,3 +1,4 @@
+using System.Net;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
@@ -102,13 +103,13 @@ public static class ServiceCollectionX
             services.AddTransient<TimingHandler>();
             services.AddScoped<IImageProcessor, ImageServerClient>()
                 .AddScoped<IImageMeasurer, ImageSharpMeasurer>();
-                
+
             services.AddHttpClient<IAppetiserClient, AppetiserClient>(client =>
                 {
                     client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
                     client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
                 }).AddHttpMessageHandler<TimingHandler>();
-            
+
             services.AddHttpClient<IThumbsClient, CantaloupeThumbsClient>(client =>
             {
                 client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUrl;

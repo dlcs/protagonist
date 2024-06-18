@@ -17,7 +17,7 @@ public class CantaloupeThumbsClient : IThumbsClient
     private readonly IFileSystem fileSystem;
     private readonly IImageMeasurer imageMeasurer;
     private readonly ILogger<CantaloupeThumbsClient> logger;
-        
+
     public CantaloupeThumbsClient(
         HttpClient cantaloupeClient,
         IFileSystem fileSystem,
@@ -66,6 +66,8 @@ public class CantaloupeThumbsClient : IThumbsClient
         using var response =
             await cantaloupeClient.GetAsync(
                 $"iiif/3/{convertedS3Location}/full/{size}/0/default.jpg", cancellationToken);
+        
+        AttemptToAddStickinessCookie(response);
 
         if (response.StatusCode == HttpStatusCode.BadRequest)
         {
@@ -82,6 +84,18 @@ public class CantaloupeThumbsClient : IThumbsClient
 
         await LogErrorResponse(response, assetId, size, LogLevel.Error, cancellationToken);
         throw new HttpException(response.StatusCode, "failed to retrieve data from the thumbs processor");
+    }
+
+    private void AttemptToAddStickinessCookie(HttpResponseMessage response)
+    {
+        if (!cantaloupeClient.DefaultRequestHeaders.Contains("Cookie"))
+        {
+            var hasCookie = response.Headers.TryGetValues("Set-Cookie", out var cookies);
+            if (hasCookie)
+            {
+                cantaloupeClient.DefaultRequestHeaders.Add("Cookie", cookies!);
+            }
+        }
     }
 
     private async Task<ImageOnDisk> SaveImageToDisk(HttpResponseMessage response, string size, string thumbFolder,
