@@ -337,6 +337,31 @@ public class CantaloupeThumbsClientTests
         cookies[2].Cookies[0].Name.Should().Be("AWSALBAPP-2");
     }
 
+    [Fact]
+    public async Task GenerateThumbnails_UpdatesHandlerWithNoCookiesSet()
+    {
+        // Arrange
+        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsThumbForSuccessfulResponse));
+        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+        context.Asset.Width = 2000;
+        context.Asset.Height = 2000;
+
+        context.WithLocation(new ImageLocation
+        {
+            S3 = "//some/location/with/s3"
+        });
+        
+        // Act
+        await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+
+        var cookies = httpClient.DefaultRequestHeaders.GetCookies();
+
+        // Assert
+        cookies.Count.Should().Be(0);
+    }
+
     public class ImageOnDiskResults
     {
         public ImageOnDisk ReturnedFromImageServer { get; }
