@@ -311,9 +311,9 @@ public class CantaloupeThumbsClientTests
         var response = new HttpResponseMessage(HttpStatusCode.OK);
         response.Headers.Add("Set-Cookie", new List<string?>()
         {
-            "AWSALBAPP-0=_remove_; Expires=Tue, 25 Jun 2024 10:56:45 GMT; Path=/",
-            "AWSALBAPP-1=_remove_; Expires=Tue, 25 Jun 2024 10:56:45 GMT; Path=/",
-            "AWSALBAPP-2=_remove_; Expires=Tue, 25 Jun 2024 10:56:45 GMT; Path=/"
+            "AWSALBAPP-0=_remove_; Path=/",
+            "AWSALBAPP-1=_remove_; Path=/",
+            "AWSALBAPP-2=_remove_; Path=/"
         });
         httpHandler.SetResponse(response);
         context.Asset.Width = 2000;
