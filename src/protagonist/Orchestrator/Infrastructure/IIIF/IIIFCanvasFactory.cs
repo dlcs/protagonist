@@ -85,7 +85,7 @@ public class IIIFCanvasFactory
                                     Format = "image/jpeg",
                                     Width = thumbnailSizes.MaxDerivativeSize.Width,
                                     Height = thumbnailSizes.MaxDerivativeSize.Height,
-                                    Service = GetImageServices(asset, customerPathElement, authProbeServices)
+                                    Service = GetImageServices(asset, customerPathElement, false, authProbeServices)
                                 }
                             : null,
                     }.AsListOf<IAnnotation>()
@@ -98,7 +98,7 @@ public class IIIFCanvasFactory
                 {
                     Id = GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
                     Format = "image/jpeg",
-                    Service = GetImageServiceForThumbnail(asset, customerPathElement,
+                    Service = GetImageServiceForThumbnail(asset, customerPathElement, false,
                         thumbnailSizes.OpenThumbnails)
                 }.AsListOf<ExternalResource>();
             }
@@ -147,7 +147,7 @@ public class IIIFCanvasFactory
                                     thumbnailSizes.MaxDerivativeSize, false),
                                 Width = thumbnailSizes.MaxDerivativeSize.Width,
                                 Height = thumbnailSizes.MaxDerivativeSize.Height,
-                                Service = GetImageServices(asset, customerPathElement, null)
+                                Service = GetImageServices(asset, customerPathElement, true, null)
                             }
                         : null,
                 }.AsList()
@@ -158,7 +158,8 @@ public class IIIFCanvasFactory
                 canvas.Thumbnail = new IIIF2.Thumbnail
                 {
                     Id = GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
-                    Service = GetImageServiceForThumbnail(asset, customerPathElement, thumbnailSizes.OpenThumbnails)
+                    Service = GetImageServiceForThumbnail(asset, customerPathElement, true,
+                        thumbnailSizes.OpenThumbnails)
                 }.AsList();
             }
 
@@ -183,10 +184,10 @@ public class IIIFCanvasFactory
         };
     }
     
-    private List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
-        List<Size> thumbnailSizes)
+    private List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement, 
+        bool forPresentation2, List<Size> thumbnailSizes)
     {
-        var services = new List<IService>(2);
+        var services = new List<IService>();
         if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(ImageApi.Version.V2))
         {
             services.Add(new ImageService2
@@ -197,6 +198,9 @@ public class IIIFCanvasFactory
                 Context = ImageService2.Image2Context,
             });
         }
+
+        // NOTE - we never include ImageService3 on Presentation2 manifests
+        if (forPresentation2) return services;
 
         if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(ImageApi.Version.V3))
         {
@@ -259,13 +263,14 @@ public class IIIFCanvasFactory
         return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
     }
 
-    private List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement,
+    private List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement, bool forPresentation2,
         Dictionary<AssetId, AuthProbeService2>? authProbeServices)
     {
         var noAuthServices = authProbeServices.IsNullOrEmpty();
+        var versionPathTemplates = orchestratorSettings.ImageServerConfig.VersionPathTemplates;
 
-        var services = new List<IService>(2);
-        if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(ImageApi.Version.V2))
+        var services = new List<IService>();
+        if (versionPathTemplates.ContainsKey(ImageApi.Version.V2))
         {
             services.Add(new ImageService2
             {
@@ -278,7 +283,10 @@ public class IIIFCanvasFactory
             });
         }
 
-        if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(ImageApi.Version.V3))
+        // NOTE - we never include ImageService3 on Presentation2 manifests
+        if (forPresentation2) return services;
+        
+        if (versionPathTemplates.ContainsKey(ImageApi.Version.V3))
         {
             services.Add(new ImageService3
             {
