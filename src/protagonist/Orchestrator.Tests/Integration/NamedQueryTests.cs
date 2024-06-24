@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -193,6 +192,25 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
         response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse["@id"].ToString().Should().Be($"http://localhost/{path}");
+    }
+    
+    [Fact]
+    public async Task Get_ReturnsV2Manifest_WithoutImageService3Services()
+    {
+        // Arrange
+        const string path = "iiif-resource/v2/99/test-named-query/my-ref/1";
+        const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/2/context.json\"";
+        
+        // Act
+        var response = await httpClient.GetAsync($"{path}?foo=bar");
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Vary.Should().Contain("Accept");
+        response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
+
+        var json = await response.Content.ReadAsStringAsync();
+        json.Should().NotContain("ImageService3");
     }
     
     [Fact]
