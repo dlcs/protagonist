@@ -4,6 +4,7 @@ using DLCS.Core.Collections;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using Hydra;
+using Microsoft.Extensions.Logging;
 using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Converters;
@@ -14,13 +15,16 @@ namespace API.Converters;
 public static class LegacyModeConverter
 {
     private const string DefaultMediaType = "image/unknown";
+
+    internal static void LogLegacyUsage(this ILogger logger, string message, params object?[] args)
+        => logger.LogWarning("LEGACY USE:" + message, args);
     
     /// <summary>
     /// Converts from legacy format to new format
     /// </summary>
     /// <param name="image">The image to convert should be emulated and translated into delivery channels</param>
     /// <returns>A converted image</returns>
-    public static T VerifyAndConvertToModernFormat<T>(T image)
+    public static T VerifyAndConvertToModernFormat<T>(T image, ILogger? logger = null)
         where T : Image
     {
         if (image.Origin.IsNullOrEmpty())
@@ -30,6 +34,7 @@ public static class LegacyModeConverter
         
         if (image.MediaType.IsNullOrEmpty())
         {
+            logger?.LogLegacyUsage("Null or empty media type");
             var contentType = image.Origin?.Split('.').Last() ?? string.Empty;
          
             image.MediaType = MIMEHelper.GetContentTypeForExtension(contentType) ?? DefaultMediaType;
@@ -43,6 +48,7 @@ public static class LegacyModeConverter
 
         if (image.MaxUnauthorised is null or 0 && image.Roles.IsNullOrEmpty())
         {
+            logger?.LogLegacyUsage("MaxUnauthorised");
             image.MaxUnauthorised = -1;
         }
         

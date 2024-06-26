@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Net;
 using API.Converters;
 using API.Exceptions;
 using API.Features.Image;
@@ -8,6 +7,7 @@ using API.Features.Queues.Requests;
 using API.Features.Queues.Validation;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
@@ -16,6 +16,7 @@ using Hydra.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Batch = DLCS.HydraModel.Batch;
 
@@ -28,8 +29,12 @@ namespace API.Features.Queues;
 [ApiController]
 public class CustomerQueueController : HydraController
 {
-    public CustomerQueueController(IOptions<ApiSettings> settings, IMediator mediator) : base(settings.Value, mediator)
+    private readonly ILogger<CustomerQueueController> logger;
+
+    public CustomerQueueController(IOptions<ApiSettings> settings, IMediator mediator,
+        ILogger<CustomerQueueController> logger) : base(settings.Value, mediator)
     {
+        this.logger = logger;
     }
 
     /// <summary>
@@ -331,6 +336,15 @@ public class CustomerQueueController : HydraController
         try
         {
             UpdateMembers(customerId, images.Members);
+
+            if (images.Members.IsEmpty() && Settings.LegacyModeEnabledForCustomer(customerId))
+            {
+                logger.LogLegacyUsage("Empty batch received for customer {CustomerId}", customerId);
+                return await HandleUpsert(new CreateEmptyBatch(customerId),
+                    batch => batch.ToHydra(GetUrlRoots().BaseUrl),
+                    errorTitle: "Create batch failed",
+                    cancellationToken: cancellationToken);
+            }
         }
         catch (APIException apiEx)
         {

@@ -559,6 +559,30 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Post_CreateBatch_201_IfLegacyModeEnabled_MembersEmpty()
+    {
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": []
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{LegacyModeHelpers.LegacyCustomer}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PostAsync(path, content);
+ 
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var model = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.CustomerQueue>();
+        var dbBatch = dbContext.Batches.Single(a => a.Id == model.Id.GetLastPathElementAsInt());
+        dbBatch.Count.Should().Be(0);
+    }
+    
+    [Fact]
     public async Task Post_CreateBatch_201_IfLegacyModeEnabledWithAtIdFieldSet()
     {
         // Arrange
@@ -698,6 +722,26 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task Post_CreateBatch_400_MembersEmpty()
+    {
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": []
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        const string path = "/customers/99/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(99).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
     [Fact]
     public async Task Post_CreateBatch_400_IfSpaceNotFound()
     {

@@ -54,6 +54,30 @@ public class CollectionXTests
 
         coll.IsNullOrEmpty().Should().BeFalse();
     }
+    
+    [Fact]
+    public void IsEmpty_List_False_IfNull()
+    {
+        List<int> coll = null;
+
+        coll.IsEmpty().Should().BeFalse();
+    }
+    
+    [Fact]
+    public void IsEmpty_List_True_IfEmpty()
+    {
+        var coll = new List<int>();
+
+        coll.IsEmpty().Should().BeTrue();
+    }
+    
+    [Fact]
+    public void IsEmpty_List_False_IfHasValues()
+    {
+        var coll = new List<int> {2};
+
+        coll.IsEmpty().Should().BeFalse();
+    }
 
     [Fact]
     public void AsList_ReturnsExpected()

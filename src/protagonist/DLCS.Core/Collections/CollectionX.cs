@@ -20,6 +20,13 @@ public static class CollectionX
     /// <returns>true if null or empty, else false</returns>
     public static bool IsNullOrEmpty<T>([NotNullWhen(false)] this IList<T>? collection)
         => collection == null || collection.Count == 0;
+    
+    /// <summary>
+    /// Check if IList is empty - this explicitly checks for Empty only, list could still be null
+    /// </summary>
+    /// <returns>true if empty, else false</returns>
+    public static bool IsEmpty<T>(this IList<T>? collection)
+        => collection?.Count == 0;
 
     /// <summary>
     /// Check if list contains single specified item
