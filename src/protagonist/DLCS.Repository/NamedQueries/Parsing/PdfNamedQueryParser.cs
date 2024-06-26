@@ -28,10 +28,10 @@ public class PdfNamedQueryParser : StoredNamedQueryParser<PdfParsedNamedQuery>
         switch (key)
         {
             case CoverPage:
-                assetQuery.CoverPageFormat = GetQueryArgumentFromTemplateElement(queryArgs, value);
+                assetQuery.CoverPageFormat = GetQueryArgumentFromTemplateElement(queryArgs, key, value);
                 break;
             case RedactedMessage:
-                assetQuery.RedactedMessage = GetQueryArgumentFromTemplateElement(queryArgs, value);
+                assetQuery.RedactedMessage = GetQueryArgumentFromTemplateElement(queryArgs, key, value);
                 break;
         }
     }

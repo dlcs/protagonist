@@ -33,10 +33,24 @@ public class IIIFNamedQueryParserTests
     }
 
     [Theory]
-    [InlineData("space=p1", "")]
     [InlineData("space=p1&s1=p2", "1")]
     [InlineData("space=p1&s1=p2&#=1", "")]
-    public void GenerateParsedNamedQueryFromRequest_ReturnsFaultParsedNQ_IfTooFewParamsPassed(string template,
+    public void GenerateParsedNamedQueryFromRequest_ReturnTrueNQ_IfTooFewParamsPassed(string template,
+        string args)
+    {
+        // Act
+        var result =
+            sut.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args, template, "my-query");
+
+        // Assert
+        result.IsFaulty.Should().BeFalse();
+    }
+    
+    [Theory]
+    [InlineData("space=p1", "")]
+    [InlineData("s1=p1&space=p2", "")]
+    [InlineData("s1=p1&space=p2", "1")]
+    public void GenerateParsedNamedQueryFromRequest_ReturnFaultyNQ_IfSpaceNotPassedCorrectlyPassed(string template,
         string args)
     {
         // Act
@@ -45,7 +59,7 @@ public class IIIFNamedQueryParserTests
 
         // Assert
         result.IsFaulty.Should().BeTrue();
-        result.ErrorMessage.Should().StartWith("Not enough query arguments to satisfy template element parameter");
+        result.ErrorMessage.Should().StartWith("The key \"space\" cannot be a null element");
     }
 
     [Theory]

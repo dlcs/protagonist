@@ -15,6 +15,9 @@ public class HydraNamedQueryValidator : AbstractValidator<DLCS.HydraModel.NamedQ
         RuleFor(nq => nq.Template)
             .NotEmpty()
             .WithMessage("A template is required");
+        RuleFor(nq => nq.Template)
+            .Must(n => n.Contains('='))
+            .WithMessage("named query requires at least 1 parameter");
         RuleSet("create", () =>
         {
             RuleFor(nq => nq.Name)
