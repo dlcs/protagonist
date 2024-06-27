@@ -26,6 +26,7 @@ using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Yarp.ReverseProxy.Forwarder;
 using Version = IIIF.ImageApi.Version;
@@ -261,7 +262,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV2_Correct_ViaDirectPath_NotInS3()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -282,6 +283,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         jsonResponse.Id.Should().Be($"http://localhost/iiif-img/v2/{id}");
         jsonResponse.Context.ToString().Should().Be("http://iiif.io/api/image/2/context.json");
         jsonResponse.Sizes.Should().BeEquivalentTo(expectedSizes);
+        jsonResponse.Type.Should().Be("iiif:Image", "ImageService2 is default on class, overridden when read");
 
         // With correct headers/status
         response.StatusCode.Should().Be(HttpStatusCode.OK);

@@ -25,7 +25,7 @@ public static class InfoJsonBuilder
         {
             Context = ImageService2.Image2Context,
             Id = serviceEndpoint,
-            Type = null,
+            Type = IIIF.Constants.ImageService2Type,
             Protocol = ImageService2.Image2Protocol,
             Profile = ImageService2.Level0Profile,
             ProfileDescription = new ProfileDescription
@@ -56,7 +56,7 @@ public static class InfoJsonBuilder
         {
             Context = ImageService2.Image2Context,
             Id = serviceEndpoint,
-            Type = null,
+            Type = IIIF.Constants.ImageService2Type,
             Protocol = ImageService2.Image2Protocol,
             Profile = ImageService2.Level1Profile,
             Width = width,

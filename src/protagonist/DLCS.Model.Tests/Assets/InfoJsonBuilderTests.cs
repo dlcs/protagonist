@@ -15,6 +15,7 @@ public void GetImageApi2_1Level0_ReturnsExpected()
   var expected = @"{
   ""@context"": ""http://iiif.io/api/image/2/context.json"",
   ""@id"": ""https://test.example.com/iiif-img/2/1/jackal"",
+  ""@type"": ""iiif:Image"",
   ""profile"": [
     ""http://iiif.io/api/image/2/level0.json"",
     {
@@ -48,6 +49,7 @@ public void GetImageApi2_1Level1_ReturnsExpected()
   var expected = @"{
   ""@context"": ""http://iiif.io/api/image/2/context.json"",
   ""@id"": ""https://test.example.com/iiif-img/2/1/jackal"",
+  ""@type"": ""iiif:Image"",
   ""profile"": [
     ""http://iiif.io/api/image/2/level1.json"",
     {
