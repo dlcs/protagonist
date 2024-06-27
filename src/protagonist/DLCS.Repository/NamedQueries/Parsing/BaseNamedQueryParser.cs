@@ -35,7 +35,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     protected const string String3 = "s3";
     protected const string AssetOrdering = "assetOrder";
     protected const string PathReplacement = "%2F";
-
+    
     public BaseNamedQueryParser(ILogger logger)
     {
         Logger = logger;
@@ -91,7 +91,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     private T GenerateParsedNamedQuery(int customerId, string[] templatePairing, List<string> queryArgs)
     {
         var assetQuery = GenerateParsedQueryObject(customerId);
-
+        
         // Iterate through all of the pairs and generate the NQ model
         try
         {
@@ -107,7 +107,8 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
                         assetQuery.AssetOrdering = GetAssetOrderingFromTemplateElement(elements[1]);
                         break;
                     case Space:
-                        assetQuery.Space = int.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                        assetQuery.Space =
+                            (int?)ConvertToLongQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case SpaceName:
                         assetQuery.SpaceName = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
@@ -123,15 +124,15 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
                         break;
                     case Number1:
                         assetQuery.Number1 =
-                            long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            ConvertToLongQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case Number2:
-                        assetQuery.Number2 =
-                            long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                        assetQuery.Number2 = 
+                            ConvertToLongQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case Number3:
-                        assetQuery.Number3 =
-                            long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                        assetQuery.Number3 = 
+                            ConvertToLongQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                 }
 
@@ -145,6 +146,16 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         }
 
         return assetQuery;
+    }
+
+    private long? ConvertToLongQueryArg(string? argToConvert)
+    {
+        if (argToConvert.IsNullOrEmpty())
+        {
+            return null;
+        }
+
+        return long.Parse(argToConvert);
     }
 
     /// <summary>
@@ -162,13 +173,18 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     /// <remarks>Could use Activator.CreateInstance this avoids using reflection</remarks>
     protected abstract T GenerateParsedQueryObject(int customerId);
 
-    protected string GetQueryArgumentFromTemplateElement(List<string> args, string element)
+    protected string? GetQueryArgumentFromTemplateElement(List<string> args, string element)
     {
         // Arg will be in format p1, p2, p3 etc. Get the index, then extract that element from args list
         if (!element.StartsWith(ParameterPrefix) || element.Length <= 1)
         {
             // default to just return the element as a literal
             return element;
+        }
+        
+        if (args.Count == 0)
+        {
+            throw new ArgumentException("Named query must have at least 1 argument");
         }
 
         if (int.TryParse(element[1..], out int argNumber))
@@ -178,8 +194,8 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
                 return args[argNumber - 1].Replace(PathReplacement, "/", StringComparison.OrdinalIgnoreCase);
             }
 
-            throw new ArgumentOutOfRangeException(element,
-                "Not enough query arguments to satisfy template element parameter");
+            // parameter out of range of supplied arguments, assumed to be an optional param to the NQ
+            return null;
         }
 
         throw new ArgumentException($"Could not parse template element parameter '{element}'", element);

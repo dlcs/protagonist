@@ -63,6 +63,8 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
             maxUnauthorised: 10, roles: "clickthrough");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/not-for-delivery"), num1: 6, ref1: "my-ref",
             notForDelivery: true);
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/limited-projection"), num1: 2,
+            ref1: "limited-ref");
         dbFixture.DbContext.SaveChanges();
     }
 
@@ -110,10 +112,10 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task GetPdf_Returns400_IfParametersIncorrect()
+    public async Task GetPdf_Returns400_IfNoParameters()
     {
         // Arrange
-        const string path = "pdf/99/test-pdf/too-little-params";
+        const string path = "pdf/99/test-pdf";
 
         // Act
         var response = await httpClient.GetAsync(path);
@@ -149,6 +151,28 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Accepted);
         response.Headers.Should().ContainKey("Retry-After");
+    }
+    
+    [Fact]
+    public async Task GetPdf_Returns200_IfParametersLessThanMax()
+    {
+        // Arrange
+        var fakePdfContent = nameof(GetPdf_Returns200_IfParametersLessThanMax);
+        const string path = "pdf/99/test-pdf/limited-ref";
+        const string pdfStorageKey = "99/pdf/test-pdf/limited-ref/tester";
+        await AddPdfControlFile("99/pdf/test-pdf/limited-ref/tester",
+            new ControlFile { Created = DateTime.UtcNow, InProcess = false });
+        pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
+        {
+            AddPdf(pdfStorageKey, fakePdfContent).Wait();
+            return true;
+        });
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
@@ -398,10 +422,10 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task GetPdfControlFile_Returns404_IfParametersIncorrect()
+    public async Task GetPdfControlFile_Returns404_IfNoParameters()
     {
         // Arrange
-        const string path = "pdf-control/99/test-pdf/too-little-params";
+        const string path = "pdf-control/99/test-pdf";
 
         // Act
         var response = await httpClient.GetAsync(path);
@@ -410,11 +434,12 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact]
-    public async Task GetPdfControlFile_Returns200_WithEmptyControlFile_IfNQValidButNoControlFile()
+    [Theory]
+    [InlineData("pdf-control/99/test-pdf/any-ref/1/2")]
+    [InlineData("pdf-control/99/test-pdf/any-ref")]
+    public async Task GetPdfControlFile_Returns200_WithEmptyControlFile_IfNQValidButNoControlFile(string path)
     {
         // Arrange
-        const string path = "pdf-control/99/test-pdf/any-ref/1/2";
         var pdfControlFile = new PdfControlFile
         {
             Created = DateTime.MinValue, InProcess = false, Exists = false, Key = string.Empty, ItemCount = 0,

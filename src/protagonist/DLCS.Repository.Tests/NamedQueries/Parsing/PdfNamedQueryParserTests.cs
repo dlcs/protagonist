@@ -34,11 +34,25 @@ public class PdfNamedQueryParserTests
             .WithMessage("Value cannot be null. (Parameter 'namedQueryTemplate')");
     }
 
+    [Fact]
+    public void GenerateParsedNamedQueryFromRequest_ReturnFaultyNQ_IfNoParametersPassed()
+    {
+        // Act
+        var result =
+            sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(99, "", "s1=p1&space=p2", "my-query");
+
+        // Assert
+        result.IsFaulty.Should().BeTrue();
+        result.ErrorMessage.Should().StartWith("Named query must have at least 1 argument");
+    }
+    
     [Theory]
-    [InlineData("space=p1", "")]
-    [InlineData("space=p1&s1=p2", "1")]
+    [InlineData("s1=p1&space=p2", "1")]
+    [InlineData("s1=p1&n1=p2", "1")]
+    [InlineData("s1=p1&n1=&n2=p2", "1/2")]
     [InlineData("space=p1&s1=p2&#=1", "")]
-    public void GenerateParsedNamedQueryFromRequest_ReturnsFaultParsedNQ_IfTooFewParamsPassed(string template,
+    [InlineData("space=p1&s1=p2&#=1", "10")]
+    public void GenerateParsedNamedQueryFromRequest_ReturnsNQ_IfLessQueriesPassedThanParameters(string template,
         string args)
     {
         // Act
@@ -46,8 +60,7 @@ public class PdfNamedQueryParserTests
             sut.GenerateParsedNamedQueryFromRequest<PdfParsedNamedQuery>(99, args, template, "my-query");
 
         // Assert
-        result.IsFaulty.Should().BeTrue();
-        result.ErrorMessage.Should().StartWith("Not enough query arguments to satisfy template element parameter");
+        result.IsFaulty.Should().BeFalse();
     }
 
     [Theory]
