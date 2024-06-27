@@ -57,8 +57,9 @@ public class InfoJsonService
             JsonLdBase deserialisedInfoJson = version == Version.V2
                 ? infoJson.FromJsonStream<ImageService2>()
                 : infoJson.FromJsonStream<ImageService3>();
+
             logger.LogTrace("Found info.json version {Version} for {AssetId}", version, orchestrationImage.AssetId);
-            return new InfoJsonResponse(deserialisedInfoJson, false);
+            return GetInfoJsonResponse(deserialisedInfoJson, false);
         }
 
         // If not found, build new copy
@@ -69,7 +70,17 @@ public class InfoJsonService
         if (infoJsonResponse == null) return null;
 
         await StoreInfoJson(infoJsonKey, infoJsonResponse, cancellationToken);
-        return new InfoJsonResponse(infoJsonResponse, true);
+        return GetInfoJsonResponse(infoJsonResponse, true);
+    }
+
+    private InfoJsonResponse GetInfoJsonResponse(JsonLdBase infoJsonResponse, bool wasOrchestrated)
+    {
+        if (infoJsonResponse is ImageService2 imageService2)
+        {
+            imageService2.Type = DLCS.Model.IIIF.Constants.ImageService2Type;
+        }
+        
+        return new InfoJsonResponse(infoJsonResponse, wasOrchestrated);
     }
 
     private ObjectInBucket GetInfoJsonKey(OrchestrationImage asset, Version version)
