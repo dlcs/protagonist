@@ -190,14 +190,17 @@ public class IIIFCanvasFactory
         var services = new List<IService>();
         if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(ImageApi.Version.V2))
         {
-            services.Add(new ImageService2
+            var imageService = new ImageService2
             {
-                Type = forPresentation2 ? null : default, // Omit '@Type' if for Presentation2
                 Id = GetFullyQualifiedId(asset, customerPathElement, true, ImageApi.Version.V2),
                 Profile = ImageService2.Level0Profile,
                 Sizes = thumbnailSizes,
                 Context = ImageService2.Image2Context,
-            });
+            };
+            
+            if (forPresentation2) imageService.Type = null; // '@Type' is not used in Presentation2
+
+            services.Add(imageService);
         }
 
         // NOTE - we never include ImageService3 on Presentation2 manifests
@@ -273,16 +276,19 @@ public class IIIFCanvasFactory
         var services = new List<IService>();
         if (versionPathTemplates.ContainsKey(ImageApi.Version.V2))
         {
-            services.Add(new ImageService2
+            var imageService = new ImageService2
             {
-                Type = forPresentation2 ? null : default, // Omit '@Type' if for Presentation2
                 Id = GetFullyQualifiedId(asset, customerPathElement, false, ImageApi.Version.V2),
                 Profile = ImageService2.Level2Profile,
                 Context = ImageService2.Image2Context,
                 Width = asset.Width ?? 0,
                 Height = asset.Height ?? 0,
                 Service = TryGetAuthServices(),
-            });
+            };
+
+            if (forPresentation2) imageService.Type = null; // '@Type' is not used in Presentation2
+            
+            services.Add(imageService);
         }
 
         // NOTE - we never include ImageService3 on Presentation2 manifests
