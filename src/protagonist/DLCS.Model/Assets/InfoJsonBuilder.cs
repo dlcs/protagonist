@@ -13,6 +13,8 @@ namespace DLCS.Model.Assets;
 /// </summary>
 public static class InfoJsonBuilder
 {
+    private const string ImageService2Type = "iiif:Image";
+    
     /// <summary>
     /// Get level 0 info.json object for IIIF Image 2.1
     /// </summary>
@@ -25,7 +27,7 @@ public static class InfoJsonBuilder
         {
             Context = ImageService2.Image2Context,
             Id = serviceEndpoint,
-            Type = null,
+            Type = ImageService2Type,
             Protocol = ImageService2.Image2Protocol,
             Profile = ImageService2.Level0Profile,
             ProfileDescription = new ProfileDescription
@@ -56,7 +58,7 @@ public static class InfoJsonBuilder
         {
             Context = ImageService2.Image2Context,
             Id = serviceEndpoint,
-            Type = null,
+            Type = ImageService2Type,
             Protocol = ImageService2.Image2Protocol,
             Profile = ImageService2.Level1Profile,
             Width = width,
