@@ -30,7 +30,7 @@ public abstract class StoredNamedQueryParser<T> : BaseNamedQueryParser<T>
         switch (key)
         {
             case ObjectName:
-                assetQuery.ObjectNameFormat = GetQueryArgumentFromTemplateElement(queryArgs, key, value);
+                assetQuery.ObjectNameFormat = GetQueryArgumentFromTemplateElement(queryArgs, value);
                 break;
         }
     }

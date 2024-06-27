@@ -109,35 +109,31 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
                         break;
                     case Space:
                         assetQuery.Space =
-                            ConvertIntegerQueryArg(
-                                GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]));
+                            ConvertIntegerQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case SpaceName:
-                        assetQuery.SpaceName = GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]);
+                        assetQuery.SpaceName = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
                         break;
                     case String1:
-                        assetQuery.String1 = GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]);
+                        assetQuery.String1 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
                         break;
                     case String2:
-                        assetQuery.String2 = GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]);
+                        assetQuery.String2 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
                         break;
                     case String3:
-                        assetQuery.String3 = GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]);
+                        assetQuery.String3 = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
                         break;
                     case Number1:
-                        assetQuery.Number1 = 
-                            ConvertIntegerQueryArg(
-                                GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]));
+                        assetQuery.Number1 =
+                            ConvertIntegerQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case Number2:
                         assetQuery.Number2 = 
-                            ConvertIntegerQueryArg(
-                                GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]));
+                            ConvertIntegerQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case Number3:
                         assetQuery.Number3 = 
-                            ConvertIntegerQueryArg(
-                                GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]));
+                            ConvertIntegerQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                 }
 
@@ -178,7 +174,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     /// <remarks>Could use Activator.CreateInstance this avoids using reflection</remarks>
     protected abstract T GenerateParsedQueryObject(int customerId);
 
-    protected string? GetQueryArgumentFromTemplateElement(List<string> args, string key, string element)
+    protected string? GetQueryArgumentFromTemplateElement(List<string> args, string element)
     {
         // Arg will be in format p1, p2, p3 etc. Get the index, then extract that element from args list
         if (!element.StartsWith(ParameterPrefix) || element.Length <= 1)

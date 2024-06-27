@@ -57,6 +57,8 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-zip-5"), num1: 5, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/not-for-delivery"), num1: 6, ref1: "my-ref",
             notForDelivery: true);
+        dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/limited-parameter-zip-1"), num1: 2,
+            ref1: "limited-ref");
         dbFixture.DbContext.SaveChanges();
     }
 
@@ -101,19 +103,6 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
-    public async Task GetZip_Returns400_IfParametersIncorrect()
-    {
-        // Arrange
-        const string path = "zip/99/test-zip/too-little-params";
-
-        // Act
-        var response = await httpClient.GetAsync(path);
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -162,6 +151,23 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(fakeContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/zip"));
+    }
+    
+    [Fact]
+    public async Task GetZip_Returns404_IfLessParametersThanTotal()
+    {
+        // Arrange
+        var fakeContent = nameof(GetZip_Returns404_IfLessParametersThanTotal);
+        const string path = "zip/99/test-zip/limited-ref";
+        await AddControlFile("99/zip/test-zip/limited-ref/tester.zip.json",
+            new ControlFile { Created = DateTime.UtcNow, InProcess = false });
+        await AddZipArchive("99/zip/test-zip/limited-ref/tester.zip", fakeContent);
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
@@ -327,24 +333,12 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    [Fact]
-    public async Task GetZipControlFile_Returns404_IfParametersIncorrect()
+    [Theory]
+    [InlineData("zip-control/99/test-zip/any-ref/1/2")]
+    [InlineData("zip-control/99/test-zip/any-ref")]
+    public async Task GetZipControlFile_Returns200_WithEmptyControlFile_IfNQValidButNoControlFile(string path)
     {
         // Arrange
-        const string path = "zip-control/99/test-zip/too-little-params";
-
-        // Act
-        var response = await httpClient.GetAsync(path);
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact]
-    public async Task GetZipControlFile_Returns200_WithEmptyControlFile_IfNQValidButNoControlFile()
-    {
-        // Arrange
-        const string path = "zip-control/99/test-zip/any-ref/1/2";
         var controlFileJson = JsonConvert.SerializeObject(ControlFile.Empty);
 
         // Act

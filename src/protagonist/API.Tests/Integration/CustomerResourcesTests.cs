@@ -54,10 +54,23 @@ public class CustomerResourcesTests : IClassFixture<ProtagonistAppFactory<Startu
     }
     
     [Fact]
-    public async Task Delete_PDF_Returns400_IfArgsIncorrect()
+    public async Task Delete_PDF_Returns200_IfLessArgsThanQuery()
     {
         // Arrange
         var path = "/customers/99/resources/pdf/cust-resource?args=too-little";
+        
+        // Act
+        var response = await httpClient.AsCustomer().DeleteAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+    
+    [Fact]
+    public async Task Delete_PDF_Returns400_IfNoArgs()
+    {
+        // Arrange
+        var path = "/customers/99/resources/pdf/cust-resource";
         
         // Act
         var response = await httpClient.AsCustomer().DeleteAsync(path);

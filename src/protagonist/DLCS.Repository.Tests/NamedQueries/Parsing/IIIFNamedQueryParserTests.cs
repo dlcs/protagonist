@@ -32,20 +32,6 @@ public class IIIFNamedQueryParserTests
             .WithMessage("Value cannot be null. (Parameter 'namedQueryTemplate')");
     }
 
-    [Theory]
-    [InlineData("space=p1&s1=p2", "1")]
-    [InlineData("space=p1&s1=p2&#=1", "")]
-    public void GenerateParsedNamedQueryFromRequest_ReturnTrueNQ_IfTooFewParamsPassed(string template,
-        string args)
-    {
-        // Act
-        var result =
-            sut.GenerateParsedNamedQueryFromRequest<IIIFParsedNamedQuery>(Customer, args, template, "my-query");
-
-        // Assert
-        result.IsFaulty.Should().BeFalse();
-    }
-    
     [Fact]
     public void GenerateParsedNamedQueryFromRequest_ReturnFaultyNQ_IfNoParametersPassed()
     {

@@ -116,10 +116,23 @@ public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData("iiif-resource/99/test-named-query/too-little-params")]
-    [InlineData("iiif-resource/v2/99/test-named-query/too-little-params")]
-    [InlineData("iiif-resource/v3/99/test-named-query/too-little-params")]
-    public async Task Get_Returns400_IfNamedQueryParametersIncorrect(string path)
+    [InlineData("iiif-resource/99/test-named-query/my-ref")]
+    [InlineData("iiif-resource/v2/99/test-named-query/my-ref")]
+    [InlineData("iiif-resource/v3/99/test-named-query/my-ref")]
+    public async Task Get_Returns200_IfNamedQueryParametersLessThanMax(string path)
+    {
+        // Act
+        var response = await httpClient.GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+    
+    [Theory]
+    [InlineData("iiif-resource/99/test-named-query")]
+    [InlineData("iiif-resource/v2/99/test-named-query")]
+    [InlineData("iiif-resource/v3/99/test-named-query")]
+    public async Task Get_Returns400_IfNoNamedQueryParameters(string path)
     {
         // Act
         var response = await httpClient.GetAsync(path);
