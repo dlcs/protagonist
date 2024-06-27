@@ -36,12 +36,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     protected const string String3 = "s3";
     protected const string AssetOrdering = "assetOrder";
     protected const string PathReplacement = "%2F";
-
-    private readonly List<string> cannotBeNullOptions = new List<string>()
-    {
-        Space
-    };
-
+    
     public BaseNamedQueryParser(ILogger logger)
     {
         Logger = logger;
@@ -113,7 +108,9 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
                         assetQuery.AssetOrdering = GetAssetOrderingFromTemplateElement(elements[1]);
                         break;
                     case Space:
-                        assetQuery.Space = int.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1])!);
+                        assetQuery.Space =
+                            ConvertIntegerQueryArg(
+                                GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]));
                         break;
                     case SpaceName:
                         assetQuery.SpaceName = GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]);
@@ -128,13 +125,19 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
                         assetQuery.String3 = GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]);
                         break;
                     case Number1:
-                        assetQuery.Number1 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]));
+                        assetQuery.Number1 = 
+                            ConvertIntegerQueryArg(
+                                GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]));
                         break;
                     case Number2:
-                        assetQuery.Number2 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]));
+                        assetQuery.Number2 = 
+                            ConvertIntegerQueryArg(
+                                GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]));
                         break;
                     case Number3:
-                        assetQuery.Number3 = long.Parse(GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]));
+                        assetQuery.Number3 = 
+                            ConvertIntegerQueryArg(
+                                GetQueryArgumentFromTemplateElement(queryArgs, elements[0], elements[1]));
                         break;
                 }
 
@@ -148,6 +151,16 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         }
 
         return assetQuery;
+    }
+
+    private int? ConvertIntegerQueryArg(string? argToConvert)
+    {
+        if (argToConvert.IsNullOrEmpty())
+        {
+            return null;
+        }
+
+        return int.Parse(argToConvert);
     }
 
     /// <summary>
@@ -173,6 +186,11 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
             // default to just return the element as a literal
             return element;
         }
+        
+        if (args.Count == 0)
+        {
+            throw new ArgumentException("Named query must have at least 1 argument");
+        }
 
         if (int.TryParse(element[1..], out int argNumber))
         {
@@ -181,12 +199,6 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
                 return args[argNumber - 1].Replace(PathReplacement, "/", StringComparison.OrdinalIgnoreCase);
             }
 
-            if (cannotBeNullOptions.Contains(key))
-            {
-                throw new ArgumentException(
-                    $"The key \"{key}\" cannot be a null element");
-            }
-            
             // parameter out of range of supplied arguments, assumed to be an optional param to the NQ
             return null;
         }
