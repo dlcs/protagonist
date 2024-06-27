@@ -154,10 +154,10 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task GetZip_Returns404_IfLessParametersThanTotal()
+    public async Task GetZip_Returns200_IfLessParametersThanTotal()
     {
         // Arrange
-        var fakeContent = nameof(GetZip_Returns404_IfLessParametersThanTotal);
+        var fakeContent = nameof(GetZip_Returns200_IfLessParametersThanTotal);
         const string path = "zip/99/test-zip/limited-ref";
         await AddControlFile("99/zip/test-zip/limited-ref/tester.zip.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });

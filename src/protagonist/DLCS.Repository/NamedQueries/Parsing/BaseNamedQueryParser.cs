@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Amazon.CloudFront.Model;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets.NamedQueries;
