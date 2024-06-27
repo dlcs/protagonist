@@ -108,7 +108,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
                         break;
                     case Space:
                         assetQuery.Space =
-                            ConvertIntegerQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            (int?)ConvertToLongQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case SpaceName:
                         assetQuery.SpaceName = GetQueryArgumentFromTemplateElement(queryArgs, elements[1]);
@@ -124,15 +124,15 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
                         break;
                     case Number1:
                         assetQuery.Number1 =
-                            ConvertIntegerQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            ConvertToLongQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case Number2:
                         assetQuery.Number2 = 
-                            ConvertIntegerQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            ConvertToLongQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case Number3:
                         assetQuery.Number3 = 
-                            ConvertIntegerQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                            ConvertToLongQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                 }
 
@@ -148,14 +148,14 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         return assetQuery;
     }
 
-    private int? ConvertIntegerQueryArg(string? argToConvert)
+    private long? ConvertToLongQueryArg(string? argToConvert)
     {
         if (argToConvert.IsNullOrEmpty())
         {
             return null;
         }
 
-        return int.Parse(argToConvert);
+        return long.Parse(argToConvert);
     }
 
     /// <summary>
