@@ -192,6 +192,7 @@ public class IIIFCanvasFactory
         {
             services.Add(new ImageService2
             {
+                Type = forPresentation2 ? null : default, // Omit '@Type' if for Presentation2
                 Id = GetFullyQualifiedId(asset, customerPathElement, true, ImageApi.Version.V2),
                 Profile = ImageService2.Level0Profile,
                 Sizes = thumbnailSizes,
@@ -274,6 +275,7 @@ public class IIIFCanvasFactory
         {
             services.Add(new ImageService2
             {
+                Type = forPresentation2 ? null : default, // Omit '@Type' if for Presentation2
                 Id = GetFullyQualifiedId(asset, customerPathElement, false, ImageApi.Version.V2),
                 Profile = ImageService2.Level2Profile,
                 Context = ImageService2.Image2Context,
