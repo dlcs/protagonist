@@ -23,7 +23,7 @@ public class IndexModel : PageModel
         this.mediator = mediator;
     }
     
-    public async Task OnGetAsync([FromRoute] bool? success = null)
+    public async Task OnGetAsync([FromQuery] bool? success = null)
     {
         Success = success;
         NamedQueries = await mediator.Send(new GetCustomerNamedQueries());
