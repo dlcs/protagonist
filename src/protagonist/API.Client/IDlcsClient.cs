@@ -34,4 +34,5 @@ public interface IDlcsClient
     Task<bool> TestBatch(int batchId);
     Task<HydraCollection<Image>> GetBatchImages(int batchId, int page, int pageSize);
     Task<CustomerQueue> GetQueue();
+    Task<HydraCollection<NamedQuery>> GetNamedQueries();
 }

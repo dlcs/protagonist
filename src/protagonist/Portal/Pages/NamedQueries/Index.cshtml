@@ -1,0 +1,38 @@
+@page
+@using DLCS.Core.Collections
+@model Portal.Pages.NamedQueries.IndexModel
+
+@{
+    ViewData["Title"] = "Named Queries";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        @if (Model.NamedQueries.Members.IsEmpty())
+        {
+            <div class="alert alert-info" role="alert">
+                No named queries found for customer
+            </div>
+        }
+        else
+        {
+            <table class="table col-6">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Template</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var namedQuery in Model.NamedQueries.Members)
+                {
+                    <tr>
+                        <td>@namedQuery.Name</td>
+                        <td><code>@namedQuery.Template</code></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+</div>

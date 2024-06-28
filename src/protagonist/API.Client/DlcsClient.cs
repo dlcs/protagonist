@@ -317,7 +317,15 @@ public class DlcsClient : IDlcsClient
         var queue = await response.ReadAsHydraResponseAsync<CustomerQueue>(jsonSerializerSettings);
         return queue;  
     }
-
+    
+    public async Task<HydraCollection<NamedQuery>> GetNamedQueries()
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/namedQueries";
+        var response = await httpClient.GetAsync(url);
+        var namedQueries = await response.ReadAsHydraResponseAsync<HydraCollection<NamedQuery>>(jsonSerializerSettings);
+        return namedQueries;
+    }
+    
     private HttpContent ApiBody(JsonLdBase apiObject)
     {
         var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
