@@ -1,5 +1,4 @@
 @page
-@using DLCS.Core.Collections
 @model Portal.Pages.NamedQueries.IndexModel
 
 @{
@@ -29,7 +28,7 @@
                         <tr>
                             <td>@namedQuery.Name</td>
                             <td><code>@namedQuery.Template</code></td>
-                            <td>
+                            <td class="col-3">
                                 <button type="button" id="edit-button" class="btn btn-sm text-start" onclick="openEditModal('@namedQuery.Name','@namedQueryId','@namedQuery.Template')">
                                     <i class="me-2" data-feather="edit"></i>Edit
                                 </button>
@@ -62,9 +61,9 @@
                 </div>
                 <div class="modal-body">
                     <label>Name</label>
-                    <input type="text" name="queryName" class="form-control form-control-sm w-100">
+                    <input type="text" name="queryName" class="form-control form-control-sm w-100" required>
                     <label class="mt-2">Template</label>
-                    <code><input type="text" name="template" class="form-control form-control-sm w-100"></code>
+                    <code><input type="text" name="template" class="form-control form-control-sm w-100" required></code>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
