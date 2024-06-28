@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using API.Client;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Portal.Features.NamedQueries.Requests;
@@ -32,7 +33,15 @@ public class NamedQueryController : Controller
     [HttpPost]
     public async Task<IActionResult> Create([FromForm] string queryName, [FromForm] string template)
     {
-        await mediator.Send(new CreateNamedQuery(){ Name = queryName, Template = template });
+        try
+        {
+            await mediator.Send(new CreateNamedQuery() { Name = queryName, Template = template });
+        }
+        catch (DlcsException dlcsEx)
+        {
+            return RedirectToPage("/NamedQueries/Index");
+        }
+
         return RedirectToPage("/NamedQueries/Index");
     }
 }

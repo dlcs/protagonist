@@ -10,9 +10,7 @@
     <div class="col-md-12">
         @if (!Model.NamedQueries.Any())
         {
-            <div class="alert alert-info" role="alert">
-                No named queries found for customer
-            </div>
+            <button type="button" class="btn btn-sm btn-primary text-start" data-bs-toggle="modal" data-bs-target="#createModal"><i class="me-2" data-feather="plus"></i>Create a named query</button>
         }
         else
         {
@@ -25,32 +23,34 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model.NamedQueries != null)
+                    @foreach (var namedQuery in Model.NamedQueries)
                     {
-                        foreach (var namedQuery in Model.NamedQueries)
-                        {
-                            var namedQueryId = namedQuery.Id.Split('/').Last();
-                            <tr>
-                                <td>@namedQuery.Name</td>
-                                <td><code>@namedQuery.Template</code></td>
-                                <td>
-                                    <button type="button" id="edit-button" class="btn text-start" onclick="openEditModal('@namedQuery.Name','@namedQueryId','@namedQuery.Template')">
-                                        <i class="me-2" data-feather="trash-2"></i>Edit
-                                    </button>
-                                    <button type="button" id="delete-button" class="btn text-danger text-start" onclick="openDeleteModal('@namedQuery.Name','@namedQueryId')">
-                                        <i class="me-2" data-feather="trash-2"></i>Delete
-                                    </button>
-                                </td>
-                            </tr>
-                        }
+                        var namedQueryId = namedQuery.Id.Split('/').Last();
+                        <tr>
+                            <td>@namedQuery.Name</td>
+                            <td><code>@namedQuery.Template</code></td>
+                            <td>
+                                <button type="button" id="edit-button" class="btn btn-sm text-start" onclick="openEditModal('@namedQuery.Name','@namedQueryId','@namedQuery.Template')">
+                                    <i class="me-2" data-feather="edit"></i>Edit
+                                </button>
+                                <button type="button" id="delete-button" class="btn btn-sm text-danger text-start" onclick="openDeleteModal('@namedQuery.Name','@namedQueryId')">
+                                    <i class="me-2" data-feather="trash-2"></i>Delete
+                                </button>
+                            </td>
+                        </tr>
                     }
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-primary text-start" data-bs-toggle="modal" data-bs-target="#createModal"><i class="me-2" data-feather="plus"></i>Add</button>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         }
     </div>
 </div>
-
-<button type="button" class="btn text-danger text-start" data-bs-toggle="modal" data-bs-target="#createModal">Create</button>
 
 <form method="post" asp-controller="NamedQuery" asp-action="Create">
     <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
