@@ -226,7 +226,7 @@ public class DlcsClient : IDlcsClient
         var uri = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}";
         try
         {
-            var response = await httpClient.DeleteAsync(uri);
+            await httpClient.DeleteAsync(uri);
             return true;
         }
         catch (Exception ex)
@@ -318,12 +318,38 @@ public class DlcsClient : IDlcsClient
         return queue;  
     }
     
-    public async Task<HydraCollection<NamedQuery>> GetNamedQueries()
+    public async Task<IEnumerable<NamedQuery>> GetNamedQueries(bool includeGlobal)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/namedQueries";
         var response = await httpClient.GetAsync(url);
         var namedQueries = await response.ReadAsHydraResponseAsync<HydraCollection<NamedQuery>>(jsonSerializerSettings);
-        return namedQueries;
+
+        if (!includeGlobal)
+        {
+            return namedQueries.Members.Where(nq => nq.Global == false);
+        }
+
+        return namedQueries.Members;
+    }
+
+    public async Task DeleteNamedQuery(string namedQueryId)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/namedQueries/{namedQueryId}";
+        await httpClient.DeleteAsync(url);
+    }
+
+    public async Task UpdateNamedQuery(string namedQueryId, string template)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/namedQueries/{namedQueryId}";
+        await httpClient.PutAsync(url, ApiBody(new NamedQuery(){ Template = template }));
+    }
+    
+    public async Task<NamedQuery> CreateNamedQuery(NamedQuery newNamedQuery)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/namedQueries";
+        var response = await httpClient.PostAsync(url, ApiBody(newNamedQuery));
+        var namedQuery = await response.ReadAsHydraResponseAsync<NamedQuery>(jsonSerializerSettings);
+        return namedQuery;
     }
     
     private HttpContent ApiBody(JsonLdBase apiObject)

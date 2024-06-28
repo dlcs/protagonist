@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
@@ -8,13 +9,13 @@ using MediatR;
 namespace Portal.Features.NamedQueries.Requests;
 
 /// <summary>
-/// Get all named queries belonging to the current customer
+/// Deletes a specified name query belonging to the current customer
 /// </summary>
-public class GetCustomerNamedQueries: IRequest<HydraCollection<NamedQuery>>
+public class GetCustomerNamedQueries: IRequest<IEnumerable<NamedQuery>>
 {
 }
 
-public class GetCustomerNamedQueriesHandler : IRequestHandler<GetCustomerNamedQueries, HydraCollection<NamedQuery>>
+public class GetCustomerNamedQueriesHandler : IRequestHandler<GetCustomerNamedQueries, IEnumerable<NamedQuery>>
 {
     private readonly IDlcsClient dlcsClient;
 
@@ -23,9 +24,9 @@ public class GetCustomerNamedQueriesHandler : IRequestHandler<GetCustomerNamedQu
         this.dlcsClient = dlcsClient;
     }
     
-    public async Task<HydraCollection<NamedQuery>> Handle(GetCustomerNamedQueries request, CancellationToken cancellationToken)
+    public async Task<IEnumerable<NamedQuery>> Handle(GetCustomerNamedQueries request, CancellationToken cancellationToken)
     {
-        var namedQueries = await dlcsClient.GetNamedQueries();
+        var namedQueries = await dlcsClient.GetNamedQueries(false);
         return namedQueries;
     }
 }

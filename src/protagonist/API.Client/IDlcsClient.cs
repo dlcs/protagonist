@@ -34,5 +34,8 @@ public interface IDlcsClient
     Task<bool> TestBatch(int batchId);
     Task<HydraCollection<Image>> GetBatchImages(int batchId, int page, int pageSize);
     Task<CustomerQueue> GetQueue();
-    Task<HydraCollection<NamedQuery>> GetNamedQueries();
+    Task<IEnumerable<NamedQuery>> GetNamedQueries(bool includeGlobal);
+    Task DeleteNamedQuery(string namedQueryId);
+    Task UpdateNamedQuery(string namedQueryId, string template);
+    Task<NamedQuery> CreateNamedQuery(NamedQuery newNamedQuery);
 }
