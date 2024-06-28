@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.HydraModel;
 using MediatR;
@@ -13,15 +14,18 @@ public class IndexModel : PageModel
     private readonly IMediator mediator;
     
     [BindProperty]
-    public IEnumerable<NamedQuery> NamedQueries { get; set; }
-
+    public IEnumerable<NamedQuery> NamedQueries { get; set; } = Enumerable.Empty<NamedQuery>();
+    
+    public bool? Success;
+    
     public IndexModel(IMediator mediator)
     {
         this.mediator = mediator;
     }
     
-    public async Task OnGetAsync()
+    public async Task OnGetAsync([FromRoute] bool? success = null)
     {
+        Success = success;
         NamedQueries = await mediator.Send(new GetCustomerNamedQueries());
     }
 }

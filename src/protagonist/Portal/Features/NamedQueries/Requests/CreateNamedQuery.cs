@@ -7,7 +7,7 @@ using MediatR;
 namespace Portal.Features.NamedQueries.Requests;
 
 /// <summary>
-/// Create a new named query belonging to the customer
+/// Create a new named query belonging to the current customer
 /// </summary>
 public class CreateNamedQuery: IRequest<NamedQuery>
 {
@@ -27,6 +27,6 @@ public class CreateNamedQueryHandler : IRequestHandler<CreateNamedQuery, NamedQu
     
     public async Task<NamedQuery> Handle(CreateNamedQuery request, CancellationToken cancellationToken)
     {
-        return await dlcsClient.CreateNamedQuery(new NamedQuery() { Name = request.Name, Template = request.Template });
+        return await dlcsClient.CreateNamedQuery(new NamedQuery(){ Name = request.Name, Template = request.Template });
     }
 }

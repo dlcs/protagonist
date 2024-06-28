@@ -36,12 +36,11 @@ public class NamedQueryController : Controller
         try
         {
             await mediator.Send(new CreateNamedQuery() { Name = queryName, Template = template });
+            return RedirectToPage("/NamedQueries/Index", new { success = true });
         }
-        catch (DlcsException dlcsEx)
+        catch (DlcsException)
         {
-            return RedirectToPage("/NamedQueries/Index");
+            return RedirectToPage("/NamedQueries/Index",new { success = false });
         }
-
-        return RedirectToPage("/NamedQueries/Index");
     }
 }

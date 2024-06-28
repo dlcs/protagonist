@@ -324,12 +324,9 @@ public class DlcsClient : IDlcsClient
         var response = await httpClient.GetAsync(url);
         var namedQueries = await response.ReadAsHydraResponseAsync<HydraCollection<NamedQuery>>(jsonSerializerSettings);
 
-        if (!includeGlobal)
-        {
-            return namedQueries.Members.Where(nq => nq.Global == false);
-        }
-
-        return namedQueries.Members;
+        return includeGlobal
+            ? namedQueries.Members
+            : namedQueries.Members.Where(nq => nq.Global == false);
     }
 
     public async Task DeleteNamedQuery(string namedQueryId)

@@ -5,6 +5,22 @@
     ViewData["Title"] = "Named Queries";
 }
 
+@if (Model.Success.HasValue)
+{
+    if (Model.Success.Value)
+    {
+        <div class="alert alert-success" role="alert">
+            <i class="me-2 fa-7x" data-feather="alert-circle"></i>Named query successfully created
+        </div> 
+    }
+    else
+    {
+        <div class="alert alert-danger" role="alert">
+            <i class="me-2 fa-7x" data-feather="alert-circle"></i>An error occured while attempting to create a new named query
+        </div>  
+    }
+}
+
 <div class="row">
     <div class="col-md-12">
         @if (!Model.NamedQueries.Any())

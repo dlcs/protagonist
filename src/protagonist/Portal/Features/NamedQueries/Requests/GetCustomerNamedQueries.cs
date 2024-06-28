@@ -3,13 +3,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using DLCS.HydraModel;
-using Hydra.Collections;
 using MediatR;
 
 namespace Portal.Features.NamedQueries.Requests;
 
 /// <summary>
-/// Deletes a specified name query belonging to the current customer
+/// Retrieves all named queries belonging to the current customer
 /// </summary>
 public class GetCustomerNamedQueries: IRequest<IEnumerable<NamedQuery>>
 {
