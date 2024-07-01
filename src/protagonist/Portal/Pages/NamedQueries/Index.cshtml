@@ -141,10 +141,10 @@
                 type: 'POST',
                 url: '@Url.Action("Create", "NamedQuery")',
                 data: createForm.serialize(),
-                success: function (data, status) {
+                success: function () {
                     window.location.reload();
                 },
-                error: function (xhr, ajaxOptions, thrownError) {
+                error: function (xhr) {
                     createModalError.show();
                     createModalError.text(xhr.responseText);
                 }
@@ -158,10 +158,10 @@
                 type: 'POST',
                 url: '@Url.Action("Update", "NamedQuery")',
                 data: editForm.serialize(),
-                success: function (data, status) {
+                success: function () {
                     window.location.reload();
                 },
-                error: function (xhr, ajaxOptions, thrownError) {
+                error: function (xhr) {
                     editModalError.show();
                     editModalError.text(xhr.responseText);
                 }
