@@ -8,12 +8,12 @@ namespace Portal.Features.NamedQueries.Requests;
 /// <summary>
 /// Delete a specified named query belonging to the current customer
 /// </summary>
-public class DeleteNamedQuery: IRequest
+public class DeleteNamedQuery: IRequest<bool>
 {
     public string NamedQueryId { get; set; }
 }
 
-public class DeleteNamedQueryHandler : IRequestHandler<DeleteNamedQuery>
+public class DeleteNamedQueryHandler : IRequestHandler<DeleteNamedQuery, bool>
 {
     private readonly IDlcsClient dlcsClient;
 
@@ -22,9 +22,8 @@ public class DeleteNamedQueryHandler : IRequestHandler<DeleteNamedQuery>
         this.dlcsClient = dlcsClient;
     }
     
-    public async Task<Unit> Handle(DeleteNamedQuery request, CancellationToken cancellationToken)
+    public async Task<bool> Handle(DeleteNamedQuery request, CancellationToken cancellationToken)
     {
-        await dlcsClient.DeleteNamedQuery(request.NamedQueryId);
-        return Unit.Value;
+        return await dlcsClient.DeleteNamedQuery(request.NamedQueryId);
     }
 }

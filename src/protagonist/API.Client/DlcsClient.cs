@@ -118,7 +118,7 @@ public class DlcsClient : IDlcsClient
             var response = await httpClient.GetAsync(url);
             return await response.ReadAsHydraResponseAsync<CustomerStorage>(jsonSerializerSettings);
         }
-        catch (Exception ex) 
+        catch (Exception) 
         {  
             logger.LogError("Failed to deserialize storage for space {SpaceStorage}", spaceId);
             return null;
@@ -196,7 +196,7 @@ public class DlcsClient : IDlcsClient
         var url = $"customers/{currentUser.GetCustomerId()}/portalUsers/{portalUserId}";
         try
         {
-            var response = await httpClient.DeleteAsync(url);
+            await httpClient.DeleteAsync(url);
             return true;
         }
         catch (Exception ex)
@@ -329,16 +329,35 @@ public class DlcsClient : IDlcsClient
             : namedQueries.Members.Where(nq => nq.Global == false);
     }
 
-    public async Task DeleteNamedQuery(string namedQueryId)
+    public async Task<bool> DeleteNamedQuery(string namedQueryId)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/namedQueries/{namedQueryId}";
-        await httpClient.DeleteAsync(url);
+        try
+        {
+            await httpClient.DeleteAsync(url);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deleting named query '{NamedQueryId}'", namedQueryId);
+            return false;
+        }
     }
 
-    public async Task UpdateNamedQuery(string namedQueryId, string template)
+    public async Task<NamedQuery?> UpdateNamedQuery(string namedQueryId, string template)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/namedQueries/{namedQueryId}";
-        await httpClient.PutAsync(url, ApiBody(new NamedQuery(){ Template = template }));
+        try
+        {
+            var response = await httpClient.PutAsync(url, ApiBody(new NamedQuery(){ Template = template }));
+            var updatedNamedQuery = await response.ReadAsHydraResponseAsync<NamedQuery>(jsonSerializerSettings);
+            return updatedNamedQuery;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error updating named query '{NamedQueryId}'", namedQueryId);
+            return null;
+        }
     }
     
     public async Task<NamedQuery> CreateNamedQuery(NamedQuery newNamedQuery)
