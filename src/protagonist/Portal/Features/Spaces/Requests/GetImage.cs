@@ -6,11 +6,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
 using DLCS.Core.Collections;
+using DLCS.Core.Settings;
 using DLCS.HydraModel;
 using DLCS.Web.Auth;
 using IIIF.ImageApi.V3;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Portal.Features.Spaces.Requests;
 
@@ -31,14 +33,17 @@ public class GetImageHandler : IRequestHandler<GetImage, GetImageResult?>
 {
     private readonly ILogger<GetImageHandler> logger;
     private readonly IDlcsClient dlcsClient;
+    private readonly DlcsSettings dlcsSettings;
     private readonly HttpClient httpClient;
     private readonly string customerId;
 
-    public GetImageHandler(IDlcsClient dlcsClient, HttpClient httpClient, ILogger<GetImageHandler> logger, ClaimsPrincipal currentUser)
+    public GetImageHandler(IDlcsClient dlcsClient, HttpClient httpClient, ILogger<GetImageHandler> logger,
+        ClaimsPrincipal currentUser, IOptions<DlcsSettings> dlcsSettings)
     {
         this.logger = logger;
         this.dlcsClient = dlcsClient;
         this.httpClient = httpClient;
+        this.dlcsSettings = dlcsSettings.Value;
         customerId = (currentUser.GetCustomerId() ?? -1).ToString();
     }
     
@@ -67,11 +72,9 @@ public class GetImageHandler : IRequestHandler<GetImage, GetImageResult?>
     
     private async Task<ImageService3?> GetImageThumbnailService(Image image)
     {
-        if (image.ThumbnailImageService.IsNullOrEmpty()) return null;
-        
         try
         {
-            var response = await httpClient.GetAsync($"{image.ThumbnailImageService}/info.json");
+            var response = await httpClient.GetAsync($"{dlcsSettings.ResourceRoot}thumbs/v3/{customerId}/{image.Space}/{image.ModelId}/info.json");
             if (!response.IsSuccessStatusCode) return null;
             return await response.Content.ReadFromJsonAsync<ImageService3>();
         }
