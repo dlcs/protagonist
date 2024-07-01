@@ -16,8 +16,6 @@ public class IndexModel : PageModel
     [BindProperty]
     public IEnumerable<NamedQuery> NamedQueries { get; set; } = Enumerable.Empty<NamedQuery>();
     
-    public bool? Success;
-    
     public IndexModel(IMediator mediator)
     {
         this.mediator = mediator;
@@ -25,7 +23,6 @@ public class IndexModel : PageModel
     
     public async Task OnGetAsync([FromQuery] bool? success = null)
     {
-        Success = success;
         NamedQueries = await mediator.Send(new GetCustomerNamedQueries());
     }
 }

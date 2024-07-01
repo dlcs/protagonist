@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using API.Client;
 using MediatR;
@@ -26,21 +27,28 @@ public class NamedQueryController : Controller
     [HttpPost]
     public async Task<IActionResult> Update([FromForm] string namedQueryId, [FromForm] string template)
     {
-        await mediator.Send(new UpdateNamedQuery(){ NamedQueryId = namedQueryId, Template = template });
-        return RedirectToPage("/NamedQueries/Index");
+        try
+        {
+            await mediator.Send(new UpdateNamedQuery(){ NamedQueryId = namedQueryId, Template = template });
+            return Ok();
+        }
+        catch (DlcsException dlcsEx)
+        {
+            return BadRequest(dlcsEx.Message);
+        }
     }
     
     [HttpPost]
-    public async Task<IActionResult> Create([FromForm] string queryName, [FromForm] string template)
+    public async Task<IActionResult> Create(string queryName, string queryTemplate)
     {
         try
         {
-            await mediator.Send(new CreateNamedQuery() { Name = queryName, Template = template });
-            return RedirectToPage("/NamedQueries/Index", new { success = true });
+            await mediator.Send(new CreateNamedQuery() { Name = queryName, Template = queryTemplate });
+            return Ok();
         }
-        catch (DlcsException)
+        catch (DlcsException dlcsEx)
         {
-            return RedirectToPage("/NamedQueries/Index",new { success = false });
+            return BadRequest(dlcsEx.Message);
         }
     }
 }

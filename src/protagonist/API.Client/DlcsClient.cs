@@ -347,17 +347,9 @@ public class DlcsClient : IDlcsClient
     public async Task<NamedQuery?> UpdateNamedQuery(string namedQueryId, string template)
     {
         var url = $"customers/{currentUser.GetCustomerId()}/namedQueries/{namedQueryId}";
-        try
-        {
-            var response = await httpClient.PutAsync(url, ApiBody(new NamedQuery(){ Template = template }));
-            var updatedNamedQuery = await response.ReadAsHydraResponseAsync<NamedQuery>(jsonSerializerSettings);
-            return updatedNamedQuery;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error updating named query '{NamedQueryId}'", namedQueryId);
-            return null;
-        }
+        var response = await httpClient.PutAsync(url, ApiBody(new NamedQuery(){ Template = template }));
+        var updatedNamedQuery = await response.ReadAsHydraResponseAsync<NamedQuery>(jsonSerializerSettings);
+        return updatedNamedQuery;
     }
     
     public async Task<NamedQuery> CreateNamedQuery(NamedQuery newNamedQuery)

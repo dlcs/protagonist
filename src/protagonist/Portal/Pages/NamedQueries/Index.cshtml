@@ -5,22 +5,6 @@
     ViewData["Title"] = "Named Queries";
 }
 
-@if (Model.Success.HasValue)
-{
-    if (Model.Success.Value)
-    {
-        <div class="alert alert-success" role="alert">
-            <i class="me-2 fa-7x" data-feather="alert-circle"></i>Named query successfully created
-        </div> 
-    }
-    else
-    {
-        <div class="alert alert-danger" role="alert">
-            <i class="me-2 fa-7x" data-feather="alert-circle"></i>An error occured while attempting to create a new named query
-        </div>  
-    }
-}
-
 <div class="row">
     <div class="col-md-12">
         @if (!Model.NamedQueries.Any())
@@ -58,7 +42,7 @@
                         <td></td>
                         <td></td>
                         <td>
-                            <button type="button" class="btn btn-sm btn-primary text-start" data-bs-toggle="modal" data-bs-target="#createModal"><i class="me-2" data-feather="plus"></i>Add</button>
+                            <button type="button" class="btn btn-sm btn-primary text-start" onclick="openCreateModal()"><i class="me-2" data-feather="plus"></i>Add</button>
                         </td>
                     </tr>
                 </tbody>
@@ -67,8 +51,8 @@
     </div>
 </div>
 
-<form method="post" asp-controller="NamedQuery" asp-action="Create">
-    <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+<form action="" id="createNamedQueryForm">
+    <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -76,10 +60,11 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-danger" role="alert" id="createModal__errorMessage" style="display: none;"></div>
                     <label>Name</label>
-                    <input type="text" name="queryName" class="form-control form-control-sm w-100" required>
+                    <input type="text" name="queryName" class="form-control form-control-sm w-100">
                     <label class="mt-2">Template</label>
-                    <code><input type="text" name="template" class="form-control form-control-sm w-100" required></code>
+                    <code><input type="text" name="queryTemplate" class="form-control form-control-sm w-100"></code>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -90,7 +75,7 @@
     </div>
 </form>
 
-<form method="post" asp-controller="NamedQuery" asp-action="Update">
+<form action="" id="editNamedQueryForm">
     <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -99,7 +84,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <code><input type="text" name="template" class="form-control form-control-sm w-100" id="editModal__editTemplate" required></code>
+                    <div class="alert alert-danger" role="alert" id="editModal__errorMessage" style="display: none;"></div>
+                    <code><input type="text" name="template" class="form-control form-control-sm w-100" id="editModal__editTemplate"></code>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -133,14 +119,54 @@
 @section Scripts
 {
     <script>
+        createForm = $('#createNamedQueryForm');
+        createModal = $('#createModal');
+        createModalError = $('#createModal__errorMessage');
+        
+        editForm = $('#editNamedQueryForm');
         editModal = $('#editModal');
         editModalTitle = $("#editModalLabel");
         editModalId = $('#editModal__queryId');
-        templateEdit = $("#editModal__editTemplate");
+        editModalError = $('#editModal__errorMessage');
+        editModalTemplateEdit = $("#editModal__editTemplate");
 
         deleteModalTitle = $("#deleteModalLabel");
         deleteModal = $('#deleteModal');
         deleteModalId = $('#deleteModal__queryId');
+        
+        createForm.submit(function(e) {
+            e.preventDefault()
+            createModalError.hide();
+            $.ajax({
+                type: 'POST',
+                url: '@Url.Action("Create", "NamedQuery")',
+                data: createForm.serialize(),
+                success: function (data, status) {
+                    window.location.reload();
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    createModalError.show();
+                    createModalError.text(xhr.responseText);
+                }
+            });
+        });
+
+        editForm.submit(function(e) {
+            e.preventDefault()
+            editModalError.hide();
+            $.ajax({
+                type: 'POST',
+                url: '@Url.Action("Update", "NamedQuery")',
+                data: editForm.serialize(),
+                success: function (data, status) {
+                    window.location.reload();
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    editModalError.show();
+                    editModalError.text(xhr.responseText);
+                }
+            });
+        });
         
         function openDeleteModal(namedQueryName, namedQueryId) {
             deleteModal.modal('show')
@@ -149,10 +175,16 @@
         }
 
         function openEditModal(namedQueryName, namedQueryId, existingTemplate) {
+            editModalError.hide();
             editModal.modal('show')
             editModalTitle.text(`Edit '${namedQueryName}'`);
             editModalId.val(namedQueryId);
-            templateEdit.val(existingTemplate);
+            editModalTemplateEdit.val(existingTemplate);
+        }
+
+        function openCreateModal() {
+            createModalError.hide();
+            createModal.modal('show');
         }
     </script>
 }
