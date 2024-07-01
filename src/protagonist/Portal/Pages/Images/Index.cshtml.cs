@@ -57,7 +57,7 @@ public class Index : PageModel
     
     public string CreateSrc(Size size)
     {
-        return $"{Image.ThumbnailImageService}/full/{size.Width},{size.Height}/0/default.jpg";
+        return $"{dlcsSettings.ResourceRoot}thumbs/v3/{Customer}/{Image.Space}/{Image.ModelId}/full/{size.Width},{size.Height}/0/default.jpg";
     }
     
     public string CreateUniversalViewerUrl(string singleAssetManifest)
