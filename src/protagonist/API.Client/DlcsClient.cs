@@ -118,7 +118,7 @@ public class DlcsClient : IDlcsClient
             var response = await httpClient.GetAsync(url);
             return await response.ReadAsHydraResponseAsync<CustomerStorage>(jsonSerializerSettings);
         }
-        catch (Exception ex) 
+        catch (Exception) 
         {  
             logger.LogError("Failed to deserialize storage for space {SpaceStorage}", spaceId);
             return null;
@@ -196,7 +196,7 @@ public class DlcsClient : IDlcsClient
         var url = $"customers/{currentUser.GetCustomerId()}/portalUsers/{portalUserId}";
         try
         {
-            var response = await httpClient.DeleteAsync(url);
+            await httpClient.DeleteAsync(url);
             return true;
         }
         catch (Exception ex)
@@ -226,7 +226,7 @@ public class DlcsClient : IDlcsClient
         var uri = $"customers/{currentUser.GetCustomerId()}/spaces/{spaceId}/images/{imageId}";
         try
         {
-            var response = await httpClient.DeleteAsync(uri);
+            await httpClient.DeleteAsync(uri);
             return true;
         }
         catch (Exception ex)
@@ -317,7 +317,49 @@ public class DlcsClient : IDlcsClient
         var queue = await response.ReadAsHydraResponseAsync<CustomerQueue>(jsonSerializerSettings);
         return queue;  
     }
+    
+    public async Task<IEnumerable<NamedQuery>> GetNamedQueries(bool includeGlobal)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/namedQueries";
+        var response = await httpClient.GetAsync(url);
+        var namedQueries = await response.ReadAsHydraResponseAsync<HydraCollection<NamedQuery>>(jsonSerializerSettings);
 
+        return includeGlobal
+            ? namedQueries.Members
+            : namedQueries.Members.Where(nq => nq.Global == false);
+    }
+
+    public async Task<bool> DeleteNamedQuery(string namedQueryId)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/namedQueries/{namedQueryId}";
+        try
+        {
+            await httpClient.DeleteAsync(url);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deleting named query '{NamedQueryId}'", namedQueryId);
+            return false;
+        }
+    }
+
+    public async Task<NamedQuery?> UpdateNamedQuery(string namedQueryId, string template)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/namedQueries/{namedQueryId}";
+        var response = await httpClient.PutAsync(url, ApiBody(new NamedQuery(){ Template = template }));
+        var updatedNamedQuery = await response.ReadAsHydraResponseAsync<NamedQuery>(jsonSerializerSettings);
+        return updatedNamedQuery;
+    }
+    
+    public async Task<NamedQuery> CreateNamedQuery(NamedQuery newNamedQuery)
+    {
+        var url = $"customers/{currentUser.GetCustomerId()}/namedQueries";
+        var response = await httpClient.PostAsync(url, ApiBody(newNamedQuery));
+        var namedQuery = await response.ReadAsHydraResponseAsync<NamedQuery>(jsonSerializerSettings);
+        return namedQuery;
+    }
+    
     private HttpContent ApiBody(JsonLdBase apiObject)
     {
         var jsonString = JsonConvert.SerializeObject(apiObject, jsonSerializerSettings);
