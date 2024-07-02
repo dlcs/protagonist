@@ -10,6 +10,7 @@ using Engine.Ingest.Image.ImageServer.Measuring;
 using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
+using Test.Helpers.Data;
 using Test.Helpers.Http;
 using Test.Helpers.Settings;
 
@@ -316,7 +317,7 @@ public class CantaloupeThumbsClientTests
     public async Task GenerateThumbnails_UpdatesHandlerWithCookies()
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsThumbForSuccessfulResponse));
+        var assetId = AssetIdGenerator.GetAssetId();
         var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
 
         var response = new HttpResponseMessage(HttpStatusCode.OK);
@@ -355,7 +356,7 @@ public class CantaloupeThumbsClientTests
     public async Task GenerateThumbnails_DoesNotUpdateHandlerWithCookiesWhenUnrecognised()
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsThumbForSuccessfulResponse));
+        var assetId = AssetIdGenerator.GetAssetId();
         var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
 
         var response = new HttpResponseMessage(HttpStatusCode.OK);
@@ -403,13 +404,17 @@ public class CantaloupeThumbsClientTests
             S3 = "//some/location/with/s3"
         });
         
+        await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+        
+        List<CookieHeaderValue> cookieHeaders = new();
+        httpHandler.RegisterCallback(message => cookieHeaders = message.Headers.GetCookies().ToList());
+        httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
+    
         // Act
         await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
-
-        var cookies = httpClient.DefaultRequestHeaders.GetCookies();
-
+        
         // Assert
-        cookies.Count.Should().Be(0);
+        cookieHeaders.Count.Should().Be(0);
     }
 
     public class ImageOnDiskResults

@@ -107,7 +107,7 @@ public class CantaloupeThumbsClient : IThumbsClient
 
     private void AttemptToAddStickinessCookie(HttpResponseMessage response)
     {
-        if (!cantaloupeClient.DefaultRequestHeaders.Contains("Cookie"))
+        if (!loadBalancerCookies.Any())
         {
             var hasCookie = response.Headers.TryGetValues("Set-Cookie", out var cookies);
             if (hasCookie)
