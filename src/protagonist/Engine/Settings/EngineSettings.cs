@@ -115,6 +115,15 @@ public class ImageIngestSettings
     public List<string> DefaultThumbs { get; set; } = new();
 
     /// <summary>
+    /// A set of cookie names used by the load balancer to indicate stickiness
+    /// </summary>
+    public List<string> LoadBalancerStickinessCookieNames { get; set; } = new()
+    {
+        "AWSALB",
+        "AWSALBCORS"
+    };
+
+    /// <summary>
     /// Get the root folder, if forImageProcessor will ensure that it is compatible with needs of image-processor
     /// sidecar.
     /// </summary>

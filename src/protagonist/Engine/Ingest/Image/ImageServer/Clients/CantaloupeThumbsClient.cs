@@ -1,10 +1,13 @@
 ﻿using System.Net;
+using System.Net.Http.Headers;
 using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using Engine.Ingest.Image.ImageServer.Measuring;
+using Engine.Settings;
 using IIIF;
 using IIIF.ImageApi;
+using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.Image.ImageServer.Clients;
 
@@ -17,17 +20,21 @@ public class CantaloupeThumbsClient : IThumbsClient
     private readonly IFileSystem fileSystem;
     private readonly IImageMeasurer imageMeasurer;
     private readonly ILogger<CantaloupeThumbsClient> logger;
+    private readonly List<string> loadBalancerCookies = new();
+    private readonly EngineSettings engineSettings;
 
     public CantaloupeThumbsClient(
         HttpClient cantaloupeClient,
         IFileSystem fileSystem,
         IImageMeasurer imageMeasurer,
+        IOptionsMonitor<EngineSettings> engineOptionsMonitor,
         ILogger<CantaloupeThumbsClient> logger)
     {
         this.cantaloupeClient = cantaloupeClient;
         this.fileSystem = fileSystem;
         this.imageMeasurer = imageMeasurer;
         this.logger = logger;
+        engineSettings = engineOptionsMonitor.CurrentValue;
     }
 
     public async Task<List<ImageOnDisk>> GenerateThumbnails(IngestionContext context,
@@ -63,9 +70,9 @@ public class CantaloupeThumbsClient : IThumbsClient
         string convertedS3Location, string size, AssetId assetId, int count, List<ImageOnDisk> thumbsResponse,
         Size imageSize, bool shouldRetry, CancellationToken cancellationToken)
     {
-        using var response =
-            await cantaloupeClient.GetAsync(
-                $"iiif/3/{convertedS3Location}/full/{size}/0/default.jpg", cancellationToken);
+        var request = CreateCantaloupeRequestMessage(convertedS3Location, size);
+
+        using var response = await cantaloupeClient.SendAsync(request, cancellationToken);
         
         AttemptToAddStickinessCookie(response);
 
@@ -86,6 +93,18 @@ public class CantaloupeThumbsClient : IThumbsClient
         throw new HttpException(response.StatusCode, "failed to retrieve data from the thumbs processor");
     }
 
+    private HttpRequestMessage CreateCantaloupeRequestMessage(string convertedS3Location, string size)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, $"iiif/3/{convertedS3Location}/full/{size}/0/default.jpg");
+
+        if (loadBalancerCookies.Any())
+        {
+            request.Headers.Add("Cookie", loadBalancerCookies);
+        }
+
+        return request;
+    }
+
     private void AttemptToAddStickinessCookie(HttpResponseMessage response)
     {
         if (!cantaloupeClient.DefaultRequestHeaders.Contains("Cookie"))
@@ -93,7 +112,14 @@ public class CantaloupeThumbsClient : IThumbsClient
             var hasCookie = response.Headers.TryGetValues("Set-Cookie", out var cookies);
             if (hasCookie)
             {
-                cantaloupeClient.DefaultRequestHeaders.Add("Cookie", cookies!);
+                foreach (var cookie in cookies!)
+                {
+                    if (CookieHeaderValue.TryParse(cookie, out var parsedCookie) && parsedCookie.Cookies.Any(x =>
+                            engineSettings.ImageIngest!.LoadBalancerStickinessCookieNames.Contains(x.Name)))
+                    {
+                        loadBalancerCookies.Add(cookie);
+                    }
+                }
             }
         }
     }
