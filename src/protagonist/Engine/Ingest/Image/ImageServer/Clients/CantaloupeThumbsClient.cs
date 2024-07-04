@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Headers;
 using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
@@ -107,16 +106,18 @@ public class CantaloupeThumbsClient : IThumbsClient
 
     private void AttemptToAddStickinessCookie(HttpResponseMessage response)
     {
-        var hasCookie = response.Headers.TryGetValues("Set-Cookie", out var cookies);
-        if (hasCookie)
+        if (!loadBalancerCookies.Any())
         {
-            loadBalancerCookies = new List<string>();
-            foreach (var cookie in cookies!)
+            var hasCookie = response.Headers.TryGetValues("Set-Cookie", out var cookies);
+            if (hasCookie)
             {
-                if (engineSettings.ImageIngest!.LoadBalancerStickinessCookieNames.Any(c =>
-                        cookie.Split(';').Any(h => h.Trim(' ').StartsWith($"{c}="))))
+                foreach (var cookie in cookies!)
                 {
-                    loadBalancerCookies.Add(cookie);
+                    if (engineSettings.ImageIngest!.LoadBalancerStickinessCookieNames.Any(c =>
+                            cookie.Split(';').Any(h => h.Trim(' ').StartsWith($"{c}="))))
+                    {
+                        loadBalancerCookies.Add(cookie);
+                    }
                 }
             }
         }
