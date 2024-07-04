@@ -106,18 +106,16 @@ public class CantaloupeThumbsClient : IThumbsClient
 
     private void AttemptToAddStickinessCookie(HttpResponseMessage response)
     {
-        if (!loadBalancerCookies.Any())
+        var hasCookie = response.Headers.TryGetValues("Set-Cookie", out var cookies);
+        if (hasCookie)
         {
-            var hasCookie = response.Headers.TryGetValues("Set-Cookie", out var cookies);
-            if (hasCookie)
+            loadBalancerCookies = new List<string>();
+            foreach (var cookie in cookies!)
             {
-                foreach (var cookie in cookies!)
+                if (engineSettings.ImageIngest!.LoadBalancerStickinessCookieNames.Any(c =>
+                        cookie.Split(';').Any(h => h.Trim(' ').StartsWith($"{c}="))))
                 {
-                    if (engineSettings.ImageIngest!.LoadBalancerStickinessCookieNames.Any(c =>
-                            cookie.Split(';').Any(h => h.Trim(' ').StartsWith($"{c}="))))
-                    {
-                        loadBalancerCookies.Add(cookie);
-                    }
+                    loadBalancerCookies.Add(cookie);
                 }
             }
         }
