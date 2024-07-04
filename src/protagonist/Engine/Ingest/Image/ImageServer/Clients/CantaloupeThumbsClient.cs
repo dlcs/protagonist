@@ -114,7 +114,7 @@ public class CantaloupeThumbsClient : IThumbsClient
             foreach (var cookie in cookies!)
             {
                 if (engineSettings.ImageIngest!.LoadBalancerStickinessCookieNames.Any(c =>
-                        cookie.Split(';').Any(h => h.Trim(' ').StartsWith(c))))
+                        cookie.Split(';').Any(h => h.Trim(' ').StartsWith($"{c}="))))
                 {
                     loadBalancerCookies.Add(cookie);
                 }
