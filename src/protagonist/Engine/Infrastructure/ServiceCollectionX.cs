@@ -110,10 +110,11 @@ public static class ServiceCollectionX
                 }).AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<IThumbsClient, CantaloupeThumbsClient>(client =>
-            {
-                client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUrl;
-                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
-            }).AddHttpMessageHandler<TimingHandler>();
+                {
+                    client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUrl;
+                    client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+                }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler() { UseCookies = false })
+                .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<IOrchestratorClient, InfoJsonOrchestratorClient>(client =>
             {
