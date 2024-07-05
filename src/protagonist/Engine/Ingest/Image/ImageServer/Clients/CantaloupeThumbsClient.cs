@@ -7,6 +7,7 @@ using Engine.Settings;
 using IIIF;
 using IIIF.ImageApi;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 
 namespace Engine.Ingest.Image.ImageServer.Clients;
 
@@ -98,7 +99,7 @@ public class CantaloupeThumbsClient : IThumbsClient
 
         if (loadBalancerCookies.Any())
         {
-            request.Headers.Add("Cookie", loadBalancerCookies);
+            request.Headers.Add(HeaderNames.Cookie, loadBalancerCookies);
         }
 
         return request;
@@ -106,7 +107,7 @@ public class CantaloupeThumbsClient : IThumbsClient
 
     private void AttemptToAddStickinessCookie(HttpResponseMessage response)
     {
-        var hasCookie = response.Headers.TryGetValues("Set-Cookie", out var cookies);
+        var hasCookie = response.Headers.TryGetValues(HeaderNames.SetCookie, out var cookies);
         if (hasCookie)
         {
             loadBalancerCookies = new List<string>();

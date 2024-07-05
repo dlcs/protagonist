@@ -1,5 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Headers;
 using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
@@ -10,9 +9,11 @@ using Engine.Ingest.Image.ImageServer.Measuring;
 using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Net.Http.Headers;
 using Test.Helpers.Data;
 using Test.Helpers.Http;
 using Test.Helpers.Settings;
+using CookieHeaderValue = System.Net.Http.Headers.CookieHeaderValue;
 
 namespace Engine.Tests.Ingest.Image.ImageServer.Clients;
 
@@ -321,7 +322,7 @@ public class CantaloupeThumbsClientTests
         var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
 
         var response = new HttpResponseMessage(HttpStatusCode.OK);
-        response.Headers.Add("Set-Cookie", new List<string?>()
+        response.Headers.Add(HeaderNames.SetCookie, new List<string?>()
         {
             "AWSALB=_remove_; Path=/",
             "AWSALBCORS=_remove_; Path=/"
@@ -360,7 +361,7 @@ public class CantaloupeThumbsClientTests
         var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
 
         var response = new HttpResponseMessage(HttpStatusCode.OK);
-        response.Headers.Add("Set-Cookie", new List<string?>()
+        response.Headers.Add(HeaderNames.SetCookie, new List<string?>()
         {
             "SOMECOOKIE=_remove_; Path=/",
             "SOMECOOKIE2=_remove_; Path=/"
