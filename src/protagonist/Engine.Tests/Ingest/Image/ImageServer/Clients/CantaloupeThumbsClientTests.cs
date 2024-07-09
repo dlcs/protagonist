@@ -6,9 +6,14 @@ using DLCS.Model.Assets;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Measuring;
+using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Net.Http.Headers;
+using Test.Helpers.Data;
 using Test.Helpers.Http;
+using Test.Helpers.Settings;
+using CookieHeaderValue = System.Net.Http.Headers.CookieHeaderValue;
 
 namespace Engine.Tests.Ingest.Image.ImageServer.Clients;
 
@@ -17,6 +22,7 @@ public class CantaloupeThumbsClientTests
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly CantaloupeThumbsClient sut;
     private readonly IImageMeasurer imageMeasurer;
+    private readonly HttpClient httpClient;
 
     private readonly List<string> defaultThumbs = new()
     {
@@ -33,9 +39,17 @@ public class CantaloupeThumbsClientTests
 
         A.CallTo(() => imageMeasurer.MeasureImage(A<string>._, A<CancellationToken>._)).Returns(new ImageOnDisk());
 
-        var httpClient = new HttpClient(httpHandler);
+        httpClient = new HttpClient(httpHandler);
         httpClient.BaseAddress = new Uri("http://image-processor/");
-        sut = new CantaloupeThumbsClient(httpClient, fileSystem, imageMeasurer, new NullLogger<CantaloupeThumbsClient>());
+        
+        var engineSettings = new EngineSettings
+        {
+            ImageIngest = new ImageIngestSettings()
+        };
+        var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
+        
+        
+        sut = new CantaloupeThumbsClient(httpClient, fileSystem, imageMeasurer, optionsMonitor, new NullLogger<CantaloupeThumbsClient>());
     }
     
     [Fact]
@@ -299,6 +313,110 @@ public class CantaloupeThumbsClientTests
             "Landscape images - invalid sizes altered",
         },
     };
+    
+    [Fact]
+    public async Task GenerateThumbnails_UpdatesHandlerWithCookies()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+
+        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        response.Headers.Add(HeaderNames.SetCookie, new List<string?>()
+        {
+            "AWSALB=_remove_; Path=/",
+            "AWSALBCORS=_remove_; Path=/"
+        });
+        httpHandler.SetResponse(response);
+        List<CookieHeaderValue> cookieHeaders = new();
+
+        context.Asset.Width = 2000;
+        context.Asset.Height = 2000;
+
+        context.WithLocation(new ImageLocation
+        {
+            S3 = "//some/location/with/s3"
+        });
+        
+        await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+        
+        httpHandler.RegisterCallback(message => cookieHeaders = message.Headers.GetCookies().ToList());
+        httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
+    
+        // Act
+        await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+
+        // Assert
+        cookieHeaders.Count.Should().Be(2);
+        cookieHeaders[0].Cookies[0].Name.Should().Be("AWSALB");
+        cookieHeaders[0].Cookies[0].Value.Should().Be("_remove_");
+        cookieHeaders[1].Cookies[0].Name.Should().Be("AWSALBCORS");
+    }
+    
+    [Fact]
+    public async Task GenerateThumbnails_DoesNotUpdateHandlerWithCookiesWhenUnrecognised()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+
+        var response = new HttpResponseMessage(HttpStatusCode.OK);
+        response.Headers.Add(HeaderNames.SetCookie, new List<string?>()
+        {
+            "SOMECOOKIE=_remove_; Path=/",
+            "SOMECOOKIE2=_remove_; Path=/"
+        });
+        httpHandler.SetResponse(response);
+        List<CookieHeaderValue> cookieHeaders = new();
+
+        context.Asset.Width = 2000;
+        context.Asset.Height = 2000;
+
+        context.WithLocation(new ImageLocation
+        {
+            S3 = "//some/location/with/s3"
+        });
+        
+        await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+        
+        httpHandler.RegisterCallback(message => cookieHeaders = message.Headers.GetCookies().ToList());
+        httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
+    
+        // Act
+        await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+
+        // Assert
+        cookieHeaders.Count.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GenerateThumbnails_UpdatesHandlerWithNoCookiesSet()
+    {
+        // Arrange
+        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsThumbForSuccessfulResponse));
+        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+        context.Asset.Width = 2000;
+        context.Asset.Height = 2000;
+
+        context.WithLocation(new ImageLocation
+        {
+            S3 = "//some/location/with/s3"
+        });
+        
+        await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+        
+        List<CookieHeaderValue> cookieHeaders = new();
+        httpHandler.RegisterCallback(message => cookieHeaders = message.Headers.GetCookies().ToList());
+        httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
+    
+        // Act
+        await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+        
+        // Assert
+        cookieHeaders.Count.Should().Be(0);
+    }
 
     public class ImageOnDiskResults
     {

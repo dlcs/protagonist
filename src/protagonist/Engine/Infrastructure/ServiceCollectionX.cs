@@ -102,18 +102,19 @@ public static class ServiceCollectionX
             services.AddTransient<TimingHandler>();
             services.AddScoped<IImageProcessor, ImageServerClient>()
                 .AddScoped<IImageMeasurer, ImageSharpMeasurer>();
-                
+
             services.AddHttpClient<IAppetiserClient, AppetiserClient>(client =>
                 {
                     client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
                     client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
                 }).AddHttpMessageHandler<TimingHandler>();
-            
+
             services.AddHttpClient<IThumbsClient, CantaloupeThumbsClient>(client =>
-            {
-                client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUrl;
-                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
-            }).AddHttpMessageHandler<TimingHandler>();
+                {
+                    client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUrl;
+                    client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+                }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler() { UseCookies = false })
+                .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<IOrchestratorClient, InfoJsonOrchestratorClient>(client =>
             {
