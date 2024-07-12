@@ -47,7 +47,7 @@ public class AssetDeliveryPathParser : IAssetDeliveryPathParser
 
         if (assetRequest is ImageAssetDeliveryRequest imageAssetRequest)
         {
-            imageAssetRequest.IIIFImageRequest = ImageRequest.Parse(escapedPath, assetRequest.BasePath);
+            imageAssetRequest.IIIFImageRequest = ImageRequest.Parse(escapedPath, assetRequest.BasePath, true);
         }
         else if (assetRequest is TimeBasedAssetDeliveryRequest timebasedAssetRequest)
         {
