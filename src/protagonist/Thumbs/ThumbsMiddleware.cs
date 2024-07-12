@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
@@ -69,7 +68,7 @@ public class ThumbsMiddleware
         catch (Exception ex)
         {
             logger.LogError(ex, "Error processing request for request {Path}", context.Request.Path);
-            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            throw;
         }
     }
 

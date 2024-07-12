@@ -57,7 +57,6 @@ public class AssetRequestProcessor
         }
         catch (Exception ex)
         {
-            // TODO - is this the correct status?
             logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
             return (null, HttpStatusCode.BadRequest);
         }
