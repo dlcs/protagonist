@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using FakeItEasy;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DLCS.Web.Tests.Requests.AssetDelivery;
 
@@ -14,7 +15,7 @@ public class AssetDeliveryPathParserTests
     public AssetDeliveryPathParserTests()
     {
         pathCustomerRepository = A.Fake<IPathCustomerRepository>();
-        sut = new AssetDeliveryPathParser(pathCustomerRepository);
+        sut = new AssetDeliveryPathParser(pathCustomerRepository, new NullLogger<AssetDeliveryPathParser>());
     }
 
     [Fact]

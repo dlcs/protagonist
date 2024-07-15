@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using DLCS.Core.Exceptions;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Http;
@@ -41,24 +42,13 @@ public class AssetRequestProcessor
         try
         {
             var assetRequest =
-                await assetDeliveryPathParser.Parse<T>(httpContext.Request.Path);
+                await assetDeliveryPathParser.ParseForHttp<T>(httpContext.Request.Path);
             
             return (assetRequest, null);
         }
-        catch (KeyNotFoundException ex)
+        catch (HttpException ex)
         {
-            logger.LogError(ex, "Could not find Customer/Space from '{Path}'", httpContext.Request.Path);
-            return (null, HttpStatusCode.NotFound);
-        }
-        catch (FormatException ex)
-        {
-            logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
-            return (null, HttpStatusCode.BadRequest);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error parsing path '{Path}'", httpContext.Request.Path);
-            return (null, HttpStatusCode.BadRequest);
+            return (null, ex.StatusCode);
         }
     }
 

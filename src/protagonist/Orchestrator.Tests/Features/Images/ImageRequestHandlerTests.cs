@@ -39,7 +39,7 @@ public class ImageRequestHandlerTests
         assetDeliveryPathParser = A.Fake<IAssetDeliveryPathParser>();
         customerRepository = A.Fake<IPathCustomerRepository>();
         accessValidator = A.Fake<IAssetAccessValidator>();
-        assetDeliveryPathParserImpl = new AssetDeliveryPathParser(customerRepository);
+        assetDeliveryPathParserImpl = new AssetDeliveryPathParser(customerRepository, new NullLogger<AssetDeliveryPathParser>());
         customHeaderRepository = A.Fake<ICustomHeaderRepository>();
 
         scopeFactory = A.Fake<IServiceScopeFactory>();
