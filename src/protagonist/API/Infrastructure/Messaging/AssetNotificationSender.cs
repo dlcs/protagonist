@@ -43,6 +43,8 @@ public class AssetNotificationSender : IAssetNotificationSender
     public async Task SendAssetModifiedMessage(IReadOnlyCollection<AssetModificationRecord> notifications,
         CancellationToken cancellationToken = default)
     {
+        if (notifications.IsNullOrEmpty()) return;
+        
         var changes = new List<AssetModifiedNotification>();
         
         foreach (var notification in notifications)
