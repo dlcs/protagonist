@@ -31,7 +31,7 @@ public class TopicPublisherTests
     public async Task PublishToAssetModifiedTopicBatch_SuccessfullyPublishesSingleMessage_IfSingleItemInBatch()
     {
         // Arrange
-        var notification = new AssetModifiedNotification("message", ChangeType.Delete);
+        var notification = new AssetModifiedNotification("message", GetAttributes(ChangeType.Delete, false));
 
         // Act
         await sut.PublishToAssetModifiedTopic(new[] { notification });
@@ -52,7 +52,7 @@ public class TopicPublisherTests
     public async Task PublishToAssetModifiedTopicBatch_SingleItemInBatch_ReturnsSuccessDependentOnStatusCode(HttpStatusCode statusCode, bool expected)
     {
         // Arrange
-        var notification = new AssetModifiedNotification("message", ChangeType.Delete);
+        var notification = new AssetModifiedNotification("message", GetAttributes(ChangeType.Delete, false));
         A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._))
             .Returns(new PublishResponse { HttpStatusCode = statusCode });
 
@@ -67,8 +67,8 @@ public class TopicPublisherTests
     public async Task PublishToAssetModifiedTopicBatch_SuccessfullyPublishesSingleBatch()
     {
         // Arrange
-        var notification = new AssetModifiedNotification("message", ChangeType.Delete);
-        var notification2 = new AssetModifiedNotification("message", ChangeType.Delete);
+        var notification = new AssetModifiedNotification("message", GetAttributes(ChangeType.Delete, false));
+        var notification2 = new AssetModifiedNotification("message", GetAttributes(ChangeType.Delete, false));
 
         // Act
         await sut.PublishToAssetModifiedTopic(new[] { notification, notification2 });
@@ -91,7 +91,7 @@ public class TopicPublisherTests
         var notifications = new List<AssetModifiedNotification>(15);
         for (int x = 0; x < 15; x++)
         {
-            notifications.Add(new AssetModifiedNotification(x < 10 ? "message" : "next", ChangeType.Delete));
+            notifications.Add(new AssetModifiedNotification(x < 10 ? "message" : "next", GetAttributes(ChangeType.Delete, false)));
         } 
 
         // Act
@@ -123,7 +123,7 @@ public class TopicPublisherTests
         var notifications = new List<AssetModifiedNotification>(15);
         for (int x = 0; x < 15; x++)
         {
-            notifications.Add(new AssetModifiedNotification("message", ChangeType.Delete));
+            notifications.Add(new AssetModifiedNotification("message", GetAttributes(ChangeType.Delete, false)));
         }
         
         A.CallTo(() => snsClient.PublishBatchAsync(A<PublishBatchRequest>._, A<CancellationToken>._))
@@ -143,7 +143,7 @@ public class TopicPublisherTests
         var notifications = new List<AssetModifiedNotification>(15);
         for (int x = 0; x < 15; x++)
         {
-            notifications.Add(new AssetModifiedNotification("message", ChangeType.Delete));
+            notifications.Add(new AssetModifiedNotification("message", GetAttributes(ChangeType.Delete, false)));
         }
 
         A.CallTo(() => snsClient.PublishBatchAsync(A<PublishBatchRequest>._, A<CancellationToken>._))
@@ -156,5 +156,59 @@ public class TopicPublisherTests
 
         // Assert
         response.Should().BeFalse();
+    }
+    
+    [Fact]
+    public async Task PublishToAssetModifiedTopicBatch_SuccessfullyPublishesSingleMessageWithEngineNotified_IfEngineNotifiedTrue()
+    {
+        // Arrange
+        var notification = new AssetModifiedNotification("message", GetAttributes(ChangeType.Update, true));
+
+        // Act
+        await sut.PublishToAssetModifiedTopic(new[] { notification });
+
+        // Assert
+        A.CallTo(() =>
+            snsClient.PublishAsync(
+                A<PublishRequest>.That.Matches(r =>
+                    r.Message == "message" && r.MessageAttributes["messageType"].StringValue == "Update" && 
+                    r.MessageAttributes["engineNotified"].StringValue == "True"),
+                A<CancellationToken>._)).MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task PublishToAssetModifiedTopicBatch_SuccessfullyPublishesSingleBatchWithEngineNotified()
+    {
+        // Arrange
+        var notification = new AssetModifiedNotification("message", GetAttributes(ChangeType.Update, true));
+        var notification2 = new AssetModifiedNotification("message", GetAttributes(ChangeType.Update, true));
+
+        // Act
+        await sut.PublishToAssetModifiedTopic(new[] { notification, notification2 });
+
+        // Assert
+        A.CallTo(() =>
+            snsClient.PublishBatchAsync(
+                A<PublishBatchRequest>.That.Matches(b => b.PublishBatchRequestEntries.All(r =>
+                                                             r.Message == "message" &&
+                                                             r.MessageAttributes["messageType"].StringValue ==
+                                                             "Update"&& 
+                                                             r.MessageAttributes["engineNotified"].StringValue == "True") &&
+                                                         b.PublishBatchRequestEntries.Count == 2),
+                A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    private Dictionary<string, string> GetAttributes(ChangeType changeType, bool engineNotified)
+    {
+        var attributes = new Dictionary<string, string>()
+        {
+            { "messageType", changeType.ToString() }
+        };
+        if (engineNotified)
+        {
+            attributes.Add("engineNotified", "True");
+        }
+
+        return attributes;
     }
 }

@@ -35,6 +35,29 @@ public class DeliveryChannelPolicyXTests
     }
     
     [Fact]
+    public void AsTimebasedPresets_Throws_IfPolicyNotTimebased()
+    {
+        var policy = new DeliveryChannelPolicy { Channel = "iiif-img" };
+
+        Action action = () => policy.AsTimebasedPresets();
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public void AsTimebasedPresets_ReturnsExpected()
+    {
+        // Arrange
+        var expected = new List<string> { "foo", "bar", "foobar" };
+        var policy = new DeliveryChannelPolicy { Channel = "iiif-av", PolicyData = "[\"foo\",\"bar\",\"foobar\"]" };
+        
+        // Act
+        var actual = policy.AsTimebasedPresets();
+        
+        // Assert
+        actual.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
     public void PolicyDataAs_ReturnsExpected()
     {
         // Arrange

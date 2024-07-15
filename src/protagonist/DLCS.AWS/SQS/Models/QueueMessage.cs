@@ -16,6 +16,11 @@ public class QueueMessage
     /// <summary>
     /// Any attributes associated with message
     /// </summary>
+    public Dictionary<string, string> MessageAttributes { get; set; }
+    
+    /// <summary>
+    /// Any attributes associated with message
+    /// </summary>
     public Dictionary<string, string> Attributes { get; set; }
         
     /// <summary>

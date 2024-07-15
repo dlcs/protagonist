@@ -1,10 +1,11 @@
 ﻿#nullable disable
 
+using System;
 using DLCS.Core.Types;
 using DLCS.Model.Policies;
 namespace DLCS.Model.Assets;
 
-public class ImageDeliveryChannel
+public class ImageDeliveryChannel : ICloneable
 {
     /// <summary>
     /// Unique identifier
@@ -27,4 +28,8 @@ public class ImageDeliveryChannel
     /// The delivery channel policy id for the attached delivery channel policy
     /// </summary>
     public int DeliveryChannelPolicyId { get; set; }
+
+    public ImageDeliveryChannel Clone() => (ImageDeliveryChannel)MemberwiseClone();
+
+    object ICloneable.Clone() => Clone();
 }

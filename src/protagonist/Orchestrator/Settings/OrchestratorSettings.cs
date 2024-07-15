@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Caching;
+using DLCS.Core.Settings;
 using DLCS.Web.Response;
 
 namespace Orchestrator.Settings;
@@ -270,22 +271,6 @@ public class CustomerOverride
     /// When serving, if a PDF contains an image that has a role on the whitelist - authentication will be required.
     /// </summary>
     public List<string> PdfRolesWhitelist { get; set; } = new();
-}
-
-/// <summary>
-/// Enum representing image server used for serving image requests
-/// </summary>
-public enum ImageServer
-{
-    /// <summary>
-    /// Cantaloupe image server
-    /// </summary>
-    Cantaloupe,
-
-    /// <summary>
-    /// IIP Image Server
-    /// </summary>
-    IIPImage
 }
 
 /// <summary>

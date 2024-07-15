@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
@@ -157,11 +158,11 @@ public class ElasticTranscoderTests
             .Returns("1234567890123-abcdef");
 
         A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
-            .Returns(new Dictionary<string, string>()
+            .Returns(new Dictionary<string, TranscoderPreset>()
             {
-                ["Standard WebM"] = "1111111111111-aaaaaa",
-                ["Standard mp4"] = "1111111111111-aaaaab",
-                ["auto-preset"] = "9999999999999-bbbbbb"
+                ["Standard WebM"] = new ("1111111111111-aaaaaa", "Standard WebM", ""),
+                ["Standard mp4"] = new ("1111111111111-aaaaab", "Standard mp4", ""),
+                ["auto-preset"] = new ("9999999999999-bbbbbb", "auto-preset", "")
             });
 
         Dictionary<string, string>? metadata = null;
@@ -224,10 +225,10 @@ public class ElasticTranscoderTests
             .Returns("1234567890123-abcdef");
 
         A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
-            .Returns(new Dictionary<string, string>()
+            .Returns(new Dictionary<string, TranscoderPreset>()
             {
-                ["Standard mp4"] = "1111111111111-aaaaab",
-                ["auto-preset"] = "9999999999999-bbbbbb"
+                ["Standard mp4"] = new ("1111111111111-aaaaab", "Standard mp4", ""),
+                ["auto-preset"] = new ("9999999999999-bbbbbb", "auto-preset", "")
             });
 
         A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<string>._, A<string>._,
@@ -277,10 +278,10 @@ public class ElasticTranscoderTests
             .Returns(elasticTranscoderJobId);
 
         A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
-            .Returns(new Dictionary<string, string>
+            .Returns(new Dictionary<string, TranscoderPreset>
             {
-                ["Standard mp4"] = "1111111111111-aaaaab",
-                ["auto-preset"] = "9999999999999-bbbbbb"
+                ["Standard mp4"] = new ("1111111111111-aaaaab", "Standard mp4", ""),
+                ["auto-preset"] = new ("9999999999999-bbbbbb", "auto-preset", "")
             });
 
         A.CallTo(() => elasticTranscoderWrapper.CreateJob(A<string>._, A<string>._,

@@ -73,7 +73,7 @@ public class Startup
             .AddCaching(cacheSettings)
             .AddDataAccess(configuration)
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
-            .AddSingleton<IAssetNotificationSender, AssetNotificationSender>()
+            .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
             .AddScoped<AssetProcessor>()
             .AddScoped<DeliveryChannelProcessor>()
             .AddTransient<TimingHandler>()
