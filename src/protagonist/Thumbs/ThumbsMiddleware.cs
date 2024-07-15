@@ -51,7 +51,7 @@ public class ThumbsMiddleware
         try
         {
             var pathValue = context.Request.Path.Value.ThrowIfNullOrEmpty(nameof(context.Request.Path.Value));
-            var thumbnailRequest = await parser.Parse<ImageAssetDeliveryRequest>(pathValue);
+            var thumbnailRequest = await parser.ParseForHttp<ImageAssetDeliveryRequest>(pathValue);
             context.Response.SetAssetIdResponseHeader(thumbnailRequest.GetAssetId());
             if (thumbnailRequest.IIIFImageRequest.IsBase)
             {
