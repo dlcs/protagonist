@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text.Json.Nodes;
 using System.Threading;
+using DLCS.Core.Exceptions;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.PathElements;
@@ -79,11 +80,11 @@ public class ImageRequestHandlerTests
     }
 
     [Fact]
-    public async Task HandleRequest_Returns404_IfAssetPathParserThrowsKeyNotFound()
+    public async Task HandleRequest_Returns404_IfAssetPathParserThrowsHttpException_NotFound()
     {
         // Arrange
-        A.CallTo(() => assetDeliveryPathParser.Parse<ImageAssetDeliveryRequest>(A<string>._))
-            .ThrowsAsync(new KeyNotFoundException());
+        A.CallTo(() => assetDeliveryPathParser.ParseForHttp<ImageAssetDeliveryRequest>(A<string>._))
+            .ThrowsAsync(new HttpException(HttpStatusCode.NotFound, "Could not find Customer/Space"));
         var sut = GetImageRequestHandlerWithMockPathParser(true);
             
         // Act
@@ -94,30 +95,13 @@ public class ImageRequestHandlerTests
     }
         
     [Fact]
-    public async Task HandleRequest_Returns400_IfAssetPathParserThrowsFormatException()
+    public async Task HandleRequest_Returns400_IfAssetPathParserThrowsHttpException_BadRequest()
     {
         // NOTE - routes should prevent this from ever happening
             
         // Arrange
-        A.CallTo(() => assetDeliveryPathParser.Parse<ImageAssetDeliveryRequest>(A<string>._))
-            .ThrowsAsync(new FormatException());
-        var sut = GetImageRequestHandlerWithMockPathParser(true);
-            
-        // Act
-        var result = await sut.HandleRequest(new DefaultHttpContext());
-            
-        // Assert
-        result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-        
-    [Fact]
-    public async Task HandleRequest_Returns400_IfAssetPathParserThrowsException()
-    {
-        // NOTE - routes should prevent this from ever happening
-            
-        // Arrange
-        A.CallTo(() => assetDeliveryPathParser.Parse<ImageAssetDeliveryRequest>(A<string>._))
-            .ThrowsAsync(new ApplicationException());
+        A.CallTo(() => assetDeliveryPathParser.ParseForHttp<ImageAssetDeliveryRequest>(A<string>._))
+            .ThrowsAsync(new HttpException(HttpStatusCode.BadRequest, "Error parsing path"));
         var sut = GetImageRequestHandlerWithMockPathParser(true);
             
         // Act
