@@ -1120,6 +1120,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Theory]
     [InlineData("iiif-img/99/1/my-image/full/all/0/default.jpg")]
     [InlineData("iiif-img/99/1/my-image/!200,200/full/0/default.jpg")]
+    [InlineData("iiif-img/99/1/my-image/full////max/0/default.jpg")]
+    [InlineData("iiif-img/99/1/my-image/full/0/default.jpg")]
     public async Task Get_MalformedImageRequest_Returns400(string path)
     {
         // Act
