@@ -30,6 +30,24 @@ public static class DeliveryChannelPolicyX
     }
     
     /// <summary>
+    /// Get timebased PolicyData as a list of strings
+    /// </summary>
+    /// <param name="deliveryChannelPolicy">Current <see cref="DeliveryChannelPolicy"/></param>
+    /// <returns>Collection of strings representing timebased policies</returns>
+    /// <exception cref="InvalidOperationException">Thrown if specified policy is not for thumbs channel</exception>
+    public static List<string> AsTimebasedPresets(this DeliveryChannelPolicy deliveryChannelPolicy)
+    {
+        if (deliveryChannelPolicy.Channel != AssetDeliveryChannels.Timebased)
+        {
+            throw new InvalidOperationException("Policy is not for timebased channel");
+        }
+
+        var timeBasedPresets = deliveryChannelPolicy.PolicyDataAs<List<string>>();
+        
+        return timeBasedPresets.ThrowIfNull(nameof(timeBasedPresets));
+    }
+    
+    /// <summary>
     /// Deserialise PolicyData as specified type
     /// </summary>
     public static T? PolicyDataAs<T>(this DeliveryChannelPolicy deliveryChannelPolicy)

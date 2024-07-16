@@ -50,9 +50,9 @@ public class AssetProcessor
     {
         try
         {
-            var existingAsset = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true);
+            var assetFromDatabase = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true, true);
 
-            if (existingAsset == null)
+            if (assetFromDatabase == null)
             {
                 if (mustExist)
                 {
@@ -96,14 +96,15 @@ public class AssetProcessor
                 return new ProcessAssetResult
                 {
                     Result = ModifyEntityResult<Asset>.Failure(
-                        "Delivery channels are required when updating an existing Asset",
+                        "Delivery channels are required when updating an existing Asset via PUT",
                         WriteResult.BadRequest
                     )
                 };
             }
-
+            
+            var existingAsset = assetFromDatabase?.Clone();
             var assetPreparationResult =
-                AssetPreparer.PrepareAssetForUpsert(existingAsset, assetBeforeProcessing.Asset, false, isBatchUpdate,
+                AssetPreparer.PrepareAssetForUpsert(assetFromDatabase, assetBeforeProcessing.Asset, false, isBatchUpdate,
                     settings.RestrictedAssetIdCharacters);
 
             if (!assetPreparationResult.Success)
@@ -114,11 +115,11 @@ public class AssetProcessor
                         WriteResult.FailedValidation)
                 };
             }
-
+            
             var updatedAsset = assetPreparationResult.UpdatedAsset!; // this is from Database
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
 
-            var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(existingAsset,
+            var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(assetFromDatabase,
                 updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
             if (deliveryChannelChanged)
             {
@@ -139,14 +140,14 @@ public class AssetProcessor
                 updatedAsset.MarkAsFinished();
             }
 
-            var assetAfterSave = await assetRepository.Save(updatedAsset, existingAsset != null, cancellationToken);
+            var assetAfterSave = await assetRepository.Save(updatedAsset, assetFromDatabase != null, cancellationToken);
 
             return new ProcessAssetResult
             {
                 ExistingAsset = existingAsset,
                 RequiresEngineNotification = requiresEngineNotification,
                 Result = ModifyEntityResult<Asset>.Success(assetAfterSave,
-                    existingAsset == null ? WriteResult.Created : WriteResult.Updated)
+                    assetFromDatabase == null ? WriteResult.Created : WriteResult.Updated)
             };
         }
         catch (APIException apiEx)

@@ -1,5 +1,9 @@
-﻿using DLCS.Core.Types;
+﻿using System.Collections.Generic;
+using System.Linq;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Metadata;
+using DLCS.Model.Policies;
 using FluentAssertions;
 using Xunit;
 
@@ -75,5 +79,64 @@ public class AssetTests
         var asset = new Asset { TagsList = new[] { "a", "b", "c" } };
         var expected = "a,b,c";
         asset.Tags.Should().Be(expected);
+    }
+    
+    [Fact]
+    public void Clone_ClonesObject_From_List()
+    {
+        // Arrange
+        var asset = new Asset
+        {
+            Reference1 = "someReference",
+            Reference2 = "ref2",
+            ImageDeliveryChannels =new List<ImageDeliveryChannel>()
+            {
+                new()
+                {
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
+                    Channel = AssetDeliveryChannels.Image,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                    {
+                        Id = KnownDeliveryChannelPolicies.ImageDefault,
+                        Channel = AssetDeliveryChannels.Image
+                    }
+                }
+            },
+            AssetApplicationMetadata = new List<AssetApplicationMetadata>()
+            {
+                new()
+                {
+                    MetadataType = "someType"
+                }
+            }
+        };
+
+        // Act
+        var secondAsset = asset.Clone();
+
+        secondAsset.Reference1 = "someReference updated";
+        secondAsset.ImageDeliveryChannels.ToList()[0].DeliveryChannelPolicyId =
+            KnownDeliveryChannelPolicies.ImageUseOriginal;
+        secondAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
+        {
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.AvDefaultVideo,
+            Channel = AssetDeliveryChannels.Timebased,
+            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            {
+                Id = KnownDeliveryChannelPolicies.AvDefaultVideo,
+                Channel = AssetDeliveryChannels.Timebased
+            }
+        });
+        secondAsset.AssetApplicationMetadata!.ToList()[0].MetadataType = "someType 2";
+        
+        // Assert
+        secondAsset.Reference1.Should().NotBe(asset.Reference1);
+        secondAsset.Reference2.Should().Be(asset.Reference2);
+        secondAsset.ImageDeliveryChannels.ToList()[0].DeliveryChannelPolicyId.Should()
+            .NotBe(asset.ImageDeliveryChannels.ToList()[0].DeliveryChannelPolicyId);
+        secondAsset.ImageDeliveryChannels.Count.Should().Be(2);
+        asset.ImageDeliveryChannels.Count.Should().Be(1);
+        secondAsset.AssetApplicationMetadata.ToList()[0].MetadataType.Should()
+            .NotBe(asset.AssetApplicationMetadata.ToList()[0].MetadataType);
     }
 }

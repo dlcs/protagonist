@@ -4,6 +4,7 @@ using System.Net;
 using System.Text.Json.Nodes;
 using System.Threading;
 using DLCS.Core.Exceptions;
+using DLCS.Core.Settings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.PathElements;
