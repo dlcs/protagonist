@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Net;
+using System.Threading.Tasks;
 using DLCS.Core.Exceptions;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Http;
@@ -22,6 +24,10 @@ public class StatusCodeExceptionHandlerMiddleware
         try
         {
             await next(httpContext);
+        }
+        catch (ArgumentException)
+        {
+            httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
         }
         catch (HttpException ex)
         {

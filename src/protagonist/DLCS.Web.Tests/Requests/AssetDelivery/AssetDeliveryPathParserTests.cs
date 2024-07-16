@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using FakeItEasy;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DLCS.Web.Tests.Requests.AssetDelivery;
 
@@ -14,7 +15,7 @@ public class AssetDeliveryPathParserTests
     public AssetDeliveryPathParserTests()
     {
         pathCustomerRepository = A.Fake<IPathCustomerRepository>();
-        sut = new AssetDeliveryPathParser(pathCustomerRepository);
+        sut = new AssetDeliveryPathParser(pathCustomerRepository, new NullLogger<AssetDeliveryPathParser>());
     }
 
     [Fact]
@@ -227,14 +228,26 @@ public class AssetDeliveryPathParserTests
     
     [Theory]
     [InlineData("/iiif-img/full/!800,400/0/default.jpg")]
-    [InlineData("/iiif-av/test-customer/1/the-astronaut/full/full/max/max/0/default.mp3")]
-    public async Task Parse_ImageRequest_ThrowsFormatException_IfPathInUnknownFormat(string path)
+    [InlineData("/iiif-img/customer-test/1,2,3/full/!800,400/0/default.jpg")]
+    public async Task Parse_ImageRequest_ThrowsFormatException_IfBaseAssetPathInUnknownFormat(string path)
     {
         // Act
         Func<Task> action = () => sut.Parse<ImageAssetDeliveryRequest>(path);
         
         // Assert
         await action.Should().ThrowAsync<FormatException>();
+    }
+    
+    [Theory]
+    [InlineData("/iiif-img/test-customer/1/the-astronaut/max/0/default.jpg")]
+    [InlineData("/iiif-av/test-customer/1/the-astronaut/full/full/max/max/0/default.mp3")]
+    public async Task Parse_ImageRequest_ThrowsArgumentException_IfPathInUnknownFormat(string path)
+    {
+        // Act
+        Func<Task> action = () => sut.Parse<ImageAssetDeliveryRequest>(path);
+        
+        // Assert
+        await action.Should().ThrowAsync<ArgumentException>();
     }
     
     [Fact]
