@@ -2,8 +2,10 @@
 using API.Features.Queues.Requests;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.HydraModel;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -28,6 +30,7 @@ public class QueueController : HydraController
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(QueueSummary))]
     public async Task<IActionResult> GetQueueDetails(CancellationToken cancellationToken)
     {
         var getCustomerRequest = new GetQueueCounts();

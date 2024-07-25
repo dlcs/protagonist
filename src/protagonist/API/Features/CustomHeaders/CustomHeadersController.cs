@@ -4,6 +4,8 @@ using API.Features.CustomHeaders.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
+using Hydra.Collections;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +31,9 @@ public class CustomHeadersController : HydraController
     /// </summary>
     /// <returns>HydraCollection of CustomHeader</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<CustomHeader>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> GetCustomHeaders(
         [FromRoute] int customerId,
         CancellationToken cancellationToken)
@@ -59,7 +63,7 @@ public class CustomHeadersController : HydraController
     /// </remarks>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> PostCustomHeader(
         [FromRoute] int customerId,
         [FromBody] CustomHeader newCustomHeader,
@@ -86,8 +90,8 @@ public class CustomHeadersController : HydraController
     /// </summary>
     [HttpGet]
     [Route("{customHeaderId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CustomHeader))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetCustomHeader(
         [FromRoute] int customerId,
         [FromRoute] string customHeaderId,
@@ -119,8 +123,8 @@ public class CustomHeadersController : HydraController
     /// </remarks>
     [HttpPut]
     [Route("{customHeaderId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CustomHeader))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> PutCustomHeader(
         [FromRoute] int customerId,
         [FromRoute] string customHeaderId,
@@ -150,7 +154,7 @@ public class CustomHeadersController : HydraController
     [HttpDelete]
     [Route("{customHeaderId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> DeleteCustomHeader(
         [FromRoute] int customerId,
         [FromRoute] string customHeaderId)

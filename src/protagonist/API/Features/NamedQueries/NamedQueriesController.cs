@@ -5,6 +5,8 @@ using API.Settings;
 using DLCS.HydraModel;
 using DLCS.Web.Auth;
 using FluentValidation;
+using Hydra.Collections;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +32,9 @@ public class NamedQueriesController : HydraController
     /// </summary>
     /// <returns>HydraCollection of NamedQuery</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<NamedQuery>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> GetNamedQueries(
         [FromRoute] int customerId,
         CancellationToken cancellationToken)
@@ -59,9 +63,9 @@ public class NamedQueriesController : HydraController
     /// </remarks>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(Error))]
     public async Task<IActionResult> PostNamedQuery(
         [FromRoute] int customerId,
         [FromBody] NamedQuery newNamedQuery,
@@ -92,8 +96,8 @@ public class NamedQueriesController : HydraController
     /// </summary>
     [HttpGet]
     [Route("{namedQueryId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(NamedQuery))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetNamedQuery(
         [FromRoute] int customerId,
         [FromRoute] string namedQueryId,
@@ -122,10 +126,10 @@ public class NamedQueriesController : HydraController
     /// </remarks>
     [HttpPut]
     [Route("{namedQueryId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(NamedQuery))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> PutNamedQuery(
         [FromRoute] int customerId,
         [FromRoute] string namedQueryId,
@@ -156,7 +160,7 @@ public class NamedQueriesController : HydraController
     [HttpDelete]
     [Route("{namedQueryId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> DeleteNamedQuery(
         [FromRoute] int customerId,
         [FromRoute] string namedQueryId)

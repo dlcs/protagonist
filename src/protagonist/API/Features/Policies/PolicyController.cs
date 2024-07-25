@@ -3,6 +3,8 @@ using API.Features.Policies.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
+using Hydra.Collections;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -30,7 +32,7 @@ public class PolicyController : HydraController
     [HttpGet]
     [AllowAnonymous]
     [Route("/imageOptimisationPolicies")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<ImageOptimisationPolicy>))]
     public async Task<IActionResult> GetImageOptimisationPolicies(CancellationToken cancellationToken)
     {
         var getImageOptimisationPolicies = new GetImageOptimisationPolicies();
@@ -51,8 +53,8 @@ public class PolicyController : HydraController
     [HttpGet]
     [AllowAnonymous]
     [Route("/imageOptimisationPolicies/{imageOptimisationPolicyId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ImageOptimisationPolicy))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetImageOptimisationPolicy([FromRoute] string imageOptimisationPolicyId, CancellationToken cancellationToken)
     {
         var getImageOptimisationPolicy = new GetImageOptimisationPolicy(imageOptimisationPolicyId);
@@ -80,7 +82,7 @@ public class PolicyController : HydraController
     [HttpGet]
     [AllowAnonymous]
     [Route("/storagePolicies")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<StoragePolicy>))]
     public async Task<IActionResult> GetStoragePolicies(CancellationToken cancellationToken)
     {
         var getStoragePolicies = new GetStoragePolicies();
@@ -101,8 +103,8 @@ public class PolicyController : HydraController
     [HttpGet]
     [AllowAnonymous]
     [Route("/storagePolicies/{storagePolicyId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(StoragePolicy))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetStoragePolicy([FromRoute] string storagePolicyId, CancellationToken cancellationToken)
     {
         var getStoragePolicy = new GetStoragePolicy(storagePolicyId);
@@ -130,7 +132,7 @@ public class PolicyController : HydraController
     [HttpGet]
     [AllowAnonymous]
     [Route("/thumbnailPolicies")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<ThumbnailPolicy>))]
     public async Task<IActionResult> GetThumbnailPolicies(CancellationToken cancellationToken)
     {
         var getThumbnailPolicies = new GetThumbnailPolicies();
@@ -150,8 +152,8 @@ public class PolicyController : HydraController
     [HttpGet]
     [AllowAnonymous]
     [Route("/thumbnailPolicies/{thumbnailPolicyId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ThumbnailPolicy))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetThumbnailPolicy([FromRoute] string thumbnailPolicyId, 
         CancellationToken cancellationToken)
     {
@@ -180,7 +182,7 @@ public class PolicyController : HydraController
     [HttpGet]
     [AllowAnonymous]
     [Route("/originStrategies")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<OriginStrategy>))]
     public async Task<IActionResult> GetOriginStrategies(CancellationToken cancellationToken)
     {
         var getOriginStrategies = new GetOriginStrategies();
@@ -199,8 +201,8 @@ public class PolicyController : HydraController
     /// <param name="originStrategyId"></param>
     /// <param name="cancellationToken"></param>
     /// <returns>Hydra JSON-LD origin strategy object</returns>
-    /// [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OriginStrategy))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     [HttpGet]
     [AllowAnonymous]
     [Route("/originStrategies/{originStrategyId}")]

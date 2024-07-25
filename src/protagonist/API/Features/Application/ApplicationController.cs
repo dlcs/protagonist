@@ -2,8 +2,10 @@
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -23,6 +25,8 @@ public class ApplicationController : HydraController
 
     [Route("/setup")]
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiKey))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> SetupApplication()
     {
         var request = new SetupApplication();

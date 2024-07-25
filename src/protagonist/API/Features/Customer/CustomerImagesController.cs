@@ -6,6 +6,7 @@ using API.Settings;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using Hydra.Collections;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -44,8 +45,8 @@ public class CustomerImagesController : HydraController
     /// </remarks>
     [HttpPost]
     [Route("allImages")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> GetAllImages(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<IdentifierOnly> imageIdentifiers,

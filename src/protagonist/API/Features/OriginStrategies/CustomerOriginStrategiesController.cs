@@ -7,6 +7,8 @@ using DLCS.Core.Enum;
 using DLCS.Core.Strings;
 using DLCS.Model.Customers;
 using FluentValidation;
+using Hydra.Collections;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -36,7 +38,7 @@ public class CustomerOriginStrategiesController : HydraController
     /// </summary>
     /// <returns>HydraCollection of CustomerOriginStrategies</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<CustomerOriginStrategy>))]
     public async Task<IActionResult> GetCustomerOriginStrategies(
         [FromRoute] int customerId,
         CancellationToken cancellationToken)
@@ -68,9 +70,9 @@ public class CustomerOriginStrategiesController : HydraController
     /// </remarks>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(Error))]
     public async Task<IActionResult> PostCustomerOriginStrategy(
         [FromRoute] int customerId,
         [FromBody] CustomerOriginStrategy newStrategy,
@@ -102,8 +104,8 @@ public class CustomerOriginStrategiesController : HydraController
     /// </summary>
     [HttpGet]
     [Route("{strategyId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CustomerOriginStrategy))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetCustomerOriginStrategy(
         [FromRoute] int customerId,
         [FromRoute] string strategyId,
@@ -135,10 +137,10 @@ public class CustomerOriginStrategiesController : HydraController
     /// </remarks>
     [HttpPut]
     [Route("{strategyId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CustomerOriginStrategy))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> PutCustomerOriginStrategy(
         [FromRoute] int customerId,
         [FromRoute] string strategyId,
@@ -184,7 +186,7 @@ public class CustomerOriginStrategiesController : HydraController
     [HttpDelete]
     [Route("{strategyId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> DeleteCustomerOriginStrategy(
         [FromRoute] int customerId,
         [FromRoute] string strategyId)

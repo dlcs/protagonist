@@ -9,6 +9,7 @@ using DLCS.Model.Assets;
 using DLCS.Web.Requests;
 using FluentValidation;
 using Hydra.Collections;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -38,7 +39,8 @@ public class DeliveryChannelPoliciesController : HydraController
     /// </summary>
     /// <returns>HydraCollection of DeliveryChannelPolicy HydraCollection</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(HydraCollection<HydraNestedCollection<DeliveryChannelPolicy>>))]
     public async Task<IActionResult> GetDeliveryChannelPolicyCollections(
         [FromRoute] int customerId,
         CancellationToken cancellationToken)
@@ -65,7 +67,7 @@ public class DeliveryChannelPoliciesController : HydraController
     /// </summary>
     /// <returns>HydraCollection of DeliveryChannelPolicy</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<DeliveryChannelPolicy>))]
     [Route("{deliveryChannelName}")]
     public async Task<IActionResult> GetDeliveryChannelPolicyCollection(
         [FromRoute] int customerId,
@@ -104,8 +106,8 @@ public class DeliveryChannelPoliciesController : HydraController
     [HttpPost]
     [Route("{deliveryChannelName}")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> PostDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
@@ -138,8 +140,8 @@ public class DeliveryChannelPoliciesController : HydraController
     /// <returns>DeliveryChannelPolicy</returns>
     [HttpGet]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DeliveryChannelPolicy))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
@@ -171,10 +173,10 @@ public class DeliveryChannelPoliciesController : HydraController
     /// <returns>DeliveryChannelPolicy</returns>
     [HttpPut]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DeliveryChannelPolicy))]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> PutDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,
@@ -219,10 +221,10 @@ public class DeliveryChannelPoliciesController : HydraController
     /// <returns>DeliveryChannelPolicy</returns>
     [HttpPatch]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DeliveryChannelPolicy))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> PatchDeliveryChannelPolicy(
         [FromRoute] int customerId,
         [FromRoute] string deliveryChannelName,

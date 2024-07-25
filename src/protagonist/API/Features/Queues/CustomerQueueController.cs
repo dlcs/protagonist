@@ -13,6 +13,7 @@ using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.Processing;
 using Hydra.Collections;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -39,7 +40,7 @@ public class CustomerQueueController : HydraController
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.CustomerQueue))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCustomerQueue([FromRoute] int customerId, CancellationToken cancellationToken)
     {
@@ -142,7 +143,7 @@ public class CustomerQueueController : HydraController
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [Route("priority")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.CustomerQueue))]
     public async Task<IActionResult> GetCustomerPriorityQueue([FromRoute] int customerId, 
         CancellationToken cancellationToken)
     {
@@ -165,8 +166,8 @@ public class CustomerQueueController : HydraController
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [Route("batches/{batchId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.CustomerQueue))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetBatch([FromRoute] int customerId, [FromRoute] int batchId, 
         CancellationToken cancellationToken)
     {
@@ -204,8 +205,9 @@ public class CustomerQueueController : HydraController
     /// </remarks>
     [HttpGet]
     [Route("batches/{batchId}/images")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> GetBatchImages([FromRoute] int customerId, [FromRoute] int batchId,
         [FromQuery] string? q = null, CancellationToken cancellationToken = default)
     {
@@ -271,7 +273,7 @@ public class CustomerQueueController : HydraController
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [Route("batches")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<Batch>))]
     public async Task<IActionResult> GetBatches([FromRoute] int customerId, CancellationToken cancellationToken)
     {
         var getBatches = new GetBatches(customerId);
@@ -293,6 +295,7 @@ public class CustomerQueueController : HydraController
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [Route("active")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<Batch>))]
     public async Task<IActionResult> GetActiveBatches([FromRoute] int customerId, CancellationToken cancellationToken)
     {
         var getActiveBatches = new GetActiveBatches(customerId);
@@ -314,6 +317,7 @@ public class CustomerQueueController : HydraController
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [Route("recent")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<Batch>))]
     public async Task<IActionResult> GetRecentBatches([FromRoute] int customerId, CancellationToken cancellationToken)
     {
         var getRecentBatches = new GetRecentBatches(customerId);

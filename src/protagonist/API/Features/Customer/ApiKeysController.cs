@@ -6,6 +6,7 @@ using DLCS.Core.Strings;
 using DLCS.HydraModel;
 using DLCS.Web.Requests;
 using Hydra.Collections;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -33,8 +34,8 @@ public class ApiKeysController : HydraController
     /// <returns>HydraCollection of ApiKey objects</returns>
     [HttpGet]
     [Route("{customerId}/keys")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<ApiKey>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetApiKeys(int customerId)
     {
         var dbCustomer = await Mediator.Send(new GetCustomer(customerId));
@@ -72,8 +73,8 @@ public class ApiKeysController : HydraController
     /// </remarks>
     [HttpPost]
     [Route("{customerId}/keys")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ApiKey))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> CreateApiKey(int customerId)
     {
         var result = await Mediator.Send(new CreateApiKey(customerId));
@@ -92,7 +93,7 @@ public class ApiKeysController : HydraController
     /// <param name="key">Key to remove</param>
     /// <returns>No content</returns>
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     [HttpDelete]
     [Route("{customerId}/keys/{key}")]
     public async Task<IActionResult> DeleteApiKey(int customerId, string key)
