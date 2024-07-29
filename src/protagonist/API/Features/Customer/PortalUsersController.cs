@@ -8,7 +8,9 @@ using DLCS.HydraModel;
 using DLCS.Model.Customers;
 using DLCS.Web.Requests;
 using Hydra.Collections;
+using Hydra.Model;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -62,6 +64,8 @@ public class PortalUsersController : HydraController
     /// <returns></returns>
     [HttpGet]
     [Route("{customerId}/portalUsers/{userId}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PortalUser))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetPortalUser(int customerId, string userId)
     {
         var users = await Mediator.Send(new GetPortalUsers(customerId));
@@ -84,6 +88,9 @@ public class PortalUsersController : HydraController
     /// <returns></returns>
     [HttpPost]
     [Route("{customerId}/portalUsers")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> CreatePortalUser(int customerId, [FromBody] PortalUser portalUser)
     {
         var request = new CreatePortalUser
@@ -120,6 +127,8 @@ public class PortalUsersController : HydraController
     /// <returns></returns>
     [HttpPatch]
     [Route("{customerId}/portalUsers/{userId}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PortalUser))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> PatchPortalUser(int customerId, string userId, [FromBody] PortalUser portalUser)
     {
         // NB Deliverator doesn't support toggling Enabled here so we won't for now.
@@ -154,6 +163,8 @@ public class PortalUsersController : HydraController
     /// <returns></returns>
     [HttpDelete]
     [Route("{customerId}/portalUsers/{userId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> DeletePortalUser(int customerId, string userId)
     {
         var result = await Mediator.Send(new DeletePortalUser(customerId, userId));

@@ -2,6 +2,7 @@
 using API.Features.Storage.Requests;
 using API.Infrastructure;
 using API.Settings;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -25,8 +26,8 @@ public class StorageController : HydraController
     /// </summary>
     [HttpGet]
     [Route("/customers/{customerId}/spaces/{spaceId}/images/{imageId}/storage")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.ImageStorage))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetImageStorage(
         [FromRoute] int customerId,
         [FromRoute] int spaceId,
@@ -46,8 +47,8 @@ public class StorageController : HydraController
     /// </summary>
     [HttpGet]
     [Route("/customers/{customerId}/spaces/{spaceId}/storage")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.CustomerStorage))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetSpaceStorage(
         [FromRoute] int customerId,
         [FromRoute] int spaceId,
@@ -66,8 +67,8 @@ public class StorageController : HydraController
     /// </summary>
     [HttpGet]
     [Route("/customers/{customerId}/storage")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.CustomerStorage))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetCustomerStorage(
         [FromRoute] int customerId,
         CancellationToken cancellationToken)

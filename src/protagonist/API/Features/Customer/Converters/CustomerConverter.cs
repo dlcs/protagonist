@@ -23,6 +23,7 @@ public static class CustomerConverter
     
     /// <summary>
     /// Converts the EF model object to a simplified JObject with just @id and @type
+    /// (PK): Could this return dedicated type, e.g. a record or sth?
     /// </summary>
     public static JObject ToCollectionForm(this DLCS.Model.Customers.Customer dbCustomer, string baseUrl)
     {

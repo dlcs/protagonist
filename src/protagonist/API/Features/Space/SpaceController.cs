@@ -37,7 +37,7 @@ public class SpaceController : HydraController
     /// </summary>
     /// <returns>HydraCollection of Space</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<DLCS.HydraModel.Space>))]
     public async Task<HydraCollection<DLCS.HydraModel.Space>> GetSpaces(
         int customerId, int? page = 1, int? pageSize = -1, 
         string? orderBy = null, string? orderByDescending = null)

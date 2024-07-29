@@ -3,6 +3,8 @@ using API.Features.Policies.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
+using Hydra.Collections;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +32,7 @@ public class CustomerPolicyController : HydraController
     /// <returns>Collection of Hydra JSON-LD image optimisation policy object</returns>
     [HttpGet]
     [Route("imageOptimisationPolicies")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<ImageOptimisationPolicy>))]
     public async Task<IActionResult> GetImageOptimisationPolicies([FromRoute] int customerId,
         CancellationToken cancellationToken)
     {
@@ -51,8 +53,8 @@ public class CustomerPolicyController : HydraController
     /// <returns>Hydra JSON-LD image optimisation policy object</returns>
     [HttpGet]
     [Route("imageOptimisationPolicies/{imageOptimisationPolicyId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ImageOptimisationPolicy))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetImageOptimisationPolicy([FromRoute] int customerId,
         [FromRoute] string imageOptimisationPolicyId, CancellationToken cancellationToken)
     {

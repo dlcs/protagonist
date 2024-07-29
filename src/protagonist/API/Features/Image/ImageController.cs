@@ -5,6 +5,7 @@ using API.Features.Image.Requests;
 using API.Features.Image.Validation;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.AWS.ElasticTranscoder.Models.Job;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
@@ -258,9 +259,9 @@ public class ImageController : HydraController
     /// <summary>
     /// Get transcode metadata for Timebased assets
     /// </summary>
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TranscoderJob))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     [HttpGet]
     [Route("metadata")]
     public async Task<IActionResult> GetAssetMetadata([FromRoute] int customerId, [FromRoute] int spaceId,

@@ -4,6 +4,7 @@ using API.Features.DeliveryChannels.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
+using Hydra.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -32,7 +33,7 @@ public class DefaultDeliveryChannelsController : HydraController
     /// </summary>
     /// <returns>Collection of Hydra JSON-LD default delivery channel objects</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<DefaultDeliveryChannel>))]
     public async Task<IActionResult> GetCustomerDefaultDeliveryChannels(
         [FromRoute] int customerId,
         CancellationToken cancellationToken,
@@ -55,7 +56,7 @@ public class DefaultDeliveryChannelsController : HydraController
     /// </summary>
     /// <returns>A Hydra JSON-LD default delivery channel object</returns>
     [HttpGet("{defaultDeliveryChannelId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DefaultDeliveryChannel))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetCustomerDefaultDeliveryChannel(
         [FromRoute] int customerId,
@@ -120,7 +121,7 @@ public class DefaultDeliveryChannelsController : HydraController
     /// </summary>
     /// <returns>A Hydra JSON-LD default delivery channel object</returns>
     [HttpPut("{defaultDeliveryChannelId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DefaultDeliveryChannel))]
     public async Task<IActionResult> UpdateCustomerDefaultDeliveryChannel(
         [FromRoute] int customerId,
         [FromBody]DefaultDeliveryChannel defaultDeliveryChannel,
