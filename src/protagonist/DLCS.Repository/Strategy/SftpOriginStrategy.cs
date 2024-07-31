@@ -52,8 +52,7 @@ public class SftpOriginStrategy : IOriginStrategy
 
         try
         {
-            var originPath = Uri.UnescapeDataString(originUri.AbsolutePath);
-            var outputStream = await sftpReader.RetrieveFile(connectionInfo, originPath, cancellationToken);
+            var outputStream = await sftpReader.RetrieveFile(connectionInfo, originUri.LocalPath, cancellationToken);
             return new OriginResponse(outputStream).WithContentLength(outputStream.Length);
         }
         catch (Exception ex)

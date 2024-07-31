@@ -123,15 +123,15 @@ public class SftpOriginStrategyTests
         result.ContentLength.Should().Be(stream.Length);
     }
     
-    [Fact]
-    public async Task LoadAssetFromOrigin_ReturnsExpectedResponseWithSpace_OnSuccess()
+    [Theory]
+    [InlineData("sftp://www.someuri.com/public_ftp/some folder/someId")]
+    [InlineData("sftp://www.someuri.com/public_ftp/some%20folder/someId")]
+    public async Task LoadAssetFromOrigin_ReturnsExpectedResponseWithSpace_OnSuccess(string originUri)
     {
         // Arrange
         var content = "this is a test";
 
         var stream = content.ToMemoryStream();
-        
-        const string originUri = "sftp://www.someuri.com/public_ftp/some folder/someId";
 
         var basicCredentials = new BasicCredentials()
         {

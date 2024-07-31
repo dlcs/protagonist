@@ -40,7 +40,7 @@ public class SftpReader : ISftpReader
                 outputStream.Close();
             }
             
-            logger.LogError(ex, "Error downloading SFTP file");
+            logger.LogError(ex, "Error downloading SFTP file from Host: {Hostname}, Path: {Path}", connectionInfo.Host, path);
             throw;
         }
 
