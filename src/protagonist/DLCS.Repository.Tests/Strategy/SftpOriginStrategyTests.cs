@@ -123,6 +123,58 @@ public class SftpOriginStrategyTests
         result.ContentLength.Should().Be(stream.Length);
     }
     
+    [Theory]
+    [InlineData("sftp://www.someuri.com/public_ftp/some folder/someId")]
+    [InlineData("sftp://www.someuri.com/public_ftp/some%20folder/someId")]
+    public async Task LoadAssetFromOrigin_ReturnsExpectedResponseWithSpace_OnSuccess(string originUri)
+    {
+        // Arrange
+        var content = "this is a test";
+
+        var stream = content.ToMemoryStream();
+
+        var basicCredentials = new BasicCredentials()
+        {
+            User = "correctTest",
+            Password = "correctPassword"
+        };
+        
+        var customerOriginStrategy = new CustomerOriginStrategy
+        {
+            Strategy = OriginStrategyType.SFTP,
+            Id = "correctResponse"
+        };
+
+        A.CallTo(() =>
+                credentialsRepository.GetBasicCredentialsForOriginStrategy(
+                    A<CustomerOriginStrategy>.That.Matches(a => a.Id == "correctResponse")))
+            .Returns(basicCredentials);
+        
+        A.CallTo(() =>
+                sftpReader.RetrieveFile(
+                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User), 
+                    A<string>._,
+                    A<CancellationToken>._))
+            .Returns(stream);
+
+        // Act
+        var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
+        
+        // Assert
+        A.CallTo(() =>
+                credentialsRepository.GetBasicCredentialsForOriginStrategy(
+                    A<CustomerOriginStrategy>.That.Matches(a => a.Id == "correctResponse")))
+            .MustHaveHappened();
+        A.CallTo(() =>
+                sftpReader.RetrieveFile(
+                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User), 
+                    A<string>.That.Matches(a => a == "/public_ftp/some folder/someId"),
+                    A<CancellationToken>._))
+            .MustHaveHappened();
+        result.Stream.Should().NotBeNull().And.Subject.Should().NotBeSameAs(Stream.Null);
+        result.ContentLength.Should().Be(stream.Length);
+    }
+    
     [Fact]
     public async Task LoadAssetFromOrigin_ReturnsNull_IfCallFailsToFindCredentials()
     {
