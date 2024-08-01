@@ -29,7 +29,8 @@ public class CreateEmptyBatchHandler : IRequestHandler<CreateEmptyBatch, ModifyE
     
     public async Task<ModifyEntityResult<Batch>> Handle(CreateEmptyBatch request, CancellationToken cancellationToken)
     {
-        var batch = await batchRepository.CreateBatch(request.CustomerId, Array.Empty<Asset>(), cancellationToken);
+        var batch = await batchRepository.CreateBatch(request.CustomerId, Array.Empty<Asset>(), cancellationToken,
+            batch => batch.Finished = batch.Submitted);
         return ModifyEntityResult<Batch>.Success(batch, WriteResult.Created);
     }
 }

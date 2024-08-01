@@ -580,6 +580,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var model = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.CustomerQueue>();
         var dbBatch = dbContext.Batches.Single(a => a.Id == model.Id.GetLastPathElementAsInt());
         dbBatch.Count.Should().Be(0);
+        dbBatch.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
     }
     
     [Fact]
