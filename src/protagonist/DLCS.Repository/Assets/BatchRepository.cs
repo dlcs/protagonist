@@ -20,7 +20,7 @@ public class BatchRepository : IDapperContextRepository, IBatchRepository
 
     /// <inheritdoc />
     public async Task<Batch> CreateBatch(int customerId, IReadOnlyList<Asset> assets,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken, Action<Batch>? postCreate = null)
     {
         var batch = new Batch
         {
@@ -31,6 +31,8 @@ public class BatchRepository : IDapperContextRepository, IBatchRepository
             Submitted = DateTime.UtcNow,
             Superseded = false
         };
+        
+        postCreate?.Invoke(batch);
         DlcsContext.Batches.Add(batch);
         await DlcsContext.SaveChangesAsync(cancellationToken);
 

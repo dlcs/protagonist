@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,6 +17,8 @@ public interface IBatchRepository
     /// <param name="customerId">Id of customer to create batch for.</param>
     /// <param name="assets"></param>
     /// <param name="cancellationToken">Current cancellation token</param>
+    /// <param name="postCreate">Optional action, will be called after Batch is created but before saving in db</param>
     /// <returns>Created Batch object</returns>
-    Task<Batch> CreateBatch(int customerId, IReadOnlyList<Asset> assets, CancellationToken cancellationToken = default);
+    Task<Batch> CreateBatch(int customerId, IReadOnlyList<Asset> assets, CancellationToken cancellationToken,
+        Action<Batch>? postCreate = null);
 }
