@@ -166,6 +166,8 @@ public class PathRewriteTransformerTests
     [InlineData(HttpStatusCode.BadGateway)]
     [InlineData(HttpStatusCode.ServiceUnavailable)]
     [InlineData(HttpStatusCode.GatewayTimeout)]
+    [InlineData(HttpStatusCode.NotFound)]
+    [InlineData(HttpStatusCode.BadRequest)]
     public async Task TransformResponseAsync_AddsSmallMaxAge_RegardlessOfDestination_IfError(HttpStatusCode statusCode)
     {
         // Arrange

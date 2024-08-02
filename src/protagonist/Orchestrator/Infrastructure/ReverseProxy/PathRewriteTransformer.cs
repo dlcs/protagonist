@@ -61,14 +61,8 @@ public class PathRewriteTransformer : HttpTransformer
         return new ValueTask<bool>(true);
     }
 
-    private bool IsDownstreamError(HttpResponseMessage? proxyResponse)
-    {
-        var downstreamStatus = proxyResponse?.StatusCode ?? HttpStatusCode.InternalServerError;
-        return downstreamStatus is HttpStatusCode.InternalServerError
-            or HttpStatusCode.BadGateway
-            or HttpStatusCode.ServiceUnavailable
-            or HttpStatusCode.GatewayTimeout;
-    }
+    private bool IsDownstreamError(HttpResponseMessage? proxyResponse) 
+        => proxyResponse == null || !proxyResponse.IsSuccessStatusCode;
 
     private void EnsureCacheHeaders(HttpContext httpContext, bool isDownstreamError)
     {
