@@ -27,41 +27,26 @@ public class MetadataWithFallbackThumbSizeProviderTests
     }
 
     [Fact]
-    public async Task GetAvailableThumbSizesForImage_ReturnsOpenFromMetadata_IfMetadataAttached_AndOpenOnly()
+    public async Task GetAvailableThumbSizesForImage_ReturnsFromMetadata_IfMetadataAttached()
     {
         // Arrange
         const string thumbsMetadata = "{\"a\": [[769, 1024],[300,400]], \"o\": [[150, 200],[75, 100]]}";
-        var expected = new List<Size> { new(150, 200), new(75, 100) };
+        var expected = new ThumbnailSizes(
+            new List<int[]> { new[] { 150, 200 }, new[] { 75, 100 }, },
+            new List<int[]> { new[] { 769, 1024 }, new[] { 300, 400 }, });
+        
         var assetId = AssetIdGenerator.GetAssetId();
         var asset = new Asset(assetId).WithTestThumbnailMetadata(thumbsMetadata);
         
         // Act
-        var actual = await sut.GetThumbSizesForImage(asset, true);
+        var actual = await sut.GetThumbSizesForImage(asset);
         
         // Assert
         actual.Should().BeEquivalentTo(expected);
     }
     
     [Fact]
-    public async Task GetAvailableThumbSizesForImage_ReturnsAllFromMetadata_IfMetadataAttached_AndNotOpenOnly()
-    {
-        // Arrange
-        const string thumbsMetadata = "{\"a\": [[769, 1024],[300,400]], \"o\": [[150, 200],[75, 100]]}";
-        var expected = new List<Size> { new(769, 1024), new(300, 400), new(150, 200), new(75, 100) };
-        var assetId = AssetIdGenerator.GetAssetId();
-        var asset = new Asset(assetId).WithTestThumbnailMetadata(thumbsMetadata);
-        
-        // Act
-        var actual = await sut.GetThumbSizesForImage(asset, false);
-        
-        // Assert
-        actual.Should().BeEquivalentTo(expected);
-    }
-    
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task GetAvailableThumbSizesForImage_ReturnsEmptyList_IfMetadataAttached_ButNoThumbs(bool openOnly)
+    public async Task GetAvailableThumbSizesForImage_ReturnsEmptyList_IfMetadataAttached_ButNoThumbs()
     {
         // Arrange
         const string thumbsMetadata = "{\"a\": [], \"o\": []}";
@@ -69,65 +54,39 @@ public class MetadataWithFallbackThumbSizeProviderTests
         var asset = new Asset(assetId).WithTestThumbnailMetadata(thumbsMetadata);
         
         // Act
-        var actual = await sut.GetThumbSizesForImage(asset, openOnly);
+        var actual = await sut.GetThumbSizesForImage(asset);
         
         // Assert
-        actual.Should().BeEmpty();
+        actual.Should().BeEquivalentTo(ThumbnailSizes.Empty);
     }
     
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task GetAvailableThumbSizesForImage_ReturnsEmptyList_IfNoMetadata_AndNoThumbsChannel(bool openOnly)
+    [Fact]
+    public async Task GetAvailableThumbSizesForImage_ReturnsEmptyList_IfNoMetadata_AndNoThumbsChannel()
     {
         // Arrange
         var asset = new Asset(AssetIdGenerator.GetAssetId());
         
         // Act
-        var actual = await sut.GetThumbSizesForImage(asset, openOnly);
+        var actual = await sut.GetThumbSizesForImage(asset);
         
         // Assert
-        actual.Should().BeEmpty();
+        actual.Should().BeEquivalentTo(ThumbnailSizes.Empty);
     }
     
     [Fact]
-    public async Task GetAvailableThumbSizesForImage_ReturnsCalculatedAvailableSizes_IfNoMetadataAttached_AndOpenOnly()
+    public async Task GetAvailableThumbSizesForImage_ReturnsAllCalculatedSizes_IfNoMetadataAttached()
     {
         // Arrange
-        // only confined sizes calculated (so 100, is ignored)
-        var expected = new List<Size> { new(200, 400), new(100, 200) }; 
-        var assetId = AssetIdGenerator.GetAssetId();
-        var asset = GetAssetWithThumbsChannel(assetId, 1000, 2000, 500);
+        var expected = new ThumbnailSizes(
+            new List<int[]> { new[] { 100, 200 }, new[] { 75, 150 }, },
+            new List<int[]> { new[] { 500, 1000 }, new[] { 200, 400 }, });
         
-        var policy = new DeliveryChannelPolicy
-        {
-            PolicyData = "[\"!1000,1000\", \"!400,400\", \"!200,200\", \"100,\"]",
-            Channel = "thumbs",
-            Id = DeliveryChannelPolicyId,
-        };
-        A.CallTo(() =>
-                policyRepository.GetThumbnailPolicy(DeliveryChannelPolicyId, asset.Customer, A<CancellationToken>._))
-            .Returns(policy);
-            
-        // Act
-        var actual = await sut.GetThumbSizesForImage(asset, true);
-        
-        // Assert
-        actual.Should().BeEquivalentTo(expected);
-    }
-    
-    [Fact]
-    public async Task GetAvailableThumbSizesForImage_ReturnsAllCalculatedSizes_IfNoMetadataAttached_AndNotOpenOnly()
-    {
-        // Arrange
-        // only confined sizes calculated (so 100, is ignored)
-        var expected = new List<Size> { new(500, 1000), new(200, 400), new(100, 200) }; 
         var assetId = AssetIdGenerator.GetAssetId();
         var asset = GetAssetWithThumbsChannel(assetId, 1000, 2000, 250);
         
         var policy = new DeliveryChannelPolicy
         {
-            PolicyData = "[\"!1000,1000\", \"!400,400\", \"!200,200\", \"100,\"]",
+            PolicyData = "[\"!1000,1000\", \"!400,400\", \"!200,200\", \"75,\"]",
             Channel = "thumbs",
             Id = DeliveryChannelPolicyId,
         };
@@ -136,7 +95,7 @@ public class MetadataWithFallbackThumbSizeProviderTests
             .Returns(policy);
             
         // Act
-        var actual = await sut.GetThumbSizesForImage(asset, false);
+        var actual = await sut.GetThumbSizesForImage(asset);
         
         // Assert
         actual.Should().BeEquivalentTo(expected);

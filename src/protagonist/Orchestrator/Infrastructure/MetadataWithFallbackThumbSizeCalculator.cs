@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Policies;
-using IIIF;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Settings;
@@ -18,9 +16,9 @@ namespace Orchestrator.Infrastructure;
 public interface IThumbSizeProvider
 {
     /// <summary>
-    /// Get available sizes for thumbnails. Can optionally return only available (ie "Open") or all thumb sizes
+    /// Get all sizes for thumbnails
     /// </summary>
-    Task<List<Size>> GetThumbSizesForImage(Asset asset, bool openOnly);
+    Task<ThumbnailSizes> GetThumbSizesForImage(Asset asset);
 }
 
 public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
@@ -40,21 +38,20 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
     }
     
     /// <summary>
-    /// Get available sizes for thumbnails. Can optionally return only available (ie "Open") or all thumb sizes
-    ///
+    /// Get available sizes for thumbnails
+    /// 
     /// This will _not_ hit S3 to read available thumbs, it will:
     /// Attempt to read from asset.AssetApplicationMetadata. If found return. Else
     /// Get thumbnail policy and calculate sizes. 
     /// </summary>
-    public async Task<List<Size>> GetThumbSizesForImage(Asset asset, bool openOnly)
+    public async Task<ThumbnailSizes> GetThumbSizesForImage(Asset asset)
     {
         var thumbnailSizes = asset.AssetApplicationMetadata?.GetThumbsMetadata();
         
         if (thumbnailSizes != null)
         {
             logger.LogDebug("ThumbSizes metadata found for {AssetId}", asset.Id);
-            var candidates = openOnly ? thumbnailSizes.Open : thumbnailSizes.GetAllSizes();
-            return candidates.Select(t => new Size(t[0], t[1])).ToList();
+            return thumbnailSizes;
         }
 
         if ((orchestratorSettings.ThumbsMetadataDate ?? DateTime.MaxValue) < asset.Finished)
@@ -64,17 +61,17 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
                 asset.Finished);
         }
         
-        return await GetThumbnailSizesForImage(asset, openOnly) ?? Enumerable.Empty<Size>().ToList();
+        return await GetThumbnailSizesForImage(asset);
     }
 
-    private async Task<List<Size>?> GetThumbnailSizesForImage(Asset asset, bool openOnly)
+    private async Task<ThumbnailSizes> GetThumbnailSizesForImage(Asset asset)
     {
         logger.LogDebug("Calculating thumbnail sizes for {AssetId}", asset.Id);
         var sizeParameters = await GetThumbnailPolicyAsSizeParams(asset);
         
-        if (sizeParameters.IsNullOrEmpty()) return null;
+        if (sizeParameters.IsNullOrEmpty()) return ThumbnailSizes.Empty;
 
-        var thumbnailSizesForImage = asset.GetAvailableThumbSizes(sizeParameters, out _, !openOnly);
+        var thumbnailSizesForImage = asset.GetAvailableThumbSizes(sizeParameters);
         return thumbnailSizesForImage;
     }
 

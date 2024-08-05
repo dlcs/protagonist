@@ -12,7 +12,6 @@ using DLCS.AWS.Settings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
-using FakeItEasy;
 using FizzWare.NBuilder;
 using IIIF;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -187,7 +186,7 @@ public class FireballPdfCreatorTests
                     A<string>._, A<string>._, A<CancellationToken>._))
             .MustHaveHappened(2, Times.Exactly);
     }
-    
+
     [Fact]
     public async Task CreatePdf_RedactsNotWhitelistedRoles()
     {
@@ -205,25 +204,25 @@ public class FireballPdfCreatorTests
                 Id = AssetId.FromString("/99/1/image1.jpg"),
                 MaxUnauthorised = 0
             },
-            new ()
+            new()
             {
                 Roles = "whitelist,notwhitelist",
                 Id = AssetId.FromString("/99/1/image1.jpg"),
                 MaxUnauthorised = 0
             },
-            new ()
+            new()
             {
                 Roles = "notwhitelist",
                 Id = AssetId.FromString("/99/1/image1.jpg"),
                 MaxUnauthorised = 0
             },
-            new ()
+            new()
             {
                 Roles = string.Empty,
                 Id = AssetId.FromString("/99/1/image1.jpg"),
                 MaxUnauthorised = -1
             },
-            new ()
+            new()
             {
                 Roles = string.Empty,
                 Id = AssetId.FromString("/99/1/image1.jpg"),
@@ -231,8 +230,8 @@ public class FireballPdfCreatorTests
             }
         };
 
-        A.CallTo(() => thumbSizeProvider.GetThumbSizesForImage(A<Asset>._, false))
-            .Returns(new List<Size> { new(500, 500) });
+        A.CallTo(() => thumbSizeProvider.GetThumbSizesForImage(A<Asset>._))
+            .Returns(new ThumbnailSizes(new List<int[]>{ new[] { 500, 500 } }, new List<int[]>()));
 
         var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
         responseMessage.Content =

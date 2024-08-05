@@ -29,11 +29,11 @@ public class ThumbnailSizes
     public int Count { get; private set; }
 
     [JsonConstructor]
-    public ThumbnailSizes(List<int[]> open, List<int[]> auth)
+    public ThumbnailSizes(List<int[]>? open, List<int[]>? auth)
     {
-        Open = open;
-        Auth = auth;
-        Count = open.Count + auth.Count;
+        Open = open ?? new List<int[]>();
+        Auth = auth ?? new List<int[]>();
+        Count = Open.Count + Auth.Count;
     }
     
     public ThumbnailSizes(int sizesCount)
