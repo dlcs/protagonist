@@ -128,6 +128,41 @@ public class AssetXTests
         });
     }
     
+    [Theory]
+    [InlineData(250, 500, "100,", true, "Ignore width for portrait")]
+    [InlineData(500, 250, "100,", false, "Width okay for landscape")]
+    [InlineData(250, 250, "100,", false, "Width okay for square")]
+    [InlineData(250, 500, "^100,", true, "Ignore confined width for portrait")]
+    [InlineData(500, 250, "^100,", false, "Upscale width okay for landscape")]
+    [InlineData(250, 250, "^100,", false, "Upscale width okay for square")]
+    [InlineData(500, 250, ",100", true, "Ignore height for landscape")]
+    [InlineData(250, 500, ",100", false, "Height okay for portrait")]
+    [InlineData(250, 250, ",100", false, "Height okay for square")]
+    [InlineData(500, 250, "^,100", true, "Ignore height for landscape")]
+    [InlineData(250, 500, "^,100", false, "Upscale height okay for portrait")]
+    [InlineData(250, 250, "^,100", false, "Upscale height okay for square")]
+    [InlineData(500, 250, "!100,100", false, "Confined okay for landscape")]
+    [InlineData(250, 500, "!100,100", false, "Confined okay for portrait")]
+    [InlineData(250, 250, "!100,100", false, "Confined okay for square")]
+    [InlineData(500, 250, "^!100,100", false, "Upscale confined okay for landscape")]
+    [InlineData(250, 500, "^!100,100", false, "Upscale confined okay for portrait")]
+    [InlineData(250, 250, "^!100,100", false, "Upscale confined okay for square")]
+    public void GetAvailableThumbSizes_IgnoresWidthOnlyForPortrait(int w, int h, string sizeParam, bool ignored, string reason)
+    {
+        // Arrange
+        var asset = new Asset { Width = w, Height = h, };
+        var sizeParametersWithNotConfined = new List<SizeParameter>
+        {
+            SizeParameter.Parse(sizeParam)
+        };
+
+        // Act
+        var sizes = asset.GetAvailableThumbSizes(sizeParametersWithNotConfined);
+        
+        // Assert
+        sizes.IsEmpty().Should().Be(ignored, reason);
+    }
+    
     [Fact]
     public void SetFieldsForIngestion_ClearsFields()
     {

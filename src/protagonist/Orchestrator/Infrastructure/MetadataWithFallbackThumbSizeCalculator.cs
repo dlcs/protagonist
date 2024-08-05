@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
@@ -92,6 +93,13 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
         var sizeParameters = thumbnailPolicyFromDb
             .ThrowIfNull(nameof(thumbnailPolicyFromDb))
             .ThumbsDataAsSizeParameters();
+
+        if (!orchestratorSettings.ImageIngest.DefaultThumbs.IsNullOrEmpty())
+        {
+            var defaultThumbs = orchestratorSettings.ImageIngest.DefaultThumbs.Select(ImageApi.SizeParameter.Parse);
+            sizeParameters = sizeParameters.Union(defaultThumbs).ToList();
+        }
+        
         thumbnailPolicies[thumbnailDeliveryChannel.DeliveryChannelPolicyId] = sizeParameters;
         return sizeParameters;
     }

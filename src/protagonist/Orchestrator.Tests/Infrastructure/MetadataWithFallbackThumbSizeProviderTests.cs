@@ -21,7 +21,9 @@ public class MetadataWithFallbackThumbSizeProviderTests
     {
         policyRepository = A.Fake<IPolicyRepository>();
 
-        var orchestratorSettings = Options.Create(new OrchestratorSettings());
+        var settings = new OrchestratorSettings();
+        settings.ImageIngest.DefaultThumbs = new List<string> { "!400,400" };
+        var orchestratorSettings = Options.Create(settings);
         sut = new MetadataWithFallbackThumbSizeProvider(policyRepository, orchestratorSettings,
             new NullLogger<MetadataWithFallbackThumbSizeProvider>());
     }
@@ -86,7 +88,7 @@ public class MetadataWithFallbackThumbSizeProviderTests
         
         var policy = new DeliveryChannelPolicy
         {
-            PolicyData = "[\"!1000,1000\", \"!400,400\", \"!200,200\", \"75,\"]",
+            PolicyData = "[\"!1000,1000\", \"!400,400\", \"!200,200\", \",150\"]",
             Channel = "thumbs",
             Id = DeliveryChannelPolicyId,
         };

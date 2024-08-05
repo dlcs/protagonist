@@ -32,6 +32,8 @@ public static class AssetX
 
         foreach (var sizeParameter in sizeParameters)
         {
+            if (!IsValidForCalculation(assetSize, sizeParameter)) continue;
+            
             var resized = sizeParameter.ResizeIfSupported(assetSize);
             var maxDimension = resized.MaxDimension;
             
@@ -52,6 +54,23 @@ public static class AssetX
         }
 
         return thumbnailSizes;
+    }
+
+    private static bool IsValidForCalculation(Size imageSize, SizeParameter sizeParameter)
+    {
+        // /!w,h/ is applicable for calculating as we will use the max, which will be the confined value
+        if (sizeParameter.Confined) return true;
+
+        var imageShape = imageSize.GetShape();
+        
+        // /w,/ is applicable for Landscape or Square images as width will be fixed as it's longest edge
+        if (sizeParameter.Width.HasValue && imageShape != ImageShape.Portrait) return true;
+        
+        // /,h/ is applicable for Portait or Square images as width will be fixed as it's longest edge
+        if (sizeParameter.Height.HasValue && imageShape != ImageShape.Landscape) return true;
+
+        // any other combination is invalid as we store thumbs by longest so rounding error could affect finding image 
+        return false;
     }
 
     /// <summary>
