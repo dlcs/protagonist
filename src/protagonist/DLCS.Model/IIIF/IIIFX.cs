@@ -34,4 +34,19 @@ public static class IIIFX
                 Math.Abs(x.MaxDimension - targetSize) < Math.Abs(y.MaxDimension - targetSize) ? x : y);
         return closestSize;
     }
+    
+    /// <summary>
+    /// Validate whether <see cref="SizeParameter"/> is valid as a thumbnail policy
+    ///
+    /// We do not support: max, pct or non-confining w,h (ie /w,h/ or /^w,h/)
+    /// </summary>
+    public static bool IsValidThumbnailParameter(this SizeParameter param) => param switch
+    {
+        { Max: true } => false,
+        { PercentScale: not null } => false,
+        { Confined: false, Width: not null, Height: not null } => false,
+        { Confined: true } and ({ Width: null } or { Height : null }) => false,
+        { Width: null, Height: null } => false,
+        _ => true,
+    };
 }
