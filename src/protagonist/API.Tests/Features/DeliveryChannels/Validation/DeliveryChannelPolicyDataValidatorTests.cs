@@ -100,7 +100,7 @@ public class DeliveryChannelPolicyDataValidatorTests
         // Assert
         result.Should().BeFalse();
     }
-    
+
     [Theory]
     [InlineData("max", false)]
     [InlineData("^max", false)]
@@ -114,7 +114,8 @@ public class DeliveryChannelPolicyDataValidatorTests
     [InlineData("^10,10", false)]
     [InlineData("!10,10", true)]
     [InlineData("^!10,10", true)]
-    public async Task PolicyDataValidator_ReturnsExpectedResult_ForThumbsPolicy_FromIIIFDocs(string sizeParam, bool expectedResult)
+    public async Task PolicyDataValidator_ReturnsExpectedResult_ForThumbsPolicySizeParameter(string sizeParam,
+        bool expectedResult)
     {
         // Arrange and Act
         var policyData = $"[\"{sizeParam}\"]";

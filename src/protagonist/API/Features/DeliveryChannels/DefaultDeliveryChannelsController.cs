@@ -39,7 +39,6 @@ public class DefaultDeliveryChannelsController : HydraController
         CancellationToken cancellationToken,
         [FromRoute] int space = 0)
     {
-
         var getCustomerDefaultDeliveryChannels = new GetDefaultDeliveryChannels(customerId, space);
 
         return await HandlePagedFetch<DLCS.Model.DeliveryChannels.DefaultDeliveryChannel, GetDefaultDeliveryChannels,

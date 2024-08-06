@@ -138,13 +138,14 @@ public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
     
     private async Task<Stream?> GetThumbnailStream(Asset asset)
     {
-        var availableSizes = await thumbSizeProvider.GetThumbSizesForImage(asset, false);
+        var availableSizes = await thumbSizeProvider.GetThumbSizesForImage(asset);
         
-        if (availableSizes.IsNullOrEmpty()) return null;
+        if (availableSizes.IsEmpty()) return null;
         
-        var selectedSize = availableSizes.SizeClosestTo(NamedQuerySettings.ProjectionThumbsize);
-        Logger.LogTrace("Using thumbnail {ThumbnailSize} for asset {AssetId}", selectedSize, asset.Id);
-        var thumbnailLocation = StorageKeyGenerator.GetThumbnailLocation(asset.Id, selectedSize.MaxDimension);
+        var selectedSize = availableSizes.SizeClosestTo(NamedQuerySettings.ProjectionThumbsize, out var isOpen);
+        Logger.LogTrace("Using thumbnail {ThumbnailSize} for asset {AssetId}. IsOpen: {ThumbnailOpen}", selectedSize,
+            asset.Id, isOpen);
+        var thumbnailLocation = StorageKeyGenerator.GetThumbnailLocation(asset.Id, selectedSize.MaxDimension, isOpen);
         
         var thumbStream = await BucketReader.GetObjectContentFromBucket(thumbnailLocation);
         return thumbStream;

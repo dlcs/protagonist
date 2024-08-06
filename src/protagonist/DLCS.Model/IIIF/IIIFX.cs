@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using IIIF;
@@ -13,11 +12,21 @@ namespace DLCS.Model.IIIF;
 public static class IIIFX
 {
     /// <summary>
-    /// Get the maximum dimension (width or height) for size parameter
+    /// Use <see cref="SizeParameter"/> values to resize <see cref="Size"/> object.
+    ///
+    /// Note that this isn't an exhaustive method - it'll only support the allowed sizeParam values, as reflected in
+    /// <see cref="IsValidThumbnailParameter"/>
     /// </summary>
-    public static int GetMaxDimension(this SizeParameter sizeParameter)
-        => Math.Max(sizeParameter.Width ?? 0, sizeParameter.Height ?? 0);
+    public static Size ResizeIfSupported(this SizeParameter sizeParameter, Size assetSize)
+    {
+        if (!sizeParameter.IsValidThumbnailParameter())
+        {
+            throw new InvalidOperationException($"Attempt to resize using unsupported SizeParameter: {sizeParameter}");
+        }
 
+        return sizeParameter.Resize(assetSize, InvalidUpscaleBehaviour.ReturnOriginal);
+    }
+    
     /// <summary>
     /// From provided sizes, return the Size that has MaxDimension closest to specified targetSize
     ///
@@ -34,4 +43,19 @@ public static class IIIFX
                 Math.Abs(x.MaxDimension - targetSize) < Math.Abs(y.MaxDimension - targetSize) ? x : y);
         return closestSize;
     }
+    
+    /// <summary>
+    /// Validate whether <see cref="SizeParameter"/> is valid as a thumbnail policy
+    ///
+    /// We do not support: max, pct or non-confining w,h (ie /w,h/ or /^w,h/)
+    /// </summary>
+    public static bool IsValidThumbnailParameter(this SizeParameter param) => param switch
+    {
+        { Max: true } => false,
+        { PercentScale: not null } => false,
+        { Confined: false, Width: not null, Height: not null } => false,
+        { Confined: true } and ({ Width: null } or { Height : null }) => false,
+        { Width: null, Height: null } => false,
+        _ => true,
+    };
 }

@@ -120,17 +120,18 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
 
     private async Task<ObjectInBucket?> GetThumbnailLocation(Asset asset)
     {
-        var availableSizes = await thumbSizeProvider.GetThumbSizesForImage(asset, false);
+        var availableSizes = await thumbSizeProvider.GetThumbSizesForImage(asset);
 
-        if (availableSizes.IsNullOrEmpty())
+        if (availableSizes.IsEmpty())
         {
             Logger.LogInformation("Unable to find thumbnail for {AssetId}, excluding from PDF", asset.Id);
             return null;
         }
         
-        var selectedSize = availableSizes.SizeClosestTo(NamedQuerySettings.ProjectionThumbsize);
-        Logger.LogTrace("Using thumbnail {ThumbnailSize} for asset {AssetId}", selectedSize, asset.Id);
-        return StorageKeyGenerator.GetThumbnailLocation(asset.Id, selectedSize.MaxDimension);
+        var selectedSize = availableSizes.SizeClosestTo(NamedQuerySettings.ProjectionThumbsize, out var isOpen);
+        Logger.LogTrace("Using thumbnail {ThumbnailSize} for asset {AssetId}. IsOpen: {ThumbnailOpen}", selectedSize,
+            asset.Id, isOpen);
+        return StorageKeyGenerator.GetThumbnailLocation(asset.Id, selectedSize.MaxDimension, isOpen);
     }
 
     private CustomerOverride GetCustomerOverride(PdfParsedNamedQuery parsedNamedQuery) 

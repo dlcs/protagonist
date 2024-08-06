@@ -99,6 +99,8 @@ public class OrchestratorSettings
     public AuthSettings Auth { get; set; } = new();
 
     public NamedQuerySettings NamedQuery { get; set; } = new();
+
+    public ImageIngestSettings ImageIngest { get; set; } = new();
 }
 
 public class ProxySettings
@@ -173,6 +175,18 @@ public class ThumbUpscaleConfig
     /// The maximum % size difference for upscaling.
     /// </summary>
     public int UpscaleThreshold { get; set; }
+}
+
+public class ImageIngestSettings
+{
+    /// <summary>
+    /// A list of thumbnails that will be added to every asset regardless of the thumbnail policy
+    /// </summary>
+    /// <remarks>
+    /// This is an Engine concern and ideally shouldn't be in Orchestrator but Orchestrator needs to be aware when
+    /// calculating sizes of images for when AssetApplicationMetadata doesn't exist
+    /// </remarks>
+    public List<string> DefaultThumbs { get; set; } = new();
 }
 
 public class AuthSettings

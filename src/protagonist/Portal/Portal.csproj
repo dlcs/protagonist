@@ -10,7 +10,7 @@
       <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.150" />
       <PackageReference Include="CsvHelper" Version="30.0.1" />
       <PackageReference Include="Destructurama.Attributed" Version="2.0.0" />
-      <PackageReference Include="iiif-net" Version="0.2.6" />
+      <PackageReference Include="iiif-net" Version="0.2.7" />
       <PackageReference Include="MediatR" Version="10.0.1" />
       <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="10.0.1" />
       <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.5" />

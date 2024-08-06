@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DLCS.Model.IIIF;
 using IIIF;
 using IIIF.ImageApi;
@@ -7,17 +8,6 @@ namespace DLCS.Model.Tests.IIIF;
 
 public class IIIFXTests
 {
-    [Theory]
-    [InlineData(null, null, 0)]
-    [InlineData(100, null, 100)]
-    [InlineData(null, 100, 100)]
-    [InlineData(200, 100, 200)]
-    public void GetMaxDimension_Correct(int? width, int? height, int expected)
-    {
-        var sizeParameter = new SizeParameter { Width = width, Height = height };
-        sizeParameter.GetMaxDimension().Should().Be(expected);
-    }
-
     [Fact]
     public void SizeClosestTo_Correct_MatchingLongestEdge()
     {
@@ -79,5 +69,41 @@ public class IIIFXTests
         
         // Assert
         actual.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("max")]
+    [InlineData("^max")]
+    [InlineData("pct:10")]
+    [InlineData("^pct:10")]
+    [InlineData("10,10")]
+    [InlineData("^10,10")]
+    public void IsValidThumbnailParameter_Correct_Invalid(string sizeParam)
+        => SizeParameter.Parse(sizeParam).IsValidThumbnailParameter().Should().BeFalse();
+
+    [Theory]
+    [InlineData("10,")]
+    [InlineData("^10,")]
+    [InlineData(",10")]
+    [InlineData("^,10")]
+    [InlineData("!10,10")]
+    [InlineData("^!10,10")]
+    public void IsValidThumbnailParameter_Correct_Valid(string sizeParam)
+        => SizeParameter.Parse(sizeParam).IsValidThumbnailParameter().Should().BeTrue();
+
+    [Theory]
+    [InlineData("max")]
+    [InlineData("^max")]
+    [InlineData("pct:10")]
+    [InlineData("^pct:10")]
+    [InlineData("10,10")]
+    [InlineData("^10,10")]
+    public void Resize_Throws_IfSizeParameter_NotSupported(string sizeParam)
+    {
+        var sp = SizeParameter.Parse(sizeParam);
+        Action action = () => sp.ResizeIfSupported(new Size(10, 20));
+        action.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage($"Attempt to resize using unsupported SizeParameter: {sizeParam}");
     }
 }

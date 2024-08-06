@@ -3,6 +3,7 @@ using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
+using DLCS.Model.IIIF;
 using IIIF.ImageApi;
 
 namespace API.Features.DeliveryChannels.Validation;
@@ -54,7 +55,7 @@ public class DeliveryChannelPolicyDataValidator
         {
             try
             {
-                if (!IsValidThumbnailParameter(SizeParameter.Parse(sizeValue)))
+                if (!SizeParameter.Parse(sizeValue).IsValidThumbnailParameter())
                 {
                     return false;
                 }
@@ -67,16 +68,6 @@ public class DeliveryChannelPolicyDataValidator
 
         return true;
     }
-
-    private bool IsValidThumbnailParameter(SizeParameter param) => param switch
-        {
-            { Max: true } => false,
-            { PercentScale: not null } => false,
-            { Confined: false, Width: not null, Height: not null } => false,
-            { Confined: true } and ({ Width: null } or { Height : null }) => false,
-            { Width: null, Height: null } => false,
-            _ => true,
-        };
 
     private async Task<bool> ValidateTimeBasedPolicyData(string policyDataJson)
     {
