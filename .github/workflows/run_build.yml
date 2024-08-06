@@ -11,7 +11,33 @@ on:
       - "scripts/**"
 
 jobs:
+  # if this is for a draft PR, build + run tests only
+  test-dotnet-only:
+    if: github.event.pull_request.draft == true
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/protagonist
+    env:
+      BUILD_CONFIG: "Release"
+      SOLUTION: "protagonist.sln"
+    steps:   
+      - id: checkout
+        uses: actions/checkout@v4
+      - id: setup-dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "6.0.x"
+      - id: restore-dotnet-dependencies
+        run: dotnet restore $SOLUTION
+      - id: build-dotnet
+        run: dotnet build $SOLUTION --configuration $BUILD_CONFIG --no-restore
+      - id: test-dotnet
+        run: dotnet test $SOLUTION --filter 'Category!=Manual' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
+
+  # if this is NOT a draft: build, test, sonar-scan and build images
   test-dotnet:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     defaults:
       run:
