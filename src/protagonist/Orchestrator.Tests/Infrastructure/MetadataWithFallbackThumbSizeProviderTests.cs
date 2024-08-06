@@ -88,7 +88,7 @@ public class MetadataWithFallbackThumbSizeProviderTests
         
         var policy = new DeliveryChannelPolicy
         {
-            PolicyData = "[\"!1000,1000\", \"!400,400\", \"!200,200\", \",150\"]",
+            PolicyData = "[\"!1000,1000\", \"!200,200\", \",150\"]", //"!400,400" is included from defaults
             Channel = "thumbs",
             Id = DeliveryChannelPolicyId,
         };
