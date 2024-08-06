@@ -147,7 +147,7 @@ public class AssetXTests
     [InlineData(500, 250, "^!100,100", false, "Upscale confined okay for landscape")]
     [InlineData(250, 500, "^!100,100", false, "Upscale confined okay for portrait")]
     [InlineData(250, 250, "^!100,100", false, "Upscale confined okay for square")]
-    public void GetAvailableThumbSizes_IgnoresWidthOnlyForPortrait(int w, int h, string sizeParam, bool ignored, string reason)
+    public void GetAvailableThumbSizes_Ignores_IfMaxDimensionMayVary(int w, int h, string sizeParam, bool ignored, string reason)
     {
         // Arrange
         var asset = new Asset { Width = w, Height = h, };

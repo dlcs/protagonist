@@ -183,8 +183,8 @@ public class ImageIngestSettings
     /// A list of thumbnails that will be added to every asset regardless of the thumbnail policy
     /// </summary>
     /// <remarks>
-    /// This is an Engine concern and ideally wouldn't be in Orchestrator but Orchestrator needs to be aware when
-    /// calculating sizes of images for 
+    /// This is an Engine concern and ideally shouldn't be in Orchestrator but Orchestrator needs to be aware when
+    /// calculating sizes of images for when AssetApplicationMetadata doesn't exist
     /// </remarks>
     public List<string> DefaultThumbs { get; set; } = new();
 }
