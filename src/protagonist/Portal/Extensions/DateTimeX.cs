@@ -4,7 +4,7 @@ namespace Portal.Extensions;
 
 public static class DateTimeX
 {
-    private const string DefaultTimeFormat = "yyyy-MM-dd hh:mm:ss";
+    private const string DefaultTimeFormat = "yyyy-MM-dd HH:mm:ss";
     private const string DateNotFoundMessage = "Date not found";
     
     /// <summary>
