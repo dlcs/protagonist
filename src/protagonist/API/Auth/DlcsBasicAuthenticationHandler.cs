@@ -38,7 +38,7 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
     private readonly DlcsApiAuth dlcsApiAuth;
     private readonly JwtAuthHelper authHelper;
 
-    private readonly JsonWebTokenHandler jwtHandler = new();
+    private static readonly JsonWebTokenHandler JwtHandler = new();
 
     /// <summary>
     /// Deduces the caller's claims
@@ -207,7 +207,7 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         if (token is null)
             return new FailedCaller("JWT missing");
 
-        var result = await jwtHandler.ValidateTokenAsync(token, new()
+        var result = await JwtHandler.ValidateTokenAsync(token, new()
         {
             IssuerSigningKey = signingKey,
             ValidateAudience = false,
