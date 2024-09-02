@@ -239,7 +239,10 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         if (!"dlcs".Equals(nid) || !"user".Equals(nss))
             return new FailedCaller("Unsupported/unauthorised token data");
 
-        var customer = await customerRepository.GetCustomer(id);
+        if (!int.TryParse(id, out var customerId))
+            return new FailedCaller("Invalid customer id format");
+        
+        var customer = await customerRepository.GetCustomer(customerId);
         if (customer is null)
             return new FailedCaller("Customer not found");
 
