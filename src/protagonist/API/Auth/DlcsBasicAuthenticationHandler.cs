@@ -80,6 +80,7 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
 
         var headerValue = Request.GetAuthHeaderValue(AuthenticationHeaderUtils.BasicScheme)
                           ?? Request.GetAuthHeaderValue(AuthenticationHeaderUtils.BearerTokenScheme);
+
         if (headerValue == null)
         {
             return AuthenticateResult.Fail("Missing Authorization Header in request");
@@ -88,28 +89,22 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         // for a path like /customers/23/queue, the resourceCustomerId is 23.
         // This isn't necessarily the customer that owns the api key being used on the call!
         int? resourceCustomerId = null;
-        if (Request.RouteValues.TryGetValue("customerId", out var customerIdRouteVal))
+        if (Request.RouteValues.TryGetValue("customerId", out var customerIdRouteVal) 
+            && customerIdRouteVal != null
+            && int.TryParse(customerIdRouteVal.ToString(), out var result))
         {
-            if (customerIdRouteVal != null && int.TryParse(customerIdRouteVal.ToString(), out int result))
-            {
-                resourceCustomerId = result;
-            }
+            resourceCustomerId = result;
         }
 
-        switch (await GetApiCaller(headerValue, resourceCustomerId))
+        return await GetApiCaller(headerValue, resourceCustomerId) switch
         {
-            case null:
-                return AuthenticateResult.Fail("Invalid credentials");
-            case FailedCaller fail:
-                return AuthenticateResult.Fail(fail.Message);
-
+            null => AuthenticateResult.Fail("Invalid credentials"),
+            FailedCaller fail => AuthenticateResult.Fail(fail.Message),
             // Success:
-            case ApiCaller apiCaller:
-                return AuthenticateApiCaller(apiCaller, resourceCustomerId);
-
-            default:
-                throw new InvalidOperationException();
-        }
+            ApiCaller apiCaller => AuthenticateApiCaller(apiCaller, resourceCustomerId),
+            // Unlikely:
+            _ => throw new InvalidOperationException()
+        };
     }
 
     private AuthenticateResult AuthenticateApiCaller(ApiCaller apiCaller, int? resourceCustomerId)
