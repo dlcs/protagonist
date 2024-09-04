@@ -72,11 +72,15 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         // Not all API paths require auth...
         var endpoint = Context.GetEndpoint();
         if (endpoint?.Metadata.GetMetadata<IAllowAnonymous>() != null)
+        {
             return AuthenticateResult.NoResult();
+        }
 
         // ...but any not marked must have the auth header
         if (!Request.Headers.ContainsKey("Authorization"))
+        {
             return AuthenticateResult.Fail("Missing Authorization Header in request");
+        }
 
         var headerValue = Request.GetAuthHeaderValue(AuthenticationHeaderUtils.BasicScheme)
                           ?? Request.GetAuthHeaderValue(AuthenticationHeaderUtils.BearerTokenScheme);
@@ -89,7 +93,7 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         // for a path like /customers/23/queue, the resourceCustomerId is 23.
         // This isn't necessarily the customer that owns the api key being used on the call!
         int? resourceCustomerId = null;
-        if (Request.RouteValues.TryGetValue("customerId", out var customerIdRouteVal) 
+        if (Request.RouteValues.TryGetValue("customerId", out var customerIdRouteVal)
             && customerIdRouteVal != null
             && int.TryParse(customerIdRouteVal.ToString(), out var result))
         {
@@ -183,7 +187,10 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
     private async Task<IApiCaller?> GetApiCallerFromBasic(string? headerValueParameter, int? customerIdHint)
     {
         if (headerValueParameter?.DecodeBase64().Split(':') is not
-            [{Length: > 0} key, {Length: > 0} secret]) return null;
+            [{Length: > 0} key, {Length: > 0} secret])
+        {
+            return null;
+        }
 
         var customerForKey = await customerRepository.GetCustomerForKey(key, customerIdHint);
         if (customerForKey == null)
@@ -197,15 +204,20 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         }
 
         return new ApiCaller(key, customerForKey);
+
     }
 
     private async Task<IApiCaller?> GetApiCallerFromJwt(string? token)
     {
         if (authHelper.SigningCredentials?.Key is not { } signingKey)
+        {
             return new FailedCaller("JWT not enabled");
+        }
 
         if (token is null)
+        {
             return new FailedCaller("JWT missing");
+        }
 
         var result = await JwtHandler.ValidateTokenAsync(token, new()
         {
@@ -226,6 +238,12 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
             return new FailedCaller("JWT missing sub field");
         }
 
+        // RFC 8141:
+        // NID - Namespace Identifier - here "dlcs" to have own namespace
+        // NSS - Namespace Specific String - currently we use "user" to inform that the next part is user (customer) id
+        const string dlcsUrnNamespace = "dlcs";
+        const string dlcsUrnUser = "user";
+
         if (subUrn.Split(':') is not [_, var nid, var nss, var id, ..])
         {
             return new FailedCaller("JWT sub in incorrect urn format");
@@ -236,15 +254,21 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         // verification.
 
         // We only support the following subjects: urn:dlcs:user:<customerId>
-        if (!"dlcs".Equals(nid) || !"user".Equals(nss))
+        if (!dlcsUrnNamespace.Equals(nid) || !dlcsUrnUser.Equals(nss))
+        {
             return new FailedCaller("Unsupported/unauthorised token data");
+        }
 
         if (!int.TryParse(id, out var customerId))
+        {
             return new FailedCaller("Invalid customer id format");
-        
+        }
+
         var customer = await customerRepository.GetCustomer(customerId);
         if (customer is null)
+        {
             return new FailedCaller("Customer not found");
+        }
 
         return new ApiCaller(customer.Keys.First(), customer);
     }
@@ -269,7 +293,7 @@ public interface IApiCaller;
 /// </summary>
 public class ApiCaller(string key, Customer? customer) : IApiCaller
 {
-    public string Key { get; set; } = key;
+    public string Key { get; } = key;
 
     public Customer? Customer { get; } = customer;
 }

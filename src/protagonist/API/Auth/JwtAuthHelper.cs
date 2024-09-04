@@ -4,13 +4,19 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace API.Auth;
 
-public class JwtAuthHelper(IOptions<DlcsSettings> dlcsSettings)
+public class JwtAuthHelper
 {
-    public SigningCredentials? SigningCredentials { get; } = dlcsSettings.Value.JwtKey is {Length: > 0} key
-        ? new(
-            new SymmetricSecurityKey(Convert.FromBase64String(key)),
-            SecurityAlgorithms.HmacSha256Signature)
-        : null;
+    public JwtAuthHelper(IOptions<DlcsSettings> dlcsSettings)
+    {
+        SigningCredentials = dlcsSettings.Value.JwtKey is {Length: > 0} key
+            ? new(
+                new SymmetricSecurityKey(Convert.FromBase64String(key)),
+                SecurityAlgorithms.HmacSha256Signature)
+            : null;
+        ValidIssuers = dlcsSettings.Value.JwtValidIssuers.ToArray();
+    }
 
-    public string[] ValidIssuers { get; } = dlcsSettings.Value.JwtValidIssuers.ToArray();
+    public SigningCredentials? SigningCredentials { get; }
+
+    public string[] ValidIssuers { get; }
 }
