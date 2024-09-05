@@ -4,7 +4,7 @@
         <TargetFramework>net6.0</TargetFramework>
         <Nullable>enable</Nullable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <LangVersion>default</LangVersion>
+        <LangVersion>10.0</LangVersion>
         <NoWarn>$(NoWarn);1591</NoWarn>
     </PropertyGroup>
 
