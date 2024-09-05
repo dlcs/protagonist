@@ -186,12 +186,14 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
 
     private async Task<IApiCaller?> GetApiCallerFromBasic(string? headerValueParameter, int? customerIdHint)
     {
-        if (headerValueParameter?.DecodeBase64().Split(':') is not
-            [{Length: > 0} key, {Length: > 0} secret])
+        var parts = headerValueParameter?.DecodeBase64().Split(':');
+        if (parts?.Length != 2 || string.IsNullOrEmpty(parts[0]) || string.IsNullOrEmpty(parts[1]))
         {
             return null;
         }
-
+        var key = parts[0];
+        var secret = parts[1];
+        
         var customerForKey = await customerRepository.GetCustomerForKey(key, customerIdHint);
         if (customerForKey == null)
         {
@@ -244,11 +246,22 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         const string dlcsUrnNamespace = "dlcs";
         const string dlcsUrnUser = "user";
 
-        if (subUrn.Split(':') is not [_, var nid, var nss, var id, ..])
+        // In modern C#:
+        // if (subUrn.Split(':') is not [_, var nid, var nss, var id, ..])
+        // {
+        //     return new FailedCaller("JWT sub in incorrect urn format");
+        // }
+
+        var parts = subUrn.Split(':');
+        if (parts.Length < 4)
         {
             return new FailedCaller("JWT sub in incorrect urn format");
         }
 
+        var nid = parts[1];
+        var nss = parts[2];
+        var id = parts[3];
+        
         // Future integration: nid/nss/id can be used for granular permissions
         // For now, we have 1 customer, the Customer Portal, so "hardcode" the
         // verification.
@@ -286,19 +299,32 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
 /// <summary>
 /// Can be <see cref="ApiCaller"/> or <see cref="FailedCaller"/>
 /// </summary>
-public interface IApiCaller;
+public interface IApiCaller
+{
+}
 
 /// <summary>
 /// Represents the credentials in the API request, the basic auth key:secret pair.
 /// </summary>
-public class ApiCaller(string key, Customer? customer) : IApiCaller
+public class ApiCaller : IApiCaller
 {
-    public string Key { get; } = key;
+    public ApiCaller(string key, Customer? customer)
+    {
+        Key = key;
+        Customer = customer;
+    }
 
-    public Customer? Customer { get; } = customer;
+    public string Key { get; }
+
+    public Customer? Customer { get; }
 }
 
-public class FailedCaller(string message) : IApiCaller
+public class FailedCaller : IApiCaller
 {
-    public string Message { get; } = message;
+    public FailedCaller(string message)
+    {
+        Message = message;
+    }
+
+    public string Message { get; }
 }
