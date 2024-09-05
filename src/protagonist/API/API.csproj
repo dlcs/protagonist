@@ -4,7 +4,7 @@
         <TargetFramework>net6.0</TargetFramework>
         <Nullable>enable</Nullable>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <LangVersion>default</LangVersion>
+        <LangVersion>10.0</LangVersion>
         <NoWarn>$(NoWarn);1591</NoWarn>
     </PropertyGroup>
 
@@ -23,6 +23,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="6.0.5" />
+        <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.0.2" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.22" />
       <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
       <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.1" />

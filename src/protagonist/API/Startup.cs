@@ -68,6 +68,7 @@ public class Startup
             .AddSingleton<CredentialsExporter>()
             .AddSingleton<ApiKeyGenerator>()
             .AddSingleton<IEncryption, SHA256>()
+            .AddSingleton<JwtAuthHelper>()
             .AddSingleton<DlcsApiAuth>()
             .AddTransient<ClaimsPrincipal>(s => s.GetRequiredService<IHttpContextAccessor>().HttpContext.User)
             .AddCaching(cacheSettings)

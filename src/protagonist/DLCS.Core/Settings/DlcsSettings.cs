@@ -37,4 +37,14 @@ public class DlcsSettings
     /// URL format for generating manifests for single assets
     /// </summary>
     public string SingleAssetManifestTemplate { get; set; }
+    
+    /// <summary>
+    /// 256bit or longer, Base64 encoded, JWT secret
+    /// </summary>
+    public string? JwtKey { get; set; }
+
+    /// <summary>
+    /// List of valid issuers of JWT for authentication
+    /// </summary>
+    public ICollection<string> JwtValidIssuers { get; set; } = Array.Empty<string>();
 }

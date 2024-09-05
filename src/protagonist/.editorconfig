@@ -1,2 +1,3 @@
 [*.cs]
 csharp_style_namespace_declarations=file_scoped:warning
+csharp_prefer_braces = true:suggestion
