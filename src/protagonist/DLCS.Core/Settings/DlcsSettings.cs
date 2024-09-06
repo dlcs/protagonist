@@ -46,5 +46,5 @@ public class DlcsSettings
     /// <summary>
     /// List of valid issuers of JWT for authentication
     /// </summary>
-    public ICollection<string> JwtValidIssuers { get; set; } = Array.Empty<string>();
+    public string[] JwtValidIssuers { get; set; } = Array.Empty<string>();
 }
