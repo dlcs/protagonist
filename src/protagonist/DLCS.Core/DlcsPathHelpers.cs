@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using DLCS.Core.Formats;
 using DLCS.Core.Types;
 
 namespace DLCS.Core;
@@ -18,7 +19,7 @@ public static class DlcsPathHelpers
     /// <param name="version">Value to replace {version} with</param>
     /// <param name="customer">Value to replace {customer} with</param>
     /// <param name="space">Value to replace {space} with</param>
-    /// <param name="assetPath">Value to replace {assetPath} with</param>
+    /// <param name="assetPath">Value to replace {assetPath} with, optionally formatted</param>
     /// <returns>Template with string replacements made</returns>
     public static string GeneratePathFromTemplate(
         string template,
@@ -33,8 +34,8 @@ public static class DlcsPathHelpers
                 .Replace("{version}", version ?? string.Empty)
                 .Replace("{customer}", customer ?? string.Empty)
                 .Replace("{space}", space ?? string.Empty)
-                .Replace("{assetPath}", assetPath ?? string.Empty), "/");
-    
+                .ReplaceAssetPath(assetPath ?? string.Empty), "/");
+
     /// <summary>
     /// Replace known slugs in DLCS auth path template.
     /// </summary>

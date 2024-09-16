@@ -96,51 +96,6 @@ E.g., the following shows IIPImage supports v2 only and Cantaloupe supports v2 +
 }
 ```
 
-### PathTemplates
-
-The default path template for requests is `/{prefix}/{customer}/{space}/{assetPath}`, where:
-
-* `prefix` is route path (e.g. `iiif-manifest`, `iiif-av`, `iiif-img`) and includes version.
-* `customer` and `space` are self explanatory
-* `assetPath` is the asset identifier plus any specific elements for the current request - e.g. for image requests it will contain the full IIIF image request.
-
-By default the above format is reflected on info.json and single-item manifests.
-
-To facilitate using proxy servers to receive alternative URLs that are then rewritten to standard DLCS URLs, overrides to the default rules can be specified. These are used when outputting any self-referencing URIs (e.g. info.json `id` element).
-
-> For the below to work the expectation is that the `x-forwarded-host` header is set in the proxy.
-
-```
-"PathRules": {
-  "Default": "/{prefix}/{customer}/{space}/{assetPath}",
-  "Overrides": {
-    "exclude-space.com": "/{prefix}/{customer}/extra/{assetPath}/",
-    "customer-specific.io": "/{prefix}/{assetPath}"
-  }
-}
-```
-
-As an convenience you can specify "PathRules:OverridesAsJson" appSetting that includes a string-based config. This makes it easier to configure via environment variables etc
-
-#### Auth PathTemplates
-
-There is a similar config block availabe for authentication under the `"Auth"` key.
-
-For auth the path replacements are simpler:
-* `customer` is the customer the auth service is for
-* `behaviour` is the name of the auth service.
-
-```
-"Auth": {
-  "AuthPathRules": {
-    "Default": "/auth/{customer}/{behaviour}",
-    "Overrides": {
-      "exclude-space.com": "/auth/{behaviour}"
-    }
-  }
-},
-```
-
 ### Versioned Requests
 
 `DefaultIIIFImageVersion` and `DefaultIIIFPresentationVersion` specify the default IIIF Image and Presentation API's supported.
