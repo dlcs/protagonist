@@ -1,4 +1,6 @@
-﻿namespace DLCS.Core.Tests;
+﻿using System;
+
+namespace DLCS.Core.Tests;
 
 public class DlcsPathHelpersTests
 {
@@ -69,5 +71,42 @@ public class DlcsPathHelpersTests
 
         // Assert
         replaced.Should().Be(expected);
+    }
+
+    // Specific example here is for ARK id https://en.wikipedia.org/wiki/Archival_Resource_Key#Structure
+    [Theory]
+    [InlineData("https://dlcs.digirati.io/{prefix}/{version}/{customer}/{space}/path/ark:{assetPath}",
+        "https://dlcs.digirati.io/images/first-space/path/ark:NAAN___Name")]
+    [InlineData("https://dlcs.digirati.io/{prefix}/{version}/{customer}/{space}/path/ark:{assetPath:3US}",
+        "https://dlcs.digirati.io/images/first-space/path/ark:NAAN/Name")]
+    [InlineData("https://dlcs.digirati.io/{prefix}/{assetPath}/path/ark:{assetPath:3US}",
+        "https://dlcs.digirati.io/images/NAAN___Name/path/ark:NAAN/Name")]
+    public void GeneratePathFromTemplate_AssetPath_ObeysFormattingInstruction(string template, string expected)
+    {
+        // Act
+        var replaced = DlcsPathHelpers.GeneratePathFromTemplate(template,
+            prefix: "images",
+            space: "first-space",
+            assetPath: "NAAN___Name");
+
+        // Assert
+        replaced.Should().Be(expected);
+    }
+    
+    [Fact]
+    public void GeneratePathFromTemplate_AssetPath_Throws_IfUnknownFormattingInstruction()
+    {
+        // Arrange
+        const string template = "https://dlcs.digirati.io/{prefix}/{version}/{customer}/{space}/path/ark:{assetPath:XY}";
+        
+        // Act
+        Action action = () => DlcsPathHelpers.GeneratePathFromTemplate(template,
+            prefix: "images",
+            space: "first-space",
+            assetPath: "NAAN___Name");
+
+        // Assert
+        action.Should().Throw<ArgumentException>()
+            .WithMessage("'XY' is not a known assetPath format (Parameter 'format')");
     }
 }
