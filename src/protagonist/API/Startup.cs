@@ -115,6 +115,8 @@ public class Startup
                 options.SerializerSettings.ApplyHydraSerializationSettings();
             });
 
+        services.AddSwaggerGenNewtonsoftSupport();
+
         services
             .AddHealthChecks()
             .AddDbContextCheck<DlcsContext>("DLCS-DB");
