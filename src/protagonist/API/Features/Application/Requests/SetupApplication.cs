@@ -1,10 +1,14 @@
 ﻿using API.Auth;
 using API.Features.Customer.Requests;
+using API.Settings;
+using DLCS.Core.Settings;
 using DLCS.Model;
+using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace API.Features.Application.Requests;
 
@@ -20,13 +24,15 @@ public class SetupApplicationHandler : IRequestHandler<SetupApplication, CreateA
     private readonly DlcsContext dbContext;
     private readonly ApiKeyGenerator apiKeyGenerator;
     private readonly IEntityCounterRepository entityCounterRepository;
+    private readonly DlcsSettings dlcsSettings;
 
     public SetupApplicationHandler(DlcsContext dbContext, ApiKeyGenerator apiKeyGenerator,
-        IEntityCounterRepository entityCounterRepository)
+        IEntityCounterRepository entityCounterRepository, IOptions<ApiSettings> apiOptions)
     {
         this.dbContext = dbContext;
         this.apiKeyGenerator = apiKeyGenerator;
         this.entityCounterRepository = entityCounterRepository;
+        dlcsSettings = apiOptions.Value.DLCS;
     }
 
     public async Task<CreateApiKeyResult> Handle(SetupApplication request, CancellationToken cancellationToken)
@@ -48,14 +54,26 @@ public class SetupApplicationHandler : IRequestHandler<SetupApplication, CreateA
         };
         var (apiKey, apiSecret) = apiKeyGenerator.CreateApiKey(adminCustomer);
         adminCustomer.Keys = new[] { apiKey };
-        
         await dbContext.Customers.AddAsync(adminCustomer, cancellationToken);
+
+        await CreateDefaultStoragePolicy(cancellationToken);
         var updateCount = await dbContext.SaveChangesAsync(cancellationToken);
 
         await entityCounterRepository.Create(adminCustomer.Id, KnownEntityCounters.CustomerSpaces, adminCustomer.Id.ToString());
 
-        return updateCount == 1
+        return updateCount == 2
             ? CreateApiKeyResult.Success(apiKey, apiSecret)
             : CreateApiKeyResult.Fail("Error creating customer");
+    }
+
+    private async Task CreateDefaultStoragePolicy(CancellationToken cancellationToken)
+    {
+        var storagePolicy = new StoragePolicy
+        {
+            Id = StoragePolicy.DefaultStoragePolicyName,
+            MaximumNumberOfStoredImages = dlcsSettings.DefaultPolicyMaxNumber,
+            MaximumTotalSizeOfStoredImages = dlcsSettings.DefaultPolicyMaxSize,
+        };
+        await dbContext.StoragePolicies.AddAsync(storagePolicy, cancellationToken);
     }
 }
