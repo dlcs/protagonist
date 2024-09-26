@@ -67,7 +67,7 @@ public class SpaceRepository : ISpaceRepository
     
     public async Task<Space?> GetSpace(int customerId, string name, CancellationToken cancellationToken)
     {
-        return await GetSpaceInternal(customerId, -1, cancellationToken, name, noCache: false);
+        return await GetSpaceInternal(customerId, -1, cancellationToken, name, noCache: true);
     }
 
     public async Task<Space> CreateSpace(int customer, string name, string? imageBucket, 
