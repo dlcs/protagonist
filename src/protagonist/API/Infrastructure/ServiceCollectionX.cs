@@ -114,6 +114,8 @@ public static class ServiceCollectionX
     public static IServiceCollection ConfigureSwagger(this IServiceCollection services)
         => services.AddSwaggerGen(c =>
         {
+            c.SupportNonNullableReferenceTypes();
+
             c.SwaggerDoc("v2", new OpenApiInfo
             {
                 Title = "DLCS API", 
