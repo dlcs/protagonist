@@ -45,7 +45,7 @@ public class CustomerStorageRepository : IStorageRepository
                 
         if (spaceId == 0)
         {
-            storageForSpace.StoragePolicy = "default"; // this isn't set on Customer
+            storageForSpace.StoragePolicy = StoragePolicy.DefaultStoragePolicyName; // this isn't set on Customer
             // This space0 row isn't created when a customer is created, either - but should it?
         }
 

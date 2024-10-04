@@ -1,8 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 using API.Client;
-using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
@@ -11,17 +9,17 @@ using Test.Helpers.Integration;
 namespace API.Tests.Integration;
 
 [Trait("Category", "Integration")]
-[Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
 public class ApplicationTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly HttpClient httpClient;
     private readonly DlcsContext dlcsContext;
 
-    public ApplicationTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
+    public ApplicationTests(ProtagonistAppFactory<Startup> factory)
     {
+        var dbFixture = new DlcsDefaultDatabaseFixture();
+        dbFixture.InitializeAsync().Wait();
         dlcsContext = dbFixture.DbContext;
         httpClient = factory.WithConnectionString(dbFixture.ConnectionString).CreateClient();
-        dbFixture.CleanUp();
     }
 
     [Fact]
@@ -39,7 +37,7 @@ public class ApplicationTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task SetupApplication_Success_CreatesCustomerAndCounter()
+    public async Task SetupApplication_Success_CreatesCustomerCounterAndStoragePolicy()
     {
         // Act
         var response = await httpClient.PostAsync("/setup", null!);
@@ -53,5 +51,10 @@ public class ApplicationTests : IClassFixture<ProtagonistAppFactory<Startup>>
         (await dlcsContext.EntityCounters
                 .AnyAsync(c => c.Scope == "1" && c.Customer == 1 && c.Type == "space"))
             .Should().BeTrue();
+        
+        // Note: -99 value comes from appsttings.Testing.json 
+        var storagePolicy = await dlcsContext.StoragePolicies.SingleAsync(s => s.Id == "default");
+        storagePolicy.MaximumNumberOfStoredImages.Should().Be(-99);
+        storagePolicy.MaximumTotalSizeOfStoredImages.Should().Be(-99);
     }
 }
