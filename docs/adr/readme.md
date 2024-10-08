@@ -7,3 +7,4 @@
 5. [Dependabot Process](0004-dependabot-upgrade-process.md)
 6. [Optimised Origin](0005-optimised-origin.md)
 7. [Engine ImageServer](0006-engine-imageserver.md)
+8. [In-house Image Server](0007-inhouse-image-server.md)
