@@ -37,7 +37,6 @@ gantt
       Handle IIIF image API request :iiif_image_req, after send_iiif_image_req, 2ms
       Write JPEG :crit, write_jpeg, after encode_jpeg_tile_1, 5ms
       Write JPEG :crit, write_jpeg_2, after encode_jpeg_tile_2, 5ms
-      Finalize request :after browser_read_image_2, 3ms
 
     section I/O thread
       Read JPEG2000 header :crit, header_request, after iiif_image_req, 10ms
