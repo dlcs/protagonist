@@ -26,6 +26,7 @@ gantt
     title Cantaloupe Image Pipeline
     dateFormat x
     axisFormat %L ms
+    tickInterval 100millisecond
 
     section Browser
       Send IIIF Image API request :send_iiif_image_req, 1, 1ms
@@ -44,7 +45,7 @@ gantt
       Read codestream :crit, codestream_request_2, after browser_read_image_1, 5ms
 
     section Kakadu
-      Decode JPEG2000 metadata :decode_header, after header_request, 2ms
+      Decode metadata :decode_header, after header_request, 5ms
       Decode tile part :kdu_decode_tile_1, after codestream_request, 5ms
       Decoder blocked :milestone, m1, after kdu_decode_tile_1, 1ms
       Decode tile part :kdu_decode_tile_2, after codestream_request_2, 5ms
