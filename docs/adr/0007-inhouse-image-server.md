@@ -47,7 +47,7 @@ gantt
       Decode metadata :decode_header, after header_request, 2ms
       Decode tile part :kdu_decode_tile_1, after codestream_request, 10ms
       Decoder blocked :milestone, m1, after kdu_decode_tile_1, 2ms
-      Decode tile part :kdu_decode_tile_2, after codestream_request_2, 10s
+      Decode tile part :kdu_decode_tile_2, after codestream_request_2, 10ms
 
     section TurboJPEG
       Encode tile part :encode_jpeg_tile_1, after kdu_decode_tile_1, 5ms
