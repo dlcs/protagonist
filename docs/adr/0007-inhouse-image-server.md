@@ -1,11 +1,10 @@
 # In-house Native Image Server
 
-* Status: proposed
-* Deciders: Tom Crane, Donald Gray
-* Date: 2024-10-08
+- Status: proposed
+- Deciders: Tom Crane, Donald Gray
+- Date: 2024-10-08
 
 Issues:
-
 
 ## Context and Problem Statement
 
@@ -16,18 +15,43 @@ The bottlenecks in Cantaloupe are primarily I/O and memory bandwidth. Stalls can
 - IO stalls
 - Memory stalls
 
-IO stalls are the result of codestream data being unavailable for decoding. When Cantaloupe issues a read request to S3 it does so synchronously and decoding is blocked until that request completes.
-```mermaid
-sequenceDiagram
-    participant Client as Client
-    participant S3 as Amazon S3
-    participant Decoder as Image Decoder
+I/O stalls occur when codestream data required for decoding is unavailable. Cantaloupe performs synchronous read requests to S3, blocking decoding until the request completes.
+In the diagram below, **red** denotes a blocking IO operation that stalls the decoder.
 
-    Client->>Decoder: Request to decode image
-    Decoder->>S3: Request image data
-    Note right of Decoder: Decoder is blocked waiting for data
-    S3-->>Decoder: Image data arrives
-    Decoder->>Client: Decoded image
+```mermaid
+---
+displayMode: compact
+---
+gantt
+    title Cantaloupe Image Pipeline
+    dateFormat x
+    axisFormat %L ms
+
+    section Browser
+      Send IIIF Image API request :send_iiif_image_req, 1, 1ms
+      Read JPEG :crit, browser_read_image_1, after encode_jpeg_tile_1, 5ms
+      Read JPEG :crit, browser_read_image_2, after encode_jpeg_tile_2, 5ms
+
+    section Server
+      Handle IIIF image API request :iiif_image_req, after send_iiif_image_req, 2ms
+      Write JPEG :crit, write_jpeg, after encode_jpeg_tile_1, 5ms
+      Write JPEG :crit, write_jpeg_2, after encode_jpeg_tile_2, 5ms
+      Finalize request :after browser_read_image_2, 3ms
+
+    section I/O thread
+      Read JPEG2000 header :crit, header_request, after iiif_image_req, 5ms
+      Read codestream :crit, codestream_request, after decode_header, 5ms
+      Read codestream :crit, codestream_request_2, after browser_read_image_1, 5ms
+
+    section Kakadu
+      Decode JPEG2000 metadata :decode_header, after header_request, 2ms
+      Decode tile part :kdu_decode_tile_1, after codestream_request, 5ms
+      Decoder blocked :milestone, m1, after kdu_decode_tile_1, 1ms
+      Decode tile part :kdu_decode_tile_2, after codestream_request_2, 5ms
+
+    section TurboJPEG
+      Encode tile part :encode_jpeg_tile_1, after kdu_decode_tile_1, 3ms
+      Encode tile part :encode_jpeg_tile_2, after kdu_decode_tile_2, 3ms
 ```
 
 Memory stalls are the result of the JVM being unable to serve a memory allocation request without performing clean-up (i.e. a garbage collection event).
