@@ -40,9 +40,9 @@ gantt
       Finalize request :after browser_read_image_2, 3ms
 
     section I/O thread
-      Read JPEG2000 header :crit, header_request, after iiif_image_req, 5ms
-      Read codestream :crit, codestream_request, after decode_header, 5ms
-      Read codestream :crit, codestream_request_2, after browser_read_image_1, 5ms
+      Read JPEG2000 header :crit, header_request, after iiif_image_req, 10ms
+      Read codestream :crit, codestream_request, after decode_header, 10ms
+      Read codestream :crit, codestream_request_2, after browser_read_image_1, 10ms
 
     section Kakadu
       Decode metadata :decode_header, after header_request, 5ms
