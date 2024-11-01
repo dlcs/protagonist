@@ -13,7 +13,7 @@ public class ResultMessage<T>
     public string Message { get; }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ResultStatus{T}"/> class.
+    /// Initializes a new instance of the <see cref="ResultMessage{T}"/> class.
     /// </summary>
     /// <param name="message">A message related to the result</param>
     /// <param name="value">The value.</param>

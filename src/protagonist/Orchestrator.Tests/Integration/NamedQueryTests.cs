@@ -21,7 +21,7 @@ namespace Orchestrator.Tests.Integration;
 
 [Trait("Category", "Integration")]
 [Collection(DatabaseCollection.CollectionName)]
-public class NamedQueryTests: IClassFixture<ProtagonistAppFactory<Startup>>
+public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
