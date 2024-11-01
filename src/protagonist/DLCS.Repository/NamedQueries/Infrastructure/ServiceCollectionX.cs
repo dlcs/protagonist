@@ -19,6 +19,7 @@ public static class ServiceCollectionX
     {
         services
             .AddScoped<PdfNamedQueryParser>()
+            .AddScoped<RawNamedQueryParser>()
             .AddScoped<INamedQueryRepository, NamedQueryRepository>()
             .AddScoped<NamedQueryConductor>()
             .AddScoped<NamedQueryStorageService>()
@@ -27,6 +28,7 @@ public static class ServiceCollectionX
                 NamedQueryType.PDF => provider.GetRequiredService<PdfNamedQueryParser>(),
                 NamedQueryType.IIIF => provider.GetRequiredService<IIIFNamedQueryParser>(),
                 NamedQueryType.Zip => provider.GetRequiredService<ZipNamedQueryParser>(),
+                NamedQueryType.Raw => provider.GetRequiredService<RawNamedQueryParser>(),
                 _ => throw new ArgumentOutOfRangeException(nameof(outputFormat), outputFormat, null)
             });
 
