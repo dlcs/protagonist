@@ -1,4 +1,4 @@
-# In-house Native Image Server
+# Image Server Optimization
 
 - Status: proposed
 - Deciders: Tom Crane, Donald Gray
