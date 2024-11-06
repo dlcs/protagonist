@@ -137,6 +137,8 @@ TODO
 
 ### Digirati develops a new high-performance native image server
 
+Laya is a IIIF Image API implementation authored by [Gary Tierney (Digirati)](https://github.com/garyttierney) and [Sophia Milan](https://github.com/sophmi). Digirati would integrate it into DLCS and work on feature parity with Cantaloupe.
+
 #### Positive Consequences
 
 - Availability of in-house resources for low-level optimization
@@ -150,3 +152,35 @@ TODO
 
 - Difficult to find Rust/C++ developers
 - Large upfront cost in testing/benchmarking/migrating
+
+### Contribute small improvements back to Cantaloupe over time
+
+Digirati would continue to patch minor performance problems in Cantaloupe and contribute those patches back upstream.
+This is the strategy we've adopted so far and we haven't made any real significant gains while being unable to make far-reaching changes.
+
+#### Positive Consequences
+
+- Relatively lower development cost overhead
+- Limited operational/infrastructure changes
+
+#### Negative Consequences
+
+- Unable to make any significant improvements.
+- The memory management problem associated with the JNI boundary isn't something that can be solved in a small improvement.
+- No changes in monitoring/observability, hampering ability to really quantize improvements
+
+### Propose changes to the Cantaloupe image processing pipeline to accomodate a fast-path for native processors
+
+Digirati would propose architectural changes to Cantaloupe that would allow it to avoid expensive JVM copies for image pipelines
+that can be handled entirely by a fast-path (i.e. passing pointers between native interfaces).
+
+#### Positive Consequences
+
+- Eliminates expensive memory transfers, the main cause of image server crashes.
+- Allows tighter - but not full - control of native memory allocations
+
+#### Negative Consequences
+
+- May require authoring native code anyway, which brings this solution much closer to Laya with none of the architectural adventages
+- Latency is still ultimately bottlenecked by synchronous I/O
+- Proposing and implementing these changes through community processes could take some time
