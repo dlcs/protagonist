@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Data;
+using API.Infrastructure.Messaging;
 using DLCS.Model;
 using DLCS.Model.Auth;
 using DLCS.Model.Processing;
@@ -46,17 +47,20 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
     private readonly IEntityCounterRepository entityCounterRepository;
     private readonly IAuthServicesRepository authServicesRepository;
     private readonly DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository;
+    private readonly ICustomerNotificationSender customerNotificationSender;
 
     public CreateCustomerHandler(
         DlcsContext dbContext,
         IEntityCounterRepository entityCounterRepository,
         IAuthServicesRepository authServicesRepository,
-        DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository)
+        DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository,
+        ICustomerNotificationSender customerNotificationSender)
     {
         this.dbContext = dbContext;
         this.entityCounterRepository = entityCounterRepository;
         this.authServicesRepository = authServicesRepository;
         this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
+        this.customerNotificationSender = customerNotificationSender;
     }
 
     public async Task<CreateCustomerResult> Handle(CreateCustomer request, CancellationToken cancellationToken)
@@ -111,6 +115,7 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         if (deliveryChannelPoliciesCreated)
         {
             await transaction.CommitAsync(cancellationToken);
+            await customerNotificationSender.SendCustomerCreatedMessage(result.Customer, cancellationToken);
             return result;
         }
         
@@ -180,9 +185,8 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
 
     private async Task<int> GetIdForNewCustomer()
     {
-        // Deliverator: /DLCS.Application/Behaviour/Data/GetNewCustomerIDBehaviour.cs#L25
         int newModelId;
-        DLCS.Model.Customers.Customer existingCustomerWithId;
+        DLCS.Model.Customers.Customer? existingCustomerWithId;
         do
         {
             var next = await entityCounterRepository.GetNext(0, KnownEntityCounters.Customers, "0");

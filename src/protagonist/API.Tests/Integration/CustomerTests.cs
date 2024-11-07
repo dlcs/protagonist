@@ -3,13 +3,20 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using API.Client;
+using API.Infrastructure.Messaging;
 using API.Tests.Integration.Infrastructure;
+using DLCS.AWS.SNS;
 using DLCS.HydraModel;
 using DLCS.Repository;
+using FakeItEasy;
 using Hydra.Collections;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
@@ -22,11 +29,24 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
+    private static readonly ICustomerNotificationSender NotificationSender = A.Fake<ICustomerNotificationSender>();
 
     public CustomerTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
         dbContext = dbFixture.DbContext;
-        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
+        httpClient = factory
+            .WithConnectionString(dbFixture.ConnectionString)
+            .WithTestServices(services =>
+            {
+                services.AddSingleton(NotificationSender);
+                services.AddAuthentication("API-Test")
+                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+                        "API-Test", _ => { });
+            })
+            .CreateClient(new WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false
+            });
         dbFixture.CleanUp();
     }
 
@@ -146,12 +166,17 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         dbContext.DeliveryChannelPolicies.Count(d => d.Customer == newDbCustomer.Id).Should().Be(3);
         dbContext.DefaultDeliveryChannels.Count(d => d.Customer == newDbCustomer.Id).Should().Be(5);
+
+        A.CallTo(() =>
+                NotificationSender.SendCustomerCreatedMessage(
+                    A<DLCS.Model.Customers.Customer>.That.Matches(c => c.Id == newDbCustomer.Id),
+                    A<CancellationToken>._))
+            .MustHaveHappened();
     }
 
     [Fact]
     public async Task CreateNewCustomer_Throws_IfNameConflicts()
     {
-        // Tests CreateCustomer::EnsureCustomerNamesNotTaken
         // These display names have already been taken by the seed data
         const string newCustomerJson = @"{
   ""@type"": ""Customer"",
