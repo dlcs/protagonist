@@ -102,25 +102,11 @@ public class SpaceController : HydraController
             Tags = space.DefaultTags ?? Array.Empty<string>(),
             MaxUnauthorised = space.MaxUnauthorised
         };
-
-        try
-        {
-            var newDbSpace = await Mediator.Send(command, cancellationToken);
-            var newApiSpace = newDbSpace.ToHydra(GetUrlRoots().BaseUrl);
-
-            if (!newApiSpace.Id.HasText())
-            {
-                return this.HydraProblem("New space not assigned an ID", 
-                    null, 500, "Bad Request");
-            }
-
-            return this.HydraCreated(newApiSpace);
-        }
-        catch (BadRequestException badRequestException)
-        {
-            return this.HydraProblem(badRequestException.Message, 
-                null, badRequestException.StatusCode, "Bad Request");
-        }
+        
+        return await HandleUpsert(command,
+            s => s.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Failed to create space",
+            cancellationToken: cancellationToken);
     }
     
     /// <summary>
