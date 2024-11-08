@@ -204,7 +204,7 @@ public class TopicPublisherTests
     }
 
     [Fact]
-    public async Task PublishToCustomerCreatedTopic_ReturnsTrue_IfNoArn()
+    public async Task PublishToCustomerCreatedTopic_ReturnsFalse_IfNoArn()
     {
         // Arrange
         var notification = new CustomerCreatedNotification(new Customer());
