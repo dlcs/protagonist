@@ -3,6 +3,7 @@ using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SNS;
+using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -18,10 +19,14 @@ public class TopicPublisherTests
     public TopicPublisherTests()
     {
         snsClient = A.Fake<IAmazonSimpleNotificationService>();
-        
+
         var settings = Options.Create(new AWSSettings
         {
-            SNS = new SNSSettings { AssetModifiedNotificationTopicArn = "arn:aws:sns:us-east-1:000000000000:knownTopic" }
+            SNS = new SNSSettings
+            {
+                AssetModifiedNotificationTopicArn = "arn:aws:sns:us-east-1:000000000000:assetModified",
+                CustomerCreatedTopicArn = "arn:aws:sns:us-east-1:000000000000:customerCreated",
+            }
         });
 
         sut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
@@ -196,6 +201,55 @@ public class TopicPublisherTests
                                                              r.MessageAttributes["engineNotified"].StringValue == "True") &&
                                                          b.PublishBatchRequestEntries.Count == 2),
                 A<CancellationToken>._)).MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task PublishToCustomerCreatedTopic_ReturnsFalse_IfNoArn()
+    {
+        // Arrange
+        var notification = new CustomerCreatedNotification(new Customer());
+        var settings = Options.Create(new AWSSettings { SNS = new SNSSettings() });
+        var noArnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        
+        // Act
+        var result = await noArnSut.PublishToCustomerCreatedTopic(notification, CancellationToken.None);
+        
+        // Assert
+        result.Should().BeFalse("Missing Arn should result in failure");
+    }
+    
+    [Fact]
+    public async Task PublishToCustomerCreatedTopic_PublishesMessage()
+    {
+        // Arrange
+        var notification = new CustomerCreatedNotification(new Customer { Id = 1, Name = "Test" });
+        var expectedMessage = "{\"name\":\"Test\",\"id\":1}";
+        
+        // Act
+        await sut.PublishToCustomerCreatedTopic(notification, CancellationToken.None);
+        
+        // Assert
+        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>.That.Matches(r => r.Message == expectedMessage),
+            A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Theory]
+    [InlineData(HttpStatusCode.Accepted, true)]
+    [InlineData(HttpStatusCode.OK, true)]
+    [InlineData(HttpStatusCode.BadRequest, false)]
+    [InlineData(HttpStatusCode.InternalServerError, false)]
+    public async Task PublishToCustomerCreatedTopic_ReturnsSuccessDependentOnStatusCode(HttpStatusCode statusCode, bool expected)
+    {
+        // Arrange
+        var notification = new CustomerCreatedNotification(new Customer { Id = 1, Name = "Test" });
+        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._))
+            .Returns(new PublishResponse { HttpStatusCode = statusCode });
+
+        // Act
+        var result = await sut.PublishToCustomerCreatedTopic(notification, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(expected);
     }
     
     private Dictionary<string, string> GetAttributes(ChangeType changeType, bool engineNotified)

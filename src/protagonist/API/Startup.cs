@@ -75,6 +75,7 @@ public class Startup
             .AddDataAccess(configuration)
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
+            .AddScoped<ICustomerNotificationSender, CustomerNotificationSender>()
             .AddScoped<AssetProcessor>()
             .AddScoped<DeliveryChannelProcessor>()
             .AddTransient<TimingHandler>()

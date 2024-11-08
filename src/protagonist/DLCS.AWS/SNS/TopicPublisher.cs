@@ -1,8 +1,8 @@
-﻿using Amazon.SimpleNotificationService;
+﻿using System.Text.Json;
+using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
 using DLCS.Core;
-using DLCS.Model.Messaging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -13,6 +13,7 @@ public class TopicPublisher : ITopicPublisher
     private readonly IAmazonSimpleNotificationService snsClient;
     private readonly ILogger<TopicPublisher> logger;
     private readonly SNSSettings snsSettings;
+    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
     public TopicPublisher(IAmazonSimpleNotificationService snsClient,
         IOptions<AWSSettings> settings,
@@ -49,8 +50,26 @@ public class TopicPublisher : ITopicPublisher
             messages.Count);
         return allBatchSuccess;
     }
-    
-    private async Task<bool> PublishToAssetModifiedTopic(AssetModifiedNotification message,
+
+    /// <inheritdoc />
+    public async Task<bool> PublishToCustomerCreatedTopic(CustomerCreatedNotification message, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(snsSettings.CustomerCreatedTopicArn))
+        {
+            logger.LogWarning("Customer Created Topic Arn is not set - cannot send CustomerCreatedNotification");
+            return false;
+        }
+        
+        var request = new PublishRequest
+        {
+            TopicArn = snsSettings.CustomerCreatedTopicArn,
+            Message = JsonSerializer.Serialize(message, settings),
+        };
+
+        return await TryPublishRequest(request, cancellationToken);
+    }
+
+    private Task<bool> PublishToAssetModifiedTopic(AssetModifiedNotification message,
         CancellationToken cancellationToken = default)
     {
         var request = new PublishRequest
@@ -60,6 +79,11 @@ public class TopicPublisher : ITopicPublisher
             MessageAttributes = GetMessageAttributes(message.Attributes)
         };
 
+        return TryPublishRequest(request, cancellationToken);
+    }
+    
+    private async Task<bool> TryPublishRequest(PublishRequest request, CancellationToken cancellationToken)
+    {
         try
         {
             var response = await snsClient.PublishAsync(request, cancellationToken);
@@ -67,7 +91,7 @@ public class TopicPublisher : ITopicPublisher
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error sending message to {Topic}", snsSettings.AssetModifiedNotificationTopicArn);
+            logger.LogError(ex, "Error sending message to {Topic}", request.TopicArn);
             return false;
         }
     }
@@ -105,7 +129,7 @@ public class TopicPublisher : ITopicPublisher
         foreach (var attribute in attributes)
         {
             messageAttributes.Add(attribute.Key,
-                new MessageAttributeValue()
+                new MessageAttributeValue
                 {
                     DataType = "String",
                     StringValue = attribute.Value

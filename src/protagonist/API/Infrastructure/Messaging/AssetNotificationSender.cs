@@ -62,7 +62,7 @@ public class AssetNotificationSender : IAssetNotificationSender
                     attributes.Add("engineNotified", "True");
                 }
 
-                changes.Add(new AssetModifiedNotification(serialisedNotification!, attributes));
+                changes.Add(new AssetModifiedNotification(serialisedNotification, attributes));
             }
         }
 
