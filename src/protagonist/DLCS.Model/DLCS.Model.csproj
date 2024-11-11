@@ -1,17 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <LangVersion>10.0</LangVersion>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="iiif-net" Version="0.2.7" />
   </ItemGroup>
-
 </Project>

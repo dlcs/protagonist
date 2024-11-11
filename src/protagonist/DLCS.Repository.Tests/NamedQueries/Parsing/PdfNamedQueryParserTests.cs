@@ -93,7 +93,7 @@ public class PdfNamedQueryParserTests
 
         // Assert
         result.IsFaulty.Should().BeTrue();
-        result.ErrorMessage.Should().StartWith("Input string was not in a correct format");
+        result.ErrorMessage.Should().StartWith("The input string 'not-an-int' was not in a correct format.");
     }
 
     [Theory]
