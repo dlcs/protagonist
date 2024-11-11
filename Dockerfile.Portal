@@ -30,5 +30,6 @@ LABEL org.opencontainers.image.description="DLCS Management UI."
 
 WORKDIR /app
 EXPOSE 80
+ENV ASPNETCORE_HTTP_PORTS 80
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Portal.dll"]

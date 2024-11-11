@@ -24,5 +24,7 @@ LABEL org.opencontainers.image.source=https://github.com/dlcs/protagonist
 LABEL org.opencontainers.image.description="DLCS Thumbs. Serves pregenerated images derivatives."
 
 WORKDIR /app
+EXPOSE 80
+ENV ASPNETCORE_HTTP_PORTS 80
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Thumbs.dll"]
