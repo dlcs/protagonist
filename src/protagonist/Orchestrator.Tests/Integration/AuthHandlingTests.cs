@@ -68,7 +68,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        response.Headers.CacheControl.Should().BeNull();
+        response.Headers.CacheControl!.NoCache.Should().BeTrue();
+        response.Headers.CacheControl.NoStore.Should().BeTrue();
     }
     
     [Fact]
@@ -112,7 +113,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        response.Headers.CacheControl.Should().BeNull();
+        response.Headers.CacheControl!.NoCache.Should().BeTrue();
+        response.Headers.CacheControl.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["error"].Value<string>().Should().Be("missingCredentials");
@@ -132,7 +134,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        response.Headers.CacheControl.Should().BeNull();
+        response.Headers.CacheControl!.NoCache.Should().BeTrue();
+        response.Headers.CacheControl.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
@@ -152,7 +155,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        response.Headers.CacheControl.Should().BeNull();
+        response.Headers.CacheControl!.NoCache.Should().BeTrue();
+        response.Headers.CacheControl.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
@@ -174,7 +178,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        response.Headers.CacheControl.Should().BeNull();
+        response.Headers.CacheControl!.NoCache.Should().BeTrue();
+        response.Headers.CacheControl.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
@@ -196,7 +201,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        response.Headers.CacheControl.Should().BeNull();
+        response.Headers.CacheControl!.NoCache.Should().BeTrue();
+        response.Headers.CacheControl.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
