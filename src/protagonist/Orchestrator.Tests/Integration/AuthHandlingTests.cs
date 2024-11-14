@@ -54,6 +54,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.Headers.CacheControl!.NoCache.Should().BeTrue();
+        response.Headers.CacheControl.NoStore.Should().BeTrue();
     }
 
     [Fact]
@@ -67,6 +69,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.Headers.CacheControl!.NoCache.Should().BeTrue();
+        response.Headers.CacheControl.NoStore.Should().BeTrue();
     }
     
     [Fact]
@@ -215,6 +219,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["accessToken"].Value<string>().Should().Be(token.Entity.BearerToken);
         responseBody["expiresIn"].Value<int>().Should().Be(token.Entity.Ttl);
+        response.Headers.CacheControl!.NoCache.Should().BeTrue();
+        response.Headers.CacheControl.NoStore.Should().BeTrue();
     }
     #endregion
     

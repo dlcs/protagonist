@@ -29,6 +29,7 @@ public class AuthController : IIIFAssetControllerBase
     /// Handle clickthrough auth request - create a new auth cookie and return View for user to close
     /// </summary>
     [Route("{customer}/clickthrough")]
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet]
     public async Task<IActionResult> Clickthrough(int customer)
     {
@@ -47,6 +48,7 @@ public class AuthController : IIIFAssetControllerBase
     /// See https://iiif.io/api/auth/1.0/#access-token-service
     /// </summary>
     [Route("{customer}/token")]
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet]
     public async Task<IActionResult> Token(int customer, string? messageId, string? origin)
     {
@@ -87,6 +89,7 @@ public class AuthController : IIIFAssetControllerBase
     /// <param name="authService">Name of authService to initiate.</param>
     /// <returns>Redirect to downstream role-provider login service</returns>
     [Route("{customer}/{authService}")]
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet]
     public async Task<IActionResult> InitiateAuthService(int customer, string authService)
     {
@@ -104,6 +107,7 @@ public class AuthController : IIIFAssetControllerBase
     /// <param name="authService">Name of authService.</param>
     /// <param name="token">Role-provider token</param>
     [Route("{customer}/{authService}")]
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet]
     public async Task<IActionResult> RoleProviderToken(int customer, string authService,
         [RequiredFromQuery] string token)
@@ -125,6 +129,7 @@ public class AuthController : IIIFAssetControllerBase
     /// <param name="authService">Name of authService.</param>
     /// <returns></returns>
     [Route("{customer}/{authService}/logout")]
+    [ResponseCache(Location = ResponseCacheLocation.None, NoStore = true)]
     [HttpGet]
     public async Task<IActionResult> Logout(int customer, string authService)
     {
