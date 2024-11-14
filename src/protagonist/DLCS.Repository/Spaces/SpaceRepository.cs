@@ -146,7 +146,7 @@ public class SpaceRepository : ISpaceRepository
                 ec.Scope == spaceId.ToString(), cancellationToken: cancellationToken);
             if (counter != null)
             {
-                space.ApproximateNumberOfImages = counter.Next;
+                space.ApproximateNumberOfImages = GetApproximateImages(counter.Next);
             }
 
             return space;
@@ -175,7 +175,7 @@ public class SpaceRepository : ISpaceRepository
             .ToDictionaryAsync(ec => ec.Scope, ec => ec.Next, cancellationToken: cancellationToken);
         foreach (var space in result.Spaces)
         {
-            space.ApproximateNumberOfImages = counters[space.Id.ToString()];
+            space.ApproximateNumberOfImages = GetApproximateImages(counters[space.Id.ToString()]);
         }
 
         return result;
@@ -314,4 +314,6 @@ public class SpaceRepository : ISpaceRepository
 
         return resultMessage;
     }
+    
+    private static long GetApproximateImages(long entityCounterNext) => Math.Max(entityCounterNext - 1, 0);
 }
