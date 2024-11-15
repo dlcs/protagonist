@@ -54,6 +54,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
 
     [Fact]
@@ -67,6 +68,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     
     [Fact]
@@ -110,6 +112,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["error"].Value<string>().Should().Be("missingCredentials");
@@ -129,6 +132,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
@@ -148,6 +152,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
@@ -169,6 +174,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
@@ -190,6 +196,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
@@ -215,6 +222,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
         responseBody["accessToken"].Value<string>().Should().Be(token.Entity.BearerToken);
         responseBody["expiresIn"].Value<int>().Should().Be(token.Entity.Ttl);
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     #endregion
     
@@ -234,6 +242,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         var responseBody = await ParseHtmlTokenReponse(response);
         responseBody["error"].Value<string>().Should().Be("missingCredentials");
         responseBody["description"].Value<string>().Should().Be("Required cookie missing");
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
 
     [Fact]
@@ -253,6 +262,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         var responseBody = await ParseHtmlTokenReponse(response);
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
         responseBody["description"].Value<string>().Should().Be("Id not found in cookie");
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     
     [Fact]
@@ -272,6 +282,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         var responseBody = await ParseHtmlTokenReponse(response);
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
         responseBody["description"].Value<string>().Should().Be("Credentials provided unknown or expired");
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     
     [Fact]
@@ -293,6 +304,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         var responseBody = await ParseHtmlTokenReponse(response);
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
         responseBody["description"].Value<string>().Should().Be("Credentials provided unknown or expired");
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     
     [Fact]
@@ -314,6 +326,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         var responseBody = await ParseHtmlTokenReponse(response);
         responseBody["error"].Value<string>().Should().Be("invalidCredentials");
         responseBody["description"].Value<string>().Should().Be("Credentials provided unknown or expired");
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     
     [Fact]
@@ -336,6 +349,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         responseBody["accessToken"].Value<string>().Should().Be(token.Entity.BearerToken);
         responseBody["expiresIn"].Value<int>().Should().Be(token.Entity.Ttl);
         responseBody["messageId"].Value<string>().Should().Be("123");
+        response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     #endregion
 
@@ -369,6 +383,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        result.Headers.CacheControl.Should().BeNull();
         result.Content.Headers.ContentType.MediaType
             .Should().Be("application/problem+json", "this isn't an AuthProbeResult2");
     }
