@@ -276,6 +276,8 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         {
             return new FailedCaller("Invalid customer id format");
         }
+        
+        Logger.LogDebug("Using JWT with customer id {CustomerId}", customerId);
 
         var customer = await customerRepository.GetCustomer(customerId);
         if (customer is null)
