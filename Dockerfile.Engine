@@ -25,5 +25,6 @@ LABEL org.opencontainers.image.description="DLCS Engine for ingesting assets and
 
 WORKDIR /app
 EXPOSE 80
+ENV ASPNETCORE_HTTP_PORTS 80
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Engine.dll"]
