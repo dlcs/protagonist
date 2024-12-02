@@ -68,6 +68,7 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
                 logger.LogInformation("Batch {BatchId} complete but not finished. Setting Finished.", request.BatchId);
                 changesMade = true;
                 batch.Finished = DateTime.UtcNow;
+                await batchCompletedNotificationSender.SendBatchCompletedMessage(batch, cancellationToken);
             }
 
             if (batch.Count != batchImages.Count)
@@ -83,7 +84,6 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
         if (changesMade)
         {
             await dlcsContext.SaveChangesAsync(cancellationToken);
-            await batchCompletedNotificationSender.SendBatchCompletedMessage(batch, cancellationToken);
             return true;
         }
 
