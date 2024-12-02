@@ -1279,7 +1279,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 NotificationSender.SendBatchCompletedMessage(
-                    A<Batch>._,
+                    A<Batch>.That.Matches(b => b.Id == dbBatch.Id),
                     A<CancellationToken>._))
             .MustNotHaveHappened();
     }
