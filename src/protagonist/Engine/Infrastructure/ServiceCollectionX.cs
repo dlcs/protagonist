@@ -2,6 +2,7 @@ using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.AWS.SNS;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
@@ -21,7 +22,6 @@ using DLCS.Repository.Storage;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Handlers;
 using Engine.Data;
-using Engine.Infrastructure.Messaging;
 using Engine.Ingest;
 using Engine.Ingest.File;
 using Engine.Ingest.Image;
@@ -166,6 +166,15 @@ public static class ServiceCollectionX
             .AddDbContextCheck<DlcsContext>("DLCS-DB")
             .AddQueueHealthCheck();
 
+        return services;
+    }
+
+    public static IServiceCollection AddTopicNotifiers(this IServiceCollection services)
+    {
+        services
+            .AddScoped<IBatchCompletedNotificationSender, BatchCompletedNotificationSender>()
+            .AddScoped<IBatchCompletedNotificationSender, BatchCompletedNotificationSender>();
+        
         return services;
     }
 }

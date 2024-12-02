@@ -1,11 +1,10 @@
 using System.Data;
-using DLCS.Core.Strings;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
-using Engine.Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 

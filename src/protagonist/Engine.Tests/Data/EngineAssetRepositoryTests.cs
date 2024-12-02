@@ -1,8 +1,9 @@
+using AngleSharp.Common;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using Engine.Data;
-using Engine.Infrastructure.Messaging;
 using Engine.Tests.Integration.Infrastructure;
 using FakeItEasy;
 using Microsoft.EntityFrameworkCore;
@@ -277,7 +278,8 @@ public class EngineAssetRepositoryTests
         updatedItem.Completed.Should().Be(1);
         updatedItem.Finished.Should().BeNull();
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(A<IQueryable<Batch>>._,
+                batchCompletedNotificationSender.SendBatchCompletedMessages(
+                    A<IQueryable<Batch>>.That.Matches(b => !b.Any()),
                     A<CancellationToken>._))
             .MustHaveHappened(1, Times.Exactly);
     }
@@ -375,7 +377,8 @@ public class EngineAssetRepositoryTests
         updatedItem.Completed.Should().Be(2);
         updatedItem.Finished.Should().BeNull();
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(A<IQueryable<Batch>>._,
+                batchCompletedNotificationSender.SendBatchCompletedMessages(
+                    A<IQueryable<Batch>>.That.Matches(b => !b.Any()),
                     A<CancellationToken>._))
             .MustHaveHappened(1, Times.Exactly);
     }
@@ -413,7 +416,8 @@ public class EngineAssetRepositoryTests
         updatedImage.Finished.Should().BeNull();
         updatedImage.Ingesting.Should().BeTrue();
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(A<IQueryable<Batch>>._,
+                batchCompletedNotificationSender.SendBatchCompletedMessages(
+                    A<IQueryable<Batch>>.That.Matches(b => !b.Any()),
                     A<CancellationToken>._))
             .MustHaveHappened(1, Times.Exactly);
     }
@@ -448,7 +452,8 @@ public class EngineAssetRepositoryTests
         var updatedItem = await dbContext.Batches.SingleAsync(b => b.Id == batchId);
         updatedItem.Finished.Should().NotBeNull();
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(A<IQueryable<Batch>>._,
+                batchCompletedNotificationSender.SendBatchCompletedMessages(
+                    A<IQueryable<Batch>>.That.Matches(b => b.GetItemByIndex(0).Id == batchId),
                     A<CancellationToken>._))
             .MustHaveHappened(1, Times.Exactly);
     }
@@ -478,8 +483,9 @@ public class EngineAssetRepositoryTests
         var updatedItem = await dbContext.Images.AsNoTracking().SingleAsync(a => a.Id == assetId);
         updatedItem.Error.Should().Be("Unable to update batch associated with image");
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(A<IQueryable<Batch>>._,
+                batchCompletedNotificationSender.SendBatchCompletedMessages(
+                    A<IQueryable<Batch>>.That.Matches(b => !b.Any()),
                     A<CancellationToken>._))
-            .MustHaveHappened(1, Times.Exactly);
+            .MustHaveHappened();
     }
 }

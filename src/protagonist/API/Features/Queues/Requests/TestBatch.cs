@@ -1,5 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using DLCS.AWS.SNS;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using MediatR;
@@ -27,12 +29,15 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
 {
     private readonly DlcsContext dlcsContext;
     private readonly ILogger<TestBatchHandler> logger;
+    private readonly IBatchCompletedNotificationSender batchCompletedNotificationSender;
 
     public TestBatchHandler(
         DlcsContext dlcsContext,
+        IBatchCompletedNotificationSender batchCompletedNotificationSender,
         ILogger<TestBatchHandler> logger)
     {
         this.dlcsContext = dlcsContext;
+        this.batchCompletedNotificationSender = batchCompletedNotificationSender;
         this.logger = logger;
     }
     
@@ -78,6 +83,7 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
         if (changesMade)
         {
             await dlcsContext.SaveChangesAsync(cancellationToken);
+            await batchCompletedNotificationSender.SendBatchCompletedMessage(batch, cancellationToken);
             return true;
         }
 
