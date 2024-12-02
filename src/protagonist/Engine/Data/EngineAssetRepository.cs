@@ -186,10 +186,9 @@ public class EngineAssetRepository : IEngineAssetRepository
 
         if (rowsAffected > 0)
         {
-            batch = await dlcsContext.Batches.FindAsync(batchId, cancellationToken);
+            batch = await dlcsContext.Batches.FindAsync(new object[] { batchId }, cancellationToken);
         }
-
-
+        
         return batch;
     }
 
