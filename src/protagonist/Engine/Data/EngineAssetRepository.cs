@@ -5,6 +5,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using Engine.Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -14,11 +15,16 @@ public class EngineAssetRepository : IEngineAssetRepository
 {
     private readonly DlcsContext dlcsContext;
     private readonly ILogger<EngineAssetRepository> logger;
+    private readonly IBatchCompletedNotificationSender batchCompletedNotificationSender;
 
-    public EngineAssetRepository(DlcsContext dlcsContext, ILogger<EngineAssetRepository> logger)
+    public EngineAssetRepository(
+        DlcsContext dlcsContext, 
+        IBatchCompletedNotificationSender batchCompletedNotificationSender, 
+        ILogger<EngineAssetRepository> logger)
     {
         this.dlcsContext = dlcsContext;
         this.logger = logger;
+        this.batchCompletedNotificationSender = batchCompletedNotificationSender;
     }
 
     public async Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage,
@@ -66,7 +72,7 @@ public class EngineAssetRepository : IEngineAssetRepository
             }
             
             var updatedRows = hasBatch
-                ? await BatchSave(asset.Batch!.Value, cancellationToken)
+                ? await BatchSave(asset, cancellationToken)
                 : await NonBatchedSave(cancellationToken);
 
             if (updatedRows && imageStorage != null)
@@ -103,7 +109,7 @@ public class EngineAssetRepository : IEngineAssetRepository
         return updatedRows > 0;
     }
 
-    private async Task<bool> BatchSave(int batchId, CancellationToken cancellationToken)
+    private async Task<bool> BatchSave(Asset asset, CancellationToken cancellationToken)
     {
         IDbContextTransaction? transaction = null;
         if (dlcsContext.Database.CurrentTransaction == null)
@@ -115,12 +121,16 @@ public class EngineAssetRepository : IEngineAssetRepository
         try
         {
             var updatedRows = await dlcsContext.SaveChangesAsync(cancellationToken);
-            updatedRows += await TryFinishBatch(batchId, cancellationToken);
+            var batchesAffected = await TryFinishBatch(asset.Batch!.Value, cancellationToken);
+            updatedRows += batchesAffected.rowsAffected;
 
             if (transaction != null)
             {
                 await transaction.CommitAsync(cancellationToken);
             }
+
+            await batchCompletedNotificationSender.SendBatchCompletedMessages(batchesAffected.batches,
+                cancellationToken);
             
             return updatedRows > 0;
         }
@@ -163,10 +173,17 @@ public class EngineAssetRepository : IEngineAssetRepository
         }
     }
 
-    private Task<int> TryFinishBatch(int batchId, CancellationToken cancellationToken)
-        => dlcsContext.Batches
-            .Where(b => b.Id == batchId && b.Count == b.Completed + b.Errors)
-            .UpdateFromQueryAsync(b => new Batch { Finished = DateTime.UtcNow }, cancellationToken);
+    private async Task<(int rowsAffected, IQueryable<Batch> batches)> TryFinishBatch(int batchId,
+        CancellationToken cancellationToken)
+    {
+        var batches = dlcsContext.Batches
+            .Where(b => b.Id == batchId && b.Count == b.Completed + b.Errors);
+        
+        var rowsAffected =
+            await batches.UpdateFromQueryAsync(b => new Batch { Finished = DateTime.UtcNow }, cancellationToken);
+
+        return (rowsAffected, batches);
+    }
 
     private async Task IncreaseCustomerStorage(ImageStorage imageStorage, CancellationToken cancellationToken)
     {

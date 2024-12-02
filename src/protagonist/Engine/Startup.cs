@@ -2,6 +2,7 @@
 using DLCS.Web.Configuration;
 using DLCS.Web.Logging;
 using Engine.Infrastructure;
+using Engine.Infrastructure.Messaging;
 using Engine.Settings;
 using Serilog;
 
@@ -30,6 +31,7 @@ public class Startup
             .AddAssetIngestion(configuration.Get<EngineSettings>())
             .AddDataAccess(configuration)
             .AddCaching(cachingSection.Get<CacheSettings>())
+            .AddScoped<IBatchCompletedNotificationSender, BatchCompletedNotificationSender>()
             .AddCorrelationIdHeaderPropagation()
             .ConfigureHealthChecks();
 

@@ -1,6 +1,7 @@
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
+using DLCS.AWS.SNS;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
@@ -20,6 +21,7 @@ using DLCS.Repository.Storage;
 using DLCS.Repository.Strategy.DependencyInjection;
 using DLCS.Web.Handlers;
 using Engine.Data;
+using Engine.Infrastructure.Messaging;
 using Engine.Ingest;
 using Engine.Ingest.File;
 using Engine.Ingest.Image;
@@ -49,9 +51,11 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
+            .AddScoped<ITopicPublisher, TopicPublisher>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS()
+            .WithAmazonSNS()
             .WithAmazonElasticTranscoder();
 
         return services;
