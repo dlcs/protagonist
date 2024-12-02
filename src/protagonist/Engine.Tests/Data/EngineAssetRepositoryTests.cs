@@ -90,7 +90,8 @@ public class EngineAssetRepositoryTests
         updatedItem.Ingesting.Should().BeFalse();
         updatedItem.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(A<IQueryable<Batch>>._,
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<Batch>._,
                     A<CancellationToken>._))
             .MustNotHaveHappened();
     }
@@ -127,7 +128,8 @@ public class EngineAssetRepositoryTests
         updatedItem.Ingesting.Should().BeFalse();
         updatedItem.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(A<IQueryable<Batch>>._,
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<Batch>._,
                     A<CancellationToken>._))
             .MustNotHaveHappened();
     }
@@ -165,7 +167,8 @@ public class EngineAssetRepositoryTests
         updatedItem.Ingesting.Should().BeFalse();
         updatedItem.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(A<IQueryable<Batch>>._,
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<Batch>._,
                     A<CancellationToken>._))
             .MustNotHaveHappened();
     }
@@ -200,7 +203,8 @@ public class EngineAssetRepositoryTests
         dbImageStorage.Should().BeEquivalentTo(imageStorage, opts => opts.Excluding(s => s.LastChecked));
         dbImageStorage.LastChecked.Should().BeCloseTo(imageStorage.LastChecked, TimeSpan.FromMinutes(1));
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(A<IQueryable<Batch>>._,
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<Batch>._,
                     A<CancellationToken>._))
             .MustNotHaveHappened();
     }
@@ -243,7 +247,8 @@ public class EngineAssetRepositoryTests
         dbCustomerStorage.TotalSizeOfStoredImages.Should().Be(1510);
         dbCustomerStorage.TotalSizeOfThumbnails.Should().Be(2820);
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(A<IQueryable<Batch>>._,
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<Batch>._,
                     A<CancellationToken>._))
             .MustNotHaveHappened();
     }
@@ -278,10 +283,10 @@ public class EngineAssetRepositoryTests
         updatedItem.Completed.Should().Be(1);
         updatedItem.Finished.Should().BeNull();
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(
-                    A<IQueryable<Batch>>.That.Matches(b => !b.Any()),
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<Batch>._,
                     A<CancellationToken>._))
-            .MustHaveHappened(1, Times.Exactly);
+            .MustNotHaveHappened();
     }
     
     [Trait("Category", "Manual")]
@@ -377,10 +382,10 @@ public class EngineAssetRepositoryTests
         updatedItem.Completed.Should().Be(2);
         updatedItem.Finished.Should().BeNull();
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(
-                    A<IQueryable<Batch>>.That.Matches(b => !b.Any()),
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<Batch>._,
                     A<CancellationToken>._))
-            .MustHaveHappened(1, Times.Exactly);
+            .MustNotHaveHappened();
     }
     
     [Fact]
@@ -416,10 +421,10 @@ public class EngineAssetRepositoryTests
         updatedImage.Finished.Should().BeNull();
         updatedImage.Ingesting.Should().BeTrue();
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(
-                    A<IQueryable<Batch>>.That.Matches(b => !b.Any()),
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<Batch>._,
                     A<CancellationToken>._))
-            .MustHaveHappened(1, Times.Exactly);
+            .MustNotHaveHappened();
     }
     
     [Theory]
@@ -452,8 +457,8 @@ public class EngineAssetRepositoryTests
         var updatedItem = await dbContext.Batches.SingleAsync(b => b.Id == batchId);
         updatedItem.Finished.Should().NotBeNull();
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(
-                    A<IQueryable<Batch>>.That.Matches(b => b.GetItemByIndex(0).Id == batchId),
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == batchId),
                     A<CancellationToken>._))
             .MustHaveHappened(1, Times.Exactly);
     }
@@ -483,9 +488,9 @@ public class EngineAssetRepositoryTests
         var updatedItem = await dbContext.Images.AsNoTracking().SingleAsync(a => a.Id == assetId);
         updatedItem.Error.Should().Be("Unable to update batch associated with image");
         A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessages(
-                    A<IQueryable<Batch>>.That.Matches(b => !b.Any()),
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<Batch>._,
                     A<CancellationToken>._))
-            .MustHaveHappened();
+            .MustNotHaveHappened();
     }
 }

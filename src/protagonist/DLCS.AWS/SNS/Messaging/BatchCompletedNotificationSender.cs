@@ -14,14 +14,6 @@ public class BatchCompletedNotificationSender : IBatchCompletedNotificationSende
         this.topicPublisher = topicPublisher;
         this.logger = logger;
     }
-    
-    public async Task SendBatchCompletedMessages(IQueryable<Batch> completedBatches, CancellationToken cancellationToken = default)
-    {
-        foreach (var batch in completedBatches)
-        {
-            await SendBatchCompletedMessage(batch, cancellationToken);
-        }
-    }
 
     public async Task SendBatchCompletedMessage(Batch batch, CancellationToken cancellationToken = default)
     {

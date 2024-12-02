@@ -120,17 +120,20 @@ public class EngineAssetRepository : IEngineAssetRepository
         try
         {
             var updatedRows = await dlcsContext.SaveChangesAsync(cancellationToken);
-            var batchesAffected = await TryFinishBatch(asset.Batch!.Value, cancellationToken);
-            updatedRows += batchesAffected.rowsAffected;
+            var batch = await TryFinishBatch(asset.Batch!.Value, cancellationToken);
 
             if (transaction != null)
             {
                 await transaction.CommitAsync(cancellationToken);
             }
 
-            await batchCompletedNotificationSender.SendBatchCompletedMessages(batchesAffected.batches,
-                cancellationToken);
-            
+            if (batch != null)
+            {
+                updatedRows++;
+                await batchCompletedNotificationSender.SendBatchCompletedMessage(batch,
+                    cancellationToken);
+            }
+
             return updatedRows > 0;
         }
         finally
@@ -172,16 +175,22 @@ public class EngineAssetRepository : IEngineAssetRepository
         }
     }
 
-    private async Task<(int rowsAffected, IQueryable<Batch> batches)> TryFinishBatch(int batchId,
+    private async Task<Batch?> TryFinishBatch(int batchId,
         CancellationToken cancellationToken)
     {
-        var batches = dlcsContext.Batches
-            .Where(b => b.Id == batchId && b.Count == b.Completed + b.Errors);
-        
-        var rowsAffected =
-            await batches.UpdateFromQueryAsync(b => new Batch { Finished = DateTime.UtcNow }, cancellationToken);
+        var rowsAffected = await dlcsContext.Batches
+            .Where(b => b.Id == batchId && b.Count == b.Completed + b.Errors)
+            .UpdateFromQueryAsync(b => new Batch { Finished = DateTime.UtcNow }, cancellationToken);
 
-        return (rowsAffected, batches);
+        Batch? batch = null;
+
+        if (rowsAffected > 0)
+        {
+            batch = await dlcsContext.Batches.FindAsync(batchId, cancellationToken);
+        }
+
+
+        return batch;
     }
 
     private async Task IncreaseCustomerStorage(ImageStorage imageStorage, CancellationToken cancellationToken)
