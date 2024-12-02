@@ -169,10 +169,12 @@ public static class ServiceCollectionX
         return services;
     }
 
+    /// <summary>
+    /// Add topic notifiers
+    /// </summary>
     public static IServiceCollection AddTopicNotifiers(this IServiceCollection services)
     {
         services
-            .AddScoped<IBatchCompletedNotificationSender, BatchCompletedNotificationSender>()
             .AddScoped<IBatchCompletedNotificationSender, BatchCompletedNotificationSender>();
         
         return services;
