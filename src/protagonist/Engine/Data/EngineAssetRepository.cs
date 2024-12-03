@@ -71,7 +71,7 @@ public class EngineAssetRepository : IEngineAssetRepository
             }
             
             var updatedRows = hasBatch
-                ? await BatchSave(asset, cancellationToken)
+                ? await BatchSave(asset.Batch!.Value, cancellationToken)
                 : await NonBatchedSave(cancellationToken);
 
             if (updatedRows && imageStorage != null)
@@ -108,7 +108,7 @@ public class EngineAssetRepository : IEngineAssetRepository
         return updatedRows > 0;
     }
 
-    private async Task<bool> BatchSave(Asset asset, CancellationToken cancellationToken)
+    private async Task<bool> BatchSave(int batchId, CancellationToken cancellationToken)
     {
         IDbContextTransaction? transaction = null;
         if (dlcsContext.Database.CurrentTransaction == null)
@@ -120,17 +120,17 @@ public class EngineAssetRepository : IEngineAssetRepository
         try
         {
             var updatedRows = await dlcsContext.SaveChangesAsync(cancellationToken);
-            var batch = await TryFinishBatch(asset.Batch!.Value, cancellationToken);
+            var finishedBatch = await TryFinishBatch(batchId, cancellationToken);
 
             if (transaction != null)
             {
                 await transaction.CommitAsync(cancellationToken);
             }
 
-            if (batch != null)
+            if (finishedBatch != null)
             {
                 updatedRows++;
-                await batchCompletedNotificationSender.SendBatchCompletedMessage(batch,
+                await batchCompletedNotificationSender.SendBatchCompletedMessage(finishedBatch,
                     cancellationToken);
             }
 
@@ -182,14 +182,9 @@ public class EngineAssetRepository : IEngineAssetRepository
             .Where(b => b.Id == batchId && b.Count == b.Completed + b.Errors)
             .UpdateFromQueryAsync(b => new Batch { Finished = DateTime.UtcNow }, cancellationToken);
 
-        Batch? batch = null;
-
-        if (rowsAffected > 0)
-        {
-            batch = await dlcsContext.Batches.FindAsync(new object[] { batchId }, cancellationToken);
-        }
-        
-        return batch;
+        return rowsAffected == 0 
+            ? null
+            : await dlcsContext.Batches.FindAsync(new object[] { batchId }, cancellationToken);
     }
 
     private async Task IncreaseCustomerStorage(ImageStorage imageStorage, CancellationToken cancellationToken)
