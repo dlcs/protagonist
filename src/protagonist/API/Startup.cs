@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using API.Auth;
-using API.Features.DeliveryChannels.Converters;
 using API.Features.DeliveryChannels.Validation;
 using API.Features.Image.Ingest;
 using API.Features.OriginStrategies.Credentials;
@@ -75,7 +74,6 @@ public class Startup
             .AddDataAccess(configuration)
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
-            .AddScoped<ICustomerNotificationSender, CustomerNotificationSender>()
             .AddScoped<AssetProcessor>()
             .AddScoped<DeliveryChannelProcessor>()
             .AddTransient<TimingHandler>()
@@ -85,6 +83,7 @@ public class Startup
             .AddNamedQueriesCore()
             .AddAws(configuration, webHostEnvironment)
             .AddCorrelationIdHeaderPropagation()
+            .AddTopicNotifiers()
             .ConfigureSwagger();
 
         services.AddHttpClient<IEngineClient, EngineClient>(client =>

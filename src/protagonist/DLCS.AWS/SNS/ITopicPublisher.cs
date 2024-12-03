@@ -19,6 +19,13 @@ public interface ITopicPublisher
     /// <returns>Boolean representing the overall success/failure status of request</returns>
     public Task<bool> PublishToCustomerCreatedTopic(CustomerCreatedNotification message,
         CancellationToken cancellationToken);
+    
+    /// <summary>
+    /// Asynchronously publishes a message to the Batch completed topic
+    /// </summary>
+    /// <returns>Boolean representing the overall success/failure status of request</returns>
+    public Task<bool> PublishToBatchCompletedTopic(BatchCompletedNotification message,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>

@@ -69,6 +69,32 @@ public class TopicPublisher : ITopicPublisher
         return await TryPublishRequest(request, cancellationToken);
     }
 
+    /// <inheritdoc />
+    public async Task<bool> PublishToBatchCompletedTopic(BatchCompletedNotification message, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(snsSettings.BatchCompletedTopicArn))
+        {
+            logger.LogWarning("Customer Created Topic Arn is not set - cannot send CustomerCreatedNotification");
+            return false;
+        }
+        
+        var request = new PublishRequest
+        {
+            TopicArn = snsSettings.BatchCompletedTopicArn,
+            Message = JsonSerializer.Serialize(message, settings),
+            MessageAttributes = new Dictionary<string, MessageAttributeValue>()
+            {
+                {"CustomerId", new MessageAttributeValue
+                {
+                    StringValue = message.CustomerId.ToString(),
+                    DataType = "String"
+                }}
+            } 
+        };
+
+        return await TryPublishRequest(request, cancellationToken);
+    }
+
     private Task<bool> PublishToAssetModifiedTopic(AssetModifiedNotification message,
         CancellationToken cancellationToken = default)
     {

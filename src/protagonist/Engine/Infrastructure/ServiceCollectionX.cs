@@ -1,6 +1,8 @@
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
+using DLCS.AWS.SNS;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
@@ -49,9 +51,11 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
+            .AddScoped<ITopicPublisher, TopicPublisher>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS()
+            .WithAmazonSNS()
             .WithAmazonElasticTranscoder();
 
         return services;
@@ -162,6 +166,17 @@ public static class ServiceCollectionX
             .AddDbContextCheck<DlcsContext>("DLCS-DB")
             .AddQueueHealthCheck();
 
+        return services;
+    }
+
+    /// <summary>
+    /// Add topic notifiers
+    /// </summary>
+    public static IServiceCollection AddTopicNotifiers(this IServiceCollection services)
+    {
+        services
+            .AddScoped<IBatchCompletedNotificationSender, BatchCompletedNotificationSender>();
+        
         return services;
     }
 }

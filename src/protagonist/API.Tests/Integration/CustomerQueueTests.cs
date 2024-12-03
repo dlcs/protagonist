@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
@@ -35,6 +36,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
     private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
+    private static readonly IBatchCompletedNotificationSender NotificationSender = A.Fake<IBatchCompletedNotificationSender>();
     
     public CustomerQueueTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
@@ -43,6 +45,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .WithConnectionString(dbFixture.ConnectionString)
             .WithTestServices(services =>
             {
+                services.AddSingleton(NotificationSender);
                 services.AddScoped<IEngineClient>(_ => EngineClient);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
@@ -1172,6 +1175,12 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == 201);
         dbBatch.Superseded.Should().BeTrue();
+        
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == dbBatch.Id),
+                    A<CancellationToken>._))
+            .MustHaveHappened();
     }
     
     [Fact]
@@ -1202,6 +1211,12 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbBatch.Count.Should().Be(4);
         dbBatch.Errors.Should().Be(1);
         dbBatch.Completed.Should().Be(3);
+        
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == dbBatch.Id),
+                    A<CancellationToken>._))
+            .MustHaveHappened();
     }
 
     [Fact]
@@ -1228,6 +1243,12 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbBatch.Superseded.Should().BeFalse();
         dbBatch.Finished.Should().BeNull();
         dbBatch.Count.Should().Be(100);
+        
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>._,
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
     
     [Fact]
@@ -1255,6 +1276,12 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbBatch.Superseded.Should().BeFalse();
         dbBatch.Finished.Should().BeCloseTo(finished, TimeSpan.FromMinutes((1)));
         dbBatch.Count.Should().Be(3);
+        
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == dbBatch.Id),
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
     
     [Fact]

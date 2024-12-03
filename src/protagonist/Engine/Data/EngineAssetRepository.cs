@@ -1,5 +1,5 @@
 using System.Data;
-using DLCS.Core.Strings;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
@@ -14,11 +14,16 @@ public class EngineAssetRepository : IEngineAssetRepository
 {
     private readonly DlcsContext dlcsContext;
     private readonly ILogger<EngineAssetRepository> logger;
+    private readonly IBatchCompletedNotificationSender batchCompletedNotificationSender;
 
-    public EngineAssetRepository(DlcsContext dlcsContext, ILogger<EngineAssetRepository> logger)
+    public EngineAssetRepository(
+        DlcsContext dlcsContext, 
+        IBatchCompletedNotificationSender batchCompletedNotificationSender, 
+        ILogger<EngineAssetRepository> logger)
     {
         this.dlcsContext = dlcsContext;
         this.logger = logger;
+        this.batchCompletedNotificationSender = batchCompletedNotificationSender;
     }
 
     public async Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage,
@@ -115,13 +120,20 @@ public class EngineAssetRepository : IEngineAssetRepository
         try
         {
             var updatedRows = await dlcsContext.SaveChangesAsync(cancellationToken);
-            updatedRows += await TryFinishBatch(batchId, cancellationToken);
+            var finishedBatch = await TryFinishBatch(batchId, cancellationToken);
 
             if (transaction != null)
             {
                 await transaction.CommitAsync(cancellationToken);
             }
-            
+
+            if (finishedBatch != null)
+            {
+                updatedRows++;
+                await batchCompletedNotificationSender.SendBatchCompletedMessage(finishedBatch,
+                    cancellationToken);
+            }
+
             return updatedRows > 0;
         }
         finally
@@ -163,10 +175,17 @@ public class EngineAssetRepository : IEngineAssetRepository
         }
     }
 
-    private Task<int> TryFinishBatch(int batchId, CancellationToken cancellationToken)
-        => dlcsContext.Batches
+    private async Task<Batch?> TryFinishBatch(int batchId,
+        CancellationToken cancellationToken)
+    {
+        var rowsAffected = await dlcsContext.Batches
             .Where(b => b.Id == batchId && b.Count == b.Completed + b.Errors)
             .UpdateFromQueryAsync(b => new Batch { Finished = DateTime.UtcNow }, cancellationToken);
+
+        return rowsAffected == 0 
+            ? null
+            : await dlcsContext.Batches.FindAsync(new object[] { batchId }, cancellationToken);
+    }
 
     private async Task IncreaseCustomerStorage(ImageStorage imageStorage, CancellationToken cancellationToken)
     {

@@ -2,13 +2,14 @@
 using System.Reflection;
 using API.Features.Assets;
 using API.Features.Customer;
-using API.Features.DeliveryChannels;
 using API.Features.DeliveryChannels.DataAccess;
+using API.Infrastructure.Messaging;
 using API.Infrastructure.Requests.Pipelines;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.AWS.SNS;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Mediatr.Behaviours;
@@ -154,4 +155,16 @@ public static class ServiceCollectionX
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             c.IncludeXmlComments(xmlPath);
         });
+    
+    /// <summary>
+    /// Add topic notifiers
+    /// </summary>
+    public static IServiceCollection AddTopicNotifiers(this IServiceCollection services)
+    {
+        services
+            .AddScoped<ICustomerNotificationSender, CustomerNotificationSender>()
+            .AddScoped<IBatchCompletedNotificationSender, BatchCompletedNotificationSender>();
+        
+        return services;
+    }
 }
