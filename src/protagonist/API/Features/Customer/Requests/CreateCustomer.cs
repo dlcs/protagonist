@@ -1,6 +1,7 @@
-using System.Collections.Generic;
 using System.Data;
 using API.Infrastructure.Messaging;
+using API.Infrastructure.Requests;
+using DLCS.Core;
 using DLCS.Model;
 using DLCS.Model.Auth;
 using DLCS.Model.Processing;
@@ -14,7 +15,7 @@ namespace API.Features.Customer.Requests;
 /// <summary>
 /// Create a new Customer
 /// </summary>
-public class CreateCustomer : IRequest<CreateCustomerResult>
+public class CreateCustomer : IRequest<ModifyEntityResult<DLCS.Model.Customers.Customer>>
 {
     /// <summary>
     /// Customer name. Will be checked for uniqueness.
@@ -34,14 +35,7 @@ public class CreateCustomer : IRequest<CreateCustomerResult>
     }
 }
 
-public class CreateCustomerResult
-{
-    public DLCS.Model.Customers.Customer? Customer;
-    public List<string> ErrorMessages = new();
-    public bool Conflict { get; set; }
-}
-
-public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCustomerResult>
+public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEntityResult<DLCS.Model.Customers.Customer>>
 {
     private readonly DlcsContext dbContext;
     private readonly IEntityCounterRepository entityCounterRepository;
@@ -63,95 +57,76 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         this.customerNotificationSender = customerNotificationSender;
     }
 
-    public async Task<CreateCustomerResult> Handle(CreateCustomer request, CancellationToken cancellationToken)
+    public async Task<ModifyEntityResult<DLCS.Model.Customers.Customer>> Handle(CreateCustomer request, CancellationToken cancellationToken)
     {
-        // Reproducing POST behaviour for customer in Deliverator
-        // what gets locked here?
-        var result = new CreateCustomerResult();
-        
-        await EnsureCustomerNamesNotTaken(request, result, cancellationToken);
-        if (result.ErrorMessages.Any()) return result;
-        
+        var customerNameError = await EnsureCustomerNamesNotTaken(request, cancellationToken);
+        if (customerNameError != null)
+        {
+            return ModifyEntityResult<DLCS.Model.Customers.Customer>.Failure(customerNameError, WriteResult.Conflict);
+        }
+
         await using var transaction = 
             await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         
-        var newModelId = await GetIdForNewCustomer();
-        result.Customer = await CreateCustomer(request, cancellationToken, newModelId);
+        var customer = await CreateCustomer(request, cancellationToken);
+        var newCustomerId = customer.Id;
 
-        // create an entity counter for space IDs [CreateCustomerSpaceEntityCounterBehaviour]
-        await entityCounterRepository.Create(result.Customer.Id, KnownEntityCounters.CustomerSpaces, result.Customer.Id.ToString());
+        // create an entity counter for space IDs
+        await entityCounterRepository.Create(newCustomerId, KnownEntityCounters.CustomerSpaces, newCustomerId.ToString());
 
-        // Create a clickthrough auth service [CreateClickthroughAuthServiceBehaviour]
-        var clickThrough = authServicesRepository.CreateAuthService(
-            result.Customer.Id, string.Empty, "clickthrough", 600);
-        // Create a logout auth service [CreateLogoutAuthServiceBehaviour]
-        var logout = authServicesRepository.CreateAuthService(
-            result.Customer.Id, "http://iiif.io/api/auth/1/logout", "logout", 600);
-        clickThrough.ChildAuthService = logout.Id;
-        
-        // Make a Role for clickthrough [CreateClickthroughRoleBehaviour]
-        var clickthroughRole = authServicesRepository.CreateRole("clickthrough", result.Customer.Id, clickThrough.Id);
-        
-        // Save these [UpdateAuthServiceBehaviour x2, UpdateRoleBehaviour]
-        // Like this?
-        // authServicesRepository.SaveAuthService(clickThrough);
-        // authServicesRepository.SaveAuthService(logout);
-        // authServicesRepository.SaveRole(clickthroughRole);
-        // or like this?
-        await dbContext.AuthServices.AddAsync(clickThrough, cancellationToken);
-        await dbContext.AuthServices.AddAsync(logout, cancellationToken);
-        await dbContext.Roles.AddAsync(clickthroughRole, cancellationToken);
-        
+        await CreateAuthServices(cancellationToken, newCustomerId);
+
         // Create both a default and priority queue
         await dbContext.Queues.AddRangeAsync(
-            new Queue { Customer = result.Customer.Id, Name = QueueNames.Default, Size = 0 },
-            new Queue { Customer = result.Customer.Id, Name = QueueNames.Priority, Size = 0 }
+            new Queue { Customer = newCustomerId, Name = QueueNames.Default, Size = 0 },
+            new Queue { Customer = newCustomerId, Name = QueueNames.Priority, Size = 0 }
         );
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        var deliveryChannelPoliciesCreated = await deliveryChannelPolicyRepository.SeedDeliveryChannelsData(result.Customer.Id);
+        var deliveryChannelPoliciesCreated = await deliveryChannelPolicyRepository.SeedDeliveryChannelsData(newCustomerId);
 
         if (deliveryChannelPoliciesCreated)
         {
             await transaction.CommitAsync(cancellationToken);
-            await customerNotificationSender.SendCustomerCreatedMessage(result.Customer, cancellationToken);
-            return result;
+            await customerNotificationSender.SendCustomerCreatedMessage(customer, cancellationToken);
+            return ModifyEntityResult<DLCS.Model.Customers.Customer>.Success(customer, WriteResult.Created);
         }
         
-        result = new CreateCustomerResult()
-        {
-            ErrorMessages = new List<string>()
-            {
-                "Failed to create customer"
-            }
-        };
-        
         await transaction.RollbackAsync(cancellationToken);
-        
 
-        // [UpdateCustomerBehaviour] - customer has already been saved.
-        // The problem here is that we have had:
-        // - some direct use of dbContext
-        // - some calls to repositories that use EF (and do their own SaveChanges)
-        // - some calls to repositories that use Dapper
-        
-        return result;
+        return ModifyEntityResult<DLCS.Model.Customers.Customer>.Failure("Failed to create customer",
+            WriteResult.Error);
     }
 
-    // Does this belong on ICustomerRepository?
-    private async Task<DLCS.Model.Customers.Customer> CreateCustomer(
-        CreateCustomer request, 
-        CancellationToken cancellationToken, 
-        int newModelId)
+    private async Task CreateAuthServices(CancellationToken cancellationToken, int newCustomerId)
     {
+        // Create a clickthrough auth service
+        var clickThrough = authServicesRepository.CreateAuthService(newCustomerId, string.Empty, "clickthrough", 600);
+        // Create a logout auth service
+        var logout =
+            authServicesRepository.CreateAuthService(newCustomerId, "http://iiif.io/api/auth/1/logout", "logout", 600);
+        clickThrough.ChildAuthService = logout.Id;
+        
+        // Make a Role for clickthrough
+        var clickthroughRole = authServicesRepository.CreateRole("clickthrough", newCustomerId, clickThrough.Id);
+        
+        await dbContext.AuthServices.AddAsync(clickThrough, cancellationToken);
+        await dbContext.AuthServices.AddAsync(logout, cancellationToken);
+        await dbContext.Roles.AddAsync(clickthroughRole, cancellationToken);
+    }
+
+    private async Task<DLCS.Model.Customers.Customer> CreateCustomer(CreateCustomer request,
+        CancellationToken cancellationToken)
+    {
+        var newModelId = await GetIdForNewCustomer();
         var customer = new DLCS.Model.Customers.Customer
         {
             Id = newModelId,
             Name = request.Name,
             DisplayName = request.DisplayName,
             Administrator = false,
-            Created = DateTime.UtcNow,  
+            Created = DateTime.UtcNow,
             AcceptedAgreement = true,
             Keys = Array.Empty<string>()
         };
@@ -161,7 +136,7 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
         return customer;
     }
 
-    private async Task EnsureCustomerNamesNotTaken(CreateCustomer request, CreateCustomerResult result, CancellationToken cancellationToken)
+    private async Task<string?> EnsureCustomerNamesNotTaken(CreateCustomer request, CancellationToken cancellationToken)
     {
         // This could use customerRepository.GetCustomer(request.Name), but we want to be a bit more restrictive.
         var allCustomers = await dbContext.Customers.ToListAsync(cancellationToken);
@@ -170,17 +145,17 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer, CreateCusto
             => c.Name.Equals(request.Name, StringComparison.InvariantCultureIgnoreCase));
         if (existing != null)
         {
-            result.Conflict = true;
-            result.ErrorMessages.Add("A customer with this name (url part) already exists.");
+            return "A customer with this name (url part) already exists.";
         }
 
         existing = allCustomers.SingleOrDefault(
                 c => c.DisplayName.Equals(request.DisplayName, StringComparison.InvariantCultureIgnoreCase));
         if (existing != null)
         {
-            result.Conflict = true;
-            result.ErrorMessages.Add("A customer with this display name (label) already exists.");
+            return "A customer with this display name (label) already exists.";
         }
+
+        return null;
     }
 
     private async Task<int> GetIdForNewCustomer()
