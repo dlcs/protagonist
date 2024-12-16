@@ -2,6 +2,7 @@ using DLCS.Core.Caching;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
 using DLCS.Repository;
+using DLCS.Repository.CustomerPath;
 using DLCS.Repository.Customers;
 using DLCS.Web.Configuration;
 using DLCS.Web.Logging;
@@ -49,7 +50,7 @@ public class Startup
             .AddAws(configuration, webHostEnvironment)
             .AddSingleton<AssetDeliveryPathParser>()
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
-            .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
+            .AddSingleton<IPathCustomerRepository, GranularCustomerPathElementRepository>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
 
         // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively

@@ -26,6 +26,7 @@ using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
+using DLCS.Repository.CustomerPath;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Policies;
@@ -75,7 +76,7 @@ public static class ServiceCollectionX
             .AddSingleton<IQueueLookup, SqsQueueLookup>()
             .AddSingleton<IQueueSender, SqsQueueSender>()
             .AddScoped<ITopicPublisher, TopicPublisher>()
-            .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
+            .AddSingleton<IPathCustomerRepository, BulkCustomerPathElementRepository>()
             .AddSingleton<SqsQueueUtilities>()
             .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
             .SetupAWS(configuration, webHostEnvironment)

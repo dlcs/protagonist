@@ -3,7 +3,6 @@ using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
 using API.Settings;
-using DLCS.Core.Strings;
 using DLCS.Web.Auth;
 using DLCS.Web.Requests;
 using Hydra.Collections;
@@ -79,7 +78,8 @@ public class CustomerController : HydraController
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> CreateCustomer(
         [FromBody] DLCS.HydraModel.Customer newCustomer,
-        [FromServices] HydraCustomerValidator validator)
+        [FromServices] HydraCustomerValidator validator,
+        CancellationToken cancellationToken)
     {
         if (!User.IsAdmin())
         {
@@ -92,28 +92,10 @@ public class CustomerController : HydraController
             return this.HydraProblem(validationResult.Errors.Select(s => s.ErrorMessage), null, 400, "Invalid Customer");
         }
         
-        var command = new CreateCustomer(newCustomer.Name!, newCustomer.DisplayName!);
-
-        try
-        {
-            var result = await Mediator.Send(command);
-            if (result.Customer == null || result.ErrorMessages.Any())
-            {
-                int statusCode = result.Conflict ? 409 : 500;
-                return this.HydraProblem(result.ErrorMessages, null, statusCode, "Could not create Customer");
-            }
-            var newApiCustomer = result.Customer.ToHydra(GetUrlRoots().BaseUrl);
-            if (newApiCustomer.Id.HasText())
-            {
-                return this.HydraCreated(newApiCustomer);
-            }
-            return this.HydraProblem("No ID assigned for new customer", null, 500, "Could not create Customer");
-        }
-        catch (Exception ex)
-        {
-            // Are exceptions the way this info should be passed back to the controller?
-            return this.HydraProblem(ex);
-        }
+        return await HandleUpsert(new CreateCustomer(newCustomer.Name!, newCustomer.DisplayName!),
+            c => c.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Could not create Customer",
+            cancellationToken: cancellationToken);
     }
 
     /// <summary>

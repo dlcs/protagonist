@@ -14,6 +14,7 @@ using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Assets.CustomHeaders;
 using DLCS.Repository.Auth;
+using DLCS.Repository.CustomerPath;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Strategy;
@@ -50,7 +51,7 @@ public static class ServiceCollectionX
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
         => services
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
-            .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
+            .AddSingleton<IPathCustomerRepository, GranularCustomerPathElementRepository>()
             .AddSingleton<AssetCachingHelper>()
             .AddSingleton<IAssetRepository, DapperAssetRepository>()
             .AddSingleton<IThumbRepository, ThumbRepository>()
