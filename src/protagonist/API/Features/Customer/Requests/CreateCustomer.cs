@@ -1,6 +1,7 @@
 using System.Data;
 using API.Infrastructure.Messaging;
 using API.Infrastructure.Requests;
+using API.Infrastructure.Requests.Pipelines;
 using DLCS.Core;
 using DLCS.Model;
 using DLCS.Model.Auth;
@@ -15,7 +16,7 @@ namespace API.Features.Customer.Requests;
 /// <summary>
 /// Create a new Customer
 /// </summary>
-public class CreateCustomer : IRequest<ModifyEntityResult<DLCS.Model.Customers.Customer>>
+public class CreateCustomer : IRequest<ModifyEntityResult<DLCS.Model.Customers.Customer>>, IInvalidateCaches
 {
     /// <summary>
     /// Customer name. Will be checked for uniqueness.
@@ -33,6 +34,8 @@ public class CreateCustomer : IRequest<ModifyEntityResult<DLCS.Model.Customers.C
         Name = name;
         DisplayName = displayName;
     }
+
+    public string[] InvalidatedCacheKeys => new[] { CacheKeys.CustomerIdLookup, CacheKeys.CustomerNameLookup };
 }
 
 public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEntityResult<DLCS.Model.Customers.Customer>>

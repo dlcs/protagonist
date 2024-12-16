@@ -3,20 +3,21 @@ using System.Collections.Generic;
 using DLCS.Core.Caching;
 using DLCS.Model.Customers;
 using DLCS.Model.PathElements;
+using DLCS.Repository.CustomerPath;
 using FakeItEasy;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace DLCS.Repository.Tests;
+namespace DLCS.Repository.Tests.CustomerPath;
 
-public class CustomerPathElementRepositoryTests
+public class BulkCustomerPathElementRepositoryTests
 {
-    private readonly CustomerPathElementRepository sut;
+    private readonly BulkCustomerPathElementRepository sut;
     private const int CustomerId = 3;
     private const string CustomerName = "Robert-Paulson";
     
-    public CustomerPathElementRepositoryTests()
+    public BulkCustomerPathElementRepositoryTests()
     {
         var customerRepository = A.Fake<ICustomerRepository>();
         A.CallTo(() => customerRepository.GetCustomerIdLookup())
@@ -24,8 +25,8 @@ public class CustomerPathElementRepositoryTests
         
         var appCache = new MockCachingService();
 
-        sut = new CustomerPathElementRepository(appCache, Options.Create(new CacheSettings()), customerRepository,
-            new NullLogger<CustomerPathElementRepository>());
+        sut = new BulkCustomerPathElementRepository(appCache, Options.Create(new CacheSettings()), customerRepository,
+            new NullLogger<BulkCustomerPathElementRepository>());
     }
     
     [Fact]
