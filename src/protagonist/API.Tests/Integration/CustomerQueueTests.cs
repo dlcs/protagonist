@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using API.Client;
+using API.Infrastructure.Messaging;
 using API.Tests.Integration.Infrastructure;
 using DLCS.AWS.SNS.Messaging;
 using DLCS.Core.Types;
@@ -21,6 +22,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using Batch = DLCS.Model.Assets.Batch;
@@ -36,6 +38,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
     private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
+    private static readonly IAssetNotificationSender AssetNotificationSender = A.Fake<IAssetNotificationSender>();
     private static readonly IBatchCompletedNotificationSender NotificationSender = A.Fake<IBatchCompletedNotificationSender>();
     
     public CustomerQueueTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
@@ -47,6 +50,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             {
                 services.AddSingleton(NotificationSender);
                 services.AddScoped<IEngineClient>(_ => EngineClient);
+                services.AddScoped<IAssetNotificationSender>(_ => AssetNotificationSender);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                         "API-Test", _ => { });
@@ -926,6 +930,72 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             EngineClient.AsynchronousIngestBatch(
                 A<IReadOnlyCollection<Asset>>.That.Matches(i => i.Count == 3), false,
                 A<CancellationToken>._)).MustHaveHappened();
+        A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
+            A<IReadOnlyCollection<AssetModificationRecord>>.That.Matches(i => i.Count == 3),
+            A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_400_DoesNotRaiseAnyNotifications_IfProcessingFailsOnLaterAsset()
+    {
+        // Arrange
+        const int customerId = 1801;
+        
+        // Add a 'not for delivery' asset as these cannot be modified
+        var failingAssetId = AssetIdGenerator.GetAssetId(customerId, 2);
+        await dbContext.Images.AddTestAsset(failingAssetId, notForDelivery: true);
+        
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, 2);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        
+        await dbContext.SaveChangesAsync();
+
+        // a batch of 3: the last one is NotForDelivery and cannot be updated so will fail processing step
+        var hydraImageBody = @$"{{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {{
+          ""id"": ""one"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 2,
+          ""mediaType"": ""video/mp4""
+        }},
+        {{
+          ""id"": ""two"",
+          ""origin"": ""https://example.org/image.jpg"",
+          ""space"": 2,
+          ""mediaType"": ""image/jpeg""
+        }},
+        {{
+          ""id"": ""{failingAssetId.Asset}"",
+          ""origin"": ""https://example.org/file.pdf"",
+          ""space"": 2,
+          ""mediaType"": ""application/pdf""
+        }}
+    ]
+}}";
+        
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+        
+        // Assert
+        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+
+        // Items not queued for processing
+        A.CallTo(() =>
+            EngineClient.AsynchronousIngestBatch(
+                A<IReadOnlyCollection<Asset>>.That.Matches(ca => ca.Any(a => a.Customer == customerId)), false,
+                A<CancellationToken>._)).MustNotHaveHappened();
+        A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
+            A<IReadOnlyCollection<AssetModificationRecord>>.That.Matches(ca =>
+                ca.Any(a => a.After.Customer == customerId)),
+            A<CancellationToken>._)).MustNotHaveHappened();
     }
     
     [Fact]

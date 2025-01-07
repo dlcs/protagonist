@@ -97,13 +97,14 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
 
             foreach (var assetBeforeProcessing in request.AssetsBeforeProcessing)
             {
-                logger.LogDebug("Processing asset {AssetId}", assetBeforeProcessing.Asset.Id);
+                var assetId = assetBeforeProcessing.Asset.Id;
+                logger.LogDebug("Processing asset {AssetId}", assetId);
                 var processAssetResult =
                     await assetProcessor.Process(assetBeforeProcessing, false, true, true,
                         cancellationToken: cancellationToken);
                 if (!processAssetResult.IsSuccess)
                 {
-                    logger.LogDebug("Processing asset {AssetId} failed, aborting batch. Error: '{Error}'", assetBeforeProcessing.Asset.Id,
+                    logger.LogDebug("Processing asset {AssetId} failed, aborting batch. Error: '{Error}'", assetId,
                         processAssetResult.Result.Error);
                     updateFailed = true;
                     failureMessage = processAssetResult.Result.Error;
@@ -126,12 +127,10 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 {
                     logger.LogDebug(
                         "Asset {AssetId} of Batch {BatchId} does not require engine notification. Marking as complete",
-                        assetBeforeProcessing.Asset.Id, batch.Id);
+                        assetId, batch.Id);
                     batch.Completed += 1;
                 }
             }
-            
-            await assetNotificationSender.SendAssetModifiedMessage(assetModifiedNotificationList, cancellationToken);
             
             if (batch.Completed > 0)
             {
@@ -141,6 +140,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
             if (!updateFailed)
             {
                 await transaction.CommitAsync(cancellationToken);
+                await assetNotificationSender.SendAssetModifiedMessage(assetModifiedNotificationList, cancellationToken);
             }
         }
         catch (Exception ex)
