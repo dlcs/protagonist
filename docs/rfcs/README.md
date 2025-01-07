@@ -16,3 +16,5 @@
 14. [Delivery channel database design](014-delivery-channels-database.md)
 15. [iiif-av channel settings](015-iiif-av-delivery-channel-settings.md)
 16. [Asset Metadata](016-asset-metadata.md)
+17. [Asset Modified Cleanup](017-asset-modified-cleanup.md)
+18. [Revisit Batches](018-revisit-batches.md)
