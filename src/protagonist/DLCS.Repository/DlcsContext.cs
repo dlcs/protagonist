@@ -79,7 +79,7 @@ public partial class DlcsContext : DbContext
     public virtual DbSet<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
     public virtual DbSet<DefaultDeliveryChannel> DefaultDeliveryChannels { get; set; }
     public virtual DbSet<AssetApplicationMetadata> AssetApplicationMetadata { get; set; }
-    //public virtual DbSet<BatchAsset> BatchAssets { get; set; }
+    public virtual DbSet<BatchAsset> BatchAssets { get; set; }
 
     public virtual DbSet<SignupLink> SignupLinks { get; set; }
 

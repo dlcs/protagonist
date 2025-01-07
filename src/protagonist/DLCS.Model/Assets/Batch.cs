@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using DLCS.Core.Types;
 
 namespace DLCS.Model.Assets;
 
@@ -20,5 +22,19 @@ public class Batch
     /// </summary>
     public bool Superseded { get; set; }
     
+    public List<BatchAsset>? BatchAssets { get; set; }
+    
     private string DebuggerDisplay => $"{Id}, Cust:{Customer}, {Count} item(s)";
+}
+
+public static class BatchX
+{
+    /// <summary>
+    /// Add a new <see cref="BatchAsset"/> to <see cref="Batch"/>
+    /// </summary>
+    public static Batch AddBatchAsset(this Batch batch, AssetId assetId, BatchAssetStatus status = BatchAssetStatus.Waiting)
+    {
+        (batch.BatchAssets ??= new List<BatchAsset>()).Add(new BatchAsset { AssetId = assetId, Status = status });
+        return batch;
+    }
 }

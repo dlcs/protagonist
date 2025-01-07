@@ -904,8 +904,15 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var batchId = hydraBatch.GetLastPathElementAsInt()!.Value;
         
         // Db batch exists (unnecessary?)
-        var dbBatch = await dbContext.Batches.SingleAsync(i => i.Customer == customerId);
-        dbBatch.Id.Should().Be(batchId);
+        var dbBatch = await dbContext.Batches
+            .Include(b => b.BatchAssets)
+            .SingleAsync(i => i.Id == batchId);
+        
+        dbBatch.BatchAssets.Should().HaveCount(3);
+        dbBatch.BatchAssets.Should().AllSatisfy(ba =>
+        {
+            ba.Status.Should().Be(BatchAssetStatus.Waiting);
+        });
 
         // Images exist with Batch set + File marked as complete
         var images = dbContext.Images.Where(i => i.Customer == customerId && i.Space == 2).ToList();
@@ -943,7 +950,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Add a 'not for delivery' asset as these cannot be modified
         var failingAssetId = AssetIdGenerator.GetAssetId(customerId, 2);
-        await dbContext.Images.AddTestAsset(failingAssetId, notForDelivery: true);
+        await dbContext.Images.AddTestAsset(failingAssetId, customer: customerId, notForDelivery: true);
         
         await dbContext.Customers.AddTestCustomer(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 2);

@@ -96,7 +96,7 @@ public class AssetProcessor
                 return new ProcessAssetResult
                 {
                     Result = ModifyEntityResult<Asset>.Failure(
-                        "Delivery channels are required when updating an existing Asset via PUT",
+                        "Delivery channels are required when updating an existing Asset",
                         WriteResult.BadRequest
                     )
                 };

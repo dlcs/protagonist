@@ -3,6 +3,7 @@ using System;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    partial class DlcsContextModelSnapshot : ModelSnapshot
+    [Migration("20250107145354_Add BatchAssets")]
+    partial class AddBatchAssets
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
