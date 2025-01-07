@@ -79,8 +79,16 @@ public partial class DlcsContext : DbContext
     public virtual DbSet<ImageDeliveryChannel> ImageDeliveryChannels { get; set; }
     public virtual DbSet<DefaultDeliveryChannel> DefaultDeliveryChannels { get; set; }
     public virtual DbSet<AssetApplicationMetadata> AssetApplicationMetadata { get; set; }
+    //public virtual DbSet<BatchAsset> BatchAssets { get; set; }
 
     public virtual DbSet<SignupLink> SignupLinks { get; set; }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder
+            .Properties<AssetId>()
+            .HaveConversion<AssetIdConverter>();
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -302,10 +310,7 @@ public partial class DlcsContext : DbContext
             entity.HasIndex(e => new { e.Customer, e.Space }, "IX_ImagesBySpace");
 
             entity.Property(e => e.Id)
-                .HasMaxLength(500)
-                .HasConversion(
-                    aId => aId.ToString(),
-                    id => AssetId.FromString(id));
+                .HasMaxLength(500);
 
             entity.Property(e => e.Created)
                 .IsRequired()
@@ -395,10 +400,7 @@ public partial class DlcsContext : DbContext
             entity.ToTable("ImageLocation");
 
             entity.Property(e => e.Id)
-                .HasMaxLength(500)
-                .HasConversion(
-                    aId => aId.ToString(),
-                    id => AssetId.FromString(id));;
+                .HasMaxLength(500);
 
             entity.Property(e => e.Nas)
                 .IsRequired()
@@ -444,10 +446,7 @@ public partial class DlcsContext : DbContext
             entity.HasIndex(e => new { e.Customer, e.Space, e.Id }, "IX_ImageStorageByCustomerSpace");
 
             entity.Property(e => e.Id)
-                .HasMaxLength(500)
-                .HasConversion(
-                    aId => aId.ToString(),
-                    id => AssetId.FromString(id));;
+                .HasMaxLength(500);
 
             entity.Property(e => e.LastChecked).HasColumnType("timestamp with time zone");
         });
@@ -660,12 +659,8 @@ public partial class DlcsContext : DbContext
             entity.Property(e => e.Id).HasMaxLength(100);
 
             entity.Property(e => e.Channel).IsRequired();
-            
-            entity.Property(e => e.ImageId)
-                .IsRequired()
-                .HasConversion(
-                    aId => aId.ToString(),
-                    id => AssetId.FromString(id));
+
+            entity.Property(e => e.ImageId).IsRequired();
 
             entity.HasOne<Asset>()
                 .WithMany(e => e.ImageDeliveryChannels)
@@ -685,11 +680,7 @@ public partial class DlcsContext : DbContext
         modelBuilder.Entity<AssetApplicationMetadata>(entity =>
         {
             entity.HasKey(e => new { e.AssetId, e.MetadataType });
-            entity.Property(e => e.AssetId).IsRequired().HasConversion(
-                aId => aId.ToString(),
-                id => AssetId.FromString(id));
-            entity.Property(e => e.MetadataType).IsRequired();
-            entity.Property(e => e.MetadataValue).IsRequired().HasColumnType("jsonb");
+            entity.Property(e => e.MetadataValue).HasColumnType("jsonb");
             
             entity.HasOne(e => e.Asset)
                 .WithMany(e => e.AssetApplicationMetadata)
