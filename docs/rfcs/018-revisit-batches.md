@@ -20,15 +20,17 @@ The proposal is to introduce a new table, `BatchAssets`. This will track the ass
 
 The following is the proposed schema:
 
-| Column   | Type        | Description                                    |
-| -------- | ----------- | ---------------------------------------------- |
-| BatchId  | int         | Batch identifier                               |
-| AssetId  | text        | Asset identifier                               |
-| Status   | int         | Values of waiting/completed/error map to enum. |
-| Finished | timestamptz | Date when asset finished                       |
+| Column   | Type        | Description                                   |
+| -------- | ----------- | --------------------------------------------- |
+| BatchId  | int         | Batch identifier                              |
+| AssetId  | text        | Asset identifier                              |
+| Status   | int         | Values of waiting/completed/error map to enum |
+| Error    | text        | Details of error                              |
+| Finished | timestamptz | Date when asset finished                      |
 
 > Note: 
 > * `Status` represents the status of processing asset in this batch, not _overall_ status of asset - it could have failed in batch 12345 but then been successful in batch 12999.
+> * `Error` will contain the error recorded against the Image. When images are reingested this information is lost so serves as a snapshot as to why the image failed.
 > * `Finished` will store when the asset finished processing, we don't need to store `Created` as this will be stored against the batch.
 
 The `Batch` table will maintain it's current schema, this will serve as a quick status check for a batch.
@@ -65,4 +67,4 @@ The exact process for doing this will need to be determined - consider removing 
 
 ## Questions
 
-* Do we want to have a single `Status` field, or separate boolean status fields? I opted for `Status` as each `BatchAsset` can only be in 1 single state at any given time.
+* Do we want to have a single `Status` field, or separate boolean status fields? I opted for `Status` as each `BatchAsset` can only have 1 single status.
