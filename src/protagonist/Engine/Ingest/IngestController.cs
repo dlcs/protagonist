@@ -31,7 +31,6 @@ public class IngestController : Controller
     [Route("asset-ingest")]
     public async Task<IActionResult> IngestAsset(CancellationToken cancellationToken)
     {
-        // TODO - throw if this is a 'T' request
         var message =
             await JsonSerializer.DeserializeAsync<IngestAssetRequest>(Request.Body,
                 JsonSerializerOptions, cancellationToken);
