@@ -53,7 +53,7 @@ The counts on `Batches` table will be updated to reflect the overall counts for 
 
 ### Orchestrator
 
-Extend the named query syntax to support `?batch` value to be specified, supporting multiple comma delimited values. `?batch=1234,5555,9999`.
+Extend the named query syntax to support `?batch` value to be specified, supporting multiple comma delimited values. These will be specified, delimited in a single path element, e.g. `/1234,5555,9999`.
 
 ## Historical Data Considerations
 
@@ -65,6 +65,4 @@ Depending on API usage patterns, the `BatchAssets` table will likely contain a l
 
 The exact process for doing this will need to be determined - consider removing only rows for Assets that completed without error, or those that are older than XX days, or have been ingested in a subsequent batch....
 
-## Questions
-
-* Do we want to have a single `Status` field, or separate boolean status fields? I opted for `Status` as each `BatchAsset` can only have 1 single status.
+We could allow API consumers to specify the strategy used to cleanup, depending on their use of batches. 
