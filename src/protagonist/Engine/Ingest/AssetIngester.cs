@@ -48,7 +48,7 @@ public class AssetIngester : IAssetIngester
     /// <returns>Result of ingest operations</returns>
     public async Task<IngestResult> Ingest(IngestAssetRequest request, CancellationToken cancellationToken = default)
     {
-        var asset = await engineAssetRepository.GetAsset(request.Id, cancellationToken);
+        var asset = await engineAssetRepository.GetAsset(request.Id, request.BatchId, cancellationToken);
 
         if (asset == null)
         {

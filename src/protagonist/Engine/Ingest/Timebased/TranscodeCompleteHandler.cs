@@ -40,13 +40,16 @@ public class TranscodeCompleteHandler : IMessageHandler
             logger.LogWarning("Unable to find DlcsId in message for ET job {JobId}", elasticTranscoderMessage.JobId);
             return false;
         }
+        
+        var batchId = elasticTranscoderMessage.GetBatchId();
 
-        logger.LogTrace("Received Message {MessageId} for {AssetId}", message.MessageId, assetId);
+        logger.LogTrace("Received Message {MessageId} for {AssetId}, batch {BatchId}", message.MessageId, assetId,
+            batchId ?? 0);
 
         var transcodeResult = new TranscodeResult(elasticTranscoderMessage);
 
         var success =
-            await timebasedIngestorCompletion.CompleteSuccessfulIngest(assetId, transcodeResult, cancellationToken);
+            await timebasedIngestorCompletion.CompleteSuccessfulIngest(assetId, batchId, transcodeResult, cancellationToken);
 
         logger.LogInformation("Message {MessageId} handled for {AssetId} with result {IngestResult}", message.MessageId,
             assetId, success);

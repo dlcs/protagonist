@@ -23,7 +23,7 @@ public interface IEngineAssetRepository
     /// <summary>
     /// Get Asset with specified Id
     /// </summary>
-    ValueTask<Asset?> GetAsset(AssetId assetId, CancellationToken cancellationToken = default);
+    ValueTask<Asset?> GetAsset(AssetId assetId, int? batchId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the size of an image from the database, or null if the image is not found

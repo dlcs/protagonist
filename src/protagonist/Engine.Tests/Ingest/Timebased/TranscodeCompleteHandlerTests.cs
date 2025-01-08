@@ -76,6 +76,7 @@ public class TranscodeCompleteHandlerTests
             
         // Assert
         A.CallTo(() => completion.CompleteSuccessfulIngest(new AssetId(2, 1, "engine_vid_1"),
+                null,
                 A<TranscodeResult>.That.Matches(result =>
                     result.InputKey == "2/1/engine_vid_1/9912" &&
                     result.Outputs.Count == 2 &&
@@ -101,7 +102,7 @@ public class TranscodeCompleteHandlerTests
         var cancellationToken = CancellationToken.None;
 
         A.CallTo(() =>
-            completion.CompleteSuccessfulIngest(new AssetId(2, 1, "engine_vid_1"), A<TranscodeResult>._,
+            completion.CompleteSuccessfulIngest(new AssetId(2, 1, "engine_vid_1"), null, A<TranscodeResult>._,
                 cancellationToken)).Returns(success);
 
         // Act

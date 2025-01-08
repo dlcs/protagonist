@@ -71,7 +71,8 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
         var jobMetadata = new Dictionary<string, string>
         {
             [UserMetadataKeys.DlcsId] = ingestionContext.AssetId.ToString(),
-            [UserMetadataKeys.OriginSize] = (TryGetStoredOriginFileSize(ingestionContext) ?? 0).ToString()
+            [UserMetadataKeys.OriginSize] = (TryGetStoredOriginFileSize(ingestionContext) ?? 0).ToString(),
+            [UserMetadataKeys.BatchId] = ingestionContext.Asset.Batch?.ToString() ?? string.Empty,
         };
         return jobMetadata;
     }

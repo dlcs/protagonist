@@ -1,6 +1,4 @@
-using AngleSharp.Common;
 using DLCS.AWS.SNS.Messaging;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using Engine.Data;
@@ -8,6 +6,7 @@ using Engine.Tests.Integration.Infrastructure;
 using FakeItEasy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 
 namespace Engine.Tests.Data;
@@ -38,7 +37,7 @@ public class EngineAssetRepositoryTests
     [Fact]
     public async Task UpdateIngestedAsset_ReturnsFalse_IfError()
     {
-        var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_ReturnsFalse_IfError)}");
+        var assetId = AssetIdGenerator.GetAssetId();
         var entry = await dbContext.Images.AddTestAsset(assetId, width: 10, height: 20, duration: 30,
             ingesting: true, ref1: "foo", roles: "secret");
         var existingAsset = entry.Entity;
@@ -63,8 +62,7 @@ public class EngineAssetRepositoryTests
     public async Task UpdateIngestedAsset_ModifiedExistingAsset_NoBatch_Location_OrStorage()
     {
         // Arrange
-        var assetId =
-            AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_ModifiedExistingAsset_NoBatch_Location_OrStorage)}");
+        var assetId = AssetIdGenerator.GetAssetId();
         var entry = await dbContext.Images.AddTestAsset(assetId, width: 0, height: 0, duration: 0,
             ingesting: true, ref1: "foo", roles: "secret");
         var existingAsset = entry.Entity;
@@ -100,13 +98,13 @@ public class EngineAssetRepositoryTests
     public async Task UpdateIngestedAsset_UpdatesAlreadyTrackedAsset()
     {
         // Arrange
-        var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_UpdatesAlreadyTrackedAsset)}");
+        var assetId = AssetIdGenerator.GetAssetId();
         await dbContext.Images.AddTestAsset(assetId, width: 0, height: 0, duration: 0,
             ingesting: true, ref1: "foo", roles: "secret");
         await dbContext.SaveChangesAsync();
 
         // Get asset so that it is tracked 
-        var trackedAsset = await sut.GetAsset(assetId);
+        var trackedAsset = await sut.GetAsset(assetId, null);
         trackedAsset.Width = 999;
         trackedAsset.Height = 1000;
         trackedAsset.Duration = 99;
@@ -138,9 +136,7 @@ public class EngineAssetRepositoryTests
     public async Task UpdateIngestedAsset_ModifiedExistingAsset_IncludingMediaType_NoBatch_Location_OrStorage()
     {
         // Arrange
-        var assetId =
-            AssetId.FromString(
-                $"99/1/{nameof(UpdateIngestedAsset_ModifiedExistingAsset_IncludingMediaType_NoBatch_Location_OrStorage)}");
+        var assetId = AssetIdGenerator.GetAssetId();
         var entry = await dbContext.Images.AddTestAsset(assetId, width: 0, height: 0, duration: 0,
             ingesting: true, ref1: "foo", roles: "secret");
         var existingAsset = entry.Entity;
@@ -177,9 +173,7 @@ public class EngineAssetRepositoryTests
     public async Task UpdateIngestedAsset_ModifiedExistingAsset_NoBatch_WithLocationAndStorage_NoExistingLocationOrStorage()
     {
         // Arrange
-        var assetId =
-            AssetId.FromString(
-                $"99/1/{nameof(UpdateIngestedAsset_ModifiedExistingAsset_NoBatch_WithLocationAndStorage_NoExistingLocationOrStorage)}");
+        var assetId = AssetIdGenerator.GetAssetId();
         var entity = await dbContext.Images.AddTestAsset(assetId);
         var existingAsset = entity.Entity;
         await dbContext.SaveChangesAsync();
@@ -213,9 +207,7 @@ public class EngineAssetRepositoryTests
     public async Task UpdateIngestedAsset_ModifiedExistingAsset_NoBatch_WithLocationAndStorage_ExistingLocationOrStorage()
     {
         // Arrange
-        var assetId =
-            AssetId.FromString(
-                $"99/1/{nameof(UpdateIngestedAsset_ModifiedExistingAsset_NoBatch_WithLocationAndStorage_ExistingLocationOrStorage)}");
+        var assetId = AssetIdGenerator.GetAssetId();
         var entity = await dbContext.Images.AddTestAsset(assetId);
         var existingAsset = entity.Entity;
         await dbContext.ImageLocations.AddTestImageLocation(assetId);
@@ -257,7 +249,7 @@ public class EngineAssetRepositoryTests
     public async Task UpdateIngestedAsset_UpdatesBatch_IfError()
     {
         // Arrange
-        var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_UpdatesBatch_IfError)}");
+        var assetId = AssetIdGenerator.GetAssetId();
         const int batchId = -10;
         await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
         await dbContext.Images.AddTestAsset(assetId, batch: batchId);
@@ -294,7 +286,7 @@ public class EngineAssetRepositoryTests
     public async Task UpdateIngestedAsset_UpdatesBatch_HandlesExistingTransaction()
     {
         // Arrange
-        var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_UpdatesBatch_HandlesExistingTransaction)}");
+        var assetId = AssetIdGenerator.GetAssetId();
         const int batchId = -10;
         await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
         var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
@@ -326,7 +318,7 @@ public class EngineAssetRepositoryTests
     public async Task UpdateIngestedAsset_UpdatesBatch_HandlesExistingTransactionRollback()
     {
         // Arrange
-        var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_UpdatesBatch_HandlesExistingTransactionRollback)}");
+        var assetId = AssetIdGenerator.GetAssetId();
         const int batchId = -10;
         await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
         var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
@@ -358,10 +350,23 @@ public class EngineAssetRepositoryTests
     public async Task UpdateIngestedAsset_UpdatesBatch_IfComplete()
     {
         // Arrange
-        var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_UpdatesBatch_IfComplete)}");
+        var assetId = AssetIdGenerator.GetAssetId();
+        var waiting = AssetIdGenerator.GetAssetId(assetPostfix: "waiting");
+        var failing = AssetIdGenerator.GetAssetId(assetPostfix: "fail");
+        var complete = AssetIdGenerator.GetAssetId(assetPostfix: "complete");
+        
         const int batchId = -11;
-        await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
+        var batch = await dbContext.Batches.AddTestBatch(batchId, count: 4, errors: 1, completed: 1);
+        batch.Entity
+            .AddBatchAsset(assetId)
+            .AddBatchAsset(waiting)
+            .AddBatchAsset(failing, BatchAssetStatus.Error)
+            .AddBatchAsset(complete, BatchAssetStatus.Completed);
+        
         var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        await dbContext.Images.AddTestAsset(waiting, batch: batchId);
+        await dbContext.Images.AddTestAsset(failing, batch: batchId);
+        await dbContext.Images.AddTestAsset(complete, batch: batchId);
         var existingAsset = entity.Entity;
         await dbContext.SaveChangesAsync();
 
@@ -377,10 +382,14 @@ public class EngineAssetRepositoryTests
         // Assert
         success.Should().BeTrue();
         
-        var updatedItem = await dbContext.Batches.SingleAsync(b => b.Id == batchId);
+        var updatedItem = await dbContext.Batches
+            .Include(b => b.BatchAssets)
+            .SingleAsync(b => b.Id == batchId);
         updatedItem.Errors.Should().Be(1);
         updatedItem.Completed.Should().Be(2);
         updatedItem.Finished.Should().BeNull();
+
+        updatedItem.BatchAssets.Single(ba => ba.AssetId == assetId).Status.Should().Be(BatchAssetStatus.Completed);
         A.CallTo(() =>
                 batchCompletedNotificationSender.SendBatchCompletedMessage(
                     A<Batch>._,
@@ -392,7 +401,7 @@ public class EngineAssetRepositoryTests
     public async Task UpdateIngestedAsset_DoesNotUpdateBatch_IfIngestNotFinished()
     {
         // Arrange
-        var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_DoesNotUpdateBatch_IfIngestNotFinished)}");
+        var assetId = AssetIdGenerator.GetAssetId();
         const int batchId = -111;
         await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 1);
         var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
@@ -433,9 +442,7 @@ public class EngineAssetRepositoryTests
     public async Task UpdateIngestedAsset_MarksBatchAsComplete_IfCompletedAndError_EqualsCount(int batchId, string error)
     {
         // Arrange
-        var assetId =
-            AssetId.FromString(
-                $"99/1/{nameof(UpdateIngestedAsset_MarksBatchAsComplete_IfCompletedAndError_EqualsCount)}{batchId}");
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: batchId.ToString());
         await dbContext.Batches.AddTestBatch(batchId, count: 10, errors: 1, completed: 8);
         var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
         var existingAsset = entity.Entity;
@@ -461,36 +468,5 @@ public class EngineAssetRepositoryTests
                     A<Batch>.That.Matches(b => b.Id == batchId),
                     A<CancellationToken>._))
             .MustHaveHappened(1, Times.Exactly);
-    }
-    
-    [Fact]
-    public async Task UpdateIngestedAsset_SavesError_IfBatchNotFound()
-    {
-        var assetId = AssetId.FromString($"99/1/{nameof(UpdateIngestedAsset_SavesError_IfBatchNotFound)}");
-        const int batchId = -100;
-        var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
-        var existingAsset = entity.Entity;
-        await dbContext.SaveChangesAsync();
-        
-        existingAsset.Width = 999;
-        existingAsset.Height = 1000;
-        existingAsset.Duration = 99;
-        existingAsset.Ingesting = true;
-
-        contextForTests.Images.Attach(existingAsset);
-        
-        // Act
-        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
-        
-        // Assert
-        success.Should().BeTrue();
-        
-        var updatedItem = await dbContext.Images.AsNoTracking().SingleAsync(a => a.Id == assetId);
-        updatedItem.Error.Should().Be("Unable to update batch associated with image");
-        A.CallTo(() =>
-                batchCompletedNotificationSender.SendBatchCompletedMessage(
-                    A<Batch>._,
-                    A<CancellationToken>._))
-            .MustNotHaveHappened();
     }
 }

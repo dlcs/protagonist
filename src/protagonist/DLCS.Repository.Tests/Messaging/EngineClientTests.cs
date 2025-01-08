@@ -55,7 +55,7 @@ public class EngineClientTests
             NumberReference1 = 1234
         };
         
-        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
         HttpRequestMessage message = null;
         httpHandler.RegisterCallback(r => message = r);
         httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
@@ -90,7 +90,7 @@ public class EngineClientTests
             NumberReference1 = 1234
         };
         
-        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
        
         var jsonString = string.Empty;
         A.CallTo(() => queueLookup.GetQueueNameForFamily(AssetFamily.Image, false)).Returns("test-queue");
