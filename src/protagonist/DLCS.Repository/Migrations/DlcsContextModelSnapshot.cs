@@ -219,18 +219,11 @@ namespace DLCS.Repository.Migrations
 
             modelBuilder.Entity("DLCS.Model.Assets.BatchAsset", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AssetId")
-                        .IsRequired()
-                        .HasColumnType("character varying(500)");
-
                     b.Property<int>("BatchId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("AssetId")
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("Error")
                         .HasColumnType("text");
@@ -241,11 +234,9 @@ namespace DLCS.Repository.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.HasKey("Id");
+                    b.HasKey("BatchId", "AssetId");
 
                     b.HasIndex("AssetId");
-
-                    b.HasIndex("BatchId");
 
                     b.ToTable("BatchAssets");
                 });
@@ -1091,7 +1082,7 @@ namespace DLCS.Repository.Migrations
             modelBuilder.Entity("DLCS.Model.Assets.BatchAsset", b =>
                 {
                     b.HasOne("DLCS.Model.Assets.Asset", "Asset")
-                        .WithMany()
+                        .WithMany("BatchAssets")
                         .HasForeignKey("AssetId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1149,6 +1140,8 @@ namespace DLCS.Repository.Migrations
             modelBuilder.Entity("DLCS.Model.Assets.Asset", b =>
                 {
                     b.Navigation("AssetApplicationMetadata");
+
+                    b.Navigation("BatchAssets");
 
                     b.Navigation("ImageDeliveryChannels");
                 });

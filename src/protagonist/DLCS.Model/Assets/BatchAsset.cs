@@ -8,7 +8,6 @@ namespace DLCS.Model.Assets;
 /// </summary>
 public class BatchAsset
 {
-    public int Id { get; set; }
     public int BatchId { get; set; }
     public AssetId AssetId { get; set; } = null!;
     public BatchAssetStatus Status { get; set; } = BatchAssetStatus.Waiting;

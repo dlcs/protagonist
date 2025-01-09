@@ -687,6 +687,11 @@ public partial class DlcsContext : DbContext
                 .HasForeignKey(e => e.AssetId);
         });
 
+        modelBuilder.Entity<BatchAsset>(entity =>
+        {
+            entity.HasKey(ba => new { ba.BatchId, ba.AssetId, });
+        });
+
         OnModelCreatingPartial(modelBuilder);
     }
 

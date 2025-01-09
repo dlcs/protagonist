@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -14,8 +13,6 @@ namespace DLCS.Repository.Migrations
                 name: "BatchAssets",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     BatchId = table.Column<int>(type: "integer", nullable: false),
                     AssetId = table.Column<string>(type: "character varying(500)", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
@@ -24,7 +21,7 @@ namespace DLCS.Repository.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_BatchAssets", x => x.Id);
+                    table.PrimaryKey("PK_BatchAssets", x => new { x.BatchId, x.AssetId });
                     table.ForeignKey(
                         name: "FK_BatchAssets_Batches_BatchId",
                         column: x => x.BatchId,
@@ -43,11 +40,6 @@ namespace DLCS.Repository.Migrations
                 name: "IX_BatchAssets_AssetId",
                 table: "BatchAssets",
                 column: "AssetId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_BatchAssets_BatchId",
-                table: "BatchAssets",
-                column: "BatchId");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
