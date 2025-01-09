@@ -86,6 +86,34 @@ public class TranscodeCompleteHandlerTests
             .MustHaveHappened();
     }
     
+    [Fact]
+    public async Task Handle_PassesDeserialisedObject_AssetInBatch_ToCompleteIngest()
+    {
+        // Arrange
+        const string fileName = "ElasticTranscoderNotificationBatch.json";
+        var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Samples", fileName);
+
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonObject.Parse(System.IO.File.OpenRead(filePath)).AsObject()
+        };
+        var cancellationToken = CancellationToken.None;
+
+        // Act
+        await sut.HandleMessage(queueMessage, cancellationToken);
+            
+        // Assert
+        A.CallTo(() => completion.CompleteSuccessfulIngest(new AssetId(2, 1, "engine_vid_1"),
+                123,
+                A<TranscodeResult>.That.Matches(result =>
+                    result.InputKey == "2/1/engine_vid_1/9912" &&
+                    result.Outputs.Count == 2 &&
+                    result.Outputs[0].Key == "random-guid/2/1/engine_vid_1/full/full/max/max/0/default.mp4" &&
+                    result.Outputs[1].Key == "random-guid/2/1/engine_vid_1/full/full/max/max/0/default.webm"),
+                cancellationToken))
+            .MustHaveHappened();
+    }
+    
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
