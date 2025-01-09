@@ -43,9 +43,12 @@ public class GetBatchAssetsHandler : GetBatchAssetsBase<GetBatchAssets>
     }
     
     protected override IQueryable<Asset> GetBatchAssets(DlcsContext dlcsContext, GetBatchAssets request)
-        => dlcsContext.Images
+        => dlcsContext.BatchAssets
             .AsNoTracking()
-            .IncludeDeliveryChannelsWithPolicy()
-            .Where(a => a.Customer == request.CustomerId)
-            .Include(a => a.BatchAssets.Where(ba => ba.BatchId == request.BatchId)); 
+            .Include(ba => ba.Batch)
+            .Include(ba => ba.Asset)
+            .ThenInclude(a => a.ImageDeliveryChannels.OrderBy(idc => idc.Channel))
+            .ThenInclude(dc => dc.DeliveryChannelPolicy)
+            .Where(ba => ba.Batch.Id == request.BatchId && ba.Batch.Customer == request.CustomerId)
+            .Select(ba => ba.Asset);
 }

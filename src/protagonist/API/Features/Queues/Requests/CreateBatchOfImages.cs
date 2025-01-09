@@ -116,11 +116,8 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                     batch.Completed += 1;
                 }
             }
-            
-            if (batch.Completed > 0)
-            {
-                await dlcsContext.SaveChangesAsync(cancellationToken);
-            }
+
+            await dlcsContext.SaveChangesAsync(cancellationToken);
 
             if (!updateFailed)
             {
