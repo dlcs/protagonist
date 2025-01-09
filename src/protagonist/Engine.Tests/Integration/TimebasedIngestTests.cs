@@ -14,6 +14,7 @@ using DLCS.Repository;
 using DLCS.Repository.Strategy.Utils;
 using Engine.Tests.Integration.Infrastructure;
 using FakeItEasy;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Stubbery;
 using Test.Helpers;
@@ -91,6 +92,8 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         
         var origin = $"{apiStub.Address}/{type}";
         const int batch = 999;
+        var dbBatch = await dbContext.Batches.AddTestBatch(batch);
+        dbBatch.Entity.AddBatchAsset(assetId);
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             mediaType: $"{type}/mpeg", family: AssetFamily.Timebased,
             imageDeliveryChannels: new List<ImageDeliveryChannel>
@@ -103,7 +106,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
             }, batch: batch);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, batch);
 
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
                 A<string>._,
@@ -143,6 +146,15 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         A.CallTo(() => ElasticTranscoderWrapper.PersistJobId(assetId, jobId, A<CancellationToken>._))
             .MustHaveHappened();
+
+        var savedBatch = await dbContext.Batches
+            .Include(b => b.BatchAssets)
+            .SingleAsync(b => b.Id == batch);
+        savedBatch.Finished.Should().BeNull();
+        savedBatch.BatchAssets.Should()
+            .ContainSingle(
+                ba => ba.AssetId == assetId && !ba.Finished.HasValue && ba.Status == BatchAssetStatus.Waiting,
+                "BatchAsset is not marked as complete");
     }
     
     [Theory]
