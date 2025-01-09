@@ -22,17 +22,22 @@ public class BatchAsset
 public enum BatchAssetStatus
 {
     /// <summary>
+    /// Placeholder
+    /// </summary>
+    Unknown = 0,
+    
+    /// <summary>
     /// Asset is waiting to be picked up or is in-flight
     /// </summary>
-    Waiting,
+    Waiting = 1,
     
     /// <summary>
     /// Asset failed to ingest
     /// </summary>
-    Error,
+    Error = 2,
     
     /// <summary>
     /// Asset completed successfully
     /// </summary>
-    Completed,
+    Completed = 3,
 }

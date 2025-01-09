@@ -249,4 +249,7 @@ public static class DatabaseTestDataPopulation
         
         return asset;
     }
+
+    public static ValueTask<EntityEntry<BatchAsset>> AddTestBatchAsset(this DbSet<BatchAsset> batchAssets, int batchId,
+        AssetId assetId) => batchAssets.AddAsync(new BatchAsset { AssetId = assetId, BatchId = batchId });
 }
