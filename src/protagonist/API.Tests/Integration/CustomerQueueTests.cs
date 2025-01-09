@@ -447,7 +447,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}3"), batch: 4006);
         await dbContext.SaveChangesAsync();
         
-        // Not batch 4006 is added in ctor
+        // Note batch 4006 is added in ctor
         const string path = "customers/99/queue/batches/4006/images";
 
         // Act
@@ -498,6 +498,132 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var q = @"{""number1"":10,""space"":1}";
         var path = "customers/99/queue/batches/4004/images?q=" + q;
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        images.TotalItems.Should().Be(2);
+        images.Members.Should().HaveCount(2);
+    }
+    
+    [Fact]
+    public async Task Get_BatchAssets_404_IfBatchNotFoundForCustomer()
+    {
+        // Arrange
+        const string path = "customers/99/queue/batches/-1200/assets";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_BatchAssets_404_IfBatchExistsForOtherCustomer()
+    {
+        // Arrange
+        const int batchId = 6004;
+        const int customerId = 6004;
+        var assetId1 = AssetIdGenerator.GetAssetId(customer: customerId, assetPostfix: "1");
+        
+        var batch = await dbContext.Batches.AddTestBatch(batchId, customer: customerId);
+        batch.Entity.AddBatchAsset(assetId1);
+        await dbContext.Images.AddTestAsset(assetId1, batch: batchId, customer: customerId);
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/99/queue/batches/{batchId}/assets";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_BatchAssets_200_IfImagesFound()
+    {
+        // Arrange
+        const int batchId = 6005;
+        var assetId1 = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetId2 = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+        
+        var batch = await dbContext.Batches.AddTestBatch(batchId);
+        batch.Entity.AddBatchAsset(assetId1).AddBatchAsset(assetId2);
+        await dbContext.Images.AddTestAsset(assetId1, batch: batchId);
+        await dbContext.Images.AddTestAsset(assetId2, batch: batchId);
+        await dbContext.SaveChangesAsync();
+        
+        var path = $"customers/99/queue/batches/{batchId}/assets";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        images.TotalItems.Should().Be(2);
+        images.Members.Should().HaveCount(2);
+    }
+    
+    [Fact]
+    public async Task Get_BatchAssets_200_IfImagesFound_SupportsPaging()
+    {
+        // Arrange
+        const int batchId = 6006;
+        var assetId1 = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetId2 = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+        var assetId3 = AssetIdGenerator.GetAssetId(assetPostfix: "3");
+        
+        var batch = await dbContext.Batches.AddTestBatch(batchId);
+        batch.Entity.AddBatchAsset(assetId1).AddBatchAsset(assetId2).AddBatchAsset(assetId3);
+        await dbContext.Images.AddTestAsset(assetId1, batch: batchId);
+        await dbContext.Images.AddTestAsset(assetId2, batch: batchId);
+        await dbContext.Images.AddTestAsset(assetId3, batch: batchId);
+        await dbContext.SaveChangesAsync();
+        
+        var path = $"customers/99/queue/batches/{batchId}/assets?pageSize=2&page=2";
+        
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        images.TotalItems.Should().Be(3);
+        images.Members.Should().HaveCount(1);
+    }
+    
+    [Fact]
+    public async Task Get_BatchAssets_200_IfImagesFound_SupportsQuery()
+    {
+        // Arrange
+        const int batchId = 6007;
+        var assetId1 = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetId2 = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+        var assetId3 = AssetIdGenerator.GetAssetId(assetPostfix: "3");
+        var altSpace = AssetIdGenerator.GetAssetId(space: 2);
+        
+        var batch = await dbContext.Batches.AddTestBatch(batchId);
+        batch.Entity
+            .AddBatchAsset(assetId1)
+            .AddBatchAsset(assetId2)
+            .AddBatchAsset(assetId3)
+            .AddBatchAsset(altSpace);
+        await dbContext.Images.AddTestAsset(assetId1, batch: batchId, num1: 10, space: 1);
+        await dbContext.Images.AddTestAsset(assetId2, batch: batchId, num1: 9, space: 1);
+        await dbContext.Images.AddTestAsset(assetId3, batch: batchId, num1: 10, space: 1);
+        await dbContext.Images.AddTestAsset(altSpace, batch: batchId, num1: 10, space: 2);
+        await dbContext.SaveChangesAsync();
+        
+        var q = @"{""number1"":10,""space"":1}";
+        var path = $"customers/99/queue/batches/{batchId}/assets?q=" + q;
 
         // Act
         var response = await httpClient.AsCustomer().GetAsync(path);
