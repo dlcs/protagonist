@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -8,6 +9,7 @@ namespace DLCS.Model.Messaging;
 /// <summary>
 /// Represents a request to ingest an asset.
 /// </summary>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public class IngestAssetRequest
 {
     /// <summary>
@@ -33,8 +35,10 @@ public class IngestAssetRequest
     {
         Id = id;
         Created = created;
-        BatchId = batchId;
+        
+        // 0 batchId represents no batch. It's cleaner if we catch that here so that engine only sees null
+        BatchId = batchId is > 0 ? batchId : null;
     }
 
-    public override string ToString() => $"IngestAssetRequest at {Created} for Asset {Id}";
+    private string DebuggerDisplay => $"IngestAssetRequest at {Created} for Asset {Id}";
 }

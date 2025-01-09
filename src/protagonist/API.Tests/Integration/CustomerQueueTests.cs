@@ -903,7 +903,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         hydraBatch.Count.Should().Be(3);
         var batchId = hydraBatch.GetLastPathElementAsInt()!.Value;
         
-        // Db batch exists (unnecessary?)
+        // Db batch exists
         var dbBatch = await dbContext.Batches
             .Include(b => b.BatchAssets)
             .SingleAsync(i => i.Id == batchId);

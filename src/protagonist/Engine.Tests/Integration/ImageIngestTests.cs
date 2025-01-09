@@ -40,8 +40,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private readonly ApiStub apiStub;
-    private readonly IImageMeasurer imageMeasurer;
-    
+
     private readonly List<ImageDeliveryChannel> imageDeliveryChannels = new()
     {
         new ImageDeliveryChannel
@@ -71,7 +70,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         dbContext = engineFixture.DbFixture.DbContext;
         apiStub = engineFixture.ApiStub;
-        imageMeasurer = A.Fake<IImageMeasurer>();
+        var imageMeasurer = A.Fake<IImageMeasurer>();
         httpClient = appFactory
             .WithTestServices(services =>
             {
@@ -122,7 +121,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         using var image = new Image<Rgba32>(1024, 1024);
 
-        //draw a useless line for some data
+        // draw a useless line for some data
         image.Mutate(imageContext =>
         {
             // draw background
@@ -130,8 +129,8 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             imageContext.BackgroundColor(bgColor);
         });
         
-        //Convert to byte array
-        MemoryStream memoryStream = new MemoryStream();
+        // Convert to byte array
+        using MemoryStream memoryStream = new MemoryStream();
         byte[] jpegData;
 
         using (memoryStream)
@@ -237,8 +236,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var updatedBatch = await dbContext.Batches.Include(b => b.BatchAssets).SingleAsync(b => b.Id == batchId);
         updatedBatch.BatchAssets.Should()
-            .HaveCount(1)
-            .And.OnlyContain(b => b.Status == BatchAssetStatus.Completed);
+            .ContainSingle(b => b.Status == BatchAssetStatus.Completed);
 
         var location = await dbContext.ImageLocations.SingleAsync(a => a.Id == assetId);
         location.Nas.Should().BeEmpty();

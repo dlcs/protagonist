@@ -43,8 +43,10 @@ public class EngineClientTests
             new NullLogger<EngineClient>());
     }
     
-    [Fact]
-    public async Task SynchronousIngest_CallsEngine()
+    [Theory]
+    [InlineData(123)]
+    [InlineData(null)]
+    public async Task SynchronousIngest_CallsEngine(int? batchId)
     {
         // Arrange
         var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
@@ -52,10 +54,11 @@ public class EngineClientTests
             Family = AssetFamily.Image,
             Tags = "whatever",
             Roles = "secure",
-            NumberReference1 = 1234
+            NumberReference1 = 1234,
+            Batch = batchId
         };
         
-        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
+        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow, batchId);
         HttpRequestMessage message = null;
         httpHandler.RegisterCallback(r => message = r);
         httpHandler.GetResponseMessage("{ \"engine\": \"hello\" }", HttpStatusCode.OK);
@@ -76,10 +79,13 @@ public class EngineClientTests
             });
         
         body.Id.Should().Be(ingestRequest.Id);
+        body.BatchId.Should().Be(batchId);
     }
     
-    [Fact]
-    public async Task AsynchronousIngest_QueuesMessage()
+    [Theory]
+    [InlineData(123)]
+    [InlineData(null)]
+    public async Task AsynchronousIngest_QueuesMessage(int? batchId)
     {
         // Arrange
         var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
@@ -87,10 +93,11 @@ public class EngineClientTests
             Family = AssetFamily.Image,
             Tags = "whatever",
             Roles = "secure",
-            NumberReference1 = 1234
+            NumberReference1 = 1234,
+            Batch = batchId
         };
         
-        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
+        var ingestRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow, batchId);
        
         var jsonString = string.Empty;
         A.CallTo(() => queueLookup.GetQueueNameForFamily(AssetFamily.Image, false)).Returns("test-queue");
@@ -109,6 +116,7 @@ public class EngineClientTests
         });
 
         body.Id.Should().Be(ingestRequest.Id);
+        body.BatchId.Should().Be(batchId);
     }
     
     [Fact]
