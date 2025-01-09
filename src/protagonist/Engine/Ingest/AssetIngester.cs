@@ -1,10 +1,7 @@
 ﻿using DLCS.Core.Types;
-using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
-using DLCS.Model.Policies;
 using Engine.Data;
-using Engine.Ingest.Models;
 
 namespace Engine.Ingest;
 
@@ -25,17 +22,14 @@ public class AssetIngester : IAssetIngester
     private readonly IngestExecutor executor;
     private readonly ILogger<AssetIngester> logger;
     private readonly ICustomerOriginStrategyRepository customerOriginRepository;
-    private readonly IPolicyRepository policyRepository;
     private readonly IEngineAssetRepository engineAssetRepository;
 
     public AssetIngester(
-        IPolicyRepository policyRepository, 
         ICustomerOriginStrategyRepository customerOriginRepository,
         ILogger<AssetIngester> logger,
         IngestExecutor executor,
         IEngineAssetRepository engineAssetRepository)
     {
-        this.policyRepository = policyRepository;
         this.customerOriginRepository = customerOriginRepository;
         this.logger = logger;
         this.executor = executor;
