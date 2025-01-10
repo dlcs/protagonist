@@ -81,6 +81,9 @@ public class IIIFNamedQueryParserTests
     [Theory]
     [InlineData("n1=p1", "not-an-int")]
     [InlineData("n1=p1&#=not-an-int", "")]
+    [InlineData("batch=p1", "not-an-int")]
+    [InlineData("batch=p1", "1|2|3")]
+    [InlineData("batch=p1&#=not-an-int", "")]
     public void GenerateParsedNamedQueryFromRequest_ReturnsFaultParsedNQ_IfNonNumberPassedForNumberArg(
         string template,
         string args)
@@ -127,6 +130,12 @@ public class IIIFNamedQueryParserTests
         },
         new object[]
         {
+            "batch=p1&#=10", "",
+            new IIIFParsedNamedQuery(Customer) { Batches = new[] { 10 }, NamedQueryName = "my-query" },
+            "Single batch from template"
+        },
+        new object[]
+        {
             "manifest=s1&spacename=p1", "10",
             new IIIFParsedNamedQuery(Customer)
                 { SpaceName = "10", Manifest = ParsedNamedQuery.QueryMapping.String1, NamedQueryName = "my-query" },
@@ -138,7 +147,7 @@ public class IIIFNamedQueryParserTests
             new IIIFParsedNamedQuery(Customer)
             {
                 String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
+                AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.Number2) },
                 NamedQueryName = "my-query"
             },
             "All params"
@@ -149,7 +158,7 @@ public class IIIFNamedQueryParserTests
             new IIIFParsedNamedQuery(Customer)
             {
                 String1 = "string-1", Number1 = 40, Space = 10, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
+                AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.Number2) },
                 NamedQueryName = "my-query"
             },
             "Extra args are ignored"
@@ -160,10 +169,21 @@ public class IIIFNamedQueryParserTests
             new IIIFParsedNamedQuery(Customer)
             {
                 String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
-                AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
+                AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.Number2) },
                 NamedQueryName = "my-query"
             },
             "Incorrect template pairs are ignored"
         },
+        new object[]
+        {
+            "manifest=s1&canvas=n2&s1=p1&n1=p2&batch=p3&space=p4&#=1", "string-1/40/10,20,30",
+            new IIIFParsedNamedQuery(Customer)
+            {
+                String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
+                AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.Number2) },
+                NamedQueryName = "my-query", Batches = new[] { 10, 20, 30 }
+            },
+            "All params including multi Batch"
+        }
     };
 }

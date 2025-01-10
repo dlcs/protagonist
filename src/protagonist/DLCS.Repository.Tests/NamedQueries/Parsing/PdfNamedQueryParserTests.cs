@@ -159,11 +159,20 @@ public class PdfNamedQueryParserTests
         },
         new object[]
         {
+            "batch=p1", "10,20,40",
+            new PdfParsedNamedQuery(99)
+            {
+                NamedQueryName = "my-query", Batches = new[] { 10, 20, 40 }, Args = new List<string> { "10,20,40" }
+            },
+            "Batch from template"
+        },
+        new object[]
+        {
             "redactedmessage=you cannot view&canvas=s1&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
             new PdfParsedNamedQuery(99)
             {
                 String1 = "string-1", Number1 = 40, Space = 1, RedactedMessage = "you cannot view",
-                AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.String1)}, 
+                AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.String1) },
                 Args = new List<string> { "string-1", "40", "1" }, NamedQueryName = "my-query",
             },
             "All params except format"
@@ -174,7 +183,7 @@ public class PdfNamedQueryParserTests
             new PdfParsedNamedQuery(99)
             {
                 String1 = "string-1", Number1 = 40, Space = 10,
-                AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
+                AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.Number2) },
                 Args = new List<string> { "string-1", "40", "10", "100", "1" }, NamedQueryName = "my-query",
             },
             "Extra args are ignored"
@@ -184,8 +193,8 @@ public class PdfNamedQueryParserTests
             "manifest=s1&&n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
             new PdfParsedNamedQuery(99)
             {
-                String1 = "string-1", Number1 = 40, Space = 1, 
-                AssetOrdering = new List<ParsedNamedQuery.QueryOrder>{new(ParsedNamedQuery.QueryMapping.Number2)},
+                String1 = "string-1", Number1 = 40, Space = 1,
+                AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.Number2) },
                 Args = new List<string> { "string-1", "40", "1" }, NamedQueryName = "my-query",
             },
             "Incorrect template pairs are ignored"

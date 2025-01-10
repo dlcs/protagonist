@@ -1,6 +1,6 @@
-﻿using System.Linq;
-using DLCS.Core.Caching;
+﻿using DLCS.Core.Caching;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.Assets;
 using LazyCache.Mocks;
@@ -14,12 +14,11 @@ namespace DLCS.Repository.Tests.NamedQueries;
 [Collection(DatabaseCollection.CollectionName)]
 public class NamedQueryRepositoryTests
 {
-    private readonly DlcsContext dbContext;
     private readonly NamedQueryRepository sut;
 
     public NamedQueryRepositoryTests(DlcsDatabaseFixture dbFixture)
     {
-        dbContext = dbFixture.DbContext;
+        var dbContext = dbFixture.DbContext;
         sut = new NamedQueryRepository(dbFixture.DbContext, new MockCachingService(),
             Options.Create(new CacheSettings()));
 
@@ -38,6 +37,26 @@ public class NamedQueryRepositoryTests
         dbContext.Images.AddTestAsset(AssetId.FromString("99/1/7"), space: 2);
         dbContext.Images.AddTestAsset(AssetId.FromString("99/1/8"), ref1: "foo", ref2: "bar", ref3: "baz", num1: 5,
             num2: 10, num3: 20);
+        
+        // Batch records - first with 3 and second with 2. 1 asset is in both
+        var batchedAsset1 = AssetId.FromString("99/2/1");
+        var batchedAsset2 = AssetId.FromString("99/2/2");
+        var batchedAsset3 = AssetId.FromString("99/2/3");
+        var batchedAsset4 = AssetId.FromString("99/2/4");
+        const int batchId1 = 101010;
+        const int batchId2 = 101011;
+        dbContext.Images.AddTestAsset(batchedAsset1, space: 2);
+        dbContext.Images.AddTestAsset(batchedAsset2, space: 2, num3: 1);
+        dbContext.Images.AddTestAsset(batchedAsset3, space: 2, num3: 1);
+        dbContext.Images.AddTestAsset(batchedAsset4, space: 2, num3: 1);
+        var batch = dbContext.Batches.AddTestBatch(batchId1).Result;
+        batch.Entity
+            .AddBatchAsset(batchedAsset1)
+            .AddBatchAsset(batchedAsset2, BatchAssetStatus.Completed)
+            .AddBatchAsset(batchedAsset3, BatchAssetStatus.Error);
+        
+        var batch2 = dbContext.Batches.AddTestBatch(batchId2).Result;
+        batch2.Entity.AddBatchAsset(batchedAsset1).AddBatchAsset(batchedAsset4);
         dbContext.SaveChanges();
     }
 
@@ -119,7 +138,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Count().Should().Be(8);
+        result.Should().HaveCount(12);
     }
 
     [Fact]
@@ -135,7 +154,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be(AssetId.FromString("99/1/1"));
+        result.Should().ContainSingle(r => r.Id == AssetId.FromString("99/1/1"));
     }
     
     [Fact]
@@ -151,7 +170,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be(AssetId.FromString("99/1/2"));
+        result.Should().ContainSingle(r => r.Id == AssetId.FromString("99/1/2"));
     }
     
     [Fact]
@@ -167,7 +186,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be(AssetId.FromString("99/1/3"));
+        result.Should().ContainSingle(r => r.Id == AssetId.FromString("99/1/3"));
     }
     
     [Fact]
@@ -183,7 +202,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be(AssetId.FromString("99/1/4"));
+        result.Should().ContainSingle(r => r.Id == AssetId.FromString("99/1/4"));
     }
     
     [Fact]
@@ -199,7 +218,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be(AssetId.FromString("99/1/5"));
+        result.Should().ContainSingle(r => r.Id == AssetId.FromString("99/1/5"));
     }
     
     [Fact]
@@ -215,7 +234,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be(AssetId.FromString("99/1/6"));
+        result.Should().ContainSingle(r => r.Id == AssetId.FromString("99/1/6"));
     }
     
     [Fact]
@@ -231,7 +250,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Count().Should().Be(7);
+        result.Should().HaveCount(7);
     }
     
     [Fact]
@@ -247,7 +266,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Count().Should().Be(7);
+        result.Should().HaveCount(7);
     }
     
     [Fact]
@@ -263,7 +282,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Count().Should().Be(7);
+        result.Should().HaveCount(7);
     }
     
     [Fact]
@@ -280,6 +299,54 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Single().Id.Should().Be(AssetId.FromString("99/1/8"));
+        result.Should().ContainSingle(r => r.Id == AssetId.FromString("99/1/8"));
+    }
+    
+    [Fact]
+    public async Task GetNamedQueryResults_FilterBySingleBatch()
+    {
+        // Arrange
+        var query = new ParsedNamedQuery(99)
+        {
+            Batches = new[] { 101010 }
+        };
+
+        // Act
+        var result = await sut.GetNamedQueryResults(query).ToListAsync();
+
+        // Assert
+        result.Should().HaveCount(3);
+    }
+    
+    [Fact]
+    public async Task GetNamedQueryResults_FilterByMultipleBatch()
+    {
+        // Arrange
+        var query = new ParsedNamedQuery(99)
+        {
+            Batches = new[] { 101010, 101011 }
+        };
+
+        // Act
+        var result = await sut.GetNamedQueryResults(query).ToListAsync();
+
+        // Assert
+        result.Should().HaveCount(4);
+    }
+    
+    [Fact]
+    public async Task GetNamedQueryResults_FilterByMultipleBatch_AndOtherCriteria()
+    {
+        // Arrange
+        var query = new ParsedNamedQuery(99)
+        {
+            Batches = new[] { 101010, 101011 }, Number3 = 1 
+        };
+
+        // Act
+        var result = await sut.GetNamedQueryResults(query).ToListAsync();
+
+        // Assert
+        result.Should().HaveCount(3);
     }
 }

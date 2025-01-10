@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
+using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
@@ -99,6 +100,11 @@ public class NamedQueryRepository : INamedQueryRepository
                     })
                 .Where(arg => arg.SpaceName == query.SpaceName)
                 .Select(arg => arg.Image);
+        }
+
+        if (!query.Batches.IsNullOrEmpty())
+        {
+            imageFilter = imageFilter.Where(i => i.BatchAssets.Any(ba => query.Batches.Contains(ba.BatchId)));
         }
 
         return imageFilter;
