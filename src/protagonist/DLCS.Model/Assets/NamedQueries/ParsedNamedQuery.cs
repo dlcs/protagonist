@@ -10,7 +10,7 @@ namespace DLCS.Model.Assets.NamedQueries;
 public class ParsedNamedQuery
 {
     /// <summary>
-    /// Collection of OrderBy clauses to apply to assets.
+    /// Collection of OrderBy clauses to apply to assets
     /// </summary>
     public List<QueryOrder> AssetOrdering { get; set; } = new() { new QueryOrder(QueryMapping.Unset) };
     
@@ -105,7 +105,6 @@ public class ParsedNamedQuery
         Number1,
         Number2,
         Number3,
-        Batch,
     }
 
     public enum OrderDirection
