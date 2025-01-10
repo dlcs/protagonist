@@ -55,6 +55,11 @@ public class ParsedNamedQuery
     public long? Number3 { get; set; }
     
     /// <summary>
+    /// Value of "batches" after parsing
+    /// </summary>
+    public int[]? Batches { get; set; } 
+    
+    /// <summary>
     /// The name of the namedQuery this object was parsed from.
     /// </summary>
     public string NamedQueryName { get; set; }
@@ -99,7 +104,8 @@ public class ParsedNamedQuery
         String3,
         Number1,
         Number2,
-        Number3
+        Number3,
+        Batch,
     }
 
     public enum OrderDirection

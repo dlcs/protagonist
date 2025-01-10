@@ -36,7 +36,7 @@ public abstract class StoredNamedQueryParser<T> : BaseNamedQueryParser<T>
     }
 
     /// <summary>
-    /// Get the template to use from specified <see cref="NamedQuerySettings"/> object.
+    /// Get the template to use from specified <see cref="NamedQueryTemplateSettings"/> object.
     /// </summary>
     /// <returns>Template to use containing {customer}, {queryname} + {args} replacements.</returns>
     protected abstract string GetTemplateFromSettings(NamedQueryTemplateSettings namedQuerySettings);

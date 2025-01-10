@@ -132,7 +132,7 @@ public static class StringX
     /// <param name="str">String to split</param>
     /// <param name="separator">String to split by.</param>
     /// <returns>String split, or empty list.</returns>
-    public static IEnumerable<string> SplitSeparatedString(this string str, string separator)
+    public static IEnumerable<string> SplitSeparatedString(this string? str, string separator)
         => str?.Trim().Split(separator, StringSplitOptions.RemoveEmptyEntries) ?? Enumerable.Empty<string>();
 
     /// <summary>
