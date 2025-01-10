@@ -220,10 +220,10 @@ public class DlcsDefaultDatabaseFixture : IAsyncLifetime
         ConnectionString = postgresContainer.ConnectionString;
 
         // Create new DlcsContext using connection string for Postgres container
-        DbContext = new DlcsContext(
-            new DbContextOptionsBuilder<DlcsContext>()
-                .UseNpgsql(postgresContainer.ConnectionString, builder => builder.SetPostgresVersion(13, 0)).Options
-        );
+        var dbContextOptions = new DbContextOptionsBuilder<DlcsContext>()
+            .SetupDlcsContextOptions(postgresContainer.ConnectionString)
+            .EnableSensitiveDataLogging();
+        DbContext = new DlcsContext(dbContextOptions.Options);
         DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
     }
 }

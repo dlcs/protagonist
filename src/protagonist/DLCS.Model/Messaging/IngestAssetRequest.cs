@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -8,6 +9,7 @@ namespace DLCS.Model.Messaging;
 /// <summary>
 /// Represents a request to ingest an asset.
 /// </summary>
+[DebuggerDisplay("{DebuggerDisplay,nq}")]
 public class IngestAssetRequest
 {
     /// <summary>
@@ -16,19 +18,27 @@ public class IngestAssetRequest
     public DateTime? Created { get; }
     
     /// <summary>
-    /// Get Asset to be ingested.
+    /// AssetId to be ingested.
     /// </summary>
     public AssetId Id { get; }
+    
+    /// <summary>
+    /// BatchId this ingestion operation is for
+    /// </summary>
+    /// <remarks>
+    /// When we fetch the Asset we can fetch the latest Batch it's associated with but that might be wrong
+    /// </remarks>
+    public int? BatchId { get; }
 
     [JsonConstructor]
-    public IngestAssetRequest(AssetId id, DateTime? created)
+    public IngestAssetRequest(AssetId id, DateTime? created, int? batchId)
     {
         Id = id;
         Created = created;
+        
+        // 0 batchId represents no batch. It's cleaner if we catch that here so that engine only sees null
+        BatchId = batchId is > 0 ? batchId : null;
     }
 
-    public override string ToString()
-    {
-        return $"IngestAssetRequest at {Created} for Asset {Id}";
-    }
+    private string DebuggerDisplay => $"IngestAssetRequest at {Created} for Asset {Id}";
 }

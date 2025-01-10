@@ -22,6 +22,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Stubbery;
 using Test.Helpers;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Storage;
 
@@ -39,8 +40,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private readonly ApiStub apiStub;
-    private readonly IImageMeasurer imageMeasurer;
-    
+
     private readonly List<ImageDeliveryChannel> imageDeliveryChannels = new()
     {
         new ImageDeliveryChannel
@@ -70,7 +70,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         dbContext = engineFixture.DbFixture.DbContext;
         apiStub = engineFixture.ApiStub;
-        imageMeasurer = A.Fake<IImageMeasurer>();
+        var imageMeasurer = A.Fake<IImageMeasurer>();
         httpClient = appFactory
             .WithTestServices(services =>
             {
@@ -121,7 +121,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         using var image = new Image<Rgba32>(1024, 1024);
 
-        //draw a useless line for some data
+        // draw a useless line for some data
         image.Mutate(imageContext =>
         {
             // draw background
@@ -129,8 +129,8 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             imageContext.BackgroundColor(bgColor);
         });
         
-        //Convert to byte array
-        MemoryStream memoryStream = new MemoryStream();
+        // Convert to byte array
+        using MemoryStream memoryStream = new MemoryStream();
         byte[] jpegData;
 
         using (memoryStream)
@@ -145,7 +145,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task IngestAsset_Success_HttpOrigin_AllOpen()
     {
         // Arrange
-        var assetId = AssetId.FromString( $"99/1/{nameof(IngestAsset_Success_HttpOrigin_AllOpen)}");
+        var assetId = AssetIdGenerator.GetAssetId();
 
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/image";
@@ -154,7 +154,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
 
         // Act
         var jsonContent =
@@ -191,13 +191,71 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         policyData.MetadataValue.Should().Be("{\"a\": [], \"o\": [[1024, 1024], [400, 400], [200, 200], [100, 100]]}");
     }
     
+    [Fact]
+    public async Task IngestAsset_Success_HttpOrigin_AllOpen_InBatch()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        // Note - API will have set this up before handing off
+        var origin = $"{apiStub.Address}/image";
+        const int batchId = 39;
+        var batch = await dbContext.Batches.AddTestBatch(batchId);
+        batch.Entity.AddBatchAsset(assetId);
+        var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
+            imageOptimisationPolicy: "fast-higher", mediaType: "image/tiff", width: 0, height: 0, duration: 0,
+            imageDeliveryChannels: imageDeliveryChannels, batch: batchId);
+        
+        var asset = entity.Entity;
+        await dbContext.SaveChangesAsync();
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, 39);
+
+        // Act
+        var jsonContent =
+            new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
+        var result = await httpClient.PostAsync("asset-ingest", jsonContent);
+
+        // Assert
+        result.Should().BeSuccessful();
+        
+        // S3 assets created
+        BucketWriter.ShouldHaveKey(assetId.ToString()).ForBucket(LocalStackFixture.StorageBucketName);
+        BucketWriter.ShouldHaveKey($"{assetId}/open/200.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
+        BucketWriter.ShouldHaveKey($"{assetId}/open/400.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
+        BucketWriter.ShouldHaveKey($"{assetId}/open/1024.jpg").ForBucket(LocalStackFixture.ThumbsBucketName);
+        BucketWriter.ShouldHaveKey($"{assetId}/s.json").ForBucket(LocalStackFixture.ThumbsBucketName);
+        
+        // Database records updated
+        var updatedAsset = await dbContext.Images.SingleAsync(a => a.Id == assetId);
+        updatedAsset.Width.Should().Be(1024);
+        updatedAsset.Height.Should().Be(1024);
+        updatedAsset.Ingesting.Should().BeFalse();
+        updatedAsset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        updatedAsset.MediaType.Should().Be("image/tiff");
+        updatedAsset.Error.Should().BeEmpty();
+
+        var updatedBatch = await dbContext.Batches.Include(b => b.BatchAssets).SingleAsync(b => b.Id == batchId);
+        updatedBatch.BatchAssets.Should()
+            .ContainSingle(b => b.Status == BatchAssetStatus.Completed);
+
+        var location = await dbContext.ImageLocations.SingleAsync(a => a.Id == assetId);
+        location.Nas.Should().BeEmpty();
+        location.S3.Should().Be($"s3://us-east-1/{LocalStackFixture.StorageBucketName}/{assetId}");
+
+        var storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == assetId);
+        storage.Size.Should().BeGreaterThan(0);
+        
+        var policyData = await dbContext.AssetApplicationMetadata.SingleAsync(a => a.AssetId == assetId);
+        policyData.MetadataValue.Should().Be("{\"a\": [], \"o\": [[1024, 1024], [400, 400], [200, 200], [100, 100]]}");
+    }
+    
      [Fact]
     public async Task IngestAsset_Success_OnLargerReingest()
     {
         // Arrange
         // Create a new customer to have control over CustomerStorage and make sure it's isolated
         const int customerId = -10;
-        var assetId = AssetId.FromString($"{customerId}/2/{nameof(IngestAsset_Success_OnLargerReingest)}");
+        var assetId = AssetIdGenerator.GetAssetId(customerId, 2);
 
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/image";
@@ -212,7 +270,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId, sizeOfStored: 950,
             storagePolicy: "medium");
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
 
         // Act
         var jsonContent =
@@ -246,7 +304,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task IngestAsset_Success_ChangesMediaTypeToContentType_WhenCalledWithUnknownImageType()
     {
         // Arrange
-        var assetId = AssetId.FromString($"99/1/{nameof(IngestAsset_Success_ChangesMediaTypeToContentType_WhenCalledWithUnknownImageType)}");
+        var assetId = AssetIdGenerator.GetAssetId();
 
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/image";
@@ -257,7 +315,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels = imageDeliveryChannels;
         await dbContext.SaveChangesAsync();
         
-        var message = new IngestAssetRequest(entity.Entity.Id, DateTime.UtcNow);
+        var message = new IngestAssetRequest(entity.Entity.Id, DateTime.UtcNow, null);
 
         // Act
         var jsonContent =
@@ -300,7 +358,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         // Create a new customer to have control over CustomerStorage and make sure it's isolated
         const int customerId = -10;
-        var assetId = AssetId.FromString($"{customerId}/1/{nameof(IngestAsset_Error_ExceedAllowance)}");
+        var assetId = AssetIdGenerator.GetAssetId(customerId, 1);
 
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/image";
@@ -313,7 +371,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId, sizeOfStored: 99,
             storagePolicy: "small");
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
 
         // Act
         var jsonContent =
@@ -347,7 +405,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         // Create a new customer to have control over CustomerStorage and make sure it's isolated
         const int customerId = -10;
-        var assetId = AssetId.FromString($"{customerId}/3/{nameof(IngestAsset_Error_ExceedAllowanceOnReingest)}");
+        var assetId = AssetIdGenerator.GetAssetId(customerId, 3);
 
         // Note - API will have set this up before handing off
         var origin = $"{apiStub.Address}/image";
@@ -361,7 +419,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId, sizeOfStored: 950,
             storagePolicy: "medium");
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
 
         // Act
         var jsonContent =
@@ -402,7 +460,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
 
         // Act
         var jsonContent =

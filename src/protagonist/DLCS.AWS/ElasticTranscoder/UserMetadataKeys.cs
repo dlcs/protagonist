@@ -24,4 +24,9 @@ public static class UserMetadataKeys
     /// Key for the size of origin file saved in DLCS (may be 0)
     /// </summary>
     public const string OriginSize = "storedOriginSize";
+
+    /// <summary>
+    /// Key for the BatchId this asset is part of
+    /// </summary>
+    public const string BatchId = "batchId";
 }

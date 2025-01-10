@@ -179,9 +179,9 @@ public class EngineClient : IEngineClient
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
     }
     
-    private string GetJsonString(Asset asset)
+    private static string GetJsonString(Asset asset)
     {
-        var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+        var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow, asset.Batch);
         var jsonString = JsonSerializer.Serialize(ingestAssetRequest, SerializerOptions);
         return jsonString;
     }

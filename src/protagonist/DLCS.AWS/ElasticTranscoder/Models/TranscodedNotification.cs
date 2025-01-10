@@ -56,7 +56,6 @@ public class TranscodedNotification
     /// <summary>
     /// Get the AssetId for this job from user metadata
     /// </summary>
-    /// <returns></returns>
     public AssetId? GetAssetId()
     {
         try
@@ -69,5 +68,15 @@ public class TranscodedNotification
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Get the BatchId, if found, for this job from user metadata
+    /// </summary>
+    public int? GetBatchId()
+    {
+        if (!UserMetadata.TryGetValue(UserMetadataKeys.BatchId, out var rawBatchId)) return null;
+
+        return int.TryParse(rawBatchId, out var batchId) ? batchId : null;
     }
 }

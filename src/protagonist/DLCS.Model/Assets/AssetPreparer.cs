@@ -70,13 +70,14 @@ public static class AssetPreparer
     /// be saved as this effectively drops validation.
     /// </param>
     /// <param name="isBatchUpdate">True if this is part of batch creation - allows Batch value to be set.</param>
+    /// <param name="disallowedCharacters">List of characters that are not allowed to be used in AssetId</param>
     /// <returns>A validation result</returns>
     public static AssetPreparationResult PrepareAssetForUpsert(
         Asset? existingAsset,
         Asset updateAsset,
         bool allowNonApiUpdates,
         bool isBatchUpdate,
-        char[]? disallowedCharacters)
+        char[] disallowedCharacters)
     {
         bool requiresReingest = existingAsset == null;
         
@@ -150,7 +151,7 @@ public static class AssetPreparer
     }
 
     private static AssetPreparationResult? ValidateRequests(Asset? existingAsset, Asset updateAsset,
-        bool allowNonApiUpdates, bool isBatchUpdate, char[]? disallowedCharacters)
+        bool allowNonApiUpdates, bool isBatchUpdate, char[] disallowedCharacters)
     {
         if (existingAsset == null)
         {

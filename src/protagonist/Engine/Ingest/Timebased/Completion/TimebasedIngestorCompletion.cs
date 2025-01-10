@@ -26,10 +26,10 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         this.logger = logger;
     }
 
-    public async Task<bool> CompleteSuccessfulIngest(AssetId assetId, TranscodeResult transcodeResult,
+    public async Task<bool> CompleteSuccessfulIngest(AssetId assetId, int? batchId, TranscodeResult transcodeResult,
         CancellationToken cancellationToken = default)
     {
-        var asset = await assetRepository.GetAsset(assetId, cancellationToken);
+        var asset = await assetRepository.GetAsset(assetId, batchId, cancellationToken);
 
         if (asset == null)
         {

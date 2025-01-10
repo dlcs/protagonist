@@ -2,12 +2,12 @@
 using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using Engine.Data;
 using Engine.Ingest.Timebased.Completion;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
+using Test.Helpers.Data;
 
 namespace Engine.Tests.Ingest.Timebased.Completion;
 
@@ -34,12 +34,12 @@ public class TimebasedIngesterCompletionTests
     public async Task CompleteSuccessfulIngest_False_IfAssetNotFound()
     {
         // Arrange
-        var assetId = new AssetId(10, 9, "endtroducing");
-        A.CallTo(() => engineAssetRepository.GetAsset(assetId, A<CancellationToken>._)).Returns<Asset?>(null);
+        var assetId = AssetIdGenerator.GetAssetId();
+        A.CallTo(() => engineAssetRepository.GetAsset(assetId, null, A<CancellationToken>._)).Returns<Asset?>(null);
         
         // Act
         var sut = GetSut();
-        var result = await sut.CompleteSuccessfulIngest(assetId, new TranscodeResult());
+        var result = await sut.CompleteSuccessfulIngest(assetId, null, new TranscodeResult());
         
         // Assert
         result.Should().BeFalse();
@@ -49,13 +49,14 @@ public class TimebasedIngesterCompletionTests
     public async Task CompleteSuccessfulIngest_FalseAndErrorSet_IfTranscodeNotComplete()
     {
         // Arrange
-        var assetId = new AssetId(10, 9, "endtroducing");
+        var assetId = AssetIdGenerator.GetAssetId();
         var asset = new Asset(assetId);
-        A.CallTo(() => engineAssetRepository.GetAsset(assetId, A<CancellationToken>._)).Returns(asset);
+        A.CallTo(() => engineAssetRepository.GetAsset(assetId, null, A<CancellationToken>._)).Returns(asset);
         
         // Act
         var sut = GetSut();
         var result = await sut.CompleteSuccessfulIngest(assetId,
+            null,
             new TranscodeResult(new TranscodedNotification
                 { Input = new JobInput(), State = "ERROR", Outputs = new List<TranscodeOutput>() }));
         
@@ -72,9 +73,9 @@ public class TimebasedIngesterCompletionTests
     public async Task CompleteSuccessfulIngest_FalseAndErrorSet_IfCopyNotFound(LargeObjectStatus status)
     {
         // Arrange
-        var assetId = new AssetId(10, 9, "endtroducing");
+        var assetId = AssetIdGenerator.GetAssetId();
         var asset = new Asset(assetId);
-        A.CallTo(() => engineAssetRepository.GetAsset(assetId, A<CancellationToken>._)).Returns(asset);
+        A.CallTo(() => engineAssetRepository.GetAsset(assetId, 1234, A<CancellationToken>._)).Returns(asset);
         var transcodeResult = new TranscodeResult(new TranscodedNotification
         {
             Input = new JobInput(),
@@ -90,7 +91,7 @@ public class TimebasedIngesterCompletionTests
         
         // Act
         var sut = GetSut();
-        var result = await sut.CompleteSuccessfulIngest(assetId, transcodeResult);
+        var result = await sut.CompleteSuccessfulIngest(assetId, 1234, transcodeResult);
 
         // Assert
         result.Should().BeFalse();
