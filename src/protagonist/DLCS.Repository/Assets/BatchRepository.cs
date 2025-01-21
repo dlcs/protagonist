@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 
 namespace DLCS.Repository.Assets;
@@ -44,24 +43,5 @@ public class BatchRepository : IDapperContextRepository, IBatchRepository
         }
 
         return batch;
-    }
-    
-    /// <inheritdoc />
-    public async Task<BatchAsset> CreateBatchAsset(Asset asset, CancellationToken cancellationToken)
-    {
-        asset.Batch.ThrowIfNull(nameof(asset.Batch));
-        
-        var batchAsset = new BatchAsset
-        {
-            AssetId = asset.Id,
-            BatchId = asset.Batch!.Value,
-            Status = BatchAssetStatus.Waiting
-        };
-        
-       var batchAssets = await DlcsContext.BatchAssets.AddAsync(batchAsset, cancellationToken);
-
-        await DlcsContext.SaveChangesAsync(cancellationToken);
-        
-        return batchAssets.Entity;
     }
 }
