@@ -106,11 +106,10 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
 
         if (modifyEntityResult.IsSuccess)
         {
-            if (modifyEntityResult.Entity!.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
+            if (modifyEntityResult.Entity!.Family == AssetFamily.Timebased)
             {
                 await batchRepository.CreateBatch(modifyEntityResult.Entity.Customer,
                     modifyEntityResult.Entity.AsList(), cancellationToken);
-                await batchRepository.CreateBatchAsset(modifyEntityResult.Entity!, cancellationToken);
             }
             
             await transaction.CommitAsync(cancellationToken);

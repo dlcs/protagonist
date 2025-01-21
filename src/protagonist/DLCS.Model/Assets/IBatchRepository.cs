@@ -22,12 +22,4 @@ public interface IBatchRepository
     /// <returns>Created Batch object</returns>
     Task<Batch> CreateBatch(int customerId, IReadOnlyList<Asset> assets, CancellationToken cancellationToken,
         Action<Batch>? postCreate = null);
-
-    /// <summary>
-    /// Create batch assets for a batch in the DB
-    /// </summary>
-    /// <param name="asset">The asset to create batch assets for</param>
-    /// <param name="cancellationToken">The current cancellation token</param>
-    /// <returns>Created batch assets</returns>
-    public Task<BatchAsset> CreateBatchAsset(Asset asset, CancellationToken cancellationToken);
 }

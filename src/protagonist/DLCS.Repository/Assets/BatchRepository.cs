@@ -33,6 +33,11 @@ public class BatchRepository : IDapperContextRepository, IBatchRepository
             Superseded = false,
             BatchAssets = new List<BatchAsset>(assets.Count)
         };
+
+        foreach (var asset in assets)
+        {
+            batch.AddBatchAsset(asset.Id);
+        }
         
         postCreate?.Invoke(batch);
         DlcsContext.Batches.Add(batch);
@@ -44,24 +49,5 @@ public class BatchRepository : IDapperContextRepository, IBatchRepository
         }
 
         return batch;
-    }
-    
-    /// <inheritdoc />
-    public async Task<BatchAsset> CreateBatchAsset(Asset asset, CancellationToken cancellationToken)
-    {
-        asset.Batch.ThrowIfNull(nameof(asset.Batch));
-        
-        var batchAsset = new BatchAsset
-        {
-            AssetId = asset.Id,
-            BatchId = asset.Batch!.Value,
-            Status = BatchAssetStatus.Waiting
-        };
-        
-       var batchAssets = await DlcsContext.BatchAssets.AddAsync(batchAsset, cancellationToken);
-
-        await DlcsContext.SaveChangesAsync(cancellationToken);
-        
-        return batchAssets.Entity;
     }
 }
