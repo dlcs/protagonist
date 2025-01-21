@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Data;
 using System.Net;
 using API.Exceptions;
@@ -7,6 +8,7 @@ using API.Infrastructure.Messaging;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Collections;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Model.Spaces;
@@ -114,6 +116,11 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
 
         if (modifyEntityResult.IsSuccess)
         {
+            if (modifyEntityResult.Entity!.HasSingleDeliveryChannel(AssetDeliveryChannels.Timebased))
+            {
+                await batchRepository.CreateBatchAsset(modifyEntityResult.Entity!, cancellationToken);
+            }
+            
             await transaction.CommitAsync(cancellationToken);
         }
         else

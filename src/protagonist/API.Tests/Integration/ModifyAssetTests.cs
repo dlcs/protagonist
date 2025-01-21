@@ -98,12 +98,14 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
+            .Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img");
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
+        asset.BatchAssets.Should().BeEmpty();
     }
     
     [Fact]
@@ -654,9 +656,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = await dbContext.Images.FindAsync(assetId);
+        var asset = await dbContext.Images.Include(a => a.BatchAssets).SingleAsync(a => a.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.Family.Should().Be(expectedFamily);
+        asset.BatchAssets.Count.Should().Be(1);
+        asset.BatchAssets[0].Status.Should().Be(BatchAssetStatus.Waiting);
     }
     
     [Theory]
@@ -841,12 +845,16 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
+            .Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultAudio);
+        
+        asset.BatchAssets.Count.Should().Be(1);
+        asset.BatchAssets[0].Status.Should().Be(BatchAssetStatus.Waiting);
     }
     
     [Fact]
@@ -874,12 +882,15 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Include(i => i.BatchAssets)
+            .Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultVideo);
+        asset.BatchAssets.Count.Should().Be(1);
+        asset.BatchAssets[0].Status.Should().Be(BatchAssetStatus.Waiting);
     }
     
     [Fact]
@@ -1484,7 +1495,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+        var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
             .ThenInclude(i => i.DeliveryChannelPolicy).Single(i => i.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("video/mp4");
@@ -1494,6 +1505,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                                                                 dc.DeliveryChannelPolicy.Name == "default-video");
+        asset.BatchAssets.Count.Should().Be(1);
+        asset.BatchAssets[0].Status.Should().Be(BatchAssetStatus.Waiting);
     }
     
     [Fact]
@@ -1548,7 +1561,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+        var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
             .ThenInclude(i => i.DeliveryChannelPolicy).Single(i => i.Id == assetId);
         asset.MediaType.Should().Be("video/mp4");
         asset.Family.Should().Be(AssetFamily.Timebased);
@@ -1557,6 +1570,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                                                                             dc.DeliveryChannelPolicy.Name == "default-video");
+        asset.BatchAssets.Count.Should().Be(1);
+        asset.BatchAssets[0].Status.Should().Be(BatchAssetStatus.Waiting);
     }
     
     [Theory]
@@ -1585,7 +1600,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+        var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
             .ThenInclude(i => i.DeliveryChannelPolicy).Single(i => i.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be("audio/mp3");
@@ -1595,6 +1610,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                                                                 dc.DeliveryChannelPolicy.Name == "default-audio");
+        asset.BatchAssets.Count.Should().Be(1);
+        asset.BatchAssets[0].Status.Should().Be(BatchAssetStatus.Waiting);
     }
     
     [Fact]
@@ -1649,7 +1666,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels)
+        var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
             .ThenInclude(i => i.DeliveryChannelPolicy).Single(i => i.Id == assetId);
         asset.MediaType.Should().Be("audio/mp3");
         asset.Family.Should().Be(AssetFamily.Timebased);
@@ -1658,6 +1675,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                                                                             dc.DeliveryChannelPolicy.Name == "default-audio");
+        asset.BatchAssets.Count.Should().Be(1);
+        asset.BatchAssets[0].Status.Should().Be(BatchAssetStatus.Waiting);
     }
     
     [Fact]
