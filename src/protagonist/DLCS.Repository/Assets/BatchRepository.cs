@@ -30,7 +30,7 @@ public class BatchRepository : IDapperContextRepository, IBatchRepository
             Errors = 0,
             Submitted = DateTime.UtcNow,
             Superseded = false,
-            BatchAssets = new List<BatchAsset>(assets.Count),
+            BatchAssets = new List<BatchAsset>(assets.Count)
         };
         
         postCreate?.Invoke(batch);
