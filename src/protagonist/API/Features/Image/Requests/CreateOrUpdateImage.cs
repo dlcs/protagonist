@@ -108,9 +108,9 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         {
             if (modifyEntityResult.Entity!.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
             {
-                await batchRepository.CreateBatch(modifyEntityResult.Entity.Customer,
+                var batch = await batchRepository.CreateBatch(modifyEntityResult.Entity.Customer,
                     modifyEntityResult.Entity.AsList(), cancellationToken);
-                await batchRepository.CreateBatchAsset(modifyEntityResult.Entity!, cancellationToken);
+                batch.AddBatchAsset(modifyEntityResult.Entity!.Id);
             }
             
             await transaction.CommitAsync(cancellationToken);
