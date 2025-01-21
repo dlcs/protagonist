@@ -1901,7 +1901,17 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             nameof(Patch_TimebasedAsset_Updates_Asset_AndEnqueuesMessage_IfReingestRequired));
 
         var testAsset = await dbContext.Images.AddTestAsset(assetId, family: AssetFamily.Timebased,
-            ref1: "I am string 1", origin: $"https://example.org/{assetId.Asset}.mp4", mediaType: "video/mp4");
+            ref1: "I am string 1", 
+            origin: $"https://example.org/{assetId.Asset}.mp4", 
+            mediaType: "video/mp4", 
+            imageDeliveryChannels: new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    Channel = AssetDeliveryChannels.Timebased,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.AvDefaultVideo
+                }
+            });
         
         await dbContext.SaveChangesAsync();
         

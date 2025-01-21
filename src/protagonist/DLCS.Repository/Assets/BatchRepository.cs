@@ -49,12 +49,12 @@ public class BatchRepository : IDapperContextRepository, IBatchRepository
     /// <inheritdoc />
     public async Task<BatchAsset> CreateBatchAsset(Asset asset, CancellationToken cancellationToken)
     {
-        asset.Batch.ThrowIfNull("Saving a batch asset requires a batch");
+        asset.Batch.ThrowIfNull(nameof(asset.Batch));
         
         var batchAsset = new BatchAsset
         {
             AssetId = asset.Id,
-            BatchId = asset.Batch.Value,
+            BatchId = asset.Batch!.Value,
             Status = BatchAssetStatus.Waiting
         };
         
