@@ -18,8 +18,7 @@ public interface IBatchRepository
     /// <param name="assets"></param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <param name="preCreate">Optional action, will be called after Batch is created but before saving in db</param>
-    /// /// <param name="afterSave">Optional action, will be called after before saving in db</param>
     /// <returns>Created Batch object</returns>
     Task<Batch> CreateBatch(int customerId, IReadOnlyList<Asset> assets, CancellationToken cancellationToken,
-        Action<Batch>? preCreate = null, Action<Batch>? afterSave = null);
+        Action<Batch>? preCreate = null);
 }
