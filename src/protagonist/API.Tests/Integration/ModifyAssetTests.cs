@@ -855,6 +855,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         asset.BatchAssets.Count.Should().Be(1);
         asset.BatchAssets[0].Status.Should().Be(BatchAssetStatus.Waiting);
+
+        var assetFromResponse = await response.ReadAsHydraResponseAsync<Image>();
+        assetFromResponse.Batch.Should().NotBeNull();
     }
     
     [Fact]
@@ -891,6 +894,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultVideo);
         asset.BatchAssets.Count.Should().Be(1);
         asset.BatchAssets[0].Status.Should().Be(BatchAssetStatus.Waiting);
+        
+        var assetFromResponse = await response.ReadAsHydraResponseAsync<Image>();
+        assetFromResponse.Batch.Should().NotBeNull();
     }
     
     [Fact]
