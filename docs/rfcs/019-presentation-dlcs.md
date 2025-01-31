@@ -166,3 +166,4 @@ One consideration was allowing the IIIF-P readonly access to the DLCS DB for que
 * Do we want a batch patch at customer level? It's currently at space level, which I think is fine but could result in multiple calls.
 * Is `"manifests"` the correct name? Or is `"appMetadata"` with a key enough?
 * Above SQL examples assume jsonb, should we consider `text[]` or separate table?
+  * Do we need to consider whether EF supports querying regardless of what approach we use?
