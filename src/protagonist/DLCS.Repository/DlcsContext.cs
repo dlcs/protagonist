@@ -238,6 +238,9 @@ public partial class DlcsContext : DbContext
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(500);
+
+            entity.HasIndex(c => c.Name).IsUnique();
+            entity.HasIndex(c => c.DisplayName).IsUnique();
         });
 
         modelBuilder.Entity<CustomerImageServer>(entity =>
