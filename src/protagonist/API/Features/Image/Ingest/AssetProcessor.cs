@@ -51,6 +51,7 @@ public class AssetProcessor
         try
         {
             var assetFromDatabase = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true, true);
+            var updatedDeliveryChannels = false;
 
             if (assetFromDatabase == null)
             {
@@ -91,7 +92,15 @@ public class AssetProcessor
 
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
-            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing.IsNullOrEmpty() && alwaysReingest)
+            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing == null && alwaysReingest)
+            {
+                assetBeforeProcessing.DeliveryChannelsBeforeProcessing = assetFromDatabase.ImageDeliveryChannels
+                    .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.DeliveryChannelPolicy.Name))
+                    .ToArray();
+
+                updatedDeliveryChannels = true;
+            }
+            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Length == 0 && alwaysReingest)
             {
                 return new ProcessAssetResult
                 {
@@ -101,6 +110,7 @@ public class AssetProcessor
                     )
                 };
             }
+            
             
             var existingAsset = assetFromDatabase?.Clone();
             var assetPreparationResult =
@@ -120,7 +130,7 @@ public class AssetProcessor
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
 
             var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(assetFromDatabase,
-                updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
+                updatedAsset, updatedDeliveryChannels, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
             if (deliveryChannelChanged)
             {
                 requiresEngineNotification = true;

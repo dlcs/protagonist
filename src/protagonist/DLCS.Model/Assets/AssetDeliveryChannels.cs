@@ -11,11 +11,12 @@ public static class AssetDeliveryChannels
     public const string Timebased = "iiif-av";
     public const string File = "file";
     public const string None = "none";
+    public const string Default = "default";
 
     /// <summary>
     /// All possible delivery channels
     /// </summary>
-    public static string[] All { get; } = { File, Timebased, Image, Thumbnails, None };
+    public static string[] All { get; } = { File, Timebased, Image, Thumbnails, None, Default };
 
     /// <summary>
     /// All possible delivery channels as a comma-delimited string
@@ -72,6 +73,7 @@ public static class AssetDeliveryChannels
             Image => mediaType.StartsWith("image/"),
             Thumbnails => mediaType.StartsWith("image/"),
             Timebased => mediaType.StartsWith("video/") || mediaType.StartsWith("audio/"),
+            Default => true, // Default causes delivery channels to be selected based on media type
             File => true, // A file can be matched to any media type
             None => true, // Likewise for the 'none' channel
             _ when throwIfChannelUnknown => throw new ArgumentOutOfRangeException(nameof(deliveryChannel), deliveryChannel,

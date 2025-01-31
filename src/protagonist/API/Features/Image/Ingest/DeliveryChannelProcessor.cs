@@ -33,10 +33,10 @@ public class DeliveryChannelProcessor
     /// </param>
     /// <param name="deliveryChannelsBeforeProcessing">List of deliveryChannels submitted in body</param>
     /// <returns>Boolean indicating whether asset requires processing Engine</returns>
-    public async Task<bool> ProcessImageDeliveryChannels(Asset? existingAsset, Asset updatedAsset,
-        DeliveryChannelsBeforeProcessing[] deliveryChannelsBeforeProcessing)
+    public async Task<bool> ProcessImageDeliveryChannels(Asset? existingAsset, Asset updatedAsset,  
+        bool deliveryChannelsUpdated, DeliveryChannelsBeforeProcessing[]? deliveryChannelsBeforeProcessing)
     {
-        if (existingAsset == null ||
+        if (existingAsset == null || deliveryChannelsUpdated ||
             DeliveryChannelsRequireReprocessing(existingAsset, deliveryChannelsBeforeProcessing))
         {
             try
@@ -54,9 +54,8 @@ public class DeliveryChannelProcessor
         return false;
     }
 
-    private bool DeliveryChannelsRequireReprocessing(Asset originalAsset, DeliveryChannelsBeforeProcessing[] deliveryChannelsBeforeProcessing)
+    private bool DeliveryChannelsRequireReprocessing(Asset originalAsset, DeliveryChannelsBeforeProcessing[]? deliveryChannelsBeforeProcessing)
     {
-        // PUT prevents empty delivery channels from being passed here, but PATCH doesn't
         if (deliveryChannelsBeforeProcessing.IsNullOrEmpty()) return false;
         if (originalAsset.ImageDeliveryChannels.Count != deliveryChannelsBeforeProcessing.Length) return true;
         
@@ -73,20 +72,20 @@ public class DeliveryChannelProcessor
         return false;
     }
 
-    private async Task<bool> SetImageDeliveryChannels(Asset asset, DeliveryChannelsBeforeProcessing[] deliveryChannelsBeforeProcessing, bool isUpdate)
+    private async Task<bool> SetImageDeliveryChannels(Asset asset, DeliveryChannelsBeforeProcessing[]? deliveryChannelsBeforeProcessing, bool isUpdate)
     {
         var assetId = asset.Id;
+        var isDefaultChannel = deliveryChannelsBeforeProcessing?.Any(d => d.Channel == AssetDeliveryChannels.Default) ??
+                               false;
         
-        if (!isUpdate)
+        // if it's a new asset, or has "default" specified, figure out the delivery channels based on media type
+        if (!isUpdate || isDefaultChannel)
         {
-            logger.LogTrace("Asset {AssetId} is new, resetting ImageDeliveryChannels", assetId);
+            logger.LogTrace("Setting delivery channels for asset {AssetId}", assetId);
             asset.ImageDeliveryChannels = new List<ImageDeliveryChannel>();
-            
-            // Only valid for creation - set image delivery channels to default values for media type
-            if (deliveryChannelsBeforeProcessing.IsNullOrEmpty())
+
+            if (deliveryChannelsBeforeProcessing.IsNullOrEmpty() || isDefaultChannel)
             {
-                logger.LogDebug("Asset {AssetId} is new, no deliveryChannels specified. Assigning defaults for mediaType",
-                    assetId);
                 await AddDeliveryChannelsForMediaType(asset);
                 return true;
             }
@@ -103,16 +102,19 @@ public class DeliveryChannelProcessor
         var changeMade = false;
         var handledChannels = new List<string>();
         var assetImageDeliveryChannels = asset.ImageDeliveryChannels;
+        
         foreach (var deliveryChannel in deliveryChannelsBeforeProcessing)
         {
             handledChannels.Add(deliveryChannel.Channel);
             var deliveryChannelPolicy = await GetDeliveryChannelPolicy(asset, deliveryChannel);
-            var currentChannel = assetImageDeliveryChannels.SingleOrDefault(idc => idc.Channel == deliveryChannel.Channel);
+            var currentChannel =
+                assetImageDeliveryChannels.SingleOrDefault(idc => idc.Channel == deliveryChannel.Channel);
 
             // No current ImageDeliveryChannel for channel so this is an addition
             if (currentChannel == null)
             {
-                logger.LogTrace("Adding new deliveryChannel {DeliveryChannel}, Policy {PolicyName} to Asset {AssetId}",
+                logger.LogTrace(
+                    "Adding new deliveryChannel {DeliveryChannel}, Policy {PolicyName} to Asset {AssetId}",
                     deliveryChannel.Channel, deliveryChannelPolicy.Name, assetId);
 
                 assetImageDeliveryChannels.Add(new ImageDeliveryChannel
