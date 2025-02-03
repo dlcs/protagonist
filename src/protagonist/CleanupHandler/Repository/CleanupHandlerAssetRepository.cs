@@ -19,4 +19,9 @@ public class CleanupHandlerAssetRepository : ICleanupHandlerAssetRepository
     {
         return await dbContext.Images.IncludeDeliveryChannelsWithPolicy().SingleOrDefaultAsync(x => x.Id == assetId);
     }
+
+    public async Task<bool> CheckExists(AssetId assetId)
+    {
+        return await dbContext.Images.AnyAsync(x => x.Id == assetId);
+    }
 }
