@@ -11,11 +11,11 @@ namespace DLCS.Repository.Exceptions;
 public static class DbUpdateExceptionX
 {
     /// <summary>
-    /// Retrieves a <see cref="DatabaseError"/> with database specific error 
+    /// Retrieves a <see cref="DbError"/> with database specific error 
     /// information from the <see cref="DbUpdateException"/> thrown by EF Core. 
     /// </summary>
     /// <param name="exception">The <see cref="DbUpdateException"/> thrown.</param>
-    /// <returns>A <see cref="DatabaseError"/> or derived class if the inner 
+    /// <returns>A <see cref="DbError"/> or derived class if the inner 
     /// exception matches one of the supported types. Otherwise returns null.</returns>
     public static DbError? GetDatabaseError(this DbUpdateException exception)
     {
