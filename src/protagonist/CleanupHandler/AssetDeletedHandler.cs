@@ -1,4 +1,5 @@
 ﻿using CleanupHandler.Infrastructure;
+using CleanupHandler.Repository;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
@@ -26,6 +27,7 @@ public class AssetDeletedHandler : IMessageHandler
     private readonly IFileSystem fileSystem;
     private readonly ILogger<AssetDeletedHandler> logger;
     private readonly ICacheInvalidator cacheInvalidator;
+    private readonly ICleanupHandlerAssetRepository assetRepository;
 
     public AssetDeletedHandler(
         IStorageKeyGenerator storageKeyGenerator,
@@ -33,6 +35,7 @@ public class AssetDeletedHandler : IMessageHandler
         ICacheInvalidator cacheInvalidator,
         IFileSystem fileSystem,
         IOptions<CleanupHandlerSettings> handlerSettings,
+        ICleanupHandlerAssetRepository assetRepository,
         ILogger<AssetDeletedHandler> logger)
     {
         this.storageKeyGenerator = storageKeyGenerator;
@@ -41,6 +44,7 @@ public class AssetDeletedHandler : IMessageHandler
         this.cacheInvalidator = cacheInvalidator;
         this.logger = logger;
         this.handlerSettings = handlerSettings.Value;
+        this.assetRepository = assetRepository;
     }
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
@@ -59,6 +63,9 @@ public class AssetDeletedHandler : IMessageHandler
         if (request?.Asset?.Id == null) return false;
 
         logger.LogDebug("Processing delete notification for {AssetId}", request.Asset.Id);
+        
+        // if the itme exists in the db, assume the asset has been reingested after delete
+        if (await assetRepository.CheckExists(request.Asset.Id)) return true;
 
         await DeleteThumbnails(request.Asset.Id);
         await DeleteTileOptimised(request.Asset.Id);
