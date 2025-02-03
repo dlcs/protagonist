@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -45,4 +46,9 @@ public record UniqueConstraintError(
         
         return new UniqueConstraintError(columnNames, tableName, constraintName, postgresException);
     }
+    
+    /// <summary>
+    /// Check if error is for specified columnt
+    /// </summary>
+    public bool ForColumn(string columnName) => ColumnNames.Contains(columnName);
 }

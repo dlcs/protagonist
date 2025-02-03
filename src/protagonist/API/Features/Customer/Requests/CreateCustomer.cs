@@ -8,15 +8,18 @@ using DLCS.Model.Auth;
 using DLCS.Model.Processing;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
+using DLCS.Repository.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using CustomerEntity = DLCS.Model.Customers.Customer;
 
 namespace API.Features.Customer.Requests;
 
 /// <summary>
 /// Create a new Customer
 /// </summary>
-public class CreateCustomer : IRequest<ModifyEntityResult<DLCS.Model.Customers.Customer>>, IInvalidateCaches
+public class CreateCustomer : IRequest<ModifyEntityResult<CustomerEntity>>, IInvalidateCaches
 {
     /// <summary>
     /// Customer name. Will be checked for uniqueness.
@@ -38,68 +41,94 @@ public class CreateCustomer : IRequest<ModifyEntityResult<DLCS.Model.Customers.C
     public string[] InvalidatedCacheKeys => new[] { CacheKeys.CustomerIdLookup, CacheKeys.CustomerNameLookup };
 }
 
-public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEntityResult<DLCS.Model.Customers.Customer>>
+public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEntityResult<CustomerEntity>>
 {
+    private const string CustomerNameTaken = "A customer with this name (url part) already exists.";
+    private const string CustomerDisplayNameTaken = "A customer with this display name (label) already exists.";
     private readonly DlcsContext dbContext;
     private readonly IEntityCounterRepository entityCounterRepository;
     private readonly IAuthServicesRepository authServicesRepository;
     private readonly DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository;
     private readonly ICustomerNotificationSender customerNotificationSender;
+    private readonly ILogger<CreateCustomerHandler> logger;
 
     public CreateCustomerHandler(
         DlcsContext dbContext,
         IEntityCounterRepository entityCounterRepository,
         IAuthServicesRepository authServicesRepository,
         DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository,
-        ICustomerNotificationSender customerNotificationSender)
+        ICustomerNotificationSender customerNotificationSender,
+        ILogger<CreateCustomerHandler> logger)
     {
         this.dbContext = dbContext;
         this.entityCounterRepository = entityCounterRepository;
         this.authServicesRepository = authServicesRepository;
         this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
         this.customerNotificationSender = customerNotificationSender;
+        this.logger = logger;
     }
 
-    public async Task<ModifyEntityResult<DLCS.Model.Customers.Customer>> Handle(CreateCustomer request, CancellationToken cancellationToken)
+    public async Task<ModifyEntityResult<CustomerEntity>> Handle(CreateCustomer request, CancellationToken cancellationToken)
     {
         var customerNameError = await EnsureCustomerNamesNotTaken(request, cancellationToken);
         if (customerNameError != null)
         {
-            return ModifyEntityResult<DLCS.Model.Customers.Customer>.Failure(customerNameError, WriteResult.Conflict);
+            return ModifyEntityResult<CustomerEntity>.Failure(customerNameError, WriteResult.Conflict);
         }
 
-        await using var transaction = 
-            await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
-        
-        var customer = await CreateCustomer(request, cancellationToken);
-        var newCustomerId = customer.Id;
-
-        // create an entity counter for space IDs
-        await entityCounterRepository.Create(newCustomerId, KnownEntityCounters.CustomerSpaces, newCustomerId.ToString());
-
-        await CreateAuthServices(cancellationToken, newCustomerId);
-
-        // Create both a default and priority queue
-        await dbContext.Queues.AddRangeAsync(
-            new Queue { Customer = newCustomerId, Name = QueueNames.Default, Size = 0 },
-            new Queue { Customer = newCustomerId, Name = QueueNames.Priority, Size = 0 }
-        );
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        var deliveryChannelPoliciesCreated = await deliveryChannelPolicyRepository.SeedDeliveryChannelsData(newCustomerId);
-
-        if (deliveryChannelPoliciesCreated)
+        try
         {
-            await transaction.CommitAsync(cancellationToken);
-            await customerNotificationSender.SendCustomerCreatedMessage(customer, cancellationToken);
-            return ModifyEntityResult<DLCS.Model.Customers.Customer>.Success(customer, WriteResult.Created);
+            await using var transaction =
+                await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+
+            var customer = await CreateCustomer(request, cancellationToken);
+            var newCustomerId = customer.Id;
+
+            // create an entity counter for space IDs
+            await entityCounterRepository.Create(newCustomerId, KnownEntityCounters.CustomerSpaces,
+                newCustomerId.ToString());
+
+            await CreateAuthServices(cancellationToken, newCustomerId);
+
+            // Create both a default and priority queue
+            await dbContext.Queues.AddRangeAsync(
+                new Queue { Customer = newCustomerId, Name = QueueNames.Default, Size = 0 },
+                new Queue { Customer = newCustomerId, Name = QueueNames.Priority, Size = 0 }
+            );
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            var deliveryChannelPoliciesCreated =
+                await deliveryChannelPolicyRepository.SeedDeliveryChannelsData(newCustomerId);
+
+            if (deliveryChannelPoliciesCreated)
+            {
+                await transaction.CommitAsync(cancellationToken);
+                await customerNotificationSender.SendCustomerCreatedMessage(customer, cancellationToken);
+                return ModifyEntityResult<CustomerEntity>.Success(customer, WriteResult.Created);
+            }
+
+            await transaction.RollbackAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "DBException creating customer");
+            var dbError = ex.GetDatabaseError();
+            if (dbError is UniqueConstraintError uce)
+            {
+                if (uce.ForColumn(nameof(CustomerEntity.Name)))
+                {
+                    return ModifyEntityResult<CustomerEntity>.Failure(CustomerNameTaken, WriteResult.Conflict);
+                }
+
+                if (uce.ForColumn(nameof(CustomerEntity.DisplayName)))
+                {
+                    return ModifyEntityResult<CustomerEntity>.Failure(CustomerDisplayNameTaken, WriteResult.Conflict);
+                }
+            }
         }
         
-        await transaction.RollbackAsync(cancellationToken);
-
-        return ModifyEntityResult<DLCS.Model.Customers.Customer>.Failure("Failed to create customer",
-            WriteResult.Error);
+        return ModifyEntityResult<CustomerEntity>.Failure("Failed to create customer", WriteResult.Error);
     }
 
     private async Task CreateAuthServices(CancellationToken cancellationToken, int newCustomerId)
@@ -119,11 +148,11 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
         await dbContext.Roles.AddAsync(clickthroughRole, cancellationToken);
     }
 
-    private async Task<DLCS.Model.Customers.Customer> CreateCustomer(CreateCustomer request,
+    private async Task<CustomerEntity> CreateCustomer(CreateCustomer request,
         CancellationToken cancellationToken)
     {
         var newModelId = await GetIdForNewCustomer();
-        var customer = new DLCS.Model.Customers.Customer
+        var customer = new CustomerEntity
         {
             Id = newModelId,
             Name = request.Name,
@@ -148,14 +177,14 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
             => c.Name.Equals(request.Name, StringComparison.InvariantCultureIgnoreCase));
         if (existing != null)
         {
-            return "A customer with this name (url part) already exists.";
+            return CustomerNameTaken;
         }
 
         existing = allCustomers.SingleOrDefault(
                 c => c.DisplayName.Equals(request.DisplayName, StringComparison.InvariantCultureIgnoreCase));
         if (existing != null)
         {
-            return "A customer with this display name (label) already exists.";
+            return CustomerDisplayNameTaken;
         }
 
         return null;
@@ -164,7 +193,7 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
     private async Task<int> GetIdForNewCustomer()
     {
         int newModelId;
-        DLCS.Model.Customers.Customer? existingCustomerWithId;
+        CustomerEntity? existingCustomerWithId;
         do
         {
             var next = await entityCounterRepository.GetNext(0, KnownEntityCounters.Customers, "0");
