@@ -4,12 +4,9 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Client;
-using API.Features.Customer.Requests;
 using API.Infrastructure.Messaging;
 using API.Tests.Integration.Infrastructure;
-using DLCS.AWS.SNS;
 using DLCS.HydraModel;
 using DLCS.Repository;
 using FakeItEasy;
@@ -305,40 +302,24 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbContext.Roles.Count(r => r.Customer == expectedCustomerId).Should().Be(0);
     }
 
-    [Fact] 
-    public async Task CreateNewCustomer_Returns400_IfNameStartsWithVersion()
+    [Theory]
+    [InlineData("Admin", "Reserved word")]
+    [InlineData("v2", "Starts with version")]
+    [InlineData("v33", "Starts with version")]
+    [InlineData("customer*|", "Invalid characters")]
+    [InlineData("123456789012345678901234567890abcdefghijklmnoprstuvwxyzzzzzwe", "Too long")]
+    public async Task CreateNewCustomer_Returns400_IfNameInvalid(string name, string because)
     {
-        // Tests HydraCustomerValidator:StartsWithVersion
-        const string newCustomerJson = @"{
+        var newCustomerJson = @$"{{
   ""@type"": ""Customer"",
-  ""name"": ""v2"",
+  ""name"": ""{name}"",
   ""displayName"": ""TestUser""
-}";
+}}";
         
-        // act
         var content = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
         var response = await httpClient.AsAdmin().PostAsync("/customers", content);
 
-        // assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-    
-    [Fact] 
-    public async Task CreateNewCustomer_Returns400_IfNameReserved()
-    {
-        // Tests HydraCustomerValidator:IsReservedWord
-        const string newCustomerJson = @"{
-  ""@type"": ""Customer"",
-  ""name"": ""Admin"",
-  ""displayName"": ""TestUser""
-}";
-        
-        // act
-        var content = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsAdmin().PostAsync("/customers", content);
-
-        // assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, because);
     }
 
     [Fact]
