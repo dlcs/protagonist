@@ -125,7 +125,7 @@ public class ImagesController : HydraController
             {
                 var asset = hydraImage.ToDlcsModel(customerId, spaceId);
 
-                var deliveryChannelsBeforeProcessing = (hydraImage.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+                var deliveryChannelsBeforeProcessing = hydraImage.DeliveryChannels?
                     .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.Policy)).ToArray();
 
                 var assetBeforeProcessing = new AssetBeforeProcessing(asset, deliveryChannelsBeforeProcessing);
