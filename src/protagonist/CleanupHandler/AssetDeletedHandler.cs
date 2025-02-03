@@ -65,7 +65,11 @@ public class AssetDeletedHandler : IMessageHandler
         logger.LogDebug("Processing delete notification for {AssetId}", request.Asset.Id);
         
         // if the itme exists in the db, assume the asset has been reingested after delete
-        if (await assetRepository.CheckExists(request.Asset.Id)) return true;
+        if (await assetRepository.CheckExists(request.Asset.Id))
+        {
+            logger.LogInformation("asset {Asset} can be found in the database, so will not be deleted", request.Asset.Id);
+            return true;
+        }
 
         await DeleteThumbnails(request.Asset.Id);
         await DeleteTileOptimised(request.Asset.Id);
@@ -77,7 +81,7 @@ public class AssetDeletedHandler : IMessageHandler
             return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
         }
 
-        Log.Debug("cdn invalidation not specified for {Asset}", request.Asset.Id);
+        logger.LogDebug("cdn invalidation not specified for {Asset}", request.Asset.Id);
         return true;
     }
 
