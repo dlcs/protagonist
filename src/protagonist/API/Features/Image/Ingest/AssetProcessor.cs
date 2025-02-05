@@ -51,7 +51,6 @@ public class AssetProcessor
         try
         {
             var assetFromDatabase = await assetRepository.GetAsset(assetBeforeProcessing.Asset.Id, true, true);
-            var updatedDeliveryChannels = false;
 
             if (assetFromDatabase == null)
             {
@@ -92,15 +91,7 @@ public class AssetProcessor
 
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
-            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing == null && alwaysReingest)
-            {
-                assetBeforeProcessing.DeliveryChannelsBeforeProcessing = assetFromDatabase.ImageDeliveryChannels
-                    .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.DeliveryChannelPolicy.Name))
-                    .ToArray();
 
-                updatedDeliveryChannels = true;
-            }
-            
             var existingAsset = assetFromDatabase?.Clone();
             var assetPreparationResult =
                 AssetPreparer.PrepareAssetForUpsert(assetFromDatabase, assetBeforeProcessing.Asset, false, isBatchUpdate,
@@ -117,12 +108,16 @@ public class AssetProcessor
             
             var updatedAsset = assetPreparationResult.UpdatedAsset!; // this is from Database
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
-
-            var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(assetFromDatabase,
-                updatedAsset, updatedDeliveryChannels, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
-            if (deliveryChannelChanged)
+            
+            if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing != null || assetFromDatabase == null)
             {
-                requiresEngineNotification = true;
+
+                var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(
+                    assetFromDatabase, updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
+                if (deliveryChannelChanged)
+                {
+                    requiresEngineNotification = true;
+                }
             }
 
             if (requiresEngineNotification)

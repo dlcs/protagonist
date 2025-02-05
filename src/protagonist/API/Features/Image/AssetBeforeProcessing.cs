@@ -12,7 +12,7 @@ public class AssetBeforeProcessing
 
     public Asset Asset { get; }
 
-    public DeliveryChannelsBeforeProcessing[]? DeliveryChannelsBeforeProcessing { get; set; }
+    public DeliveryChannelsBeforeProcessing[]? DeliveryChannelsBeforeProcessing { get; }
 }
 
 /// <summary>
