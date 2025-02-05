@@ -13,13 +13,10 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 {
     public HydraImageValidator()
     {
-        RuleSet("patch", () =>
-        {
-            RuleFor(p => p.DeliveryChannels)
-                .Must(a => a!.Any())
-                .When(a => a.DeliveryChannels != null)
-                .WithMessage("'deliveryChannels' cannot be an empty array when updating an existing asset via PATCH");
-        });
+        RuleFor(p => p.DeliveryChannels)
+            .Must(a => a!.Any())
+            .When(a => a.DeliveryChannels != null)
+            .WithMessage("'deliveryChannels' cannot be an empty array");
         
         RuleSet("create", () =>
         {

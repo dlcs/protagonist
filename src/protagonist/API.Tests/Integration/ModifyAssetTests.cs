@@ -1233,7 +1233,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("Delivery channels are required when updating an existing Asset");
+        body.Should().Contain("'deliveryChannels' cannot be an empty array");
     }
 
     [Fact]

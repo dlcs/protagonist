@@ -100,17 +100,6 @@ public class AssetProcessor
 
                 updatedDeliveryChannels = true;
             }
-            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Length == 0 && alwaysReingest)
-            {
-                return new ProcessAssetResult
-                {
-                    Result = ModifyEntityResult<Asset>.Failure(
-                        "Delivery channels are required when updating an existing Asset",
-                        WriteResult.BadRequest
-                    )
-                };
-            }
-            
             
             var existingAsset = assetFromDatabase?.Clone();
             var assetPreparationResult =
