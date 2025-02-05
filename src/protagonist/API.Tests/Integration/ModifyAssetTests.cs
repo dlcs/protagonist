@@ -1151,13 +1151,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
         asset.MaxUnauthorised.Should().Be(-1);
-        asset.ImageDeliveryChannels.Should().HaveCount(3).And.Contain(i =>
-                i.Channel == AssetDeliveryChannels.Image &&
-                i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageDefault).And
-            .Contain(i => i.Channel == AssetDeliveryChannels.Thumbnails && i.DeliveryChannelPolicyId == thumbsPolicy.Id)
-            .And.Contain(i =>
-                i.Channel == AssetDeliveryChannels.File &&
-                i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.FileNone);
+        asset.ImageDeliveryChannels.Should().BeEquivalentTo(deliveryChannels);
     }
     
     [Fact]
