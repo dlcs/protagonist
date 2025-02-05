@@ -64,7 +64,7 @@ public class AssetDeletedHandler : IMessageHandler
 
         logger.LogDebug("Processing delete notification for {AssetId}", request.Asset.Id);
         
-        // if the itme exists in the db, assume the asset has been reingested after delete
+        // if the item exists in the db, assume the asset has been reingested after delete
         if (await assetRepository.CheckExists(request.Asset.Id))
         {
             logger.LogInformation("asset {Asset} can be found in the database, so will not be deleted", request.Asset.Id);
