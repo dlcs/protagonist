@@ -158,6 +158,21 @@ where
 * `"operation"` is the operation (`add` or `remove`, possible `replace` in the future)
 * `"value"` is the value to use when carrying out the `operation` on the specified `field`
 
+### Summary
+
+Another way of looking at the suggestion is:
+
+If everything was one schema, the `canvas_paintings` is the joining table between the `manifests` table and the `images` table (assets). It has more cols than a simple joining table, because it provides context about how they are joined.
+
+If we can't query across, we need a little bit of the other db in both dbs.
+
+* In the presentation db, `manifest` + `canvas_paintings.asset_id` gives us the id of any asset; we have that half of the join.
+* In the asset/dlcs db, `asset.manifest[]` gives us the id of any manifest; we now have the other half of the join.
+
+They are actually symmetrical because the pgsql array type gives us the effect of an assets table and an assets_manifests joining table, we just don't see the latter as a real table.
+
+Having the symmetry allows us to do "joins" over HTTP but in one operation and without vast list payloads to generate `where in (...)` queries.
+
 ### Example of calls made
 
 To outline how this suggestion would affect interactions, the below is a sample timeline of adding and updating a manifest and interactions between the 2 services
