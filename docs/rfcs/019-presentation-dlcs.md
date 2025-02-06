@@ -78,13 +78,44 @@ select * from images where id in ('2/1/foo', '2/1/bar');
 select * from images where id in ('2/1/foo', '2/1/bar',...'2/99/qux');
 
 -- GET /allImages?q={"manifest": ["m123"]}
-select * from images where manifest ? 'm123';
+select * from images where manifest @> array['m123'];
 
 -- GET /allImages?q={"manifest": ["m123", "m125"]}
-select * from images where manifest ?| array['m123', 'm125'];
+select * from images where manifest @> array['m123', 'm125'];
 
 -- GET /allImages?q={"manifest": ["m123", "m125"]}?orderBy=id
-select * from images where manifest ?| array['m123', 'm125'] order by id;
+select * from images where manifest @> array['m123', 'm125'] order by id;
+```
+
+#### Implementation Detail
+
+For the `"manifests"` column we should use a data type of `text[]` with a [GIN](https://www.postgresql.org/docs/13/gin-intro.html) index.
+
+This will allow us to efficiently query and update while having good [EF support](https://www.npgsql.org/efcore/mapping/array.html#operation-translation).
+
+Example setup:
+
+```cs
+public class Asset {
+  public string[]? Manifests { get; set; }
+}
+
+modelBuilder.Entity<Asset>().HasIndex(a => a.Manifests).HasMethod("gin");
+```
+
+Sample operations for querying and updating, the following aren't necessarily how it'll be done in code but shows that it is supported (removing items requires Npgsql 9.0):
+
+```cs
+// select * from images where manifest @> array['m123'];
+dlcsContext.Assets.Where(a => a.Manifests.Contains("m123"));
+
+// select * from images where manifest @> array['m123', 'm125'];
+dlcsContext.Assets.Where(a => new[] { "m123", "m125" }.All(v => v.Manifets.Contains(v)));
+
+// update images set manifests = array_append(manifests, 'm126') where id = '2/1/rfc-019'
+dlcsContext.Assets
+  .Where(a => a.Id = "2/1/rfc-019")
+  .ExecuteUpdate(setters => setters.SetProperty(v => v.Manifests, v => v.Manifests.Append("m126")));
 ```
 
 ### Querying for Content-Resources
@@ -104,6 +135,29 @@ There will be some side effects as a result of implementing the above:
   * Do we want to do this? Or continue with async approach?
   * If so, do we need an alternative entry point to manifest generation that is not manifest dependant?
 
+### Updating Resources
+
+It's imperative that we maintain an accurate list of which manifests an asset belongs to. These updates need to be a single atomic operation to add/remove the association. The DLCS currently supports 'batch patch' operations at a space level, via `PATCH /customers/{customer}/spaces/{space}/images`, but this has a couple of issues for this work:
+* This operates at the "space" level - manifest updates could cover a number of spaces
+* There's no way to specify that you only want to append a value to an array, rather than replace the entire array. If we operated in this way we'd need to read and then write, or always specify _every_ manifest that an asset is in, which runs the risk of 2 competing requests losing data.
+
+The solution to this is to extend `/customers/{id}/allImages` to support PATCH operations. The format of the payloads leans heavily on [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902#section-4.1):
+
+```json
+{
+ "members": [ {"id": "1/2/a"},{"id": "1/2/b"} ],
+ "field": "manifest",
+ "operation": "add",
+ "value": [ "m123" ]
+}
+```
+
+where
+* `"members"` contains a list of Ids to update
+* `"field"` specifies which field is being modified
+* `"operation"` is the operation (`add` or `remove`, possible `replace` in the future)
+* `"value"` is the value to use when carrying out the `operation` on the specified `field`
+
 ### Example of calls made
 
 To outline how this suggestion would affect interactions, the below is a sample timeline of adding and updating a manifest and interactions between the 2 services
@@ -112,8 +166,8 @@ To outline how this suggestion would affect interactions, the below is a sample 
 | Driver                         | Without "manifest"                                                                                             | With "manifests"                                                                                              |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Check if assets new            | Query `canvasPainting` to check if asset exists in iiif-p, fallback to `POST customers/{id}/allImages` request | As Without                                                                                                    |
-| Assets are new                 | `POST customers/{id}/queue` with 2 assets (batch 55555 created)                                                | Assets are new, POST `customers/{id}/queue` with 2 assets, including `"manifest"` field (batch 55555 created) |
-| Get `"assets"` for return body | `POST customers/{id}/allImages` with 2 Ids                                                                     | `GET customers/{id}/allImages?q={"manifest": ["m123"]}`                                                       |
+| Assets are new                 | `POST /customers/{id}/queue` with 2 assets (batch 55555 created)                                                | Assets are new, POST `/customers/{id}/queue` with 2 assets, including `"manifest"` field (batch 55555 created) |
+| Get `"assets"` for return body | `POST /customers/{id}/allImages` with 2 Ids                                                                     | `GET /customers/{id}/allImages?q={"manifest": ["m123"]}`                                                       |
 | DB Results                     | Manifest "m123". Batch 55555. CanvasPainting [`"2/1/foo"`, `"2/1/bar"`]                                        | As Without                                                                                                    |
 
 
@@ -127,14 +181,14 @@ To outline how this suggestion would affect interactions, the below is a sample 
 #### 00:03 Auth'd API request to GET manifest
 | Driver                         | Without "manifest"                         | With "manifests"                                        |
 | ------------------------------ | ------------------------------------------ | ------------------------------------------------------- |
-| Get `"assets"` for return body | `POST customers/{id}/allImages` with 2 Ids | `GET customers/{id}/allImages?q={"manifest": ["m123"]}` |
+| Get `"assets"` for return body | `POST /customers/{id}/allImages` with 2 Ids | `GET /customers/{id}/allImages?q={"manifest": ["m123"]}` |
 
 #### 01:00 IIIF-P. manifest "m123" updated with existing assets `"2/1/foo"`, `"2/1/bar"`, `"2/1/baz"` and new asset `"2/1/qux"`
 | Driver                         | Without "manifest"                                                                                                                                   | With "manifests"                                                                                                                                                               |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Check if assets new            | Query `canvasPainting` to check if asset exists in iiif-p (2 do), fallback to `POST customers/{id}/allImages` request for rest (1 exists, 1 doesn't) | As Without                                                                                                                                                                     |
-| 1 asset new                    | `POST customers/{id}/queue` with 1 asset (batch 66666 created)                                                                                       | 1 assets is new, `POST customers/{id}/queue` with 1 asset (batch 66666 created). 3 assets exist, `PATCH customers/{id}/space/{id}/images` to add "m123" to "manifest" property |
-| Get `"assets"` for return body | `POST customers/{id}/allImages` with 4 Ids                                                                                                           | `GET customers/{id}/allImages?q={"manifest": ["m123"]}`                                                                                                                        |
+| Check if assets new            | Query `canvasPainting` to check if asset exists in iiif-p (2 do), fallback to `POST /customers/{id}/allImages` request for rest (1 exists, 1 doesn't) | As Without                                                                                                                                                                     |
+| 1 asset new                    | `POST /customers/{id}/queue` with 1 asset (batch 66666 created)                                                                                       | 1 assets is new, `POST customers/{id}/queue` with 1 asset (batch 66666 created). 3 assets exist, `PATCH /customers/{id}/space/{id}/images` to add "m123" to "manifest" property |
+| Get `"assets"` for return body | `POST /customers/{id}/allImages` with 4 Ids                                                                                                           | `GET /customers/{id}/allImages?q={"manifest": ["m123"]}`                                                                                                                        |
 | DB Results                     | Manifest "m123". Batch [55555, 66666]. CanvasPainting [`"2/1/foo"`, `"2/1/bar"`, `"2/1/baz"`, `"2/1/qux"`]                                           | As Without                                                                                                                                                                     |
 
 #### 01:01 DLCS. Ingests and raises batchCompletion notification
@@ -151,19 +205,10 @@ To outline how this suggestion would affect interactions, the below is a sample 
 #### 01:03 Auth'd API request to GET manifest
 | Driver                         | Without "manifest"                         | With "manifests"                                        |
 | ------------------------------ | ------------------------------------------ | ------------------------------------------------------- |
-| Get `"assets"` for return body | `POST customers/{id}/allImages` with 4 Ids | `GET customers/{id}/allImages?q={"manifest": ["m123"]}` |
+| Get `"assets"` for return body | `POST /customers/{id}/allImages` with 4 Ids | `GET /customers/{id}/allImages?q={"manifest": ["m123"]}` |
 
 ## Disregarded Approaches
 
 The above resulted from exploring how we will manage Manifest updates. One suggestion was to always follow the same process of IIIF-P creating Batches and allowing the DLCS to determine whether things need processed or not. This was disregarded as we would need some means of notifying `POST customers/{id}/queue` to only ingest if something has changed.
 
 One consideration was allowing the IIIF-P readonly access to the DLCS DB for querying if assets exist. This would be quicker but ties the IIIF-P implementation to the DB internals of DLCS.
-
-## Questions
-
-* How to do batch patch addition to `"manifests"`, without needing to define them all?
-  * [JSON Patch](https://datatracker.ietf.org/doc/html/rfc6902#section-4.1) has a syntax for this : `{ "op": "add", "path": "manifests", "value": [ "m123" ] }`
-* Do we want a batch patch at customer level? It's currently at space level, which I think is fine but could result in multiple calls.
-* Is `"manifests"` the correct name? Or is `"appMetadata"` with a key enough?
-* Above SQL examples assume jsonb, should we consider `text[]` or separate table?
-  * Do we need to consider whether EF supports querying regardless of what approach we use?
