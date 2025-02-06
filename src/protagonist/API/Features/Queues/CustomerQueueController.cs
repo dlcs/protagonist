@@ -424,7 +424,7 @@ public class CustomerQueueController : HydraController
     {
         var assetsBeforeProcessing = images.Members!
             .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId),
-                (i.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+                i.DeliveryChannels?
                 .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.Policy)).ToArray())).ToList();
         return assetsBeforeProcessing;
     }

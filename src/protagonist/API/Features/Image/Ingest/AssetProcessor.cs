@@ -91,17 +91,7 @@ public class AssetProcessor
 
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
-            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing.IsNullOrEmpty() && alwaysReingest)
-            {
-                return new ProcessAssetResult
-                {
-                    Result = ModifyEntityResult<Asset>.Failure(
-                        "Delivery channels are required when updating an existing Asset",
-                        WriteResult.BadRequest
-                    )
-                };
-            }
-            
+
             var existingAsset = assetFromDatabase?.Clone();
             var assetPreparationResult =
                 AssetPreparer.PrepareAssetForUpsert(assetFromDatabase, assetBeforeProcessing.Asset, false, isBatchUpdate,
@@ -118,12 +108,16 @@ public class AssetProcessor
             
             var updatedAsset = assetPreparationResult.UpdatedAsset!; // this is from Database
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
-
-            var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(assetFromDatabase,
-                updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
-            if (deliveryChannelChanged)
+            
+            if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing != null || assetFromDatabase == null)
             {
-                requiresEngineNotification = true;
+
+                var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(
+                    assetFromDatabase, updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
+                if (deliveryChannelChanged)
+                {
+                    requiresEngineNotification = true;
+                }
             }
 
             if (requiresEngineNotification)
