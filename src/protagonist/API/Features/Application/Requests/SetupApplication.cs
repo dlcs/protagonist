@@ -59,7 +59,7 @@ public class SetupApplicationHandler : IRequestHandler<SetupApplication, CreateA
         await CreateDefaultStoragePolicy(cancellationToken);
         var updateCount = await dbContext.SaveChangesAsync(cancellationToken);
 
-        await entityCounterRepository.Create(adminCustomer.Id, KnownEntityCounters.CustomerSpaces, adminCustomer.Id.ToString());
+        await entityCounterRepository.TryCreate(adminCustomer.Id, KnownEntityCounters.CustomerSpaces, adminCustomer.Id.ToString());
 
         return updateCount == 2
             ? CreateApiKeyResult.Success(apiKey, apiSecret)

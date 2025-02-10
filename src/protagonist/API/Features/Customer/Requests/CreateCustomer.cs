@@ -85,7 +85,7 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
             var newCustomerId = customer.Id;
 
             // create an entity counter for space IDs
-            await entityCounterRepository.Create(newCustomerId, KnownEntityCounters.CustomerSpaces,
+            await entityCounterRepository.TryCreate(newCustomerId, KnownEntityCounters.CustomerSpaces,
                 newCustomerId.ToString());
 
             await CreateAuthServices(cancellationToken, newCustomerId);

@@ -43,12 +43,8 @@ public class ApiAssetRepositoryTests
         );
         // We want this turned on to match live behaviour
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new[]
-                { new KeyValuePair<string, string>("ConnectionStrings:PostgreSQLConnection", dbFixture.ConnectionString) })
-            .Build();
-        
-        var entityCounterRepo = new EntityCounterRepository(dbContext);
+
+        var entityCounterRepo = new EntityCounterRepository(dbContext, new NullLogger<EntityCounterRepository>());
 
         var assetRepositoryCachingHelper = new AssetCachingHelper(
             new MockCachingService(),
