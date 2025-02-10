@@ -46,16 +46,11 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleForEach(a => a.DeliveryChannels)
             .Must(dc => AssetDeliveryChannels.IsValidChannel(dc.Channel))
             .WithMessage($"DeliveryChannel must be one of {AssetDeliveryChannels.AllString}");
-
-        RuleFor(a => a.DeliveryChannels)
-            .Must(d => d.All(d => d.Channel != AssetDeliveryChannels.None))
-            .When(a => a.DeliveryChannels!.Length > 1)
-            .WithMessage("If 'none' is the specified channel, then no other delivery channels are allowed");
         
         RuleFor(a => a.DeliveryChannels)
-            .Must(d => d.All(d => d.Channel != AssetDeliveryChannels.Default))
+            .Must(dl => dl.All(d => !AssetDeliveryChannels.SingleOnly.Contains(d.Channel)))
             .When(a => a.DeliveryChannels!.Length > 1)
-            .WithMessage("If 'default' is a specified channel, then no other delivery channels are allowed");
+            .WithMessage(d => $"If one of '{AssetDeliveryChannels.SingleOnlyString}' is a specified channel, then no other delivery channels are allowed");
 
         RuleForEach(a => a.DeliveryChannels)
             .Must(c => !string.IsNullOrEmpty(c.Channel))

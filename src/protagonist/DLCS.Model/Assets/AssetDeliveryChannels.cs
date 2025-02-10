@@ -17,11 +17,21 @@ public static class AssetDeliveryChannels
     /// All possible delivery channels
     /// </summary>
     public static string[] All { get; } = { File, Timebased, Image, Thumbnails, None, Default };
+    
+    /// <summary>
+    /// All possible delivery channels that can only be used by themselves
+    /// </summary>
+    public static string[] SingleOnly { get; } = { Default, None };
 
     /// <summary>
     /// All possible delivery channels as a comma-delimited string
     /// </summary>
     public static readonly string AllString = string.Join(',', All);
+    
+    /// <summary>
+    /// All single only delivery channels as a comma-delimited string
+    /// </summary>
+    public static readonly string SingleOnlyString = string.Join(',', SingleOnly);
     
     /// <summary>
     /// Checks if an asset has any delivery channel specified in a list
