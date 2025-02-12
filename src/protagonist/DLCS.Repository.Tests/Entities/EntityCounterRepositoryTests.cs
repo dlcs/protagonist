@@ -1,7 +1,7 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using DLCS.Repository.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Integration;
 
 namespace DLCS.Repository.Tests.Entities;
@@ -17,47 +17,49 @@ public class EntityCounterRepositoryTests
     {
         dbContext = dbFixture.DbContext;
 
-        sut = new EntityCounterRepository(dbContext);
+        sut = new EntityCounterRepository(dbContext, new NullLogger<EntityCounterRepository>());
         
         dbFixture.CleanUp();
     }
 
     [Fact]
-    public async Task Create_AddsEntityCounter()
+    public async Task TryCreate_AddsEntityCounter()
     {
         // Arrange
-        const string scope = nameof(Create_AddsEntityCounter);
+        const string scope = nameof(TryCreate_AddsEntityCounter);
         var expected = new EntityCounter
         {
             Customer = 1, Next = 1, Scope = scope, Type = $"{scope}_type"
         };
         
         // Act
-        await sut.Create(1, $"{scope}_type", scope);
+        var result = await sut.TryCreate(1, $"{scope}_type", scope);
         
         // Assert
+        result.Should().BeTrue("Counter created");
         var saved = dbContext.EntityCounters.Single(ec => ec.Scope == scope);
         saved.Should().BeEquivalentTo(expected);
     }
     
     [Fact]
-    public async Task Create_Throws_IfRecordAlreadyExists_SameTypeScopeCustomer()
+    public async Task TryCreate_NoOp_ReturnsFalse_IfRecordAlreadyExists_SameTypeScopeCustomer()
     {
-        // NOTE - this tests behaviour rather than the behaviour being correct
-        
         // Arrange
-        const string scope = nameof(Create_Throws_IfRecordAlreadyExists_SameTypeScopeCustomer);
-        dbContext.EntityCounters.Add(new EntityCounter
+        const string scope = nameof(TryCreate_NoOp_ReturnsFalse_IfRecordAlreadyExists_SameTypeScopeCustomer);
+        var entityCounter = new EntityCounter
         {
             Customer = 1, Next = 9999, Scope = scope, Type = $"{scope}_type"
-        });
+        };
+        dbContext.EntityCounters.Add(entityCounter);
         await dbContext.SaveChangesAsync();
 
         // Act
-        Func<Task> action = () => sut.Create(1, $"{scope}_type", scope);
+        var result = await sut.TryCreate(1, $"{scope}_type", scope);
         
         // Assert
-        await action.Should().ThrowAsync<InvalidOperationException>();
+        result.Should().BeFalse("Counter already exists");
+        var dbCounter = dbContext.EntityCounters.Single(ec => ec.Scope == scope);
+        dbCounter.Should().BeEquivalentTo(entityCounter);
     }
 
     [Fact]

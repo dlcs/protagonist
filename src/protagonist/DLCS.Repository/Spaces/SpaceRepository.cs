@@ -21,7 +21,7 @@ public class SpaceRepository : ISpaceRepository
     private readonly IEntityCounterRepository entityCounterRepository;
     private readonly CacheSettings cacheSettings;
     private readonly IAppCache appCache;
-    private ILogger<SpaceRepository> logger;
+    private readonly ILogger<SpaceRepository> logger;
     
     private const int DefaultMaxUnauthorised = -1;
 
@@ -88,7 +88,7 @@ public class SpaceRepository : ISpaceRepository
         };
 
         await dlcsContext.Spaces.AddAsync(space, cancellationToken);
-        await entityCounterRepository.Create(customer,  KnownEntityCounters.SpaceImages, space.Id.ToString());
+        await entityCounterRepository.TryCreate(customer,  KnownEntityCounters.SpaceImages, space.Id.ToString());
         await dlcsContext.SaveChangesAsync(cancellationToken);
         return space;
     }
@@ -108,7 +108,6 @@ public class SpaceRepository : ISpaceRepository
 
         return newModelId;
     }
-    
 
     private async Task<Space?> GetSpaceInternal(int customerId, int spaceId, 
         CancellationToken cancellationToken, string? name = null,
@@ -261,7 +260,7 @@ public class SpaceRepository : ISpaceRepository
             };
         
             await dlcsContext.Spaces.AddAsync(space, cancellationToken);
-            await entityCounterRepository.Create(customerId, KnownEntityCounters.SpaceImages, space.Id.ToString()); 
+            await entityCounterRepository.TryCreate(customerId, KnownEntityCounters.SpaceImages, space.Id.ToString()); 
         }
         
         await dlcsContext.SaveChangesAsync(cancellationToken);
@@ -269,51 +268,43 @@ public class SpaceRepository : ISpaceRepository
         var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken, noCache:true);
         return retrievedSpace;
     }
-    
-    public async Task<ResultMessage<DeleteResult>> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken)
-    {
-        var deleteResult = DeleteResult.NotFound;
-        var message = string.Empty;
 
+    public async Task<ResultMessage<DeleteResult>> DeleteSpace(int customerId, int spaceId,
+        CancellationToken cancellationToken)
+    {
         try
         {
             var space = await dlcsContext.Spaces.SingleOrDefaultAsync(s =>
                 s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
 
-            if (space != null)
+            if (space == null)
             {
-                var images = await dlcsContext.Images.AsNoTracking().FirstOrDefaultAsync(i =>
-                    i.Customer == customerId && i.Space == spaceId, cancellationToken);
-
-                if (images == null)
-                {
-                    dlcsContext.Spaces.Remove(space);
-                    await dlcsContext.SaveChangesAsync(cancellationToken);
-
-                    await entityCounterRepository.Decrement(customerId, KnownEntityCounters.CustomerSpaces,
-                        customerId.ToString());
-                    await entityCounterRepository.Remove(customerId, KnownEntityCounters.SpaceImages,
-                        space.Id.ToString(), 1);
-                    deleteResult = DeleteResult.Deleted;
-                }
-                else
-                {
-                    deleteResult = DeleteResult.Conflict;
-                    message = "Cannot delete a space with images";
-                }
+                return new ResultMessage<DeleteResult>($"Space {spaceId} not found", DeleteResult.NotFound);
             }
+
+            var hasImages = await dlcsContext.Images.AnyAsync(i =>
+                i.Customer == customerId && i.Space == spaceId, cancellationToken);
+
+            if (hasImages)
+            {
+                return new ResultMessage<DeleteResult>("Cannot delete a space with images", DeleteResult.Conflict);
+            }
+
+            dlcsContext.Spaces.Remove(space);
+            await dlcsContext.SaveChangesAsync(cancellationToken);
+
+            await entityCounterRepository.Decrement(customerId, KnownEntityCounters.CustomerSpaces,
+                customerId.ToString());
+            await entityCounterRepository.Remove(customerId, KnownEntityCounters.SpaceImages,
+                space.Id.ToString(), 1);
+            return new ResultMessage<DeleteResult>(string.Empty, DeleteResult.Deleted);
         }
         catch (Exception exception)
         {
-            message = "Error deleting space";
-            deleteResult = DeleteResult.Error;
-            logger.LogError(exception, "Failed to delete space");
+            logger.LogError(exception, "Failed to delete space {Customer}/{Space}", customerId, spaceId);
+            return new ResultMessage<DeleteResult>("Error deleting space", DeleteResult.Error);
         }
-
-        var resultMessage = new ResultMessage<DeleteResult>(message, deleteResult);
-
-        return resultMessage;
     }
-    
+
     private static long GetApproximateImages(long entityCounterNext) => Math.Max(entityCounterNext - 1, 0);
 }

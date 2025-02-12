@@ -1,31 +1,32 @@
 using System.Threading.Tasks;
 using DLCS.Model;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Entities;
 
 public class EntityCounterRepository : IDapperContextRepository, IEntityCounterRepository
 {
+    private readonly ILogger<EntityCounterRepository> logger;
     public DlcsContext DlcsContext { get; }
 
-    public EntityCounterRepository(DlcsContext dlcsContext)
+    public EntityCounterRepository(DlcsContext dlcsContext, ILogger<EntityCounterRepository> logger)
     {
+        this.logger = logger;
         DlcsContext = dlcsContext;
     }
 
-    public async Task Create(int customer, string entityType, string scope, long initialValue = 1)
+    public async Task<bool> TryCreate(int customer, string entityType, string scope, long initialValue = 1)
     {
-        var ec = new EntityCounter
-        {
-            Customer = customer,
-            Type = entityType,
-            Scope = scope,
-            Next = initialValue
-        };
-        await DlcsContext.EntityCounters.AddAsync(ec);
-        await DlcsContext.SaveChangesAsync();
+        var exists = await Exists(customer, entityType, scope);
+        if (exists) return false;
+
+        logger.LogInformation("Creating entityCounter {EntityType}:{Scope} for Customer {Customer}", entityType,
+            scope, customer);
+        await CreateEntity(customer, entityType, scope, initialValue);
+        return true;
     }
-    
+
     public async Task Remove(int customer, string entityType, string scope, long nextValue)
     {
         var ec = new EntityCounter
@@ -59,19 +60,23 @@ public class EntityCounterRepository : IDapperContextRepository, IEntityCounterR
         DlcsContext.EntityCounters.AnyAsync(ec =>
             ec.Customer == customer && ec.Type == entityType && ec.Scope == scope);
     
-    private async Task EnsureCounter(int customer, string entityType, string scope, long initialValue)
-    {
-        var exists = await Exists(customer, entityType, scope);
-        if (!exists)
-        {
-            await Create(customer, entityType, scope, initialValue);
-        }
-    }
-    
     private async Task<long> LongUpdate(string sql, int customer, string entityType, string scope, long initialValue = 1)
     {
-        await EnsureCounter(customer, entityType, scope, initialValue);
+        await TryCreate(customer, entityType, scope, initialValue);
         return await this.QuerySingleAsync<long>(sql, new { customer, entityType, scope });
+    }
+    
+    private async Task CreateEntity(int customer, string entityType, string scope, long initialValue = 1)
+    {
+        var ec = new EntityCounter
+        {
+            Customer = customer,
+            Type = entityType,
+            Scope = scope,
+            Next = initialValue
+        };
+        await DlcsContext.EntityCounters.AddAsync(ec);
+        await DlcsContext.SaveChangesAsync();
     }
 
     private const string GetNextSql = @"
