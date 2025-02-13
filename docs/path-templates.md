@@ -32,7 +32,7 @@ As an convenience you can specify `"PathRules:OverridesAsJson"` appSetting, for 
 
 Supported format parameter values are:
 
-* `3US` - replaces triple _U_nderscores with _S_lashes (e.g. assetPath `"foo___bar_baz"` -> `"foo/bar_baz"`).
+* `3US` - replaces triple (`3`) `U`nderscores with `S`lashes (e.g. assetPath `"foo___bar_baz"` -> `"foo/bar_baz"`).
 
 ## Auth PathTemplates
 
