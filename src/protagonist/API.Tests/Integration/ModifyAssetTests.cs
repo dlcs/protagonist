@@ -1693,6 +1693,46 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.BatchAssets[0].Status.Should().Be(BatchAssetStatus.Waiting);
     }
     
+    [Theory]
+    [InlineData("video-max")]
+    [InlineData("https://api.dlc.services/imageOptimisationPolicies/video-max")]
+    public async Task Put_NewVideoAsset_WithImageOptimisationPolicy_Creates_Asset_WhenLegacyEnabledAndUsingMediaType(string imageOptimisationPolicy)
+    {
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
+
+        var hydraImageBody = $@"{{
+          ""mediaType"": ""video/mp4"",
+          ""origin"": ""https://example.org/{assetId.Asset}.mp4"",
+          ""imageOptimisationPolicy"" : ""{imageOptimisationPolicy}""
+        }}";
+
+        A.CallTo(() =>
+                EngineClient.AsynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(true);
+
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
+            .ThenInclude(i => i.DeliveryChannelPolicy).Single(i => i.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.MediaType.Should().Be("video/mp4");
+        asset.Family.Should().Be(AssetFamily.Timebased);
+        asset.ImageOptimisationPolicy.Should().BeEmpty();
+        asset.ThumbnailPolicy.Should().BeEmpty();
+        asset.ImageDeliveryChannels.Count.Should().Be(1);
+        asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
+                                                                 dc.DeliveryChannelPolicy.Name == "default-video");
+        asset.BatchAssets.Count.Should().Be(1);
+        asset.BatchAssets[0].Status.Should().Be(BatchAssetStatus.Waiting);
+    }
+    
     [Fact]
     public async Task Put_NewVideoAsset_WithImageOptimisationPolicy_Returns400_IfInvalid_AndLegacyEnabled()
     {
