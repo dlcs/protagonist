@@ -1,8 +1,9 @@
 # PathTemplates
 
-The default path template for requests is `/{prefix}/{customer}/{space}/{assetPath}`, where:
+The default path template for requests is `/{prefix}/{version}/{customer}/{space}/{assetPath}`, where:
 
-* `prefix` is route path (e.g. `iiif-manifest`, `iiif-av`, `iiif-img`) and includes version.
+* `prefix` is route path (e.g. `iiif-manifest`, `iiif-av`, `iiif-img`)
+* `version` is the version slug (e.g. `v2` or `v3`)
 * `customer` and `space` are self explanatory
 * `assetPath` is the asset identifier plus any specific elements for the current request - e.g. for image requests it will contain the full IIIF image request.
 
@@ -15,7 +16,7 @@ To facilitate using proxy servers to receive alternative URLs that are then rewr
 
 ```
 "PathRules": {
-  "Default": "/{prefix}/{customer}/{space}/{assetPath}",
+  "Default": "/{prefix}/{version}/{customer}/{space}/{assetPath}",
   "Overrides": {
     "exclude-space.com": "/{prefix}/{customer}/extra/{assetPath}/",
     "customer-specific.io": "/{prefix}/{assetPath}"
