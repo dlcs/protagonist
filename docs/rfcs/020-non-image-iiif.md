@@ -202,9 +202,9 @@ Note that the `"rendering"` uses the mediaType of the _origin_ file. The transco
 
 We currently don't have any record of what transcodes each Asset has available. To render the above we need to efficiently identify what these are.
 
-We encountered this same issue when implementing `thumbs` delivery-channel. The solution was to implement the [AssetApplicationMetadata](016-asset-metadata.md) table. We will need to extend this to store transcoded types and their location (and, if known from transcoding operation, their mediaType). This can then be used to populate the Audio/Sound body.
+We encountered this same issue when implementing `thumbs` delivery-channel. The solution was to implement the [AssetApplicationMetadata](016-asset-metadata.md) table. We will need to extend this to store transcoded types, their location and dimensions. This can then be used to populate the Audio/Sound body.
 
-AV files that were generated prior to this date aren't guaranteed to have an `AssetApplicationMetadata` record so we will need a fallback. From the `"Images"` record we can only see the 'friendly' derivative name (e.g. `audio-mp3-128`), not what this is mapped to or what it actually means, only Engine knows that. One option would be able to have an Engine endpoint that can take `audio-mp3-128` and return details of what types this would transcode to.
+AV files that were generated prior to this date aren't guaranteed to have an `AssetApplicationMetadata` record so we will need to handle this possibility. Rather than attempt to work out what we should put here we should just skip any items in this state. `AssetApplicationMetadata` values can be backfilled via a script.
 
 ## File
 
@@ -215,10 +215,10 @@ See Wellcome RFC https://github.com/wellcomecollection/docs/tree/main/rfcs/046-b
 
 The original file will be available as a `"rendering"` (like other `file` channels) but there is no `iiif-img` or `iiif-av` channel available for painting content onto the canvas. Instead we will use a placeholder image. Unlike the linked Wellcome example, we will use a generic placeholder image for all content, rather than one that varies by type.
 
-
 Notes on below:
 * `"type"` of rendering will need to be mapped from mediaType of asset, falling back to `DataSet`. Using the "type" part of the mediaType should be enough initially.
-* 1000x1000 size is from the placeholder image
+* 1000x1000 size is from the placeholder image (the actual size should reflect the size of placeholder jpeg)
+* The placeholder image is available from orchestrator on `/static/{rdf-type}/placeholder.png` (e.g. `/static/dataset/placeholder.png` or `/static/image/placeholder.png`)
 * Custom context required due to `"placeholder"` and `"original"` behaviors
 * Custom context introduced for Wellcome will eb used as this is dereferenceable (or will be).
 
@@ -247,7 +247,7 @@ Notes on below:
                             "type": "Annotation",
                             "motivation": "painting",
                             "body": {
-                                "id": "https://dlcs.example/static/placeholder.jpg",
+                                "id": "https://dlcs.example/static/image/placeholder.jpg",
                                 "type": "Image",
                                 "width": 1000,
                                 "height": 1000,
@@ -283,10 +283,3 @@ The `IIIFCanvasFactory` class is used to construct canvases for both single-item
 The above Manifest examples only show how content resources are to be rendered for the various asset types.
 
 The current rules for displaying asset metadata on a canvas, setting a default canvas label etc still apply.
-
-## Questions
-
-* What should the placeholder contain?
-* What path should the placeholder be available on? `/static/placeholder.jpg` on orchestrator is used above - is that enough?
-* Should we implement the `AssetApplicationMetadata` fallback of calling engine? Or if we can't find AAM do we not render (so as-is)?
-  * Given there is less use of AV - is it worth writing a one off script to backfill `AssetApplicationMetadata` so that this can always be used?
