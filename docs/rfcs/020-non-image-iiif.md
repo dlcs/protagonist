@@ -278,8 +278,15 @@ The `IIIFCanvasFactory` class is used to construct canvases for both single-item
 
 `IIIFCanvasFactory` returns a list of canvases only, we will need some way to signal that a new context needs to be added to the manifest.
 
+## Labels / Metadata etc
+
+The above Manifest examples only show how content resources are to be rendered for the various asset types.
+
+The current rules for displaying asset metadata on a canvas, setting a default canvas label etc still apply.
+
 ## Questions
 
 * What should the placeholder contain?
 * What path should the placeholder be available on? `/static/placeholder.jpg` on orchestrator is used above - is that enough?
 * Should we implement the `AssetApplicationMetadata` fallback of calling engine? Or if we can't find AAM do we not render (so as-is)?
+  * Given there is less use of AV - is it worth writing a one off script to backfill `AssetApplicationMetadata` so that this can always be used?
