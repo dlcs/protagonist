@@ -19,3 +19,4 @@
 17. [Asset Modified Cleanup](017-asset-modified-cleanup.md)
 18. [Revisit Batches](018-revisit-batches.md)
 19. [Querying Across IIIF Presentation and DLCS](019-presentation-dlcs.md)
+20. [Non-image content-resources](020-non-image-iiif.md)
