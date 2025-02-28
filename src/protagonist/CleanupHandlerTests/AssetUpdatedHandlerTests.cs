@@ -174,7 +174,7 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
-
+    
     // removed
     
     [Fact]
@@ -259,6 +259,11 @@ public class AssetUpdatedHandlerTests
                     A<ObjectInBucket[]>.That.Matches(o => o.Any(x => x.Key  == "1/99/foo/some/other/key"))))
             .MustNotHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
+        
+        A.CallTo(() =>
+                assetMetadataRepository.DeleteAssetApplicationMetadata(A<AssetId>._, "AVTranscodes",
+                    A<CancellationToken>._))
+            .Returns(true);
     }
     
     [Fact]
@@ -272,7 +277,7 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
         A.CallTo(() =>
-                assetMetadataRepository.DeleteAssetApplicationMetadata(A<AssetId>._, A<string>._,
+                assetMetadataRepository.DeleteAssetApplicationMetadata(A<AssetId>._, "ThumbSizes",
                     A<CancellationToken>._))
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
@@ -287,7 +292,7 @@ public class AssetUpdatedHandlerTests
         
         // Assert
         response.Should().BeTrue();
-        A.CallTo(() => assetMetadataRepository.DeleteAssetApplicationMetadata(A<AssetId>._, A<string>._, A<CancellationToken>._)).MustHaveHappened();
+        A.CallTo(() => assetMetadataRepository.DeleteAssetApplicationMetadata(A<AssetId>._, "ThumbSizes", A<CancellationToken>._)).MustHaveHappened();
         A.CallTo(() =>
             bucketWriter.DeleteFolder(
                 A<ObjectInBucket>.That.Matches(o =>
