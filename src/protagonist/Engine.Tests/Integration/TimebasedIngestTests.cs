@@ -36,15 +36,8 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private static readonly IElasticTranscoderWrapper ElasticTranscoderWrapper = A.Fake<IElasticTranscoderWrapper>();
+    private static readonly IElasticTranscoderPresetLookup ElasticTranscoderPreset = A.Fake<IElasticTranscoderPresetLookup>();
     private readonly ApiStub apiStub;
-    private readonly List<ImageDeliveryChannel> timebasedDeliveryChannels = new()
-    {
-        new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Timebased,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.AvDefaultVideo
-        }
-    };
 
     public TimebasedIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
     {
@@ -58,7 +51,8 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                     .AddSingleton<IFileSaver, FakeFileSaver>()
                     .AddSingleton<IFileSystem, FakeFileSystem>()
                     .AddSingleton<IBucketWriter>(BucketWriter)
-                    .AddSingleton<IElasticTranscoderWrapper>(ElasticTranscoderWrapper);
+                    .AddSingleton<IElasticTranscoderWrapper>(ElasticTranscoderWrapper)
+                    .AddSingleton<IElasticTranscoderPresetLookup>(ElasticTranscoderPreset);
             })
             .WithConnectionString(engineFixture.DbFixture.ConnectionString)
             .CreateClient();
@@ -73,7 +67,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         A.CallTo(() => ElasticTranscoderWrapper.GetPipelineId("protagonist-pipeline", A<CancellationToken>._))
             .Returns("pipeline-id-1234");
-        A.CallTo(() => ElasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
+        A.CallTo(() => ElasticTranscoderPreset.GetPresetLookupByName(A<CancellationToken>._))
             .Returns(new Dictionary<string, TranscoderPreset>
             {
                 ["System preset: Generic 720p"] = new ("123-123", "System preset: Generic 720p", ""),

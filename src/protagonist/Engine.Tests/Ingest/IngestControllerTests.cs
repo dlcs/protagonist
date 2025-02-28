@@ -10,14 +10,14 @@ namespace Engine.Tests.Ingest;
 
 public class IngestControllerTests
 {
-    private IngestController sut;
-    private IAssetIngester ingester;
-    private IElasticTranscoderWrapper elasticTranscoderWrapper;
+    private readonly IngestController sut;
+    private readonly IAssetIngester ingester;
+    private readonly IElasticTranscoderPresetLookup elasticTranscoderPreset;
 
     public IngestControllerTests()
     {
         ingester = A.Fake<IAssetIngester>();
-        elasticTranscoderWrapper = A.Fake<IElasticTranscoderWrapper>();
+        elasticTranscoderPreset = A.Fake<IElasticTranscoderPresetLookup>();
         var engineSettings = new EngineSettings
         {
             TimebasedIngest = new TimebasedIngestSettings()
@@ -30,14 +30,14 @@ public class IngestControllerTests
             }
         };
 
-        A.CallTo(() => elasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._)).Returns(
+        A.CallTo(() => elasticTranscoderPreset.GetPresetLookupByName(A<CancellationToken>._)).Returns(
             new Dictionary<string, TranscoderPreset>()
             {
                 { "An amazon policy", new TranscoderPreset("some-id", "An amazon policy", ".ext") },
                 { "An amazon policy 2", new TranscoderPreset("some-id-2", "An amazon policy 2", ".ext2") }
             });
 
-        sut = new IngestController(ingester, elasticTranscoderWrapper, Options.Create(engineSettings));
+        sut = new IngestController(ingester, elasticTranscoderPreset, Options.Create(engineSettings));
     }
 
     [Fact]
@@ -65,7 +65,7 @@ public class IngestControllerTests
             TimebasedIngest = new TimebasedIngestSettings()
         };
         
-        var ingestController = new IngestController(ingester, elasticTranscoderWrapper, Options.Create(engineSettings));
+        var ingestController = new IngestController(ingester, elasticTranscoderPreset, Options.Create(engineSettings));
         
         // Act
         var avReturn = ingestController.GetAllowedAvOptions();
@@ -105,7 +105,7 @@ public class IngestControllerTests
             TimebasedIngest = new TimebasedIngestSettings()
         };
         
-        var ingestController = new IngestController(ingester, elasticTranscoderWrapper, Options.Create(engineSettings));
+        var ingestController = new IngestController(ingester, elasticTranscoderPreset, Options.Create(engineSettings));
         
         // Act
         var avReturn = await ingestController.GetAllowedAvPresetOptions();

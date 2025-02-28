@@ -83,7 +83,9 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
 
     public ValueTask<Asset?> GetAsset(AssetId assetId, int? batchId, CancellationToken cancellationToken = default)
     {
-        var images = DlcsContext.Images.IncludeDeliveryChannelsWithPolicy();
+        var images = DlcsContext.Images
+            .Include(i => i.AssetApplicationMetadata)
+            .IncludeDeliveryChannelsWithPolicy();
 
         if (batchId.HasValue)
         {

@@ -14,14 +14,17 @@ public class ElasticTranscoder : IMediaTranscoder
 {
     private readonly IOptionsMonitor<EngineSettings> engineSettings;
     private readonly IElasticTranscoderWrapper elasticTranscoderWrapper;
+    private readonly IElasticTranscoderPresetLookup elasticTranscoderPresetLookup;
     private readonly ILogger<ElasticTranscoder> logger;
 
     public ElasticTranscoder(
         IElasticTranscoderWrapper elasticTranscoderWrapper,
+        IElasticTranscoderPresetLookup elasticTranscoderPresetLookup,
         IOptionsMonitor<EngineSettings> engineSettings,
         ILogger<ElasticTranscoder> logger)
     {
         this.elasticTranscoderWrapper = elasticTranscoderWrapper;
+        this.elasticTranscoderPresetLookup = elasticTranscoderPresetLookup;
         this.engineSettings = engineSettings;
         engineSettings.CurrentValue.TimebasedIngest.ThrowIfNull(nameof(engineSettings.CurrentValue.TimebasedIngest));
         this.logger = logger;
@@ -41,7 +44,7 @@ public class ElasticTranscoder : IMediaTranscoder
             return false;
         }
 
-        var presets = await elasticTranscoderWrapper.GetPresetIdLookup(token);
+        var presets = await elasticTranscoderPresetLookup.GetPresetLookupByName(token);
 
         // Create a guid to uniquely identify this job - this is added to ET output path to avoid overwriting by
         // separate jobs  
