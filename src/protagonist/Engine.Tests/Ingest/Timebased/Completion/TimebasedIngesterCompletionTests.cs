@@ -140,7 +140,7 @@ public class TimebasedIngesterCompletionTests
         var sut = GetSut();
 
         var expectedMedata =
-            "[{\"l\":\"s3://bucket/location.mp3\",\"n\":\"This-is-name\",\"ex\":\"mp4\",\"mt\":\"video/mp4\",\"w\":123,\"h\":234,\"d\":100}]";
+            "[{\"l\":\"s3://bucket/location.mp3\",\"n\":\"This-is-name\",\"ex\":\"mp4\",\"mt\":\"video/mp4\",\"w\":123,\"h\":234,\"d\":100000}]";
         
         // Act
         await sut.CompleteSuccessfulIngest(assetId, 1234, transcodeResult);
@@ -195,7 +195,7 @@ public class TimebasedIngesterCompletionTests
         var sut = GetSut();
 
         var expectedMedata =
-            "[{\"l\":\"s3://bucket/location.mp3\",\"n\":\"This-is-name\",\"ex\":\"mp4\",\"mt\":\"video/mp4\",\"w\":123,\"h\":234,\"d\":100}]";
+            "[{\"l\":\"s3://bucket/location.mp3\",\"n\":\"This-is-name\",\"ex\":\"mp4\",\"mt\":\"video/mp4\",\"w\":123,\"h\":234,\"d\":100000}]";
         
         // Act
         await sut.CompleteSuccessfulIngest(assetId, 1234, transcodeResult);

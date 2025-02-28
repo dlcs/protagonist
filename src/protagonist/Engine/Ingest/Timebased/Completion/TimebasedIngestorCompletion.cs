@@ -145,7 +145,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
 
         var avTranscode = new AVTranscode
         {
-            Duration = transcodeOutput.Duration,
+            Duration = transcodeOutput.GetDuration(),
             Location = outputDestination.GetS3Uri(),
             Extension = extension,
             TranscodeName = preset.Name,
