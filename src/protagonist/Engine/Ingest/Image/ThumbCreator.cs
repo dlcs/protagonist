@@ -4,6 +4,7 @@ using DLCS.Core.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
+using Engine.Data;
 using IIIF;
 using Newtonsoft.Json;
 
@@ -13,19 +14,16 @@ public class ThumbCreator : IThumbCreator
 {
     private readonly IBucketWriter bucketWriter;
     private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly IAssetApplicationMetadataRepository assetApplicationMetadataRepository;
     private readonly ILogger<ThumbCreator> logger;
     private readonly AsyncKeyedLock asyncLocker = new();
 
     public ThumbCreator(
         IBucketWriter bucketWriter,
         IStorageKeyGenerator storageKeyGenerator,
-        IAssetApplicationMetadataRepository assetApplicationMetadataRepository,
         ILogger<ThumbCreator> logger)
     {
         this.bucketWriter = bucketWriter;
         this.storageKeyGenerator = storageKeyGenerator;
-        this.assetApplicationMetadataRepository = assetApplicationMetadataRepository;
         this.logger = logger;
     }
 
@@ -80,7 +78,7 @@ public class ThumbCreator : IThumbCreator
             processedWidths.Add(thumbCandidate.Width);
         }
             
-        await CreateSizesJson(assetId, thumbnailSizes);
+        await CreateSizesJson(asset, thumbnailSizes);
         return thumbnailSizes.Count;
     }
     
@@ -103,14 +101,13 @@ public class ThumbCreator : IThumbCreator
         await bucketWriter.WriteFileToBucket(thumbKey, thumbCandidate.Path, MIMEHelper.JPEG);
     }
     
-    private async Task CreateSizesJson(AssetId assetId, ThumbnailSizes thumbnailSizes)
+    private async Task CreateSizesJson(Asset asset, ThumbnailSizes thumbnailSizes)
     {
         // NOTE - this data is read via AssetApplicationMetadataX.GetThumbsMetadata
         var serializedThumbnailSizes = JsonConvert.SerializeObject(thumbnailSizes);
-        var sizesDest = storageKeyGenerator.GetThumbsSizesJsonLocation(assetId);
+        var sizesDest = storageKeyGenerator.GetThumbsSizesJsonLocation(asset.Id);
         await bucketWriter.WriteToBucket(sizesDest, serializedThumbnailSizes,
             "application/json");
-        await assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId,
-            AssetApplicationMetadataTypes.ThumbSizes, serializedThumbnailSizes);
+        asset.UpsertApplicationMetadata(AssetApplicationMetadataTypes.ThumbSizes, serializedThumbnailSizes);
     }
 }
