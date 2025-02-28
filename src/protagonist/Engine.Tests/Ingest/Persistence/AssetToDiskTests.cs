@@ -116,7 +116,7 @@ public class AssetToDiskTests
         var context = new IngestionContext(asset);
 
         var responseStream = "{\"foo\":\"bar\"}".ToMemoryStream();
-        var originResponse = new OriginResponse(responseStream).WithContentType("application/json");
+        var originResponse = new OriginResponse(responseStream).WithContentType("applicatiosan/jasawson");
         A.CallTo(() =>
                 customerOriginStrategy.LoadAssetFromOrigin(asset.Id, origin, cos, A<CancellationToken>._))
             .Returns(originResponse);
@@ -133,7 +133,7 @@ public class AssetToDiskTests
         A.CallTo(() => fileSaver.SaveResponseToDisk(A<AssetId>.That.Matches(a => a == assetId),
             originResponse, A<string>._, A<CancellationToken>._)).MustHaveHappened();
         response.Location.Should().Be(expectedOutput);
-        response.ContentType.Should().Be("application/json");
+        response.ContentType.Should().Be("applicatiosan/jasawson");
         response.AssetSize.Should().Be(fileLength);
         response.AssetId.Should().Be(assetId);
         response.CustomerOriginStrategy.Should().Be(cos);
@@ -162,7 +162,7 @@ public class AssetToDiskTests
         A.CallTo(() => fileSaver.SaveResponseToDisk(A<AssetId>._, originResponse, A<string>._, A<CancellationToken>._))
             .Returns(fileLength);
         
-        var expectedOutput = Path.Join(".", "2", "1", "godzilla1", "godzilla1.file");
+        var expectedOutput = Path.Join(".", "2", "1", "godzilla1", "godzilla1.json");
 
         // Act
         var response = await sut.CopyAssetToLocalDisk(context, destination, false, cos);
