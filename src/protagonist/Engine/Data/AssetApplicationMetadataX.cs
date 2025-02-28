@@ -1,11 +1,22 @@
 ﻿using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Engine.Data;
 
 public static class AssetApplicationMetadataX
 {
+    /// <summary>
+    /// Upsert application metadata for given type. Note that this requires the asset to be loaded with
+    /// AssetApplicationMetadata.
+    /// Updates provided <see cref="Asset"/> only, no DB writes take place.
+    /// Provided metadata value is serialized using newtonsoft
+    /// </summary>
+    public static AssetApplicationMetadata UpsertApplicationMetadata<T>(this Asset asset, string metadataType,
+        T metadataValue) where T : class
+        => asset.UpsertApplicationMetadata(metadataType, JsonConvert.SerializeObject(metadataValue));
+    
     /// <summary>
     /// Upsert application metadata for given type. Note that this requires the asset to be loaded with
     /// AssetApplicationMetadata.
@@ -40,6 +51,6 @@ public static class AssetApplicationMetadataX
     private static void ValidateJson(string metadataValue)
     {
         // Safety check - validate what's passed is valid JSON
-        JObject.Parse(metadataValue);
+        JToken.Parse(metadataValue);
     }
 }
