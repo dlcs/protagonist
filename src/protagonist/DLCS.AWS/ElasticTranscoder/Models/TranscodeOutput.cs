@@ -25,5 +25,8 @@ public class TranscodeOutput
     /// </summary>
     public bool IsComplete() => string.Equals(Status, "Complete", StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Gets the duration of transcode in milliseconds
+    /// </summary>
     public long GetDuration() => DurationMillis ?? Duration * 1000;
 }

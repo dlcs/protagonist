@@ -1,5 +1,4 @@
 ﻿using Amazon.ElasticTranscoder.Model;
-using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.ElasticTranscoder.Models.Job;
 using DLCS.Core.Types;
 
@@ -10,21 +9,6 @@ namespace DLCS.AWS.ElasticTranscoder;
 /// </summary>
 public interface IElasticTranscoderWrapper
 {
-    /// <summary>
-    /// Get a lookup of preset {name}:{id} (e.g. "System Preset: Generic 1080p": "1351620000001-000001")
-    /// </summary>
-    /// <param name="token">CancellationToken</param>
-    /// <returns>Dictionary of ElasticTranscoder presets</returns>
-    Task<Dictionary<string, TranscoderPreset>> GetPresetIdLookup(CancellationToken token = default);
-
-    /// <summary>
-    /// Gets details of a preset based on the name
-    /// </summary>
-    /// <param name="name">The name of the preset</param>
-    /// <param name="token">Cancellation token</param>
-    /// <returns>Details of a single preset</returns>
-    public Task<TranscoderPreset?> GetPresetDetails(string name, CancellationToken token = default);
-
     /// <summary>
     /// Get ElasticTranscoder Pipeline Id from name. 
     /// </summary>

@@ -74,7 +74,7 @@ public class TopicPublisher : ITopicPublisher
     {
         if (string.IsNullOrEmpty(snsSettings.BatchCompletedTopicArn))
         {
-            logger.LogWarning("Customer Created Topic Arn is not set - cannot send CustomerCreatedNotification");
+            logger.LogWarning("Batch Completed Topic Arn is not set - cannot send BatchCompletedNotification");
             return false;
         }
         
