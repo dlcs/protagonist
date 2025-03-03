@@ -56,6 +56,19 @@ public class EngineAssetRepositoryTests
     }
     
     [Fact]
+    public async Task GetAsset_ReturnsAssetWithAssetDeliveryChannels()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId).WithTestDeliveryChannel("iiif-img").WithTestThumbnailMetadata();
+        await dbContext.SaveChangesAsync();
+        
+        var asset = await sut.GetAsset(assetId, null);
+        asset.ImageDeliveryChannels.Should().NotBeNullOrEmpty("DeliveryChannels are loaded");
+        asset.BatchAssets.Should().BeNull("No batch Id specified");
+        asset.AssetApplicationMetadata.Should().NotBeNull("Asset application metadata are loaded");
+    }
+    
+    [Fact]
     public async Task GetAsset_Returns_IfBatchIdSpecifiedButNoAssetBatchRecordsFound()
     {
         var assetId = AssetIdGenerator.GetAssetId();

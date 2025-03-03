@@ -13,34 +13,14 @@ namespace DLCS.AWS.Tests.ElasticTranscoder;
 public class ElasticTranscoderWrapperTests
 {
     private readonly IAmazonElasticTranscoder elasticTranscoder;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly IBucketWriter bucketWriter;
-    private readonly IBucketReader bucketReader;
     private readonly ElasticTranscoderWrapper sut;
 
     public ElasticTranscoderWrapperTests()
     {
         elasticTranscoder = A.Fake<IAmazonElasticTranscoder>();
-        bucketWriter = A.Fake<IBucketWriter>();
-        bucketReader = A.Fake<IBucketReader>();
-        storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
-        
-        A.CallTo(() => elasticTranscoder.ListPresetsAsync(A<ListPresetsRequest>._, A<CancellationToken>._)).Returns(new ListPresetsResponse()
-        {
-            Presets = new List<Preset>()
-            {
-                new()
-                {
-                    Id = "some-preset",
-                    Name = "some-preset-name"
-                },
-                new()
-                {
-                    Id = "some-preset2",
-                    Name = "some-preset-2-name"
-                }
-            }
-        });
+        var bucketWriter = A.Fake<IBucketWriter>();
+        var bucketReader = A.Fake<IBucketReader>();
+        var storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         
         var cacheSettings = Options.Create(new CacheSettings());
         sut = new ElasticTranscoderWrapper(elasticTranscoder, new MockCachingService(), bucketWriter, bucketReader,
@@ -75,38 +55,5 @@ public class ElasticTranscoderWrapperTests
         
         // Assert
         createRequest.Input.Should().BeEquivalentTo(expectedInput);
-    }
-
-    [Fact]
-    public async Task GetPresetIdLookup_ReturnsPresets_WhenCalled()
-    {
-        // Arrange and Act
-        var presets = await sut.GetPresetIdLookup(default);
-
-        // Assert
-        presets.Count.Should().Be(2);
-        presets.Should().ContainKey("some-preset-name");
-        presets.Should().NotContainKey("random-preset");
-    }
-    
-    [Fact]
-    public async Task GetPresetDetails_ReturnsPresetDetails_WhenCalled()
-    {
-        // Arrange and Act
-        var preset = await sut.GetPresetDetails("some-preset-name", default);
-
-        // Assert
-        preset.Should().NotBeNull();
-        preset.Id.Should().Be("some-preset");
-    }
-    
-    [Fact]
-    public async Task GetPresetDetails_ReturnsNull_WhenCalledWithInvalidPreset()
-    {
-        // Arrange and Act
-        var preset = await sut.GetPresetDetails("incorrect-name", default);
-
-        // Assert
-        preset.Should().BeNull();
     }
 }

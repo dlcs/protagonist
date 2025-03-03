@@ -13,14 +13,14 @@ public class IngestController : Controller
 {
     private readonly IAssetIngester ingester;
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
-    private readonly IElasticTranscoderWrapper elasticTranscoderWrapper;
-    private TimebasedIngestSettings timebasedIngestSettings;
+    private readonly IElasticTranscoderPresetLookup elasticTranscoderPresetLookup;
+    private readonly TimebasedIngestSettings timebasedIngestSettings;
 
-    public IngestController(IAssetIngester ingester, IElasticTranscoderWrapper elasticTranscoderWrapper, 
+    public IngestController(IAssetIngester ingester, IElasticTranscoderPresetLookup elasticTranscoderPresetLookup, 
         IOptions<EngineSettings> engineSettings)
     {
         this.ingester = ingester;
-        this.elasticTranscoderWrapper = elasticTranscoderWrapper;
+        this.elasticTranscoderPresetLookup = elasticTranscoderPresetLookup;
         timebasedIngestSettings = engineSettings.Value.TimebasedIngest;
     }
     
@@ -57,7 +57,7 @@ public class IngestController : Controller
     [Route("av-presets")]
     public async Task<IActionResult> GetAllowedAvPresetOptions()
     {
-        var presets = await elasticTranscoderWrapper.GetPresetIdLookup();
+        var presets = await elasticTranscoderPresetLookup.GetPresetLookupByName();
 
         var allowedPresets =
             presets.Where(x => timebasedIngestSettings.DeliveryChannelMappings.Values.Contains(x.Key))

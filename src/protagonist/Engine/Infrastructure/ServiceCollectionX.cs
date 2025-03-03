@@ -51,6 +51,7 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
+            .AddSingleton<IElasticTranscoderPresetLookup, ElasticTranscoderPresetLookup>()
             .AddScoped<ITopicPublisher, TopicPublisher>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
@@ -141,7 +142,6 @@ public static class ServiceCollectionX
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
             .AddScoped<IStorageRepository, CustomerStorageRepository>()
             .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
-            .AddScoped<IAssetApplicationMetadataRepository, AssetApplicationMetadataRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>
