@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.IIIF;
 using DLCS.Model.PathElements;
 using IIIF;
 using IIIF.Presentation;
@@ -47,11 +48,7 @@ public class IIIFManifestBuilder
         {
             Id = manifestId,
             Label = new LanguageMap(Language, label),
-            Metadata = new List<LabelValuePair>
-            {
-                new(Language, "Title", "Created by DLCS"),
-                new(Language, "Generated On", DateTime.UtcNow.ToString("u"))
-            }
+            Metadata = GetManifestMetadata().ToV3Metadata(Language),
         };
         
         manifest.EnsurePresentation3Context();
@@ -82,19 +79,7 @@ public class IIIFManifestBuilder
         {
             Id = manifestId,
             Label = new MetaDataValue(label),
-            Metadata = new List<IIIF2.Metadata>
-            {
-                new()
-                {
-                    Label = new MetaDataValue("Title"),
-                    Value = new MetaDataValue("Created by DLCS")
-                } ,
-                new()
-                {
-                    Label = new MetaDataValue("Generated On"),
-                    Value = new MetaDataValue(DateTime.UtcNow.ToString("u"))
-                }   
-            }
+            Metadata = GetManifestMetadata().ToV2Metadata(),
         };
         
         manifest.EnsurePresentation2Context();
@@ -111,6 +96,13 @@ public class IIIFManifestBuilder
 
         return manifest;
     }
+
+    private static Dictionary<string, string> GetManifestMetadata() =>
+        new()
+        {
+            ["Title"] = "Created by DLCS",
+            ["Generated On"] = DateTime.UtcNow.ToString("u"),
+        };
 
     private async Task<Dictionary<AssetId, IIIFAuth2.AuthProbeService2>?> GetProbeServices(IReadOnlyCollection<Asset> assets, CancellationToken cancellationToken)
     {

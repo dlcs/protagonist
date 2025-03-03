@@ -65,11 +65,7 @@ public class IIIFCanvasFactory
                 Label = new LanguageMap("en", $"Canvas {counter}"),
                 Width = asset.Width,
                 Height = asset.Height,
-                Metadata = GetImageMetadata(asset)
-                    .Select(m => 
-                        new LabelValuePair(new LanguageMap(MetadataLanguage, m.Key), 
-                            new LanguageMap(MetadataLanguage, m.Value)))
-                    .ToList(),
+                Metadata = GetImageMetadata(asset).ToV3Metadata(MetadataLanguage),
                 Items = new AnnotationPage
                 {
                     Id = $"{canvasId}/page",
@@ -129,13 +125,7 @@ public class IIIFCanvasFactory
                 Label = new MetaDataValue($"Canvas {counter}"),
                 Width = asset.Width,
                 Height = asset.Height,
-                Metadata = GetImageMetadata(asset)
-                    .Select(m => new IIIF2.Metadata()
-                    {
-                        Label = new MetaDataValue(m.Key),
-                        Value = new MetaDataValue(m.Value)
-                    })
-                    .ToList(),
+                Metadata = GetImageMetadata(asset).ToV2Metadata(),
                 Images = new ImageAnnotation
                 {
                     Id = string.Concat(fullyQualifiedImageId, "/imageanno/0"),
