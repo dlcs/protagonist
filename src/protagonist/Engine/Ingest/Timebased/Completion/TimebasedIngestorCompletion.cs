@@ -73,7 +73,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         bool dimensionsUpdated = false;
         var transcodeOutputs = transcodeResult.Outputs;
         var applicationMetadata = new List<AVTranscode>(transcodeOutputs.Count);
-        var transcodeSize = 0L;
+        var transcodeSizeRunningTotal = 0L;
 
         var presetLookup = await elasticTranscoderPresetLookup.GetPresetLookupById(cancellationToken);
         
@@ -90,7 +90,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
 
             if (!presetLookup.TryGetValue(transcodeOutput.PresetId, out var preset))
             {
-                logger.LogError("Unable to find preset for {PresetId}", transcodeOutput.Key);
+                logger.LogError("Unable to find preset for {PresetId}", transcodeOutput.PresetId);
                 continue;
             }
 
@@ -109,7 +109,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
                 var avTranscode = MakeAvTranscode(transcodeOutput, outputDestination, asset, preset);
                 applicationMetadata.Add(avTranscode);
 
-                transcodeSize += copyResult.Size ?? 0;
+                transcodeSizeRunningTotal += copyResult.Size ?? 0;
             }
             else
             {
@@ -122,7 +122,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
             asset.UpsertApplicationMetadata(AssetApplicationMetadataTypes.AVTranscodes, applicationMetadata.ToArray());
         }
         
-        return transcodeSize;
+        return transcodeSizeRunningTotal;
     }
     
     private static bool IsCopySuccessful(LargeObjectCopyResult copyResult)

@@ -28,10 +28,11 @@ public static class AssetApplicationMetadataX
         ValidateJson(metadataValue);
         var existingMetadata = asset.AssetApplicationMetadata?.FirstOrDefault(e => e.MetadataType == metadataType);
 
+        var now = DateTime.UtcNow;
         if (existingMetadata is not null)
         {
             existingMetadata.MetadataValue = metadataValue;
-            existingMetadata.Modified = DateTime.UtcNow;
+            existingMetadata.Modified = now;
             return existingMetadata;
         }
 
@@ -40,8 +41,8 @@ public static class AssetApplicationMetadataX
         {
             MetadataType = metadataType,
             MetadataValue = metadataValue,
-            Created = DateTime.UtcNow,
-            Modified = DateTime.UtcNow
+            Created = now,
+            Modified = now
         };
         asset.AssetApplicationMetadata.Add(assetApplicationMetadata);
 
