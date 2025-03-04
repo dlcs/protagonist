@@ -24,9 +24,9 @@ namespace Orchestrator.Infrastructure.IIIF.Manifests;
 /// </summary>
 public abstract class IIIFManifestBuilderBase
 {
-    protected readonly IAssetPathGenerator assetPathGenerator;
-    protected readonly OrchestratorSettings orchestratorSettings;
-    protected readonly IThumbSizeProvider thumbSizeProvider;
+    protected readonly IAssetPathGenerator AssetPathGenerator;
+    protected readonly OrchestratorSettings OrchestratorSettings;
+    protected readonly IThumbSizeProvider ThumbSizeProvider;
     protected const string MetadataLanguage = "none";
 
     public IIIFManifestBuilderBase(
@@ -34,18 +34,18 @@ public abstract class IIIFManifestBuilderBase
         IOptions<OrchestratorSettings> orchestratorSettings,
         IThumbSizeProvider thumbSizeProvider)
     {
-        this.assetPathGenerator = assetPathGenerator;
-        this.thumbSizeProvider = thumbSizeProvider;
-        this.orchestratorSettings = orchestratorSettings.Value;
+        AssetPathGenerator = assetPathGenerator;
+        ThumbSizeProvider = thumbSizeProvider;
+        OrchestratorSettings = orchestratorSettings.Value;
     }
 
     protected async Task<ImageSizeDetails> RetrieveThumbnails(Asset asset, CancellationToken cancellationToken)
     {
-        var allThumbSizes = await thumbSizeProvider.GetThumbSizesForImage(asset, cancellationToken);
+        var allThumbSizes = await ThumbSizeProvider.GetThumbSizesForImage(asset, cancellationToken);
         var openThumbnails = allThumbSizes.Open.Select(Size.FromArray).ToList();
 
         var maxDerivativeSize = openThumbnails.IsNullOrEmpty()
-            ? Size.Confine(orchestratorSettings.TargetThumbnailSize, new Size(asset.Width ?? 0, asset.Height ?? 0))
+            ? Size.Confine(OrchestratorSettings.TargetThumbnailSize, new Size(asset.Width ?? 0, asset.Height ?? 0))
             : openThumbnails.MaxBy(s => s.MaxDimension)!;
 
         return new ImageSizeDetails(openThumbnails, maxDerivativeSize);
@@ -55,7 +55,7 @@ public abstract class IIIFManifestBuilderBase
         bool forPresentation2, List<Size> thumbnailSizes)
     {
         var services = new List<IService>();
-        if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V2))
+        if (OrchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V2))
         {
             var imageService = new ImageService2
             {
@@ -73,7 +73,7 @@ public abstract class IIIFManifestBuilderBase
         // NOTE - we never include ImageService3 on Presentation2 manifests
         if (forPresentation2) return services;
 
-        if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V3))
+        if (OrchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V3))
         {
             services.Add(new ImageService3
             {
@@ -90,7 +90,7 @@ public abstract class IIIFManifestBuilderBase
     protected string GetFullQualifiedThumbPath(Asset asset, CustomerPathElement customerPathElement,
         List<Size> availableThumbs)
     {
-        var targetThumb = orchestratorSettings.TargetThumbnailSize;
+        var targetThumb = OrchestratorSettings.TargetThumbnailSize;
 
         // Get the thumbnail size that is closest to the system-wide TargetThumbnailSize
         var closestSize = availableThumbs.SizeClosestTo(targetThumb);
@@ -105,10 +105,10 @@ public abstract class IIIFManifestBuilderBase
         {
             Space = asset.Space,
             AssetPath = $"{asset.Id.Asset}/full/{size.Width},{size.Height}/0/default.jpg",
-            RoutePrefix = isThumb ? orchestratorSettings.Proxy.ThumbsPath : orchestratorSettings.Proxy.ImagePath,
+            RoutePrefix = isThumb ? OrchestratorSettings.Proxy.ThumbsPath : OrchestratorSettings.Proxy.ImagePath,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(request, true, false);
+        return AssetPathGenerator.GetFullPathForRequest(request, true, false);
     }
 
     protected string GetCanvasId(Asset asset, CustomerPathElement customerPathElement, int index)
@@ -120,14 +120,14 @@ public abstract class IIIFManifestBuilderBase
     protected string GetFullyQualifiedId(Asset asset, CustomerPathElement customerPathElement,
         bool isThumb, global::IIIF.ImageApi.Version imageApiVersion = global::IIIF.ImageApi.Version.Unknown)
     {
-        var versionPart = imageApiVersion == orchestratorSettings.DefaultIIIFImageVersion ||
+        var versionPart = imageApiVersion == OrchestratorSettings.DefaultIIIFImageVersion ||
                           imageApiVersion == global::IIIF.ImageApi.Version.Unknown
             ? string.Empty
             : $"/{imageApiVersion.ToString().ToLower()}";
 
         var routePrefix = isThumb
-            ? orchestratorSettings.Proxy.ThumbsPath
-            : orchestratorSettings.Proxy.ImagePath; // TODO - cater for iiif-av and file too?
+            ? OrchestratorSettings.Proxy.ThumbsPath
+            : OrchestratorSettings.Proxy.ImagePath; // TODO - cater for iiif-av and file too?
 
         var imageRequest = new BasicPathElements
         {
@@ -137,13 +137,13 @@ public abstract class IIIFManifestBuilderBase
             RoutePrefix = routePrefix,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
+        return AssetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
     }
 
     protected List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement, bool forPresentation2,
         List<IService>? authServices)
     {
-        var versionPathTemplates = orchestratorSettings.ImageServerConfig.VersionPathTemplates;
+        var versionPathTemplates = OrchestratorSettings.ImageServerConfig.VersionPathTemplates;
 
         var services = new List<IService>();
         if (versionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V2))
