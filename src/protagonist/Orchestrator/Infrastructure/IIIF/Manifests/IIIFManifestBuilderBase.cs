@@ -48,11 +48,7 @@ public abstract class IIIFManifestBuilderBase
             ? Size.Confine(orchestratorSettings.TargetThumbnailSize, new Size(asset.Width ?? 0, asset.Height ?? 0))
             : openThumbnails.MaxBy(s => s.MaxDimension)!;
 
-        return new ImageSizeDetails
-        {
-            MaxDerivativeSize = maxDerivativeSize,
-            OpenThumbnails = openThumbnails,
-        };
+        return new ImageSizeDetails(openThumbnails, maxDerivativeSize);
     }
 
     protected List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
@@ -131,7 +127,7 @@ public abstract class IIIFManifestBuilderBase
 
         var routePrefix = isThumb
             ? orchestratorSettings.Proxy.ThumbsPath
-            : orchestratorSettings.Proxy.ImagePath;
+            : orchestratorSettings.Proxy.ImagePath; // TODO - cater for iiif-av and file too?
 
         var imageRequest = new BasicPathElements
         {
@@ -145,9 +141,8 @@ public abstract class IIIFManifestBuilderBase
     }
 
     protected List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement, bool forPresentation2,
-        Dictionary<AssetId, AuthProbeService2>? authProbeServices)
+        List<IService>? authServices)
     {
-        var noAuthServices = authProbeServices.IsNullOrEmpty();
         var versionPathTemplates = orchestratorSettings.ImageServerConfig.VersionPathTemplates;
 
         var services = new List<IService>();
@@ -160,10 +155,11 @@ public abstract class IIIFManifestBuilderBase
                 Context = ImageService2.Image2Context,
                 Width = asset.Width ?? 0,
                 Height = asset.Height ?? 0,
-                Service = TryGetAuthServices(),
+                Service = authServices,
             };
 
-            if (forPresentation2) imageService.Type = null; // '@Type' is not used in Presentation2
+            // '@Type' is not used in Presentation2 embedded
+            if (forPresentation2) imageService.Type = null; 
 
             services.Add(imageService);
         }
@@ -180,20 +176,18 @@ public abstract class IIIFManifestBuilderBase
                 Context = ImageService3.Image3Context,
                 Width = asset.Width ?? 0,
                 Height = asset.Height ?? 0,
-                Service = TryGetAuthServices(),
+                Service = authServices,
             });
         }
 
-        return services;
-
-        List<IService>? TryGetAuthServices()
+        // AuthServices are included on both the ImageService and the "Image" body. This allows viewers to see the
+        // static image requires auth, as well as the ImageService(s) 
+        if (!authServices.IsNullOrEmpty())
         {
-            if (noAuthServices) return null;
-            if (!authProbeServices!.TryGetValue(asset.Id, out var probeService2)) return null;
-
-            var authServiceToAdd = probeService2.ToEmbeddedService();
-            return authServiceToAdd.AsListOf<IService>();
+            services.AddRange(authServices);
         }
+
+        return services;
     }
 
     protected static Dictionary<string, string> GetCanvasMetadata(Asset asset) =>
@@ -224,14 +218,20 @@ public abstract class IIIFManifestBuilderBase
     /// </summary>
     protected class ImageSizeDetails
     {
+        public ImageSizeDetails(List<Size> openThumbnails, Size maxDerivativeSize)
+        {
+            OpenThumbnails = openThumbnails;
+            MaxDerivativeSize = maxDerivativeSize;
+        }
+
         /// <summary>
         /// List of open available thumbnails
         /// </summary>
-        public List<Size> OpenThumbnails { get; set; }
+        public List<Size> OpenThumbnails { get; }
 
         /// <summary>
         /// The size of the largest derivative, according to thumbnail policy.
         /// </summary>
-        public Size MaxDerivativeSize { get; set; }
+        public Size MaxDerivativeSize { get; }
     }
 }

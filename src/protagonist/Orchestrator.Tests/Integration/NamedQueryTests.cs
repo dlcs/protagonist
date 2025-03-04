@@ -407,10 +407,12 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .Items.Cast<PaintingAnnotation>().Single()
             .Body.As<IIIF.Presentation.V3.Content.Image>();
             
-        paintable.Service.Should().HaveCount(2);
+        paintable.Service.Should().HaveCount(3);
         paintable.Service.OfType<ImageService2>().Single().Service.Should()
-            .ContainSingle(s => s is AuthProbeService2 && s.Id.Contains("auth-1"));
+            .ContainSingle(s => s is AuthProbeService2 && s.Id.Contains("auth-1"), "ImageService2 has auth service");
         paintable.Service.OfType<ImageService3>().Single().Service.Should()
-            .ContainSingle(s => s is AuthProbeService2 && s.Id.Contains("auth-1"));
+            .ContainSingle(s => s is AuthProbeService2 && s.Id.Contains("auth-1"), "ImageService3 has auth service");
+        paintable.Service.OfType<AuthProbeService2>().Single().Id.Should()
+            .Contain("auth-1", "Image body has auth service");
     }
 }
