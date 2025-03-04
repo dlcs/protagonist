@@ -48,7 +48,7 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
     /// </summary>
     public async Task<ThumbnailSizes> GetThumbSizesForImage(Asset asset, CancellationToken cancellationToken = default)
     {
-        var thumbnailSizes = asset.AssetApplicationMetadata?.GetThumbsMetadata();
+        var thumbnailSizes = asset.AssetApplicationMetadata.GetThumbsMetadata();
         
         if (thumbnailSizes != null)
         {

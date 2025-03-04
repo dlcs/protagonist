@@ -64,7 +64,7 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
         var assetId = request.AssetRequest.GetAssetId();
 
         var asset = await dlcsContext.Images
-            .IncludeDataForThumbs()
+            .IncludeRelevantMetadataData()
             .FirstOrDefaultAsync(a => a.Id == assetId, cancellationToken);
         
         // TODO - fix these 

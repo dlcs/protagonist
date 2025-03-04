@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
+using Newtonsoft.Json;
 
 namespace Test.Helpers.Data;
 
@@ -19,6 +20,21 @@ public static class EntityHelpers
             AssetId = asset.Id,
             MetadataType = AssetApplicationMetadataTypes.ThumbSizes,
             MetadataValue = metadataValue,
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow
+        });
+        return asset;
+    }
+    
+    public static Asset WithTestTranscodeMetadata(this Asset asset,
+        List<AVTranscode> transcodes)
+    {
+        asset.AssetApplicationMetadata ??= new List<AssetApplicationMetadata>();
+        asset.AssetApplicationMetadata.Add(new AssetApplicationMetadata
+        {
+            AssetId = asset.Id,
+            MetadataType = AssetApplicationMetadataTypes.AVTranscodes,
+            MetadataValue = JsonConvert.SerializeObject(transcodes),
             Created = DateTime.UtcNow,
             Modified = DateTime.UtcNow
         });
