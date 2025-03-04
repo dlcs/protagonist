@@ -4,11 +4,15 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core;
 using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Metadata;
 using DLCS.Model.IIIF;
 using DLCS.Model.PathElements;
+using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
 using IIIF.Auth.V2;
@@ -231,6 +235,36 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
                 };
             }
         }
+        else if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
+        {
+            var transcodes = asset.AssetApplicationMetadata.GetTranscodeMetadata(false);
+            
+            // TODO - move this to a method and return from here
+            if (!transcodes.IsNullOrEmpty())
+            {
+                var paintingAnnotation = new PaintingAnnotation
+                {
+                    Target = new Canvas { Id = canvasId },
+                    Id = $"{canvasId}/page/image",
+                };
+
+                if (transcodes.Length == 1)
+                {
+                    // Single transcode, add single body
+                    paintingAnnotation.Body =
+                        GetPaintableForTranscode(asset, customerPathElement, transcodes[0], authServices);
+                }
+                else
+                {
+                    // Multiple transcodes, add a choice 
+                    paintingAnnotation.Body = new PaintingChoice
+                    {
+                        Items = transcodes.Select(t =>
+                            GetPaintableForTranscode(asset, customerPathElement, t, authServices)).ToList()
+                    };
+                }
+            }
+        }
         
         return new CanvasParts(annotationPage, thumbnail);
     }
@@ -240,12 +274,45 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
     /// </summary>
     private record CanvasParts(AnnotationPage? AnnotationPage, ExternalResource? Thumbnail);
     
-    private List<IService>? GetAuthServices(Asset asset, Dictionary<AssetId, AuthProbeService2> authProbeServices)
+    private static List<IService>? GetAuthServices(Asset asset, Dictionary<AssetId, AuthProbeService2> authProbeServices)
     {
         if (authProbeServices.IsNullOrEmpty()) return null;
         if (!authProbeServices.TryGetValue(asset.Id, out var probeService2)) return null;
 
         var authServiceToAdd = probeService2.ToEmbeddedService();
         return authServiceToAdd.AsListOf<IService>();
+    }
+
+    private IPaintable GetPaintableForTranscode(Asset asset, CustomerPathElement customerPathElement,
+        AVTranscode transcode, List<IService>? authServices) =>
+        MIMEHelper.IsVideo(transcode.MediaType)
+            ? new Video
+            {
+                Id = GetPathForTranscode(asset, customerPathElement, transcode),
+                Format = transcode.MediaType,
+                Duration = transcode.Duration,
+                Height = transcode.Height,
+                Width = transcode.Width,
+                Service = authServices,
+            }
+            : new Audio
+            {
+                Id = GetPathForTranscode(asset, customerPathElement, transcode),
+                Format = transcode.MediaType,
+                Duration = transcode.Duration,
+                Service = authServices,
+            };
+
+    private string GetPathForTranscode(Asset asset, CustomerPathElement customerPathElement,
+        AVTranscode avTranscode)
+    {
+        var imageRequest = new BasicPathElements
+        {
+            Space = asset.Space,
+            AssetPath = asset.Id.Asset.ToConcatenated('/', avTranscode.GetTranscodeRequestPath()),
+            RoutePrefix = "iiif-av",
+            CustomerPathValue = customerPathElement.Id.ToString(),
+        };
+        return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
     }
 }
