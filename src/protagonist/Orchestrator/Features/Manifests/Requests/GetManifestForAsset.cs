@@ -67,20 +67,27 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
             .IncludeRelevantMetadataData()
             .FirstOrDefaultAsync(a => a.Id == assetId, cancellationToken);
         
-        // TODO - fix these 
-        if (asset == null || asset.NotForDelivery ||
-            !asset.HasAnyDeliveryChannel(AssetDeliveryChannels.Image, AssetDeliveryChannels.Thumbnails))
+        if (asset == null || asset.NotForDelivery)
         {
             logger.LogDebug("Attempted to request an iiif-manifest for {AssetId}, but it was not found or is unavailable",
                 assetId);
             return DescriptionResourceResponse.Empty;
-        }    
+        }
 
-        JsonLdBase manifest = request.IIIFPresentationVersion == Version.V3
-            ? await GenerateV3Manifest(request.AssetRequest, asset, cancellationToken)
-            : await GenerateV2Manifest(request.AssetRequest, asset, cancellationToken);
+        if (request.IIIFPresentationVersion == Version.V3)
+        {
+            var v3Manifest = await GenerateV3Manifest(request.AssetRequest, asset, cancellationToken);
+            return DescriptionResourceResponse.Open(v3Manifest);
+        }
 
-        return DescriptionResourceResponse.Open(manifest);
+        if (!asset.HasAnyDeliveryChannel(AssetDeliveryChannels.Image, AssetDeliveryChannels.Thumbnails))
+        {
+            logger.LogDebug("V2 manifest for {AssetId} unavailable on image or thumbs, won't render", assetId);
+            return DescriptionResourceResponse.Empty;
+        }
+
+        var v2Manifest = await GenerateV2Manifest(request.AssetRequest, asset, cancellationToken);
+        return DescriptionResourceResponse.Open(v2Manifest);
     }
 
     private async Task<IIIF3.Manifest> GenerateV3Manifest(BaseAssetRequest assetRequest, Asset asset,

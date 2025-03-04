@@ -142,7 +142,26 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     [Theory]
     [InlineData(AssetFamily.File)]
     [InlineData(AssetFamily.Timebased)]
-    public async Task Get_NonImage_Returns404(AssetFamily family)
+    public async Task Get_NonImageV2_Returns404(AssetFamily family)
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId(assetPostfix: $":{family}");
+        await dbFixture.DbContext.Images.AddTestAsset(id, family: family);
+        await dbFixture.DbContext.SaveChangesAsync();
+            
+        var path = $"iiif-manifest/v2/{id}";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Theory]
+    [InlineData(AssetFamily.File)]
+    [InlineData(AssetFamily.Timebased)]
+    public async Task Get_NonImageV3_Returns200(AssetFamily family)
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId(assetPostfix: $":{family}");
@@ -155,7 +174,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         var response = await httpClient.GetAsync(path);
             
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
         
     [Fact]
