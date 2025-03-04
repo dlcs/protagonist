@@ -59,8 +59,6 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
             Metadata = GetManifestMetadata().ToV3Metadata(Language),
         };
         
-        // TODO - add context dependant on whether BD style output is added
-        
         manifest.EnsurePresentation3Context();
         if (anyAssetRequireAuth)
         {
@@ -75,10 +73,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
             manifest.Services = accessServices;
         }
         
-        var canvases = await CreateCanvases(assets, customerPathElement, probeServices, cancellationToken);
-        manifest.Items = canvases;
-        manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
-        
+        await PopulateManifest(manifest, assets, customerPathElement, probeServices, cancellationToken);
         return manifest;
     }
 
@@ -127,23 +122,36 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         return accessServices;
     }
 
-    private async Task<List<Canvas>> CreateCanvases(List<Asset> results,
+    private async Task PopulateManifest(Manifest manifest, List<Asset> results,
         CustomerPathElement customerPathElement, Dictionary<AssetId, AuthProbeService2>? authProbeServices,
         CancellationToken cancellationToken)
     {
+        logger.LogDebug("Populating manifest {ManifestId}..", manifest.Id);
         var probeServices = authProbeServices ?? new Dictionary<AssetId, AuthProbeService2>();
         int counter = 0;
         var canvases = new List<Canvas>(results.Count);
+        var additionalContexts = new List<string>();
         foreach (var asset in results)
         {
-            var canvas = await GetCanvas(asset, customerPathElement, ++counter, probeServices, cancellationToken);
-            if (canvas != null) canvases.Add(canvas);
+            var assetCanvas = await GetCanvas(asset, customerPathElement, ++counter, probeServices, cancellationToken);
+            if (assetCanvas.Canvas != null) canvases.Add(assetCanvas.Canvas);
+
+            if (!assetCanvas.AdditionalContexts.IsNullOrEmpty())
+            {
+                additionalContexts.AddRange(assetCanvas.AdditionalContexts);
+            }
         }
 
-        return canvases;
+        foreach (var additionalContext in additionalContexts.Distinct())
+        {
+            manifest.EnsureContext(additionalContext);
+        }
+        
+        manifest.Items = canvases;
+        manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
     }
 
-    private async Task<Canvas?> GetCanvas(Asset asset, CustomerPathElement customerPathElement, int canvasIndex,
+    private async Task<AssetCanvas> GetCanvas(Asset asset, CustomerPathElement customerPathElement, int canvasIndex,
         Dictionary<AssetId, AuthProbeService2> authProbeServices, CancellationToken cancellationToken)
     {
         /*
@@ -151,57 +159,51 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
          * If 'thumbs'; add "Thumbnail" on canvas
          * If 'iiif-av' and single transcode; add "Sound" OR "Video" body on AnnotationPage>PaintingAnnotation
          * If 'iiif-av' and multi transcode; add "Choice" body on AnnotationPage>PaintingAnnotation
-         * If 'file' _only_; add BD style placeholder body (incl behaviour at Canvas level)
-         * If 'file'; add "Rendering" on canvas (regardless of what else is there)
+         * If 'iiif-av' and no AppMetadata then no Canvas
+         * If 'file' only; add weco BD style placeholder body (incl custom behaviours + context)
+         * If 'file'; add "Rendering" on canvas (always, canvas painted resource taken care of with above)
          *
-         * If 'iiif-av' and no AppMetadata then no Canvas - but _could_ have a BD style rendering if 'iiif-av' + 'file'
+         * Other notes:
+         *  Dimensions on Canvas can differ depending on type (temporal and/or spatial)
+         *  Metadata is same
+         *  CanvasId isn't same (do we want to change this??)
          *
-         * Dimensions on Canvas can differ depending on type (temporal and/or spatial)
-         * Metadata is same
-         * CanvasId isn't same (do we want to change this??)
-         *
-         * Build something that returns: Thumbnail, Canvas, Rendering. Just whack those in as required.
-         *    Does it need to return dimensions too?
-         *
-         * Auth services - on "body" too ALWAYS. On ImageService for images
+         * Auth services - on "body" always. Also on ImageService for images
          */
 
-        // TODO - this should differ depending on type of asset
-        var canvasId = GetCanvasId(asset, customerPathElement, canvasIndex);
-        
-        var canvasParts =
-            await GetCanvasParts(asset, customerPathElement, canvasId, authProbeServices, cancellationToken);
-        
-        if (canvasParts.Thumbnail == null && canvasParts.AnnotationPage == null) return null;
-
+        // TODO - id should differ depending on type of asset
         // The basic properties of a canvas are identical regardless of how the asset is available
         var canvas = new Canvas
         {
-            Id = canvasId,
+            Id = GetCanvasId(asset, customerPathElement, canvasIndex),
             Label = new LanguageMap("en", $"Canvas {canvasIndex}"),
-            Width = asset.Width,
-            Height = asset.Height,
-            Duration = asset.Duration,
             Metadata = GetCanvasMetadata(asset).ToV3Metadata(MetadataLanguage),
-            Items = canvasParts.AnnotationPage?.AsList(),
-            Thumbnail = canvasParts.Thumbnail?.AsListOf<ExternalResource>(),
         };
-
-        return canvas;
+        
+        var assetCanvas =
+            await GetCanvasForAsset(asset, customerPathElement, canvas, authProbeServices, cancellationToken);
+        
+        return assetCanvas;
     }
 
-    private async Task<CanvasParts> GetCanvasParts(Asset asset, CustomerPathElement customerPathElement, string canvasId,
+    private async Task<AssetCanvas> GetCanvasForAsset(Asset asset, CustomerPathElement customerPathElement, Canvas canvas,
         Dictionary<AssetId, AuthProbeService2> authProbeServices, CancellationToken cancellationToken)
     {
         var authServices = GetAuthServices(asset, authProbeServices);
         
         AnnotationPage? annotationPage = null;
         ExternalResource? thumbnail = null;
+        var additionalContexts = new List<string>();
+
+        var canvasId = canvas.Id;
         
-        // If Image or Thumbnail then it will have Image body and/or thumbnails
+        // If Image or Thumbnail then it will have Image body and/or thumbnail
         if (asset.HasAnyDeliveryChannel(AssetDeliveryChannels.Image, AssetDeliveryChannels.Thumbnails))
         {
             var thumbnailSizes = await RetrieveThumbnails(asset, cancellationToken);
+            
+            canvas.Width = asset.Width;
+            canvas.Height = asset.Height;
 
             annotationPage = new AnnotationPage
             {
@@ -239,40 +241,150 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         {
             var transcodes = asset.AssetApplicationMetadata.GetTranscodeMetadata(false);
             
+            canvas.Width = asset.Width;
+            canvas.Height = asset.Height;
+            canvas.Duration = asset.Duration;
+            
             // TODO - move this to a method and return from here
             if (!transcodes.IsNullOrEmpty())
             {
+                var paintables = transcodes
+                    .Select(t => GetPaintableForTranscode(asset, customerPathElement, t, authServices))
+                    .ToList();
+                
                 var paintingAnnotation = new PaintingAnnotation
                 {
                     Target = new Canvas { Id = canvasId },
                     Id = $"{canvasId}/page/image",
                 };
 
-                if (transcodes.Length == 1)
-                {
-                    // Single transcode, add single body
-                    paintingAnnotation.Body =
-                        GetPaintableForTranscode(asset, customerPathElement, transcodes[0], authServices);
-                }
-                else
-                {
-                    // Multiple transcodes, add a choice 
-                    paintingAnnotation.Body = new PaintingChoice
+                // For single transcode, add Audio/Sound body. Else add a choice
+                paintingAnnotation.Body = transcodes.Length == 1
+                    ? paintables.Single()
+                    : new PaintingChoice
                     {
-                        Items = transcodes.Select(t =>
-                            GetPaintableForTranscode(asset, customerPathElement, t, authServices)).ToList()
+                        Items = paintables
                     };
-                }
+                
+                annotationPage = new AnnotationPage
+                {
+                    Id = $"{canvasId}/page",
+                    Items = paintingAnnotation.AsListOf<IAnnotation>(),
+                };
             }
         }
+
+        if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
+        {
+            var isFileOnly = false;
+            
+            // If asset _only_ has file delivery channel then add a placeholder canvas
+            if (asset.HasSingleDeliveryChannel(AssetDeliveryChannels.File))
+            {
+                // TODO - store behaviors and context somewhere as const
+                additionalContexts.Add("https://iiif.wellcomecollection.org/extensions/born-digital/context.json");
+                isFileOnly = true;
+                canvas.Width = 1000;
+                canvas.Height = 1000;
+                canvas.Behavior ??= new List<string>();
+                canvas.Behavior.Add("placeholder"); 
+
+                annotationPage = new AnnotationPage
+                {
+                    Id = $"{canvasId}/page",
+                    Items = new PaintingAnnotation
+                    {
+                        Target = new Canvas { Id = canvasId },
+                        Id = $"{canvasId}/page/image",
+                        Body = new Image
+                        {
+                            Id = "TODO - /static/<type>/placeholder",
+                            Width = 1000,
+                            Height = 1000,
+                            Format = "image/jpeg",
+                        }
+                    }.AsListOf<IAnnotation>()
+                };
+            }
+
+            // Safety - prevents us trying to add a rendering when there is no choice
+            if (annotationPage != null)
+            {
+                var fileRendering = GetRenderingForAsset(asset, customerPathElement);
+                if (isFileOnly)
+                {
+                    fileRendering.Behavior ??= new List<string>();
+                    fileRendering.Behavior.Add("original");
+                }
+
+                annotationPage.Rendering = fileRendering.AsList();
+            }
+        }
+
+        if (annotationPage == null)
+        {
+            return new AssetCanvas(null, null);
+        }
         
-        return new CanvasParts(annotationPage, thumbnail);
+        canvas.Items = annotationPage.AsList();
+
+        if (thumbnail != null)
+        {
+            canvas.Thumbnail = thumbnail.AsListOf<ExternalResource>();
+        }
+        
+        return new AssetCanvas(canvas, additionalContexts);
+    }
+
+    private ExternalResource GetRenderingForAsset(Asset asset, CustomerPathElement customerPathElement)
+    {
+        var renderingId = GetFilePath(asset, customerPathElement);
+        if (MIMEHelper.IsImage(asset.MediaType))
+        {
+            return new Image
+            {
+                Id = renderingId,
+                Format = asset.MediaType,
+                Width = asset.Width,
+                Height = asset.Height,
+            };
+        }
+
+        if (MIMEHelper.IsVideo(asset.MediaType))
+        {
+            return new Video
+            {
+                Id = renderingId,
+                Format = asset.MediaType,
+                Width = asset.Width,
+                Height = asset.Height,
+                Duration = asset.Duration,
+            };
+        }
+        
+        if (MIMEHelper.IsAudio(asset.MediaType))
+        {
+            return new Audio
+            {
+                Id = renderingId,
+                Format = asset.MediaType,
+                Duration = asset.Duration,
+            };
+        }
+
+        var rdfType = MIMEHelper.GetRdfType(asset.MediaType);
+        return new ExternalResource(rdfType)
+        {
+            Id = renderingId,
+            Format = asset.MediaType,
+        };
     }
 
     /// <summary>
     /// Carrier for the possible properties that can be added to a manifest, dependent on Asset config
     /// </summary>
     private record CanvasParts(AnnotationPage? AnnotationPage, ExternalResource? Thumbnail);
+    private record AssetCanvas(Canvas? Canvas, IList<string>? AdditionalContexts);
     
     private static List<IService>? GetAuthServices(Asset asset, Dictionary<AssetId, AuthProbeService2> authProbeServices)
     {
@@ -310,7 +422,19 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         {
             Space = asset.Space,
             AssetPath = asset.Id.Asset.ToConcatenated('/', avTranscode.GetTranscodeRequestPath()),
-            RoutePrefix = "iiif-av",
+            RoutePrefix = AssetDeliveryChannels.Timebased,
+            CustomerPathValue = customerPathElement.Id.ToString(),
+        };
+        return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
+    }
+    
+    private string GetFilePath(Asset asset, CustomerPathElement customerPathElement)
+    {
+        var imageRequest = new BasicPathElements
+        {
+            Space = asset.Space,
+            AssetPath = asset.Id.Asset,
+            RoutePrefix = AssetDeliveryChannels.File,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
         return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
