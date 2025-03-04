@@ -168,7 +168,9 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif2);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(3);
+        var sequence = jsonResponse.SelectToken("sequences[0]");
+        sequence.Value<string>("@id").Should().Contain("/iiif-query/sequence/0", "@id set for nq");
+        sequence.SelectToken("canvases").Should().HaveCount(3);
     }
     
     [Fact]

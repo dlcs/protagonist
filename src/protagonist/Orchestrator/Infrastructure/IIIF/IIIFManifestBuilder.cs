@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -14,6 +15,7 @@ using IIIF.Presentation;
 using IIIF.Presentation.V2.Strings;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Infrastructure.IIIF.Manifests;
 using IIIF2 = IIIF.Presentation.V2;
 using IIIF3 = IIIF.Presentation.V3;
 using IIIFAuth2 = IIIF.Auth.V2;
@@ -27,14 +29,16 @@ public class IIIFManifestBuilder
 {
     private readonly IIIFCanvasFactory canvasFactory;
     private readonly IIIIFAuthBuilder authBuilder;
+    private readonly IBuildManifests<IIIF2.Manifest> manifestV2Builder;
     private readonly ILogger<IIIFManifestBuilder> logger;
     private const string Language = "en";
 
-    public IIIFManifestBuilder(IIIFCanvasFactory canvasFactory, IIIIFAuthBuilder authBuilder,
-        ILogger<IIIFManifestBuilder> logger)
+    public IIIFManifestBuilder(IIIFCanvasFactory canvasFactory, IIIIFAuthBuilder authBuilder, 
+        IBuildManifests<IIIF2.Manifest> manifestV2Builder, ILogger<IIIFManifestBuilder> logger)
     {
         this.canvasFactory = canvasFactory;
         this.authBuilder = authBuilder;
+        this.manifestV2Builder = manifestV2Builder;
         this.logger = logger;
     }
 
@@ -72,30 +76,10 @@ public class IIIFManifestBuilder
         return manifest;
     }
 
-    public async Task<IIIF2.Manifest> GenerateV2Manifest(List<Asset> assets, CustomerPathElement customerPathElement,
-        string manifestId, string label, string sequenceRoot, CancellationToken cancellationToken)
-    {
-        var manifest = new IIIF2.Manifest
-        {
-            Id = manifestId,
-            Label = new MetaDataValue(label),
-            Metadata = GetManifestMetadata().ToV2Metadata(),
-        };
-        
-        manifest.EnsurePresentation2Context();
-        
-        var canvases = await canvasFactory.CreateV2Canvases(assets, customerPathElement);
-        var sequence = new IIIF2.Sequence
-        {
-            Id = string.Concat(sequenceRoot, "/sequence/0"),
-            Label = new MetaDataValue("Sequence 0"),
-        };
-        sequence.Canvases = canvases;
-        manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
-        manifest.Sequences = sequence.AsList();
-
-        return manifest;
-    }
+    public Task<IIIF2.Manifest> GenerateV2Manifest(List<Asset> assets, CustomerPathElement customerPathElement,
+        string manifestId, string label, ManifestType manifestType, CancellationToken cancellationToken)
+        => manifestV2Builder.BuildManifest(manifestId, label, assets, customerPathElement, manifestType,
+            cancellationToken);
 
     private static Dictionary<string, string> GetManifestMetadata() =>
         new()

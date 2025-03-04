@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.IIIF;
+using Orchestrator.Infrastructure.IIIF.Manifests;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
 using IIIF2 = IIIF.Presentation.V2;
@@ -66,10 +67,11 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
             .IncludeDataForThumbs()
             .FirstOrDefaultAsync(a => a.Id == assetId, cancellationToken);
         
+        // TODO - fix these 
         if (asset == null || asset.NotForDelivery ||
             !asset.HasAnyDeliveryChannel(AssetDeliveryChannels.Image, AssetDeliveryChannels.Thumbnails))
         {
-            logger.LogDebug("Attempted to request an iiif-manifest for {AssetId}, but it was not found or is unavailable on any image delivery channel.",
+            logger.LogDebug("Attempted to request an iiif-manifest for {AssetId}, but it was not found or is unavailable",
                 assetId);
             return DescriptionResourceResponse.Empty;
         }    
@@ -95,10 +97,10 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
     private async Task<IIIF2.Manifest> GenerateV2Manifest(BaseAssetRequest assetRequest, Asset asset,
         CancellationToken cancellationToken)
     {
-        var manifestIdAndSequenceRoot = GetFullyQualifiedId(assetRequest);
+        var manifestId = GetFullyQualifiedId(assetRequest);
         var manifest =
-            await manifestBuilder.GenerateV2Manifest(asset.AsList(), assetRequest.Customer, manifestIdAndSequenceRoot,
-                ManifestLabel, manifestIdAndSequenceRoot, cancellationToken);
+            await manifestBuilder.GenerateV2Manifest(asset.AsList(), assetRequest.Customer, manifestId,
+                ManifestLabel, ManifestType.SingleItem, cancellationToken);
         return manifest;
     }
 

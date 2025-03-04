@@ -11,6 +11,7 @@ using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using DLCS.Web.Views;
+using IIIF.Presentation.V2;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -25,11 +26,14 @@ using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.IIIF;
+using Orchestrator.Infrastructure.IIIF.Manifests;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
+using IIIF2 = IIIF.Presentation.V2;
+using IIIF3 = IIIF.Presentation.V3;
 
 // Prevent R# flagging View() as not found
 [assembly: AspMvcViewLocationFormat(@"~\Features\Auth\Views\{0}.cshtml")]
@@ -72,7 +76,8 @@ public class Startup
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
             .AddScoped<IThumbSizeProvider, MetadataWithFallbackThumbSizeProvider>()
             .AddScoped<IIIFManifestBuilder>()
-            .AddScoped<IIIFCanvasFactory>()
+            .AddScoped<IBuildManifests<IIIF2.Manifest>, ManifestV2Builder>()
+            .AddScoped<IIIFCanvasFactory>() // TODO - remove
             .AddSingleton<AssetRequestProcessor>()
             .AddSingleton<DownstreamDestinationSelector>()
             .AddCaching(cachingSection.Get<CacheSettings>())

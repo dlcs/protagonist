@@ -3,14 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using IIIF.Auth.V2;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
 using IIIF.Presentation.V3.Annotation;
-using IIIF.Presentation.V3.Strings;
+using IIIF.Presentation.V3.Content;
 using IIIF.Serialisation;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
@@ -19,6 +18,7 @@ using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using IIIF3 = IIIF.Presentation.V3;
+using IIIF2 = IIIF.Presentation.V2;
 
 namespace Orchestrator.Tests.Integration;
 
@@ -317,7 +317,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin")
+        await dbFixture.DbContext.Images.AddTestAsset(id)
             .WithTestDeliveryChannel(AssetDeliveryChannels.Image)
             .WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
@@ -328,11 +328,11 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         var response = await httpClient.GetAsync(path);
             
         // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{id}");
         jsonResponse.SelectToken("sequences[0].canvases[0].images[0].resource").Should().NotBeNull();
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
@@ -343,7 +343,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin")
+        await dbFixture.DbContext.Images.AddTestAsset(id)
             .WithTestDeliveryChannel(AssetDeliveryChannels.Thumbnails)
             .WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
@@ -354,23 +354,23 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         var response = await httpClient.GetAsync(path);
             
         // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{id}");
         jsonResponse.SelectToken("sequences[0].canvases[0].images[0].resource").Should().BeNull();
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
     }
     
     [Fact]
-    public async Task Get_ManifestForImage_ReturnsManifest_ByName()
+    public async Task Get_ManifestForImage_V2_ReturnsManifest_ByName()
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        var namedId = $"test/1/{nameof(Get_ManifestForImage_ReturnsManifest_ByName)}";
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        var namedId = $"test/{id.Space}/{id.Asset}";
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
             
         var path = $"iiif-manifest/v2/{namedId}";
@@ -384,21 +384,18 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         jsonResponse.SelectToken("sequences[0].canvases[0].thumbnail.@id").Value<string>()
             .Should().StartWith($"http://localhost/thumbs/{id}/full");
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
     }
 
     [Fact]
-    public async Task Get_V3ManifestForImage_ReturnsManifest_WithCustomFields()
+    public async Task Get_V3ManifestForImage_ReturnsManifest_AssetMetadata()
     {
         // Arrange
         const string defaultLanguage = "none"; 
         var id = AssetIdGenerator.GetAssetId();
-        var namedId = $"test/1/{nameof(Get_V3ManifestForImage_ReturnsManifest_WithCustomFields)}";
         var asset = await dbFixture.DbContext.Images.AddTestAsset(id, 
-            origin: "testorigin",
             ref1: "string-example-1",
             ref2: "string-example-2",
             ref3: "string-example-3",
@@ -408,20 +405,20 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         
-        var path = $"iiif-manifest/{namedId}";
+        var path = $"iiif-manifest/{id}";
         
         // Act
         var response = await httpClient.GetAsync(path);
       
         // Assert
-        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        var metadata = jsonResponse.SelectToken("items[0].metadata")
-            .ToObject<List<LabelValuePair>>()
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+
+        var metadata = manifest.Items[0].Metadata
             .ToDictionary(
                 lvp => lvp.Label[defaultLanguage][0],
                 lvp => lvp.Value[defaultLanguage][0]);
         
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
         metadata.Should().NotBeNullOrEmpty();
         metadata.Should().Contain("String 1", asset.Entity.Reference1);
         metadata.Should().Contain("String 2", asset.Entity.Reference2);
@@ -431,12 +428,12 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         metadata.Should().Contain("Number 3", asset.Entity.NumberReference3.ToString());
     }
     
-        [Fact]
-    public async Task Get_V3ManifestForImage_ReturnsManifest_FromMetadata()
+    [Fact]
+    public async Task Get_V3ManifestForImage_ReturnsManifest_WithThumbsFromMetadata()
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels)
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels)
             .WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
             
@@ -446,15 +443,10 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         var response = await httpClient.GetAsync(path);
             
         // Assert
-        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-manifest/{id}");
-        jsonResponse.SelectToken("items[0].thumbnail[0].id").Value<string>()
-            .Should().StartWith($"http://localhost/thumbs/{id}/full");
-
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
-        response.Headers.CacheControl.Public.Should().BeTrue();
-        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        manifest.Id.Should().Be($"http://localhost/iiif-manifest/{id}");
+        manifest.Items[0].Thumbnail[0].Id.Should().StartWith($"http://localhost/thumbs/{id}/full");
     }
     
     [Fact]
@@ -462,7 +454,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin")
+        await dbFixture.DbContext.Images.AddTestAsset(id)
             .WithTestDeliveryChannel(AssetDeliveryChannels.Image);
         await dbFixture.DbContext.SaveChangesAsync();
             
@@ -472,14 +464,10 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         var response = await httpClient.GetAsync(path);
             
         // Assert
-        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-manifest/{id}");
-        jsonResponse.SelectToken("items[0].thumbnail").Should().BeNull();
-
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
-        response.Headers.CacheControl.Public.Should().BeTrue();
-        response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        manifest.Thumbnail.Should().BeNull("No thumbnail delivery-channel");
+        manifest.Items[0].Thumbnail.Should().BeNull("No thumbnail delivery-channel");
     }
     
     [Fact]
@@ -487,7 +475,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin")
+        await dbFixture.DbContext.Images.AddTestAsset(id)
             .WithTestDeliveryChannel(AssetDeliveryChannels.Image);
         await dbFixture.DbContext.SaveChangesAsync();
             
@@ -497,11 +485,14 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         var response = await httpClient.GetAsync(path);
             
         // Assert
-        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-manifest/{id}");
-        jsonResponse.SelectToken("items[0].items[0].items[0].body").Should().NotBeNull();
-
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        manifest
+            .Items.Single()
+            .Items.Single()
+            .Items.Cast<PaintingAnnotation>().Single()
+            .Body.Should().BeOfType<Image>();
     }
     
     [Fact]
@@ -509,7 +500,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin")
+        await dbFixture.DbContext.Images.AddTestAsset(id)
             .WithTestDeliveryChannel(AssetDeliveryChannels.Thumbnails)
             .WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
@@ -520,21 +511,22 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         var response = await httpClient.GetAsync(path);
             
         // Assert
-        var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
-        jsonResponse["id"].ToString().Should().Be($"http://localhost/iiif-manifest/{id}");
-        jsonResponse.SelectToken("items[0].items[0].items[0].body").Should().BeNull();
-
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        manifest
+            .Items.Single()
+            .Items.Single()
+            .Items.Cast<PaintingAnnotation>().Single()
+            .Body.Should().BeNull();
     }
     
     [Fact]
-    public async Task Get_V2ManifestForImage_ReturnsManifest_WithCustomFields()
+    public async Task Get_V2ManifestForImage_ReturnsManifest_WithAssetMetadata()
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        var namedId = $"test/1/{nameof(Get_V2ManifestForImage_ReturnsManifest_WithCustomFields)}";
         var asset = await dbFixture.DbContext.Images.AddTestAsset(id, 
-            origin: "testorigin",
             ref1: "string-example-1",
             ref2: "string-example-2",
             ref3: "string-example-3",
@@ -544,12 +536,14 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         
-        var path = $"iiif-manifest/v2/{namedId}";
+        var path = $"iiif-manifest/v2/{id}";
         
         // Act
         var response = await httpClient.GetAsync(path);
       
         // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         var metadata = jsonResponse.SelectToken("sequences[0].canvases[0].metadata")
             .ToObject<List<IIIF.Presentation.V2.Metadata>>()
@@ -557,7 +551,6 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
                 m => m.Label.LanguageValues[0].Value,
                 m => m.Value.LanguageValues[0].Value);
         
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
         metadata.Should().NotBeNullOrEmpty();
         metadata.Should().Contain("String 1", asset.Entity.Reference1);
         metadata.Should().Contain("String 2", asset.Entity.Reference2);
@@ -646,7 +639,11 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
         jsonResponse["@id"].ToString().Should().Be($"http://localhost/iiif-manifest/v2/{id}");
         jsonResponse["@context"].ToString().Should().Be("http://iiif.io/api/presentation/2/context.json");
-        jsonResponse.SelectToken("sequences[0].canvases").Count().Should().Be(1);
+        
+        var sequence = jsonResponse.SelectToken("sequences[0]");
+        sequence.Value<string>("@id").Should()
+            .Contain($"/iiif-manifest/v2/{id}/sequence/0", "@id set for single item manifest");
+        sequence.SelectToken("canvases").Should().HaveCount(1);
     }
         
     [Fact]
