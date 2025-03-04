@@ -17,14 +17,12 @@ public class IIIFManifestBuilder
 {
     private readonly IBuildManifests<IIIF3.Manifest> manifestV3Builder;
     private readonly IBuildManifests<IIIF2.Manifest> manifestV2Builder;
-    private readonly ILogger<IIIFManifestBuilder> logger;
 
     public IIIFManifestBuilder(IBuildManifests<IIIF3.Manifest> manifestV3Builder, 
-        IBuildManifests<IIIF2.Manifest> manifestV2Builder, ILogger<IIIFManifestBuilder> logger)
+        IBuildManifests<IIIF2.Manifest> manifestV2Builder)
     {
         this.manifestV3Builder = manifestV3Builder;
         this.manifestV2Builder = manifestV2Builder;
-        this.logger = logger;
     }
 
     public Task<IIIF3.Manifest> GenerateV3Manifest(List<Asset> assets, CustomerPathElement customerPathElement,
