@@ -120,14 +120,14 @@ public abstract class IIIFManifestBuilderBase
     protected string GetFullyQualifiedId(Asset asset, CustomerPathElement customerPathElement,
         bool isThumb, global::IIIF.ImageApi.Version imageApiVersion = global::IIIF.ImageApi.Version.Unknown)
     {
-        var versionPart = imageApiVersion == OrchestratorSettings.DefaultIIIFImageVersion ||
+        var versionPart= imageApiVersion == OrchestratorSettings.DefaultIIIFImageVersion ||
                           imageApiVersion == global::IIIF.ImageApi.Version.Unknown
             ? string.Empty
             : $"/{imageApiVersion.ToString().ToLower()}";
 
-        var routePrefix = isThumb
+        var routePrefix= isThumb
             ? OrchestratorSettings.Proxy.ThumbsPath
-            : OrchestratorSettings.Proxy.ImagePath; // TODO - cater for iiif-av and file too?
+            : OrchestratorSettings.Proxy.ImagePath;
 
         var imageRequest = new BasicPathElements
         {

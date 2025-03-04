@@ -81,7 +81,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         CustomerPathElement customerPathElement, Dictionary<AssetId, AuthProbeService2>? authProbeServices,
         CancellationToken cancellationToken)
     {
-        logger.LogDebug("Populating manifest {ManifestId}..", manifest.Id);
+        logger.LogDebug("Populating manifest {ManifestId}", manifest.Id);
         var probeServices = authProbeServices ?? new Dictionary<AssetId, AuthProbeService2>();
         int counter = 0;
         var canvases = new List<Canvas>(results.Count);
@@ -126,7 +126,6 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
          * Auth services - on "body" always. Also on ImageService for images
          */
 
-        // TODO - id should differ depending on type of asset
         // The basic properties of a canvas are identical regardless of how the asset is available
         var canvas = new Canvas
         {
@@ -146,7 +145,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
     {
         var authServices = GetAuthServices(asset, authProbeServices);
         
-        logger.LogTrace("Adding canvas {CanvasId} to manifest..", canvas.Id);
+        logger.LogTrace("Adding canvas {CanvasId} to manifest", canvas.Id);
         
         AnnotationPage? annotationPage = null;
         ExternalResource? thumbnail = null;
@@ -160,7 +159,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         }
         else if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
         {
-            // If Timebased when it will only have an annotation body (no thumbs)
+            // If Timebased then it will only have an annotation body (no thumbs)
             annotationPage = HandleTimebasedAsset(asset, customerPathElement, canvas, authServices);
         }
 
@@ -210,7 +209,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         CustomerPathElement customerPathElement, Canvas canvas, List<IService>? authServices, 
         CancellationToken cancellationToken)
     {
-        logger.LogTrace("{CanvasId} is image, processing..", canvas.Id);
+        logger.LogTrace("{CanvasId} is image, processing", canvas.Id);
         var thumbnailSizes = await RetrieveThumbnails(asset, cancellationToken);
 
         var canvasId = canvas.Id;
@@ -253,7 +252,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
     private AnnotationPage? HandleTimebasedAsset(Asset asset, CustomerPathElement customerPathElement, Canvas canvas,
         List<IService>? authServices)
     {
-        logger.LogTrace("{CanvasId} is timebased, processing..", canvas.Id);
+        logger.LogTrace("{CanvasId} is timebased, processing", canvas.Id);
         var canvasId = canvas.Id;
         var transcodes = asset.AssetApplicationMetadata.GetTranscodeMetadata(false);
             
@@ -294,7 +293,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
     
     private AnnotationPage GetFileChannelPlaceholder(Asset asset, Canvas canvas)
     {
-        logger.LogTrace("{CanvasId} is file only, processing..", canvas.Id);
+        logger.LogTrace("{CanvasId} is file only, processing", canvas.Id);
         
         var canvasId = canvas.Id!;
         canvas.Width = 1000;
@@ -331,6 +330,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
 
     private ExternalResource GetRenderingForAsset(Asset asset, CustomerPathElement customerPathElement)
     {
+        logger.LogTrace("Generating 'rendering' for {AssetId}", asset.Id);
         var renderingId = GetFilePath(asset, customerPathElement);
         if (MIMEHelper.IsImage(asset.MediaType))
         {

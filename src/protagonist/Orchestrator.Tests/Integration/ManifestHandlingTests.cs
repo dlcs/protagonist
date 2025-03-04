@@ -518,7 +518,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             .Items.Single()
             .Items.Single()
             .Items.Cast<PaintingAnnotation>().Single()
-            .Body.Should().BeNull();
+            .Body.Service.Should().BeNull();
     }
     
     [Fact]
@@ -773,10 +773,11 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             .Items.Cast<PaintingAnnotation>().Single()
             .Body.As<IIIF.Presentation.V3.Content.Image>();
             
-        paintable.Service.Should().HaveCount(2);
+        paintable.Service.Should().HaveCount(3);
         paintable.Service.OfType<ImageService2>().Single().Service.Should()
             .ContainSingle(s => s is AuthProbeService2 && s.Id.Contains(id.ToString()));
         paintable.Service.OfType<ImageService3>().Single().Service.Should()
             .ContainSingle(s => s is AuthProbeService2 && s.Id.Contains(id.ToString()));
+        paintable.Service.OfType<AuthProbeService2>().Single().Id.Should().Contain(id.ToString());
     }
 }
