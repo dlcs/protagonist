@@ -41,7 +41,7 @@ public class ManifestV2Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
 
         manifest.EnsurePresentation2Context();
 
-        var canvases = await CreateV2Canvases(assets, customerPathElement, cancellationToken);
+        var canvases = await CreateCanvases(assets, customerPathElement, cancellationToken);
         var sequence = new Sequence
         {
             Id = GetSequenceId(manifestId, manifestType),
@@ -67,7 +67,7 @@ public class ManifestV2Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         return manifestId.ToConcatenated('/', "/sequence/0");
     }
 
-    private async Task<List<Canvas>> CreateV2Canvases(List<Asset> results, CustomerPathElement customerPathElement,
+    private async Task<List<Canvas>> CreateCanvases(List<Asset> results, CustomerPathElement customerPathElement,
         CancellationToken cancellationToken)
     {
         int counter = 0;

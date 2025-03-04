@@ -69,7 +69,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
             manifest.Services = accessServices;
         }
         
-        var canvases = await CreateV3Canvases(assets, customerPathElement, probeServices, cancellationToken);
+        var canvases = await CreateCanvases(assets, customerPathElement, probeServices, cancellationToken);
         manifest.Items = canvases;
         manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
         
@@ -119,7 +119,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         return accessServices;
     }
 
-    private async Task<List<Canvas>> CreateV3Canvases(List<Asset> results,
+    private async Task<List<Canvas>> CreateCanvases(List<Asset> results,
         CustomerPathElement customerPathElement, Dictionary<AssetId, AuthProbeService2>? authProbeServices,
         CancellationToken cancellationToken)
     {
