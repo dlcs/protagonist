@@ -11,7 +11,6 @@ using DLCS.Web.Middleware;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using DLCS.Web.Views;
-using IIIF.Presentation.V2;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -77,7 +76,7 @@ public class Startup
             .AddScoped<IThumbSizeProvider, MetadataWithFallbackThumbSizeProvider>()
             .AddScoped<IIIFManifestBuilder>()
             .AddScoped<IBuildManifests<IIIF2.Manifest>, ManifestV2Builder>()
-            .AddScoped<IIIFCanvasFactory>() // TODO - remove
+            .AddScoped<IBuildManifests<IIIF3.Manifest>, ManifestV3Builder>()
             .AddSingleton<AssetRequestProcessor>()
             .AddSingleton<DownstreamDestinationSelector>()
             .AddCaching(cachingSection.Get<CacheSettings>())

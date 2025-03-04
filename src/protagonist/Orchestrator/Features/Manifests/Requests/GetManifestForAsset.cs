@@ -87,9 +87,8 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
         CancellationToken cancellationToken)
     {
         var manifestId = GetFullyQualifiedId(assetRequest);
-        var manifest =
-            await manifestBuilder.GenerateV3Manifest(asset.AsList(), assetRequest.Customer, manifestId, ManifestLabel,
-                cancellationToken);
+        var manifest = await manifestBuilder.GenerateV3Manifest(asset.AsList(), assetRequest.Customer, manifestId,
+            ManifestLabel, ManifestType.SingleItem, cancellationToken);
 
         return manifest;
     }

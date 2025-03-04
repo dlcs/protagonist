@@ -73,7 +73,7 @@ public class IIIFNamedQueryProjector
         var label = GetManifestLabel(parsedNamedQuery);
         var manifest =
             await manifestBuilder.GenerateV3Manifest(results, customerPathElement, manifestId, label,
-                cancellationToken);
+                ManifestType.NamedQuery, cancellationToken);
         
         return manifest;
     }

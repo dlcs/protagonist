@@ -1,24 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Collections;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.IIIF;
 using DLCS.Model.PathElements;
-using IIIF;
-using IIIF.Presentation;
-using IIIF.Presentation.V2.Strings;
-using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Infrastructure.IIIF.Manifests;
 using IIIF2 = IIIF.Presentation.V2;
 using IIIF3 = IIIF.Presentation.V3;
-using IIIFAuth2 = IIIF.Auth.V2;
 
 namespace Orchestrator.Infrastructure.IIIF;
 
@@ -27,107 +15,25 @@ namespace Orchestrator.Infrastructure.IIIF;
 /// </summary>
 public class IIIFManifestBuilder
 {
-    private readonly IIIFCanvasFactory canvasFactory;
-    private readonly IIIIFAuthBuilder authBuilder;
+    private readonly IBuildManifests<IIIF3.Manifest> manifestV3Builder;
     private readonly IBuildManifests<IIIF2.Manifest> manifestV2Builder;
     private readonly ILogger<IIIFManifestBuilder> logger;
-    private const string Language = "en";
 
-    public IIIFManifestBuilder(IIIFCanvasFactory canvasFactory, IIIIFAuthBuilder authBuilder, 
+    public IIIFManifestBuilder(IBuildManifests<IIIF3.Manifest> manifestV3Builder, 
         IBuildManifests<IIIF2.Manifest> manifestV2Builder, ILogger<IIIFManifestBuilder> logger)
     {
-        this.canvasFactory = canvasFactory;
-        this.authBuilder = authBuilder;
+        this.manifestV3Builder = manifestV3Builder;
         this.manifestV2Builder = manifestV2Builder;
         this.logger = logger;
     }
 
-    public async Task<IIIF3.Manifest> GenerateV3Manifest(List<Asset> assets, CustomerPathElement customerPathElement,
-        string manifestId, string label, CancellationToken cancellationToken)
-    {
-        var probeServices = await GetProbeServices(assets, cancellationToken);
-        var anyAssetRequireAuth = !probeServices.IsNullOrEmpty();
-        
-        var manifest = new IIIF3.Manifest
-        {
-            Id = manifestId,
-            Label = new LanguageMap(Language, label),
-            Metadata = GetManifestMetadata().ToV3Metadata(Language),
-        };
-        
-        manifest.EnsurePresentation3Context();
-        if (anyAssetRequireAuth)
-        {
-            logger.LogTrace(
-                "ManifestId {ManifestId} has at least 1 asset requiring auth - adding Auth2 context + services",
-                manifestId);
-            manifest.EnsureContext(IIIFAuth2.Constants.IIIFAuth2Context);
-
-            // Add the AuthAccessServices to the manifest services collection.
-            // Individual ImageServices will contain ProbeService and reference this accessService
-            var accessServices = GetDistinctAccessServices(probeServices);
-            manifest.Services = accessServices;
-        }
-        
-        var canvases = await canvasFactory.CreateV3Canvases(assets, customerPathElement, probeServices);
-        manifest.Items = canvases;
-        manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
-        
-        return manifest;
-    }
+    public Task<IIIF3.Manifest> GenerateV3Manifest(List<Asset> assets, CustomerPathElement customerPathElement,
+        string manifestId, string label, ManifestType manifestType, CancellationToken cancellationToken)
+        => manifestV3Builder.BuildManifest(manifestId, label, assets, customerPathElement, manifestType,
+            cancellationToken);
 
     public Task<IIIF2.Manifest> GenerateV2Manifest(List<Asset> assets, CustomerPathElement customerPathElement,
         string manifestId, string label, ManifestType manifestType, CancellationToken cancellationToken)
         => manifestV2Builder.BuildManifest(manifestId, label, assets, customerPathElement, manifestType,
             cancellationToken);
-
-    private static Dictionary<string, string> GetManifestMetadata() =>
-        new()
-        {
-            ["Title"] = "Created by DLCS",
-            ["Generated On"] = DateTime.UtcNow.ToString("u"),
-        };
-
-    private async Task<Dictionary<AssetId, IIIFAuth2.AuthProbeService2>?> GetProbeServices(IReadOnlyCollection<Asset> assets, CancellationToken cancellationToken)
-    {
-        var assetsRequiringAuth = assets.Where(a => a.RequiresAuth && !string.IsNullOrEmpty(a.Roles)).ToList();
-
-        var assetsRequiringAuthCount = assetsRequiringAuth.Count;
-        if (assetsRequiringAuthCount == 0) return null;
-
-        var logLevel = assetsRequiringAuthCount > 10 ? LogLevel.Information : LogLevel.Debug;
-        logger.Log(logLevel, "Getting Auth services for {AuthAssetCount} assets", assetsRequiringAuthCount);
-
-        // This is doing a lot - batch the requests up?
-        var sw = Stopwatch.StartNew();
-        var probeServices = new Dictionary<AssetId, IIIFAuth2.AuthProbeService2>(assetsRequiringAuthCount);
-        var taskList = new List<Task>(assetsRequiringAuthCount);
-        foreach (var asset in assetsRequiringAuth)
-        {
-            taskList.Add(authBuilder.GetAuthServicesForAsset(asset.Id, asset.RolesList.ToList(), cancellationToken)
-                .ContinueWith(antecedent =>
-                    {
-                        if (antecedent.Result is IIIFAuth2.AuthProbeService2 probeService2)
-                            probeServices[asset.Id] = probeService2;
-                    },
-                    TaskContinuationOptions.OnlyOnRanToCompletion));
-        }
-        
-        await Task.WhenAll(taskList);
-        sw.Stop();
-        logger.Log(logLevel, "Got Auth services for {AuthAssetCount} assets in {Elapsed}ms", assetsRequiringAuthCount,
-            sw.ElapsedMilliseconds);
-
-        return probeServices;
-    }
-    
-    private static List<IService> GetDistinctAccessServices(Dictionary<AssetId, IIIFAuth2.AuthProbeService2>? probeServices)
-    {
-        var accessServices = probeServices!
-            .SelectMany(kvp => kvp.Value.Service?.OfType<IIIFAuth2.AuthAccessService2>() ?? Array.Empty<IIIFAuth2.AuthAccessService2>())
-            .DistinctBy(accessService => accessService.Id)
-            .Cast<IService>()
-            .ToList();
-        return accessServices;
-    }
 }
