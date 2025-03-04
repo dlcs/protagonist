@@ -22,8 +22,6 @@ using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Orchestrator.Settings;
 using IIIFAuth2 = IIIF.Auth.V2;
 
 namespace Orchestrator.Infrastructure.IIIF.Manifests;
@@ -31,17 +29,23 @@ namespace Orchestrator.Infrastructure.IIIF.Manifests;
 /// <summary>
 /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v3 manifest
 /// </summary>
-public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manifest>
+public class ManifestV3Builder : IBuildManifests<Manifest>
 {
+    private readonly IManifestBuilderUtils builderUtils;
+    private readonly IAssetPathGenerator assetPathGenerator;
     private readonly IIIIFAuthBuilder authBuilder;
     private readonly ILogger<ManifestV3Builder> logger;
-    private const string Language = "en";
+    private const string ManifestLanguage = "en";
+    private const string CanvasLanguage = "none";
 
-    public ManifestV3Builder(IAssetPathGenerator assetPathGenerator,
-        IOptions<OrchestratorSettings> orchestratorSettings, IThumbSizeProvider thumbSizeProvider,
-        IIIIFAuthBuilder authBuilder, ILogger<ManifestV3Builder> logger) : base(assetPathGenerator,
-        orchestratorSettings, thumbSizeProvider)
+    public ManifestV3Builder(
+        IManifestBuilderUtils builderUtils,
+        IAssetPathGenerator assetPathGenerator,
+        IIIIFAuthBuilder authBuilder, 
+        ILogger<ManifestV3Builder> logger)
     {
+        this.builderUtils = builderUtils;
+        this.assetPathGenerator = assetPathGenerator;
         this.authBuilder = authBuilder;
         this.logger = logger;
     }
@@ -55,8 +59,8 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         var manifest = new Manifest
         {
             Id = manifestId,
-            Label = new LanguageMap(Language, label),
-            Metadata = GetManifestMetadata().ToV3Metadata(Language),
+            Label = new LanguageMap(ManifestLanguage, label),
+            Metadata = ManifestBuilderUtils.GetManifestMetadata().ToV3Metadata(ManifestLanguage),
         };
 
         manifest.EnsurePresentation3Context();
@@ -129,9 +133,9 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         // The basic properties of a canvas are identical regardless of how the asset is available
         var canvas = new Canvas
         {
-            Id = GetCanvasId(asset, customerPathElement, canvasIndex),
+            Id = builderUtils.GetCanvasId(asset, customerPathElement, canvasIndex),
             Label = new LanguageMap("en", $"Canvas {canvasIndex}"),
-            Metadata = GetCanvasMetadata(asset).ToV3Metadata(MetadataLanguage),
+            Metadata = ManifestBuilderUtils.GetCanvasMetadata(asset).ToV3Metadata(CanvasLanguage),
         };
         
         var assetCanvas =
@@ -210,7 +214,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         CancellationToken cancellationToken)
     {
         logger.LogTrace("{CanvasId} is image, processing", canvas.Id);
-        var thumbnailSizes = await RetrieveThumbnails(asset, cancellationToken);
+        var thumbnailSizes = await builderUtils.RetrieveThumbnails(asset, cancellationToken);
 
         var canvasId = canvas.Id;
         canvas.Width = asset.Width;
@@ -225,25 +229,25 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
                 Id = $"{canvasId}/page/image",
                 Body = new Image
                 {
-                    Id = GetFullQualifiedImagePath(asset, customerPathElement,
+                    Id = builderUtils.GetFullQualifiedImagePath(asset, customerPathElement,
                         thumbnailSizes.MaxDerivativeSize, false),
                     Format = "image/jpeg",
                     Width = thumbnailSizes.MaxDerivativeSize.Width,
                     Height = thumbnailSizes.MaxDerivativeSize.Height,
                     Service = asset.HasDeliveryChannel(AssetDeliveryChannels.Image)
-                        ? GetImageServices(asset, customerPathElement, false, authServices)
+                        ? builderUtils.GetImageServices(asset, customerPathElement, false, authServices)
                         : null,
                 },
             }.AsListOf<IAnnotation>(),
         };
 
-        if (!ShouldAddThumbs(asset, thumbnailSizes)) return (annotationPage, null);
+        if (!builderUtils.ShouldAddThumbs(asset, thumbnailSizes)) return (annotationPage, null);
 
         var thumbnail = new Image
         {
-            Id = GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
+            Id = builderUtils.GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
             Format = "image/jpeg",
-            Service = GetImageServiceForThumbnail(asset, customerPathElement, false,
+            Service = builderUtils.GetImageServiceForThumbnail(asset, customerPathElement, false,
                 thumbnailSizes.OpenThumbnails)
         };
         return (annotationPage, thumbnail);
@@ -414,7 +418,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
             RoutePrefix = AssetDeliveryChannels.Timebased,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return AssetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
+        return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
     }
     
     private string GetFilePath(Asset asset, CustomerPathElement customerPathElement)
@@ -426,7 +430,7 @@ public class ManifestV3Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
             RoutePrefix = AssetDeliveryChannels.File,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return AssetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
+        return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
     }
     
     private async Task<Dictionary<AssetId, AuthProbeService2>?> GetProbeServices(IReadOnlyCollection<Asset> assets,

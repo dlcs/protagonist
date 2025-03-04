@@ -24,15 +24,11 @@ using Orchestrator.Features.Files;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
-using Orchestrator.Infrastructure.IIIF;
-using Orchestrator.Infrastructure.IIIF.Manifests;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Serilog;
-using IIIF2 = IIIF.Presentation.V2;
-using IIIF3 = IIIF.Presentation.V3;
 
 // Prevent R# flagging View() as not found
 [assembly: AspMvcViewLocationFormat(@"~\Features\Auth\Views\{0}.cshtml")]
@@ -73,10 +69,6 @@ public class Startup
             .AddSingleton<FileRequestHandler>()
             .AddSingleton<S3ProxyPathGenerator>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
-            .AddScoped<IThumbSizeProvider, MetadataWithFallbackThumbSizeProvider>()
-            .AddScoped<IIIFManifestBuilder>()
-            .AddScoped<IBuildManifests<IIIF2.Manifest>, ManifestV2Builder>()
-            .AddScoped<IBuildManifests<IIIF3.Manifest>, ManifestV3Builder>()
             .AddSingleton<AssetRequestProcessor>()
             .AddSingleton<DownstreamDestinationSelector>()
             .AddCaching(cachingSection.Get<CacheSettings>())
@@ -91,6 +83,7 @@ public class Startup
             .AddAws(configuration, webHostEnvironment)
             .AddCorrelationIdHeaderPropagation()
             .AddInfoJsonClient()
+            .AddIIIFBuilding()
             .AddIIIFAuth(orchestratorSettings)
             .HandlePathTemplates();
         

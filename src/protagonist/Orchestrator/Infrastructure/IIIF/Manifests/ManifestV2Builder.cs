@@ -8,25 +8,23 @@ using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.IIIF;
 using DLCS.Model.PathElements;
-using DLCS.Web.Response;
 using IIIF.Presentation;
 using IIIF.Presentation.V2;
 using IIIF.Presentation.V2.Annotation;
 using IIIF.Presentation.V2.Strings;
-using Microsoft.Extensions.Options;
-using Orchestrator.Settings;
 
 namespace Orchestrator.Infrastructure.IIIF.Manifests;
 
 /// <summary>
 /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v2 manifest
 /// </summary>
-public class ManifestV2Builder : IIIFManifestBuilderBase, IBuildManifests<Manifest>
+public class ManifestV2Builder : IBuildManifests<Manifest>
 {
-    public ManifestV2Builder(IAssetPathGenerator assetPathGenerator,
-        IOptions<OrchestratorSettings> orchestratorSettings, IThumbSizeProvider thumbSizeProvider) : base(
-        assetPathGenerator, orchestratorSettings, thumbSizeProvider)
+    private readonly IManifestBuilderUtils builderUtils;
+
+    public ManifestV2Builder(IManifestBuilderUtils builderUtils)
     {
+        this.builderUtils = builderUtils;
     }
 
     public async Task<Manifest> BuildManifest(string manifestId, string label, List<Asset> assets,
@@ -36,7 +34,7 @@ public class ManifestV2Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         {
             Id = manifestId,
             Label = new MetaDataValue(label),
-            Metadata = GetManifestMetadata().ToV2Metadata(),
+            Metadata = ManifestBuilderUtils.GetManifestMetadata().ToV2Metadata(),
         };
 
         manifest.EnsurePresentation2Context();
@@ -74,11 +72,8 @@ public class ManifestV2Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
         var canvases = new List<Canvas>(results.Count);
         foreach (var asset in results)
         {
-            // TODO - this breaks tests but makes sense - cleans up ImageResource construction below
-            //if (!asset.HasDeliveryChannel(AssetDeliveryChannels.Image)) continue;
-
-            var canvasId = GetCanvasId(asset, customerPathElement, ++counter);
-            var thumbnailSizes = await RetrieveThumbnails(asset, cancellationToken);
+            var canvasId = builderUtils.GetCanvasId(asset, customerPathElement, ++counter);
+            var thumbnailSizes = await builderUtils.RetrieveThumbnails(asset, cancellationToken);
 
             var canvas = new Canvas
             {
@@ -86,7 +81,7 @@ public class ManifestV2Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
                 Label = new MetaDataValue($"Canvas {counter}"),
                 Width = asset.Width,
                 Height = asset.Height,
-                Metadata = GetCanvasMetadata(asset).ToV2Metadata(),
+                Metadata = ManifestBuilderUtils.GetCanvasMetadata(asset).ToV2Metadata(),
                 Images = new ImageAnnotation
                 {
                     Id = string.Concat(canvasId, "/imageanno/0"),
@@ -94,22 +89,22 @@ public class ManifestV2Builder : IIIFManifestBuilderBase, IBuildManifests<Manife
                     Resource = asset.HasDeliveryChannel(AssetDeliveryChannels.Image)
                         ? new ImageResource
                         {
-                            Id = GetFullQualifiedImagePath(asset, customerPathElement,
+                            Id = builderUtils.GetFullQualifiedImagePath(asset, customerPathElement,
                                 thumbnailSizes.MaxDerivativeSize, false),
                             Width = thumbnailSizes.MaxDerivativeSize.Width,
                             Height = thumbnailSizes.MaxDerivativeSize.Height,
-                            Service = GetImageServices(asset, customerPathElement, true, null)
+                            Service = builderUtils.GetImageServices(asset, customerPathElement, true, null)
                         }
                         : null,
                 }.AsList()
             };
 
-            if (ShouldAddThumbs(asset, thumbnailSizes))
+            if (builderUtils.ShouldAddThumbs(asset, thumbnailSizes))
             {
                 canvas.Thumbnail = new Thumbnail
                 {
-                    Id = GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
-                    Service = GetImageServiceForThumbnail(asset, customerPathElement, true,
+                    Id = builderUtils.GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
+                    Service = builderUtils.GetImageServiceForThumbnail(asset, customerPathElement, true,
                         thumbnailSizes.OpenThumbnails)
                 }.AsList();
             }

@@ -19,43 +19,63 @@ using Orchestrator.Settings;
 
 namespace Orchestrator.Infrastructure.IIIF.Manifests;
 
+public interface IManifestBuilderUtils
+{
+    Task<ImageSizeDetails> RetrieveThumbnails(Asset asset, CancellationToken cancellationToken);
+
+    List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
+        bool forPresentation2, List<Size> thumbnailSizes);
+
+    string GetFullQualifiedThumbPath(Asset asset, CustomerPathElement customerPathElement,
+        List<Size> availableThumbs);
+
+    string GetFullQualifiedImagePath(Asset asset, CustomerPathElement customerPathElement, Size size,
+        bool isThumb);
+
+    string GetCanvasId(Asset asset, CustomerPathElement customerPathElement, int index);
+
+    List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement, bool forPresentation2,
+        List<IService>? authServices);
+    
+    bool ShouldAddThumbs(Asset asset, ImageSizeDetails thumbnailSizes);
+}
+
 /// <summary>
 /// Class containing common methods for building different version Manifests 
 /// </summary>
-public abstract class IIIFManifestBuilderBase
+public class ManifestBuilderUtils : IManifestBuilderUtils
 {
-    protected readonly IAssetPathGenerator AssetPathGenerator;
-    protected readonly OrchestratorSettings OrchestratorSettings;
-    protected readonly IThumbSizeProvider ThumbSizeProvider;
-    protected const string MetadataLanguage = "none";
+    private readonly IAssetPathGenerator assetPathGenerator;
+    private readonly OrchestratorSettings orchestratorSettings;
+    private readonly IThumbSizeProvider thumbSizeProvider;
 
-    public IIIFManifestBuilderBase(
+    public ManifestBuilderUtils(
         IAssetPathGenerator assetPathGenerator,
         IOptions<OrchestratorSettings> orchestratorSettings,
         IThumbSizeProvider thumbSizeProvider)
     {
-        AssetPathGenerator = assetPathGenerator;
-        ThumbSizeProvider = thumbSizeProvider;
-        OrchestratorSettings = orchestratorSettings.Value;
+        this.assetPathGenerator = assetPathGenerator;
+        this.thumbSizeProvider = thumbSizeProvider;
+        this.orchestratorSettings = orchestratorSettings.Value;
     }
 
-    protected async Task<ImageSizeDetails> RetrieveThumbnails(Asset asset, CancellationToken cancellationToken)
+    public async Task<ImageSizeDetails> RetrieveThumbnails(Asset asset, CancellationToken cancellationToken)
     {
-        var allThumbSizes = await ThumbSizeProvider.GetThumbSizesForImage(asset, cancellationToken);
+        var allThumbSizes = await thumbSizeProvider.GetThumbSizesForImage(asset, cancellationToken);
         var openThumbnails = allThumbSizes.Open.Select(Size.FromArray).ToList();
 
         var maxDerivativeSize = openThumbnails.IsNullOrEmpty()
-            ? Size.Confine(OrchestratorSettings.TargetThumbnailSize, new Size(asset.Width ?? 0, asset.Height ?? 0))
+            ? Size.Confine(orchestratorSettings.TargetThumbnailSize, new Size(asset.Width ?? 0, asset.Height ?? 0))
             : openThumbnails.MaxBy(s => s.MaxDimension)!;
 
         return new ImageSizeDetails(openThumbnails, maxDerivativeSize);
     }
 
-    protected List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
+    public List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
         bool forPresentation2, List<Size> thumbnailSizes)
     {
         var services = new List<IService>();
-        if (OrchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V2))
+        if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V2))
         {
             var imageService = new ImageService2
             {
@@ -73,7 +93,7 @@ public abstract class IIIFManifestBuilderBase
         // NOTE - we never include ImageService3 on Presentation2 manifests
         if (forPresentation2) return services;
 
-        if (OrchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V3))
+        if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V3))
         {
             services.Add(new ImageService3
             {
@@ -87,10 +107,10 @@ public abstract class IIIFManifestBuilderBase
         return services;
     }
 
-    protected string GetFullQualifiedThumbPath(Asset asset, CustomerPathElement customerPathElement,
+    public string GetFullQualifiedThumbPath(Asset asset, CustomerPathElement customerPathElement,
         List<Size> availableThumbs)
     {
-        var targetThumb = OrchestratorSettings.TargetThumbnailSize;
+        var targetThumb = orchestratorSettings.TargetThumbnailSize;
 
         // Get the thumbnail size that is closest to the system-wide TargetThumbnailSize
         var closestSize = availableThumbs.SizeClosestTo(targetThumb);
@@ -98,52 +118,29 @@ public abstract class IIIFManifestBuilderBase
         return GetFullQualifiedImagePath(asset, customerPathElement, closestSize, true);
     }
 
-    protected string GetFullQualifiedImagePath(Asset asset, CustomerPathElement customerPathElement, Size size,
+    public string GetFullQualifiedImagePath(Asset asset, CustomerPathElement customerPathElement, Size size,
         bool isThumb)
     {
         var request = new BasicPathElements
         {
             Space = asset.Space,
             AssetPath = $"{asset.Id.Asset}/full/{size.Width},{size.Height}/0/default.jpg",
-            RoutePrefix = isThumb ? OrchestratorSettings.Proxy.ThumbsPath : OrchestratorSettings.Proxy.ImagePath,
+            RoutePrefix = isThumb ? orchestratorSettings.Proxy.ThumbsPath : orchestratorSettings.Proxy.ImagePath,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return AssetPathGenerator.GetFullPathForRequest(request, true, false);
+        return assetPathGenerator.GetFullPathForRequest(request, true, false);
     }
 
-    protected string GetCanvasId(Asset asset, CustomerPathElement customerPathElement, int index)
+    public string GetCanvasId(Asset asset, CustomerPathElement customerPathElement, int index)
     {
         var fullyQualifiedImageId = GetFullyQualifiedId(asset, customerPathElement, false);
         return string.Concat(fullyQualifiedImageId, "/canvas/c/", index);
     }
 
-    protected string GetFullyQualifiedId(Asset asset, CustomerPathElement customerPathElement,
-        bool isThumb, global::IIIF.ImageApi.Version imageApiVersion = global::IIIF.ImageApi.Version.Unknown)
-    {
-        var versionPart= imageApiVersion == OrchestratorSettings.DefaultIIIFImageVersion ||
-                          imageApiVersion == global::IIIF.ImageApi.Version.Unknown
-            ? string.Empty
-            : $"/{imageApiVersion.ToString().ToLower()}";
-
-        var routePrefix= isThumb
-            ? OrchestratorSettings.Proxy.ThumbsPath
-            : OrchestratorSettings.Proxy.ImagePath;
-
-        var imageRequest = new BasicPathElements
-        {
-            Space = asset.Space,
-            AssetPath = asset.Id.Asset,
-            VersionPathValue = versionPart,
-            RoutePrefix = routePrefix,
-            CustomerPathValue = customerPathElement.Id.ToString(),
-        };
-        return AssetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
-    }
-
-    protected List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement, bool forPresentation2,
+    public List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement, bool forPresentation2,
         List<IService>? authServices)
     {
-        var versionPathTemplates = OrchestratorSettings.ImageServerConfig.VersionPathTemplates;
+        var versionPathTemplates = orchestratorSettings.ImageServerConfig.VersionPathTemplates;
 
         var services = new List<IService>();
         if (versionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V2))
@@ -190,7 +187,7 @@ public abstract class IIIFManifestBuilderBase
         return services;
     }
 
-    protected static Dictionary<string, string> GetCanvasMetadata(Asset asset) =>
+    public static Dictionary<string, string> GetCanvasMetadata(Asset asset) =>
         new()
         {
             { "String 1", asset.Reference1 ?? string.Empty },
@@ -203,35 +200,58 @@ public abstract class IIIFManifestBuilderBase
             { "Roles", asset.Roles ?? string.Empty }
         };
     
-    protected static Dictionary<string, string> GetManifestMetadata() =>
+    public static Dictionary<string, string> GetManifestMetadata() =>
         new()
         {
             ["Title"] = "Created by DLCS",
             ["Generated On"] = DateTime.UtcNow.ToString("u"),
         };
 
-    protected static bool ShouldAddThumbs(Asset asset, ImageSizeDetails thumbnailSizes) =>
+    public bool ShouldAddThumbs(Asset asset, ImageSizeDetails thumbnailSizes) =>
         asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails) && !thumbnailSizes.OpenThumbnails.IsNullOrEmpty();
+    
+    private string GetFullyQualifiedId(Asset asset, CustomerPathElement customerPathElement,
+        bool isThumb, global::IIIF.ImageApi.Version imageApiVersion = global::IIIF.ImageApi.Version.Unknown)
+    {
+        var versionPart= imageApiVersion == orchestratorSettings.DefaultIIIFImageVersion ||
+                         imageApiVersion == global::IIIF.ImageApi.Version.Unknown
+            ? string.Empty
+            : $"/{imageApiVersion.ToString().ToLower()}";
+
+        var routePrefix= isThumb
+            ? orchestratorSettings.Proxy.ThumbsPath
+            : orchestratorSettings.Proxy.ImagePath;
+
+        var imageRequest = new BasicPathElements
+        {
+            Space = asset.Space,
+            AssetPath = asset.Id.Asset,
+            VersionPathValue = versionPart,
+            RoutePrefix = routePrefix,
+            CustomerPathValue = customerPathElement.Id.ToString(),
+        };
+        return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
+    }
+}
+
+/// <summary>
+/// Class containing details of available thumbnail sizes
+/// </summary>
+public class ImageSizeDetails
+{
+    public ImageSizeDetails(List<Size> openThumbnails, Size maxDerivativeSize)
+    {
+        OpenThumbnails = openThumbnails;
+        MaxDerivativeSize = maxDerivativeSize;
+    }
 
     /// <summary>
-    /// Class containing details of available thumbnail sizes
+    /// List of open available thumbnails
     /// </summary>
-    protected class ImageSizeDetails
-    {
-        public ImageSizeDetails(List<Size> openThumbnails, Size maxDerivativeSize)
-        {
-            OpenThumbnails = openThumbnails;
-            MaxDerivativeSize = maxDerivativeSize;
-        }
+    public List<Size> OpenThumbnails { get; }
 
-        /// <summary>
-        /// List of open available thumbnails
-        /// </summary>
-        public List<Size> OpenThumbnails { get; }
-
-        /// <summary>
-        /// The size of the largest derivative, according to thumbnail policy.
-        /// </summary>
-        public Size MaxDerivativeSize { get; }
-    }
+    /// <summary>
+    /// The size of the largest derivative, according to thumbnail policy.
+    /// </summary>
+    public Size MaxDerivativeSize { get; }
 }
