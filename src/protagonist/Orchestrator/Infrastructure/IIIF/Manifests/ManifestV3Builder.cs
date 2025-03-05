@@ -336,45 +336,35 @@ public class ManifestV3Builder : IBuildManifests<Manifest>
     {
         logger.LogTrace("Generating 'rendering' for {AssetId}", asset.Id);
         var renderingId = GetFilePath(asset, customerPathElement);
-        if (MIMEHelper.IsImage(asset.MediaType))
+        var label = new LanguageMap(CanvasLanguage, $"File {asset.Id}");
+
+        var rendering = GetBasicExternalResourceForAsset();
+        rendering.Id = renderingId;
+        rendering.Label = label;
+        rendering.Format = asset.MediaType;
+
+        if (rendering is ISpatial spatial)
         {
-            return new Image
-            {
-                Id = renderingId,
-                Format = asset.MediaType,
-                Width = asset.Width,
-                Height = asset.Height,
-            };
+            spatial.Height = asset.Height;
+            spatial.Width = asset.Width;
         }
 
-        if (MIMEHelper.IsVideo(asset.MediaType))
+        if (rendering is ITemporal temporal)
         {
-            return new Video
-            {
-                Id = renderingId,
-                Format = asset.MediaType,
-                Width = asset.Width,
-                Height = asset.Height,
-                Duration = asset.Duration,
-            };
+            temporal.Duration = asset.Duration;
         }
         
-        if (MIMEHelper.IsAudio(asset.MediaType))
-        {
-            return new Sound
-            {
-                Id = renderingId,
-                Format = asset.MediaType,
-                Duration = asset.Duration,
-            };
-        }
+        return rendering;
 
-        var rdfType = MIMEHelper.GetRdfType(asset.MediaType);
-        return new ExternalResource(rdfType)
+        ExternalResource GetBasicExternalResourceForAsset()
         {
-            Id = renderingId,
-            Format = asset.MediaType,
-        };
+            if (MIMEHelper.IsImage(asset.MediaType)) return new Image();
+            if (MIMEHelper.IsVideo(asset.MediaType)) return new Video();
+            if (MIMEHelper.IsAudio(asset.MediaType)) return new Sound();
+
+            var rdfType = MIMEHelper.GetRdfType(asset.MediaType);
+            return new ExternalResource(rdfType);
+        }
     }
 
     private record AssetCanvas(Canvas? Canvas, IList<string>? AdditionalContexts);
