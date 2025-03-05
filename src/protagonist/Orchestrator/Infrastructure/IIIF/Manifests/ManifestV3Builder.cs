@@ -190,7 +190,7 @@ public class ManifestV3Builder : IBuildManifests<Manifest>
                     fileRendering.Behavior.Add(BornDigitalConsts.OriginalBehavior);
                 }
 
-                annotationPage.Rendering = fileRendering.AsList();
+                canvas.Rendering = fileRendering.AsList();
             }
         }
 

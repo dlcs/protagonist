@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Assets;
 using DLCS.Model.PathElements;
-using Microsoft.Extensions.Logging;
 using Orchestrator.Infrastructure.IIIF.Manifests;
 using IIIF2 = IIIF.Presentation.V2;
 using IIIF3 = IIIF.Presentation.V3;
