@@ -220,6 +220,9 @@ public class ManifestV3Builder : IBuildManifests<Manifest>
         canvas.Width = asset.Width;
         canvas.Height = asset.Height;
 
+        // if iiif-img channel not available then id should be /thumbs/ path or image request would fail
+        var renderThumbsPath = !asset.HasDeliveryChannel(AssetDeliveryChannels.Image);
+
         var annotationPage = new AnnotationPage
         {
             Id = $"{canvasId}/page",
@@ -230,7 +233,7 @@ public class ManifestV3Builder : IBuildManifests<Manifest>
                 Body = new Image
                 {
                     Id = builderUtils.GetFullQualifiedImagePath(asset, customerPathElement,
-                        thumbnailSizes.MaxDerivativeSize, false),
+                        thumbnailSizes.MaxDerivativeSize, renderThumbsPath),
                     Format = "image/jpeg",
                     Width = thumbnailSizes.MaxDerivativeSize.Width,
                     Height = thumbnailSizes.MaxDerivativeSize.Height,

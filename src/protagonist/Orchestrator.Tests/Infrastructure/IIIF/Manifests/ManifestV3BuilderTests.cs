@@ -135,8 +135,8 @@ public class ManifestV3BuilderTests
         var asset = GetImageAsset("thumbs");
         
         var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
-        A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
-            .Returns("https://dlcs.test/image-url/");
+        A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, true))
+            .Returns("https://dlcs.test/thumbs-url/");
         A.CallTo(() => builderUtils.ShouldAddThumbs(asset, A<ImageSizeDetails>._)).Returns(true);
 
         var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
@@ -152,7 +152,7 @@ public class ManifestV3BuilderTests
         var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
-        image.Id.Should().Be("https://dlcs.test/image-url/");
+        image.Id.Should().Be("https://dlcs.test/thumbs-url/");
         image.Service.Should().BeNull("No image delivery channel");
     }
     
@@ -162,8 +162,8 @@ public class ManifestV3BuilderTests
         var asset = GetImageAsset("thumbs", "file");
         
         var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
-        A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
-            .Returns("https://dlcs.test/image-url/");
+        A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, true))
+            .Returns("https://dlcs.test/thumbs-url/");
         A.CallTo(() => builderUtils.ShouldAddThumbs(asset, A<ImageSizeDetails>._)).Returns(true);
 
         var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
@@ -182,7 +182,7 @@ public class ManifestV3BuilderTests
         var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
-        image.Id.Should().Be("https://dlcs.test/image-url/");
+        image.Id.Should().Be("https://dlcs.test/thumbs-url/");
         image.Service.Should().BeNull("No image delivery channel");
     }
     
