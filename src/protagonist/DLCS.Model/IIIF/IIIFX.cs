@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using IIIF;
 using IIIF.ImageApi;
+using IIIF.Presentation.V2.Strings;
+using IIIF.Presentation.V3.Strings;
+using IIIF2 = IIIF.Presentation.V2;
 
 namespace DLCS.Model.IIIF;
 
@@ -58,4 +61,25 @@ public static class IIIFX
         { Width: null, Height: null } => false,
         _ => true,
     };
+    
+    /// <summary>
+    /// Convert specified dictionary to v2 metadata list
+    /// </summary>
+    public static List<IIIF2.Metadata> ToV2Metadata(this Dictionary<string, string> metadata) =>
+        metadata.Select(m => new IIIF2.Metadata
+            {
+                Label = new MetaDataValue(m.Key),
+                Value = new MetaDataValue(m.Value)
+            })
+            .ToList();
+
+    /// <summary>
+    /// Convert specified dictionary to v3 metadata list for specified language
+    /// </summary>
+    public static List<LabelValuePair> ToV3Metadata(this Dictionary<string, string> metadata, string language) =>
+        metadata
+            .Select(m =>
+                new LabelValuePair(new LanguageMap(language, m.Key),
+                    new LanguageMap(language, m.Value)))
+            .ToList();
 }

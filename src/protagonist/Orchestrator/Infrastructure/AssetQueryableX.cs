@@ -8,12 +8,13 @@ namespace Orchestrator.Infrastructure;
 public static class AssetQueryableX
 {
     /// <summary>
-    /// Includes data from additional tables required to build manifests
+    /// Includes data from <see cref="AssetApplicationMetadata"/> and related <see cref="ImageDeliveryChannel"/> that is
+    /// relevant to Orchestrator processing for manifests and named query projections
     /// </summary>
-    public static IQueryable<Asset> IncludeDataForThumbs(this IQueryable<Asset> assets)
-    {
-        return assets.Include(a =>
-                Enumerable.Where<AssetApplicationMetadata>(a.AssetApplicationMetadata, md => md.MetadataType == AssetApplicationMetadataTypes.ThumbSizes))
+    public static IQueryable<Asset> IncludeRelevantMetadataData(this IQueryable<Asset> assets) =>
+        assets.Include(a =>
+                a.AssetApplicationMetadata.Where(md =>
+                    md.MetadataType == AssetApplicationMetadataTypes.ThumbSizes ||
+                    md.MetadataType == AssetApplicationMetadataTypes.AVTranscodes))
             .Include(a => a.ImageDeliveryChannels);
-    }
 }

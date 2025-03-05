@@ -104,6 +104,16 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKeys(corsHeaders);
     }
     
+    [Fact]
+    public async Task Get_CanvasIdUrl_NotFound()
+    {
+        // Act
+        var response = await httpClient.GetAsync("/iiif-img/2/1/image/canvas/c/10");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
     [Theory]
     [InlineData("/iiif-img/2/1/image", "/iiif-img/2/1/image/info.json")]
     [InlineData("/iiif-img/2/1/image/", "/iiif-img/2/1/image/info.json")]

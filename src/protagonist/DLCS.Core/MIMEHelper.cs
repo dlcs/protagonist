@@ -944,4 +944,19 @@ public class MIMEHelper
     public static bool IsVideo(string? mediaType) => mediaType?.StartsWith("video/") ?? false;
     
     public static bool IsImage(string? mediaType) => mediaType?.StartsWith("image/") ?? false;
+
+    /// <summary>
+    /// Gets the RDF type for specified mediaType
+    /// </summary>
+    /// <remarks>Mapping from https://iiif.io/api/presentation/3.0/#type</remarks>
+    public static string GetRdfType(string? mediaType)
+    {
+        if (IsImage(mediaType)) return "Image";
+        if (IsAudio(mediaType)) return "Sound";
+        if (IsVideo(mediaType)) return "Video";
+        if (mediaType?.StartsWith("text/") ?? false) return "Text";
+        if (mediaType?.StartsWith("model/") ?? false) return "Model";
+
+        return "DataSet";
+    }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
@@ -19,7 +20,7 @@ public interface IThumbSizeProvider
     /// <summary>
     /// Get all sizes for thumbnails
     /// </summary>
-    Task<ThumbnailSizes> GetThumbSizesForImage(Asset asset);
+    Task<ThumbnailSizes> GetThumbSizesForImage(Asset asset, CancellationToken cancellationToken = default);
 }
 
 public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
@@ -45,9 +46,9 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
     /// Attempt to read from asset.AssetApplicationMetadata. If found return. Else
     /// Get thumbnail policy and calculate sizes. 
     /// </summary>
-    public async Task<ThumbnailSizes> GetThumbSizesForImage(Asset asset)
+    public async Task<ThumbnailSizes> GetThumbSizesForImage(Asset asset, CancellationToken cancellationToken = default)
     {
-        var thumbnailSizes = asset.AssetApplicationMetadata?.GetThumbsMetadata();
+        var thumbnailSizes = asset.AssetApplicationMetadata.GetThumbsMetadata();
         
         if (thumbnailSizes != null)
         {
@@ -62,13 +63,13 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
                 asset.Finished);
         }
         
-        return await GetThumbnailSizesForImage(asset);
+        return await GetThumbnailSizesForImage(asset, cancellationToken);
     }
 
-    private async Task<ThumbnailSizes> GetThumbnailSizesForImage(Asset asset)
+    private async Task<ThumbnailSizes> GetThumbnailSizesForImage(Asset asset, CancellationToken cancellationToken)
     {
         logger.LogDebug("Calculating thumbnail sizes for {AssetId}", asset.Id);
-        var sizeParameters = await GetThumbnailPolicyAsSizeParams(asset);
+        var sizeParameters = await GetThumbnailPolicyAsSizeParams(asset, cancellationToken);
         
         if (sizeParameters.IsNullOrEmpty()) return ThumbnailSizes.Empty;
 
@@ -76,7 +77,7 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
         return thumbnailSizesForImage;
     }
 
-    private async Task<List<ImageApi.SizeParameter>?> GetThumbnailPolicyAsSizeParams(Asset image)
+    private async Task<List<ImageApi.SizeParameter>?> GetThumbnailPolicyAsSizeParams(Asset image, CancellationToken cancellationToken)
     {
         var thumbnailDeliveryChannel = image.ImageDeliveryChannels.GetThumbsChannel();
 
@@ -88,7 +89,8 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
         }
 
         var thumbnailPolicyFromDb =
-            await policyRepository.GetThumbnailPolicy(thumbnailDeliveryChannel.DeliveryChannelPolicyId, image.Customer);
+            await policyRepository.GetThumbnailPolicy(thumbnailDeliveryChannel.DeliveryChannelPolicyId, image.Customer,
+                cancellationToken);
 
         var sizeParameters = thumbnailPolicyFromDb
             .ThrowIfNull(nameof(thumbnailPolicyFromDb))

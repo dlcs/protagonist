@@ -86,4 +86,16 @@ public class MIMEHelperTests
     [InlineData(null)]
     public void IsImage_False(string mediaType)
         => MIMEHelper.IsImage(mediaType).Should().BeFalse();
+
+    [Theory]
+    [InlineData("image/png", "Image")]
+    [InlineData("video/mp4", "Video")]
+    [InlineData("audio/mp4", "Sound")]
+    [InlineData("text/plain", "Text")]
+    [InlineData("model/obj", "Model")]
+    [InlineData("application/pdf", "DataSet")]
+    [InlineData(null, "DataSet")]
+    [InlineData("", "DataSet")]
+    public void GetRdfType_Correct(string mediaType, string expectedRdfType)
+        => MIMEHelper.GetRdfType(mediaType).Should().Be(expectedRdfType);
 }

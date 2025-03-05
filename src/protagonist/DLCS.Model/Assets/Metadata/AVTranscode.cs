@@ -52,4 +52,13 @@ public class AVTranscode
     /// </summary>
     [JsonProperty("d")]
     public long Duration { get; set; }
+
+    /// <summary>
+    /// Get the 'request' part of path, this is the path to the file excluding the asset id.
+    ///
+    /// s3://dlcs-storage/1/2/identity_of_asset/full/full/max/max/0/default.webm => full/full/max/max/0/default.webm
+    /// s3://dlcs-storage/1/2/identity_of_asset/full/max/default.mp3 => full/max/default.mp3 
+    /// </summary>
+    public string GetTranscodeRequestPath()
+        => string.Join("/", Location.AbsolutePath.Split("/", StringSplitOptions.RemoveEmptyEntries)[3..]);
 }

@@ -93,6 +93,8 @@ public class StatusCodeResult : IProxyActionResult
     {
         StatusCode = statusCode;
     }
+    
+    public static StatusCodeResult NotFound => new(HttpStatusCode.NotFound);
 }
 
 public static class ProxyActionResultsX
