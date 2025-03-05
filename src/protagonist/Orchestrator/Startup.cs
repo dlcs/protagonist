@@ -147,6 +147,7 @@ public class Startup
             })
             .UseCors("CorsPolicy")
             .UseAuthorization()
+            .UseStaticFiles()
             .UseEndpoints(endpoints =>
             {
                 endpoints.MapGet("favicon.ico", context =>
