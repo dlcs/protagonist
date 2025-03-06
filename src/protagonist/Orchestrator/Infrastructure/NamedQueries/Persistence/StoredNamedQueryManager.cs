@@ -62,7 +62,7 @@ public class StoredNamedQueryManager
         }
 
         var imageResults = await namedQueryResult.Results
-            .IncludeRelevantMetadataData()
+            .IncludeRelevantMetadata()
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
         if (imageResults.Count == 0)

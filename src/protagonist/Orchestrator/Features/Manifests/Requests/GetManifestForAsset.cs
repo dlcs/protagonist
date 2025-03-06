@@ -64,7 +64,7 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
         var assetId = request.AssetRequest.GetAssetId();
 
         var asset = await dlcsContext.Images
-            .IncludeRelevantMetadataData()
+            .IncludeRelevantMetadata()
             .FirstOrDefaultAsync(a => a.Id == assetId, cancellationToken);
         
         if (asset == null || asset.NotForDelivery)

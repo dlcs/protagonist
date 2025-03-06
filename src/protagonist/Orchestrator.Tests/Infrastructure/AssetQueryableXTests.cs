@@ -24,13 +24,13 @@ public class AssetQueryableXTests
     }
     
     [Fact]
-    public async Task IncludeRelevantMetadataData_HandlesNoRelatedData()
+    public async Task IncludeRelevantMetadata_HandlesNoRelatedData()
     {
         var assetId = AssetIdGenerator.GetAssetId();
         await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
         
-        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelevantMetadataData().SingleAsync();
+        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelevantMetadata().SingleAsync();
 
         asset.Should().NotBeNull("Asset returned despite having no related data");
         asset.AssetApplicationMetadata.Should().BeNullOrEmpty();
@@ -38,13 +38,13 @@ public class AssetQueryableXTests
     }
     
     [Fact]
-    public async Task IncludeRelevantMetadataData_ReturnsRelatedThumbs()
+    public async Task IncludeRelevantMetadata_ReturnsRelatedThumbs()
     {
         var assetId = AssetIdGenerator.GetAssetId();
         await dbContext.Images.AddTestAsset(assetId).WithTestThumbnailMetadata().WithTestDeliveryChannel("iiif-img");
         await dbContext.SaveChangesAsync();
         
-        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelevantMetadataData().SingleAsync();
+        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelevantMetadata().SingleAsync();
 
         asset.Should().NotBeNull();
         asset.AssetApplicationMetadata.Should().HaveCount(1)
@@ -53,7 +53,7 @@ public class AssetQueryableXTests
     }
     
     [Fact]
-    public async Task IncludeRelevantMetadataData_ReturnsRelatedTranscodes()
+    public async Task IncludeRelevantMetadata_ReturnsRelatedTranscodes()
     {
         var assetId = AssetIdGenerator.GetAssetId();
         var fakeTranscodes = new List<AVTranscode>
@@ -63,7 +63,7 @@ public class AssetQueryableXTests
         (await dbContext.Images.AddTestAsset(assetId)).Entity.WithTestTranscodeMetadata(fakeTranscodes);
         await dbContext.SaveChangesAsync();
         
-        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelevantMetadataData().SingleAsync();
+        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelevantMetadata().SingleAsync();
 
         asset.Should().NotBeNull();
         asset.AssetApplicationMetadata.Should().HaveCount(1)
@@ -71,7 +71,7 @@ public class AssetQueryableXTests
     }
 
     [Fact]
-    public async Task IncludeRelevantMetadataData_ReturnsThumbsAndTranscodes()
+    public async Task IncludeRelevantMetadata_ReturnsThumbsAndTranscodes()
     {
         var assetId = AssetIdGenerator.GetAssetId();
         var fakeTranscodes = new List<AVTranscode>
@@ -83,7 +83,7 @@ public class AssetQueryableXTests
         await dbContext.SaveChangesAsync();
         
         var asset = await dbContext.Images.Where(i => i.Id == assetId)
-            .IncludeRelevantMetadataData()
+            .IncludeRelevantMetadata()
             .SingleAsync();
 
         asset.Should().NotBeNull();
