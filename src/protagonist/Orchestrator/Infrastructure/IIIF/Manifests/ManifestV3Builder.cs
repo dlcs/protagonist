@@ -81,16 +81,16 @@ public class ManifestV3Builder : IBuildManifests<Manifest>
         return manifest;
     }
 
-    private async Task PopulateManifest(Manifest manifest, List<Asset> results,
+    private async Task PopulateManifest(Manifest manifest, List<Asset> assets,
         CustomerPathElement customerPathElement, Dictionary<AssetId, AuthProbeService2>? authProbeServices,
         CancellationToken cancellationToken)
     {
         logger.LogDebug("Populating manifest {ManifestId}", manifest.Id);
         var probeServices = authProbeServices ?? new Dictionary<AssetId, AuthProbeService2>();
         int counter = 0;
-        var canvases = new List<Canvas>(results.Count);
+        var canvases = new List<Canvas>(assets.Count);
         var additionalContexts = new List<string>();
-        foreach (var asset in results)
+        foreach (var asset in assets)
         {
             var assetCanvas = await GetCanvas(asset, customerPathElement, ++counter, probeServices, cancellationToken);
             if (assetCanvas.Canvas != null) canvases.Add(assetCanvas.Canvas);
@@ -114,7 +114,7 @@ public class ManifestV3Builder : IBuildManifests<Manifest>
         Dictionary<AssetId, AuthProbeService2> authProbeServices, CancellationToken cancellationToken)
     {
         /*
-         * If 'iiif-img'; add "Image" body on AnnotationPage>PaintingAnnotation
+         * If 'iiif-img'; add "Image" body on AnnotationPage>PaintingAnnotation with ImageService
          * If 'thumbs'; add "Thumbnail" on canvas
          * If 'iiif-av' and single transcode; add "Sound" OR "Video" body on AnnotationPage>PaintingAnnotation
          * If 'iiif-av' and multi transcode; add "Choice" body on AnnotationPage>PaintingAnnotation
@@ -125,7 +125,6 @@ public class ManifestV3Builder : IBuildManifests<Manifest>
          * Other notes:
          *  Dimensions on Canvas can differ depending on type (temporal and/or spatial)
          *  Metadata is same
-         *  CanvasId isn't same (do we want to change this??)
          *
          * Auth services - on "body" always. Also on ImageService for images
          */
@@ -262,16 +261,16 @@ public class ManifestV3Builder : IBuildManifests<Manifest>
         logger.LogTrace("{CanvasId} is timebased, processing", canvas.Id);
         var canvasId = canvas.Id;
         var transcodes = asset.AssetApplicationMetadata.GetTranscodeMetadata(false);
-            
-        canvas.Width = asset.Width;
-        canvas.Height = asset.Height;
-        canvas.Duration = asset.Duration;
-
+        
         if (transcodes.IsNullOrEmpty())
         {
             logger.LogDebug("No transcode metadata found for {AssetId}, no manifest canvas will be rendered", asset.Id);
             return null;
         }
+        
+        canvas.Width = asset.Width;
+        canvas.Height = asset.Height;
+        canvas.Duration = asset.Duration;
 
         var paintables = transcodes
             .Select(t => GetPaintableForTranscode(asset, customerPathElement, t, authServices))

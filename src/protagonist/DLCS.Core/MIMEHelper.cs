@@ -957,6 +957,6 @@ public class MIMEHelper
         if (mediaType?.StartsWith("text/") ?? false) return "Text";
         if (mediaType?.StartsWith("model/") ?? false) return "Model";
 
-        return "DataSet";
+        return "Dataset";
     }
 }

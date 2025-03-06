@@ -93,9 +93,9 @@ public class MIMEHelperTests
     [InlineData("audio/mp4", "Sound")]
     [InlineData("text/plain", "Text")]
     [InlineData("model/obj", "Model")]
-    [InlineData("application/pdf", "DataSet")]
-    [InlineData(null, "DataSet")]
-    [InlineData("", "DataSet")]
+    [InlineData("application/pdf", "Dataset")]
+    [InlineData(null, "Dataset")]
+    [InlineData("", "Dataset")]
     public void GetRdfType_Correct(string mediaType, string expectedRdfType)
         => MIMEHelper.GetRdfType(mediaType).Should().Be(expectedRdfType);
 }
