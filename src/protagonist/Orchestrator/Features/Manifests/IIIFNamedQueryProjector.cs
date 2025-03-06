@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.IIIF;
+using Orchestrator.Infrastructure.IIIF.Manifests;
 using Orchestrator.Infrastructure.NamedQueries;
 using Version = IIIF.Presentation.Version;
 
@@ -40,7 +41,7 @@ public class IIIFNamedQueryProjector
         var parsedNamedQuery = namedQueryResult.ParsedQuery.ThrowIfNull(nameof(request.Query))!;
 
         var assets = await namedQueryResult.Results
-            .IncludeDataForThumbs()
+            .IncludeRelevantMetadata()
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
         if (assets.Count == 0) return null;
@@ -56,12 +57,10 @@ public class IIIFNamedQueryProjector
         CustomerPathElement customerPathElement, List<Asset> results, HttpRequest request,
         CancellationToken cancellationToken)
     {
-        var sequenceRootUrl = request.GetDisplayUrl("/iiif-query/");
         var manifestId = GetManifestId(request);
         var label = GetManifestLabel(parsedNamedQuery);
-        var manifest =
-            await manifestBuilder.GenerateV2Manifest(results, customerPathElement, manifestId, label, sequenceRootUrl,
-                cancellationToken);
+        var manifest = await manifestBuilder.GenerateV2Manifest(results, customerPathElement, manifestId, label,
+            ManifestType.NamedQuery, cancellationToken);
         
         return manifest;
     }
@@ -74,7 +73,7 @@ public class IIIFNamedQueryProjector
         var label = GetManifestLabel(parsedNamedQuery);
         var manifest =
             await manifestBuilder.GenerateV3Manifest(results, customerPathElement, manifestId, label,
-                cancellationToken);
+                ManifestType.NamedQuery, cancellationToken);
         
         return manifest;
     }

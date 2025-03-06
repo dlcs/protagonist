@@ -55,11 +55,17 @@ public static class ImageRouteHandlers
         endpoints.MapGet("/iiif-img/{customer}/{space}/{image}/{**assetRequest}", async httpContext =>
         {
             logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
+            if (RequestIIIFIdentifier(httpContext))
+            {
+                HandleStatusCodeResult(httpContext, StatusCodeResult.NotFound);
+                return;
+            }
+
             var proxyResponse = await requestHandler.HandleRequest(httpContext);
             await ProcessResponse(logger, httpContext, forwarder, proxyResponse, destinationSelector, orchestrator);
         });
     }
-    
+        
     private static async Task ProcessResponse(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
         IProxyActionResult proxyActionResult, DownstreamDestinationSelector destinationSelector,
         IImageOrchestrator imageOrchestrator)
@@ -134,4 +140,10 @@ public static class ImageRouteHandlers
 
     private static ForwarderRequestConfig GetRequestOptions(ClusterState clusterState) =>
         clusterState.Model.Config.HttpRequest ?? DefaultRequestOptions;
+    
+    // CanvasIds/AnnotationPages/Annotations all start with `/iiif-img/{assetId}/canvas/c/{count}*
+    // sometimes viewer will attempt to derefence these so catch and return a 404 without doing any work
+    private static bool RequestIIIFIdentifier(HttpContext httpContext)
+        => httpContext.Request.RouteValues.TryGetValue("assetRequest", out var assetRequest)
+           && (assetRequest?.ToString()?.StartsWith("canvas/c/") ?? false);
 }
