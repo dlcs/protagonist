@@ -628,11 +628,12 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData("[]")] // Empty array
-    [InlineData("[\"\"]")] // Array containing an empty value
-    [InlineData(@"[\""transcode-policy-1\"",\""\""]")] // Invalid data
-    [InlineData(@"[\""transcode-policy\""")] // Invalid JSON
-    public async Task Patch_DeliveryChannelPolicy_400_IfAvPolicyDataInvalid(string policyData)
+    [InlineData("[]", "Empty array")]
+    [InlineData("[\"\"]", "Array containing an empty value")]
+    [InlineData(@"[\""transcode-policy-1\"",\""\""]", "Invalid data")]
+    [InlineData(@"[\""transcode-policy\""", "Invalid JSON")]
+    [InlineData(@"[\""transcode-policy-1\"",\""transcode-policy-1\""]", "Duplicate values")]
+    public async Task Patch_DeliveryChannelPolicy_400_IfAvPolicyDataInvalid(string policyData, string reason)
     {
         // Arrange
         const int customerId = 88;
@@ -640,7 +641,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         var newDeliveryChannelPolicyJson = $@"{{
             ""policyData"": ""{policyData}""
         }}";
-        var policy = new DLCS.Model.Policies.DeliveryChannelPolicy()
+        var policy = new DLCS.Model.Policies.DeliveryChannelPolicy
         {
             Customer = customerId,
             Name = "patch-invalid-iiif-av",
@@ -658,7 +659,7 @@ public class DeliveryChannelTests : IClassFixture<ProtagonistAppFactory<Startup>
         var response = await httpClient.AsCustomer(customerId).PatchAsync(path, content);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, reason);
     }
     
     [Fact]
