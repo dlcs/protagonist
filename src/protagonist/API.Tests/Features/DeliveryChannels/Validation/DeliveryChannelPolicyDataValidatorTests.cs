@@ -1,10 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using API.Features.DeliveryChannels.Validation;
+﻿using API.Features.DeliveryChannels.Validation;
 using DLCS.Model.DeliveryChannels;
 using FakeItEasy;
 
-namespace API.Tests.Features.DeliveryChannelPolicies.Validation;
+namespace API.Tests.Features.DeliveryChannels.Validation;
 
 public class DeliveryChannelPolicyDataValidatorTests
 {
@@ -168,6 +166,16 @@ public class DeliveryChannelPolicyDataValidatorTests
     {
         // Arrange and Act
         var result = await sut.Validate(policyData, "iiif-av");
+
+        // Assert
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task PolicyDataValidator_ReturnsFalse_IfDuplicates()
+    {
+        // Arrange and Act
+        var result = await sut.Validate("[\"policy-1\",\"policy-2\",\"policy-1\"]", "iiif-av");
 
         // Assert
         result.Should().BeFalse();
