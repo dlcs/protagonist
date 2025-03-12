@@ -475,4 +475,48 @@ public class EngineAssetRepositoryTests
                     A<CancellationToken>._))
             .MustHaveHappened(1, Times.Exactly);
     }
+    
+    [Theory]
+    [InlineData(-22, "" )]
+    [InlineData(-23, "error")]
+    public async Task UpdateIngestedAsset_DoesNotRaiseBatchCompleted_IfBatchAlreadyComplete(int batchId, string error)
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: batchId.ToString());
+        var failing = AssetIdGenerator.GetAssetId(assetPostfix: $"{batchId}fail");
+        var complete = AssetIdGenerator.GetAssetId(assetPostfix: $"{batchId}complete");
+
+        var batchFinishedDate = DateTime.UtcNow.AddDays(-10);
+        var finishedBatch = await dbContext.Batches.AddTestBatch(batchId, count: 3, errors: 1, completed: 1,
+            finished: batchFinishedDate);
+        finishedBatch.Entity
+            .AddBatchAsset(assetId)
+            .AddBatchAsset(failing, BatchAssetStatus.Error)
+            .AddBatchAsset(complete, BatchAssetStatus.Completed);
+        
+        var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        await dbContext.Images.AddTestAsset(failing, batch: batchId);
+        await dbContext.Images.AddTestAsset(complete, batch: batchId);
+        
+        var existingAsset = entity.Entity;
+        await dbContext.SaveChangesAsync();
+
+        contextForTests.Images.Attach(existingAsset);
+        existingAsset.Error = error;
+
+        // Act
+        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
+
+        // Assert
+        success.Should().BeTrue();
+
+        var updatedBatch = await dbContext.Batches.SingleAsync(b => b.Id == batchId);
+        updatedBatch.Finished.Should()
+            .BeCloseTo(batchFinishedDate, TimeSpan.FromSeconds(2), "Finished date is not modified");
+        A.CallTo(() =>
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == batchId),
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
+    }
 }

@@ -193,6 +193,7 @@ FROM (SELECT ""BatchId""                                     as batch_id,
       GROUP BY ""BatchId"") ba
 WHERE b.""Id"" = ba.batch_id
 AND b.""Id"" = @batchId
+AND b.""Finished"" IS NULL
 RETURNING b.*;
 ";
 }
