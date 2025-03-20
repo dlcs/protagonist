@@ -3,6 +3,7 @@ using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using Engine.Ingest;
 using Engine.Ingest.Image;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Measuring;
@@ -17,10 +18,10 @@ using CookieHeaderValue = System.Net.Http.Headers.CookieHeaderValue;
 
 namespace Engine.Tests.Ingest.Image.ImageServer.Clients;
 
-public class CantaloupeThumbsClientTests
+public class ImageServerThumbsClientTests
 {
     private readonly ControllableHttpMessageHandler httpHandler;
-    private readonly CantaloupeThumbsClient sut;
+    private readonly ImageServerThumbsClient sut;
     private readonly IImageMeasurer imageMeasurer;
     private readonly HttpClient httpClient;
 
@@ -31,7 +32,7 @@ public class CantaloupeThumbsClientTests
 
     private static readonly string ThumbsRoot = $"{Path.DirectorySeparatorChar}thumbs";
 
-    public CantaloupeThumbsClientTests()
+    public ImageServerThumbsClientTests()
     {
         httpHandler = new ControllableHttpMessageHandler();
         var fileSystem = A.Fake<IFileSystem>();
@@ -48,24 +49,34 @@ public class CantaloupeThumbsClientTests
         };
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
         
+        sut = new ImageServerThumbsClient(httpClient, fileSystem, imageMeasurer, optionsMonitor, new NullLogger<ImageServerThumbsClient>());
+    }
+    
+    [Fact]
+    public async Task GenerateThumbnails_CallsCorrectPath()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = GetIngestionContext(assetId);
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
         
-        sut = new CantaloupeThumbsClient(httpClient, fileSystem, imageMeasurer, optionsMonitor, new NullLogger<CantaloupeThumbsClient>());
+        // Act
+        await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+
+        // Assert
+        // validate path constructed correctly. Without the dot-segment the request is incorrect as it would be treated 
+        // as an absolute url
+        httpHandler.CallsMade.Should()
+            .Contain("http://image-processor/s3:%2f%2feu-west-1%2fbucket-name%2f2%2f1%2ffoo/full/!1024,1024/0/default.jpg");
     }
     
     [Fact]
     public async Task GenerateThumbnails_ReturnsThumbForSuccessfulResponse()
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsThumbForSuccessfulResponse));
-        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = GetIngestionContext(assetId);
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
-        context.Asset.Width = 2000;
-        context.Asset.Height = 2000;
-
-        context.WithLocation(new ImageLocation
-        {
-            S3 = "//some/location/with/s3"
-        });
         
         // Act
         var thumbs = await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
@@ -76,18 +87,17 @@ public class CantaloupeThumbsClientTests
         thumbs[0].Width.Should().Be(1024);
     }
     
-    [Fact]
-    public async Task GenerateThumbnails_ThrowsException_WhenNotOk()
+    [Theory]
+    [InlineData(HttpStatusCode.BadGateway)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    public async Task GenerateThumbnails_ThrowsException_WhenNotOk(HttpStatusCode errorCode)
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ThrowsException_WhenNotOk));
-        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
-        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
-
-        context.WithLocation(new ImageLocation()
-        {
-            S3 = "//some/location/with/s3"
-        });
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = GetIngestionContext(assetId);
+        httpHandler.SetResponse(new HttpResponseMessage(errorCode));
 
         // Act
         Func<Task> action = async () => await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
@@ -97,44 +107,20 @@ public class CantaloupeThumbsClientTests
     }
     
     [Fact]
-    public async Task GenerateThumbnails_ReturnsNothing_WhenCantaloupeReturns400()
+    public async Task GenerateThumbnails_FailsFor400_IfMessageUnknown()
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsNothing_WhenCantaloupeReturns400));
-        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
-        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadRequest));
-
-        context.WithLocation(new ImageLocation()
-        {
-            S3 = "//some/location/with/s3"
-        });
-
-        // Act
-        var thumbs = await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
-
-        // Assert
-        thumbs.Should().HaveCount(0);
-    }
-    
-    [Fact]
-    public async Task GenerateThumbnails_Ignores400_AndProcessesRest()
-    {
-        // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_Ignores400_AndProcessesRest));
-        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
-        context.Asset.Width = 200;
-        context.Asset.Height = 200;
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = GetIngestionContext(assetId, 200, 200);
 
         var thumbSizes = new List<string> { "!1024,1024", "!400,400" };
         
         // first size returns BadRequest (400), then OK (200) after
-        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadRequest));
+        var badRequest = httpHandler.GetResponseMessage(
+            "Requests for scales in excess of 100% must prefix the size path component with a ^ character",
+            HttpStatusCode.BadRequest);
+        httpHandler.SetResponse(badRequest);
         httpHandler.RegisterCallback(_ => httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)));
-
-        context.WithLocation(new ImageLocation
-        {
-            S3 = "//some/location/with/s3"
-        });
 
         // Act
         var thumbs = await sut.GenerateThumbnails(context, thumbSizes, ThumbsRoot);
@@ -151,10 +137,8 @@ public class CantaloupeThumbsClientTests
         int height, string reason)
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_SizeHandling));
-        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
-        context.Asset.Width = width;
-        context.Asset.Height = height;
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = GetIngestionContext(assetId, width, height);
 
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
         httpHandler.RegisterCallback(_ => httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)));
@@ -165,11 +149,6 @@ public class CantaloupeThumbsClientTests
 
         A.CallTo(() => imageMeasurer.MeasureImage(A<string>._, A<CancellationToken>._))
             .ReturnsNextFromSequence(fromImageServer);
-
-        context.WithLocation(new ImageLocation
-        {
-            S3 = "//some/location/with/s3"
-        });
 
         // Act
         var thumbs = await sut.GenerateThumbnails(context, thumbSizes, ThumbsRoot);
@@ -182,16 +161,9 @@ public class CantaloupeThumbsClientTests
     public async Task GenerateThumbnails_InvalidOperationException_WhenMeasureImageReturnsNull()
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsThumbForSuccessfulResponse));
-        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = GetIngestionContext(assetId);
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
-        context.Asset.Width = 2000;
-        context.Asset.Height = 2000;
-
-        context.WithLocation(new ImageLocation
-        {
-            S3 = "//some/location/with/s3"
-        });
 
         ImageOnDisk returnedFromImageMeasurer = null;
 
@@ -209,16 +181,9 @@ public class CantaloupeThumbsClientTests
     public async Task GenerateThumbnails_ReturnsThumbForSuccessfulResponse_AfterFirstImageMeasurerFailure()
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsThumbForSuccessfulResponse));
-        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = GetIngestionContext(assetId);
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
-        context.Asset.Width = 2000;
-        context.Asset.Height = 2000;
-
-        context.WithLocation(new ImageLocation
-        {
-            S3 = "//some/location/with/s3"
-        });
         
         ImageOnDisk returnedFromImageMeasurer = null;
 
@@ -319,7 +284,7 @@ public class CantaloupeThumbsClientTests
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+        var context = GetIngestionContext(assetId);
 
         var response = new HttpResponseMessage(HttpStatusCode.OK);
         response.Headers.Add(HeaderNames.SetCookie, new List<string?>()
@@ -329,14 +294,6 @@ public class CantaloupeThumbsClientTests
         });
         httpHandler.SetResponse(response);
         List<CookieHeaderValue> cookieHeaders = new();
-
-        context.Asset.Width = 2000;
-        context.Asset.Height = 2000;
-
-        context.WithLocation(new ImageLocation
-        {
-            S3 = "//some/location/with/s3"
-        });
         
         await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
         
@@ -358,7 +315,7 @@ public class CantaloupeThumbsClientTests
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+        var context = GetIngestionContext(assetId);
 
         var response = new HttpResponseMessage(HttpStatusCode.OK);
         response.Headers.Add(HeaderNames.SetCookie, new List<string?>()
@@ -368,14 +325,6 @@ public class CantaloupeThumbsClientTests
         });
         httpHandler.SetResponse(response);
         List<CookieHeaderValue> cookieHeaders = new();
-
-        context.Asset.Width = 2000;
-        context.Asset.Height = 2000;
-
-        context.WithLocation(new ImageLocation
-        {
-            S3 = "//some/location/with/s3"
-        });
         
         await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
         
@@ -393,18 +342,10 @@ public class CantaloupeThumbsClientTests
     public async Task GenerateThumbnails_UpdatesHandlerWithNoCookiesSet()
     {
         // Arrange
-        var assetId = new AssetId(2, 1, nameof(GenerateThumbnails_ReturnsThumbForSuccessfulResponse));
-        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
-
-        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
-        context.Asset.Width = 2000;
-        context.Asset.Height = 2000;
-
-        context.WithLocation(new ImageLocation
-        {
-            S3 = "//some/location/with/s3"
-        });
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = GetIngestionContext(assetId);
         
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
         await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
         
         List<CookieHeaderValue> cookieHeaders = new();
@@ -416,6 +357,15 @@ public class CantaloupeThumbsClientTests
         
         // Assert
         cookieHeaders.Count.Should().Be(0);
+    }
+
+    private IngestionContext GetIngestionContext(AssetId assetId, int width = 2000, int height = 2000)
+    {
+        var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
+        context.Asset.Width = width;
+        context.Asset.Height = height;
+        context.WithLocation(new ImageLocation { S3 = "s3://eu-west-1/bucket-name/2/1/foo" });
+        return context;
     }
 
     public class ImageOnDiskResults
