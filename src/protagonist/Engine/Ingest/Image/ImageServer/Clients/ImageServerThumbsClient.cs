@@ -76,9 +76,10 @@ public class ImageServerThumbsClient : IThumbsClient
         
         AttemptToAddStickinessCookie(response);
 
-        if (response.StatusCode == HttpStatusCode.BadRequest)
+        if (response.StatusCode == HttpStatusCode.BadRequest &&
+            await IsErrorDueToIncorrectImageRequest(response, cancellationToken))
         {
-            // This is likely an error for the individual thumb size, so don't throw an error
+            // This is due to thumb size being larger than image
             await LogErrorResponse(response, assetId, size, LogLevel.Information, cancellationToken);
             return null;
         }
@@ -93,10 +94,23 @@ public class ImageServerThumbsClient : IThumbsClient
         throw new HttpException(response.StatusCode, "Failed to retrieve data from the thumbs processor");
     }
 
+    // Collection of known values found in 400 response body which signify error can be ignored
+    private static readonly string[] KnownIgnorableBadRequests = new[]
+    {
+        "scales in excess of 100%", // Cantaloupe. For when size-param exceeds image dimensions and ^ not used
+    };
+
+    private static async Task<bool> IsErrorDueToIncorrectImageRequest(HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return KnownIgnorableBadRequests.Any(upscale => body.Contains(upscale));
+    }
+
     private HttpRequestMessage CreateRequestMessage(string convertedS3Location, string size)
     {
         // use a dot-segment (./) to be explicit that this is a relative path or the colon in s3: makes http-client
-        // this it's absolute // see https://github.com/dotnet/runtime/issues/24266#issuecomment-347604913
+        // this it's absolute. see https://github.com/dotnet/runtime/issues/24266#issuecomment-347604913
         var request = new HttpRequestMessage(HttpMethod.Get, $"./{convertedS3Location}/full/{size}/0/default.jpg");
 
         if (loadBalancerCookies.Any())

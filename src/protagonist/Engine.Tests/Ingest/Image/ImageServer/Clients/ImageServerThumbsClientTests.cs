@@ -49,8 +49,25 @@ public class ImageServerThumbsClientTests
         };
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
         
-        
         sut = new ImageServerThumbsClient(httpClient, fileSystem, imageMeasurer, optionsMonitor, new NullLogger<ImageServerThumbsClient>());
+    }
+    
+    [Fact]
+    public async Task GenerateThumbnails_CallsCorrectPath()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = GetIngestionContext(assetId);
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+        
+        // Act
+        await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
+
+        // Assert
+        // validate path constructed correctly. Without the dot-segment the request is incorrect as it would be treated 
+        // as an absolute url
+        httpHandler.CallsMade.Should()
+            .Contain("http://image-processor/s3:%2f%2feu-west-1%2fbucket-name%2f2%2f1%2ffoo/full/!1024,1024/0/default.jpg");
     }
     
     [Fact]
@@ -70,13 +87,17 @@ public class ImageServerThumbsClientTests
         thumbs[0].Width.Should().Be(1024);
     }
     
-    [Fact]
-    public async Task GenerateThumbnails_ThrowsException_WhenNotOk()
+    [Theory]
+    [InlineData(HttpStatusCode.BadGateway)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    public async Task GenerateThumbnails_ThrowsException_WhenNotOk(HttpStatusCode errorCode)
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
         var context = GetIngestionContext(assetId);
-        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        httpHandler.SetResponse(new HttpResponseMessage(errorCode));
 
         // Act
         Func<Task> action = async () => await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
@@ -86,23 +107,7 @@ public class ImageServerThumbsClientTests
     }
     
     [Fact]
-    public async Task GenerateThumbnails_ReturnsNothing_WhenCantaloupeReturns400()
-    {
-        // Arrange
-        var assetId = AssetIdGenerator.GetAssetId();
-        var context = GetIngestionContext(assetId);
-        
-        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadRequest));
-
-        // Act
-        var thumbs = await sut.GenerateThumbnails(context, defaultThumbs, ThumbsRoot);
-
-        // Assert
-        thumbs.Should().HaveCount(0);
-    }
-    
-    [Fact]
-    public async Task GenerateThumbnails_Ignores400_AndProcessesRest()
+    public async Task GenerateThumbnails_FailsFor400_IfMessageUnknown()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -111,7 +116,10 @@ public class ImageServerThumbsClientTests
         var thumbSizes = new List<string> { "!1024,1024", "!400,400" };
         
         // first size returns BadRequest (400), then OK (200) after
-        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadRequest));
+        var badRequest = httpHandler.GetResponseMessage(
+            "Requests for scales in excess of 100% must prefix the size path component with a ^ character",
+            HttpStatusCode.BadRequest);
+        httpHandler.SetResponse(badRequest);
         httpHandler.RegisterCallback(_ => httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)));
 
         // Act
@@ -356,7 +364,7 @@ public class ImageServerThumbsClientTests
         var context = IngestionContextFactory.GetIngestionContext(assetId: assetId.ToString());
         context.Asset.Width = width;
         context.Asset.Height = height;
-        context.WithLocation(new ImageLocation { S3 = "//some/location/with/s3" });
+        context.WithLocation(new ImageLocation { S3 = "s3://eu-west-1/bucket-name/2/1/foo" });
         return context;
     }
 
