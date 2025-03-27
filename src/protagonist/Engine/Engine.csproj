@@ -8,6 +8,7 @@
     <ItemGroup>
         <PackageReference Include="iiif-net"/>
         <PackageReference Include="Microsoft.AspNet.WebApi.Client"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" />
         <PackageReference Include="Serilog.AspNetCore"/>
         <PackageReference Include="AWSSDK.SecurityToken"/>
         <PackageReference Include="LazyCache.AspNetCore"/>

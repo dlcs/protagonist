@@ -32,7 +32,7 @@ public class CacheInvalidationBehaviour<TRequest, TResponse> : IPipelineBehavior
         this.logger = logger;
     }
 
-    public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         var nextResponse = await next();
 
@@ -48,5 +48,5 @@ public class CacheInvalidationBehaviour<TRequest, TResponse> : IPipelineBehavior
             logger.LogDebug("Invalidating cacheKey {CacheKey}", cacheKey);
             appCache.Remove(cacheKey);
         }
-    } 
+    }
 }

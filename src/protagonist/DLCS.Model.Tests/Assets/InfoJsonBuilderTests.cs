@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using DLCS.Model.Assets;
 using FluentAssertions;
 using IIIF.Serialisation;
@@ -38,7 +39,7 @@ public void GetImageApi2_1Level0_ReturnsExpected()
     new List<int[]> { new[] { 400, 800 }, new[] { 100, 200 } });
 
   // Assert
-  var normalisedJson = actual.AsJson().Replace("\r\n", "\n");
+  var normalisedJson = actual.AsJson().Replace("\r\n", Environment.NewLine);
   normalisedJson.Should().BeEquivalentTo(expected);
 }
 
@@ -101,7 +102,7 @@ public void GetImageApi2_1Level1_ReturnsExpected()
     new List<int[]> { new[] { 1000, 2000 }, new[] { 400, 800 }, new[] { 100, 200 } });
 
   // Assert
-  var normalisedJson = actual.AsJson().Replace("\r\n", "\n");
+  var normalisedJson = actual.AsJson().Replace("\r\n", Environment.NewLine);
   normalisedJson.Should().BeEquivalentTo(expected);
 }
 
@@ -133,7 +134,7 @@ public void GetImageApi3_Level0_ReturnsExpected()
     new List<int[]> { new[] { 400, 800 }, new[] { 100, 200 } });
 
   // Assert
-  var normalisedJson = actual.AsJson().Replace("\r\n", "\n");
+  var normalisedJson = actual.AsJson().Replace("\r\n", Environment.NewLine);
   normalisedJson.Should().BeEquivalentTo(expected);
 }
 }

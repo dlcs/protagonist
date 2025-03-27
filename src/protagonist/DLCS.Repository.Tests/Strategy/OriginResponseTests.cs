@@ -58,8 +58,8 @@ public class OriginResponseTests
     
     [Theory]
     [InlineData(null)]
-    [InlineData(-1)]
-    [InlineData(0)]
+    [InlineData(-1L)]
+    [InlineData(0L)]
     public void WithContentLength_DoesNotSetContentLength_IfNullOrLessThan1(long? contentLength)
     {
         // Arrange

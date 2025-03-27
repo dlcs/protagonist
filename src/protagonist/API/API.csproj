@@ -14,6 +14,7 @@
         <PackageReference Include="AWSSDK.SecurityToken"/>
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions"/>
         <PackageReference Include="LazyCache.AspNetCore"/>
+        <PackageReference Include="MediatR"/>
         <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection"/>
         <PackageReference Include="Microsoft.AspNet.WebApi.Client"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson"/>

@@ -17,7 +17,7 @@ namespace Test.Helpers.Integration;
 /// </summary>
 public class LocalStackFixture : IAsyncLifetime
 {
-    private readonly TestcontainersContainer localStackContainer;
+    private readonly IContainer localStackContainer;
     private const int LocalStackContainerPort = 4566;
     
     // S3 Buckets
@@ -47,7 +47,7 @@ public class LocalStackFixture : IAsyncLifetime
     public LocalStackFixture()
     {
         // Configure container binding to host port 0, which will use a random free port
-        var localStackBuilder = new TestcontainersBuilder<TestcontainersContainer>()
+        var localStackBuilder = new ContainerBuilder()
             .WithImage("localstack/localstack")
             .WithCleanUp(true)
             .WithLabel("protagonist_test", "True")
