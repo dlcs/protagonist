@@ -6,22 +6,22 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="6.0.3" />
-      <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.150" />
-      <PackageReference Include="CsvHelper" Version="30.0.1" />
-      <PackageReference Include="Destructurama.Attributed" Version="2.0.0" />
-      <PackageReference Include="iiif-net" Version="0.3.4" />
-      <PackageReference Include="MediatR" Version="10.0.1" />
-      <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="10.0.1" />
-      <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.5" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.5">
+      <PackageReference Include="AspNetCore.HealthChecks.Uris" />
+      <PackageReference Include="AWSSDK.SecurityToken" />
+      <PackageReference Include="CsvHelper" />
+      <PackageReference Include="Destructurama.Attributed" />
+      <PackageReference Include="iiif-net" />
+      <PackageReference Include="MediatR" />
+      <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" />
+      <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="6.0.5" />
-      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.22" />
-      <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
-      <PackageReference Include="System.Linq.Dynamic.Core" Version="1.3.0" />
+      <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+      <PackageReference Include="Serilog.AspNetCore" />
+      <PackageReference Include="System.Linq.Dynamic.Core" />
     </ItemGroup>
 
     <ItemGroup>
