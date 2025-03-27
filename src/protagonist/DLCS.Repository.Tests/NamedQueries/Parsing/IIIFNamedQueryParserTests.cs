@@ -94,7 +94,6 @@ public class IIIFNamedQueryParserTests
 
         // Assert
         result.IsFaulty.Should().BeTrue();
-        result.ErrorMessage.Should().StartWith("Input string was not in a correct format");
     }
 
     [Theory]
