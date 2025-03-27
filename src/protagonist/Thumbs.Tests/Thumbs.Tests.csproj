@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
 
@@ -9,10 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="FakeItEasy" />
-        <PackageReference Include="FluentAssertions" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" />
-        <PackageReference Include="xunit" />
+        <PackageReference Include="FakeItEasy"/>
+        <PackageReference Include="FluentAssertions"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -24,15 +23,15 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DLCS.AWS\DLCS.AWS.csproj" />
-      <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj" />
-      <ProjectReference Include="..\Thumbs\Thumbs.csproj" />
+        <ProjectReference Include="..\DLCS.AWS\DLCS.AWS.csproj"/>
+        <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj"/>
+        <ProjectReference Include="..\Thumbs\Thumbs.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="appsettings.Testing.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
+        <Content Include="appsettings.Testing.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
 </Project>

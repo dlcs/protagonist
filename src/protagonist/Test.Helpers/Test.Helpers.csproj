@@ -1,26 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="AWSSDK.S3" />
-      <PackageReference Include="AWSSDK.SQS" />
-      <PackageReference Include="FakeItEasy" />
-      <PackageReference Include="FluentAssertions" />
-      <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore" />
-      <PackageReference Include="Microsoft.NET.Test.Sdk" />
-      <PackageReference Include="Testcontainers" />
-      <PackageReference Include="xunit" />
-      <PackageReference Include="Yarp.ReverseProxy" />
-      <PackageReference Include="Stubbery" />
+        <PackageReference Include="AWSSDK.S3"/>
+        <PackageReference Include="AWSSDK.SQS"/>
+        <PackageReference Include="FakeItEasy"/>
+        <PackageReference Include="FluentAssertions"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="Testcontainers"/>
+        <PackageReference Include="xunit"/>
+        <PackageReference Include="Yarp.ReverseProxy"/>
+        <PackageReference Include="Stubbery"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
-      <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
+        <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj"/>
+        <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj"/>
     </ItemGroup>
 
 </Project>

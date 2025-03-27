@@ -1,30 +1,29 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
-        <PackageReference Include="AspNetCore.HealthChecks.Uris" />
-        <PackageReference Include="AWSSDK.SecurityToken" />
-        <PackageReference Include="JetBrains.Annotations" />
-        <PackageReference Include="LazyCache.AspNetCore" />
-        <PackageReference Include="MediatR" />
-        <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" />
-        <PackageReference Include="Microsoft.AspNetCore.HeaderPropagation" />
-        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-        <PackageReference Include="Serilog.AspNetCore" />
-        <PackageReference Include="Yarp.ReverseProxy" />
+        <PackageReference Include="AspNetCore.HealthChecks.NpgSql"/>
+        <PackageReference Include="AspNetCore.HealthChecks.Uris"/>
+        <PackageReference Include="AWSSDK.SecurityToken"/>
+        <PackageReference Include="JetBrains.Annotations"/>
+        <PackageReference Include="LazyCache.AspNetCore"/>
+        <PackageReference Include="MediatR"/>
+        <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection"/>
+        <PackageReference Include="Microsoft.AspNetCore.HeaderPropagation"/>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
+        <PackageReference Include="Serilog.AspNetCore"/>
+        <PackageReference Include="Yarp.ReverseProxy"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\API.Client\API.Client.csproj" />
-      <ProjectReference Include="..\DLCS.Mediatr\DLCS.Mediatr.csproj" />
-      <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
-      <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
+        <ProjectReference Include="..\API.Client\API.Client.csproj"/>
+        <ProjectReference Include="..\DLCS.Mediatr\DLCS.Mediatr.csproj"/>
+        <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj"/>
+        <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj"/>
     </ItemGroup>
 
 </Project>

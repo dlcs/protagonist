@@ -1,25 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="iiif-net" />
-        <PackageReference Include="Microsoft.AspNet.WebApi.Client" />
-        <PackageReference Include="Serilog.AspNetCore" />
-        <PackageReference Include="AWSSDK.SecurityToken" />
-        <PackageReference Include="LazyCache.AspNetCore" />
-        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
-        <PackageReference Include="SixLabors.ImageSharp" />
+        <PackageReference Include="iiif-net"/>
+        <PackageReference Include="Microsoft.AspNet.WebApi.Client"/>
+        <PackageReference Include="Serilog.AspNetCore"/>
+        <PackageReference Include="AWSSDK.SecurityToken"/>
+        <PackageReference Include="LazyCache.AspNetCore"/>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore"/>
+        <PackageReference Include="SixLabors.ImageSharp"/>
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
-        <ProjectReference Include="..\DLCS.AWS\DLCS.AWS.csproj" />
-        <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
+        <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj"/>
+        <ProjectReference Include="..\DLCS.AWS\DLCS.AWS.csproj"/>
+        <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj"/>
     </ItemGroup>
 
 </Project>

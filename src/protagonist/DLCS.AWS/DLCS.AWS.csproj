@@ -1,32 +1,31 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
-      <ProjectReference Include="..\DLCS.Model\DLCS.Model.csproj" />
+        <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj"/>
+        <ProjectReference Include="..\DLCS.Model\DLCS.Model.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <FrameworkReference Include="Microsoft.AspNetCore.App" />
-      <PackageReference Include="Amazon.Extensions.Configuration.SystemsManager" />
-      <PackageReference Include="AWSSDK.CloudFront" />
-      <PackageReference Include="AWSSDK.Core" />
-      <PackageReference Include="AWSSDK.ElasticTranscoder" />
-      <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" />
-      <PackageReference Include="AWSSDK.S3" />
-      <PackageReference Include="AWSSDK.SimpleNotificationService" />
-      <PackageReference Include="AWSSDK.SQS" />
-      <PackageReference Include="LazyCache" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-      <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
-      <PackageReference Include="Newtonsoft.Json" />
+        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+        <PackageReference Include="Amazon.Extensions.Configuration.SystemsManager"/>
+        <PackageReference Include="AWSSDK.CloudFront"/>
+        <PackageReference Include="AWSSDK.Core"/>
+        <PackageReference Include="AWSSDK.ElasticTranscoder"/>
+        <PackageReference Include="AWSSDK.Extensions.NETCore.Setup"/>
+        <PackageReference Include="AWSSDK.S3"/>
+        <PackageReference Include="AWSSDK.SimpleNotificationService"/>
+        <PackageReference Include="AWSSDK.SQS"/>
+        <PackageReference Include="LazyCache"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions"/>
+        <PackageReference Include="Newtonsoft.Json"/>
     </ItemGroup>
 
 </Project>

@@ -1,20 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
 
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AngleSharp" />
-        <PackageReference Include="FakeItEasy" />
-        <PackageReference Include="FluentAssertions" />
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" />
-        <PackageReference Include="NBuilder" />
-        <PackageReference Include="Stubbery" />
-        <PackageReference Include="xunit" />
+        <PackageReference Include="AngleSharp"/>
+        <PackageReference Include="FakeItEasy"/>
+        <PackageReference Include="FluentAssertions"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="NBuilder"/>
+        <PackageReference Include="Stubbery"/>
+        <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -26,18 +25,18 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Orchestrator\Orchestrator.csproj" />
-      <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj" />
+        <ProjectReference Include="..\Orchestrator\Orchestrator.csproj"/>
+        <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="appsettings.Testing.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
+        <Content Include="appsettings.Testing.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Integration\Files\dummy.pdf" />
+        <None Remove="Integration\Files\dummy.pdf"/>
     </ItemGroup>
 
 </Project>

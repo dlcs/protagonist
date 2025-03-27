@@ -1,16 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
 
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="FakeItEasy" />
-        <PackageReference Include="FluentAssertions" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" />
-        <PackageReference Include="xunit" />
+        <PackageReference Include="FakeItEasy"/>
+        <PackageReference Include="FluentAssertions"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="xunit"/>
         <PackageReference Include="xunit.runner.visualstudio">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
@@ -22,21 +21,21 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\API.Client\API.Client.csproj" />
-      <ProjectReference Include="..\API\API.csproj" />
-      <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj" />
+        <ProjectReference Include="..\API.Client\API.Client.csproj"/>
+        <ProjectReference Include="..\API\API.csproj"/>
+        <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="appsettings.Testing.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
+        <Content Include="appsettings.Testing.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Direct_Bytes_Upload.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
+        <None Update="Direct_Bytes_Upload.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
 </Project>
