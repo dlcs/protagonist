@@ -98,6 +98,7 @@ public class ImageServerThumbsClient : IThumbsClient
     private static readonly string[] KnownIgnorableBadRequests = new[]
     {
         "scales in excess of 100%", // Cantaloupe. For when size-param exceeds image dimensions and ^ not used
+        "image dimensions exceed largest", // Laya. For when size-param exceeds image dimensions and ^ not used
     };
 
     private static async Task<bool> IsErrorDueToIncorrectImageRequest(HttpResponseMessage response,

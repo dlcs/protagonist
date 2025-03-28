@@ -106,8 +106,11 @@ public class ImageServerThumbsClientTests
         await action.Should().ThrowAsync<HttpException>();
     }
     
-    [Fact]
-    public async Task GenerateThumbnails_FailsFor400_IfMessageUnknown()
+    [Theory]
+    [InlineData("Requests for scales in excess of 100% must prefix the size path component with a ^ character")] // Cantaloupe
+    [InlineData("Requests for scales in excess of 100% must prefix the scale path component with a ^ character.")] // Cantaloupe
+    [InlineData("Requested image dimensions exceed largest available resolution")] // Laya
+    public async Task GenerateThumbnails_FailsFor400_IfMessageUnknown(string knownError)
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -116,9 +119,7 @@ public class ImageServerThumbsClientTests
         var thumbSizes = new List<string> { "!1024,1024", "!400,400" };
         
         // first size returns BadRequest (400), then OK (200) after
-        var badRequest = httpHandler.GetResponseMessage(
-            "Requests for scales in excess of 100% must prefix the size path component with a ^ character",
-            HttpStatusCode.BadRequest);
+        var badRequest = httpHandler.GetResponseMessage(knownError, HttpStatusCode.BadRequest);
         httpHandler.SetResponse(badRequest);
         httpHandler.RegisterCallback(_ => httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)));
 
@@ -126,6 +127,7 @@ public class ImageServerThumbsClientTests
         var thumbs = await sut.GenerateThumbnails(context, thumbSizes, ThumbsRoot);
 
         // Assert
+        httpHandler.CallsMade.Should().HaveCount(2, "First call fails, second succeeds");
         thumbs.Should().HaveCount(1);
         thumbs[0].Height.Should().Be(200);
         thumbs[0].Width.Should().Be(200);
