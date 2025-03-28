@@ -30,7 +30,7 @@ jobs:
       - id: setup-dotnet
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "6.0.x"
+          dotnet-version: "8.0.x"
       - name: Cache SonarCloud packages
         uses: actions/cache@v4
         with:
@@ -40,7 +40,8 @@ jobs:
       - name: Install SonarCloud scanners and code coverage tools
         run: |
           dotnet tool install --global dotnet-sonarscanner
-          dotnet tool install --global JetBrains.dotCover.GlobalTool
+          dotnet new tool-manifest
+          dotnet tool install --local JetBrains.dotCover.CommandLineTools
       - id: restore-dotnet-dependencies
         run: dotnet restore $SOLUTION
       - id: build-dotnet
@@ -50,7 +51,7 @@ jobs:
         run: |
           dotnet-sonarscanner begin /k:"dlcs_protagonist" /o:"dlcs" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.dotcover.reportsPaths=dotCover.Output.html
           dotnet build $SOLUTION --configuration $BUILD_CONFIG --no-restore
-          dotnet dotcover test --dcReportType=HTML --filter 'Category!=Manual' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
+          dotnet dotcover cover-dotnet --Output dotcover.result.html --ReportType=HTML -- test --filter 'Category!=Manual' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
           dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
 
   build-push-orchestrator:

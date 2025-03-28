@@ -707,7 +707,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await httpClient.GetAsync($"iiif-img/{id}/info.json");
 
         // Assert
-        FakeImageOrchestrator.OrchestratedImages.Should().Contain(id);
+        FakeImageOrchestrator.OrchestratedImages.Should().ContainEquivalentOf(id);
     }
     
     [Fact]
