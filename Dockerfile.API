@@ -1,6 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
+COPY ["Directory.Build.props", "Directory.Packages.props", "."]
 COPY ["API/API.csproj", "API/"]
 COPY ["DLCS.Repository/DLCS.Repository.csproj", "DLCS.Repository/"]
 COPY ["DLCS.Model/DLCS.Model.csproj", "DLCS.Model/"]
