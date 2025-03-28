@@ -1,5 +1,4 @@
-﻿using System.Text.Json.Serialization;
-using Amazon.ElasticTranscoder.Model;
+﻿using Amazon.ElasticTranscoder.Model;
 using DLCS.Core.Exceptions;
 using DLCS.Core.Types;
 

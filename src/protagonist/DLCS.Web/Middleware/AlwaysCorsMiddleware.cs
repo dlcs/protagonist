@@ -17,7 +17,7 @@ public class AlwaysCorsMiddleware
 
     public async Task InvokeAsync(HttpContext httpContext)
     {
-        httpContext.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+        httpContext.Response.Headers.Append("Access-Control-Allow-Origin", "*");
         await next(httpContext);
     }
 }

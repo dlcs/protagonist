@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using DLCS.Model.Assets;
+﻿using System.Linq;
 using DLCS.Model.Policies;
 using DLCS.Repository.Assets;
 using Microsoft.EntityFrameworkCore;

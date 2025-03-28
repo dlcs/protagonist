@@ -39,7 +39,7 @@ public class ControllableHttpMessageHandler : HttpMessageHandler
     /// <summary>
     /// Set a pre-canned response 
     /// </summary>
-    public void SetResponse(HttpResponseMessage response) => this.response = response;
+    public void SetResponse(HttpResponseMessage responseMessage) => response = responseMessage;
 
     /// <summary>
     /// Register a callback when SendAsync called. Useful for verifying headers etc.

@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Strings;
 using Microsoft.AspNetCore.Http;
@@ -23,10 +23,10 @@ public class PathRewriteTransformer : HttpTransformer
     }
 
     public override async ValueTask TransformRequestAsync(HttpContext httpContext, HttpRequestMessage proxyRequest,
-        string destinationPrefix)
+        string destinationPrefix, CancellationToken cancelationToken)
     {
         // Copy all request headers
-        await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix);
+        await base.TransformRequestAsync(httpContext, proxyRequest, destinationPrefix, cancelationToken);
 
         // Assign the custom uri. Be careful about extra slashes when concatenating here.
         proxyRequest.RequestUri = rewriteWholePath 

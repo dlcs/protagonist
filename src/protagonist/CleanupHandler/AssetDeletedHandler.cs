@@ -12,7 +12,6 @@ using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Serilog;
 
 namespace CleanupHandler;
 
@@ -115,7 +114,7 @@ public class AssetDeletedHandler : IMessageHandler
         
         if (!asset.ImageDeliveryChannels.IsNullOrEmpty())
         {
-            invalidationUriList = SetDeliveryChannelInvalidations(asset.Id!, 
+            invalidationUriList = SetDeliveryChannelInvalidations(asset.Id, 
                 asset.ImageDeliveryChannels, idList);
         }
         else if (asset.Family.HasValue)

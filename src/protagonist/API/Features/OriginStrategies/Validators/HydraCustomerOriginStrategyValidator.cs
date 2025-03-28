@@ -21,7 +21,7 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
         {
             RuleFor(s => s.OriginStrategy)
                 .NotEmpty()
-                .WithMessage(s => "An origin strategy must be specified");
+                .WithMessage(_ => "An origin strategy must be specified");
             RuleFor(s => s.Optimised)
                 .NotEqual(true)
                 .When(s => s.OriginStrategy != OriginStrategyType.S3Ambient.GetDescription())

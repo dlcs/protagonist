@@ -7,9 +7,6 @@ using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -206,7 +203,7 @@ public class DlcsDefaultDatabaseFixture : IAsyncLifetime
         }
         catch (Exception ex)
         {
-            var m = ex.Message;
+            _ = ex.Message;
             throw;
         }
     }

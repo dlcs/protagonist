@@ -51,12 +51,12 @@ public class TestProxyForwarder : IHttpForwarder
         
         // Create request and transform to outgoing
         var requestMessage = context.CreateProxyHttpRequest(requestUri.Uri);
-        await transformer.TransformRequestAsync(context, requestMessage, destinationPrefix);
+        await transformer.TransformRequestAsync(context, requestMessage, destinationPrefix, CancellationToken.None);
         
         // Create a fake 200 response from proxy + run through transformer
         var proxyResponse = new HttpResponseMessage(HttpStatusCode.OK);
         await context.CopyProxyHttpResponse(proxyResponse);
-        await transformer.TransformResponseAsync(context, proxyResponse);
+        await transformer.TransformResponseAsync(context, proxyResponse, CancellationToken.None);
 
         // Write request parameters into response
         await context.Response.WriteAsJsonAsync(new ProxyResponse(requestMessage, requestConfig.ActivityTimeout));

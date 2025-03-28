@@ -20,9 +20,9 @@ public class OptionsMiddleware
     {
         if (context.Request.Method != "OPTIONS") return _next.Invoke(context);
         
-        context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
-        context.Response.Headers.Add("Access-Control-Allow-Headers", "Authorization,Content-Type");
-        context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS");
+        context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        context.Response.Headers.Append("Access-Control-Allow-Headers", "Authorization,Content-Type");
+        context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS");
         context.Response.StatusCode = 200;
         return context.Response.CompleteAsync();
     }

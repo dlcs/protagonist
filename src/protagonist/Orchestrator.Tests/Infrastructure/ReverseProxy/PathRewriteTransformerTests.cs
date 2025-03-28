@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using Microsoft.AspNetCore.Http;
 using Orchestrator.Infrastructure.ReverseProxy;
 
@@ -21,7 +22,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult);
 
         // Act
-        await sut.TransformRequestAsync(new DefaultHttpContext(), request, destination);
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, destination, CancellationToken.None);
         
         // Assert
         request.RequestUri.Should().Be(expected);
@@ -38,7 +39,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult, true);
 
         // Act
-        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com");
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com", CancellationToken.None);
         
         // Assert
         request.RequestUri.Should().Be(expected);
@@ -54,7 +55,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult, true);
 
         // Act
-        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com");
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com", CancellationToken.None);
         
         // Assert
         request.Headers.Host.Should().Be("newtest.example.com");
@@ -69,7 +70,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult);
 
         // Act
-        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com");
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com", CancellationToken.None);
         
         // Assert
         request.Headers.Host.Should().Be("test.example.com");
@@ -86,7 +87,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult, rewriteWholePath);
 
         // Act
-        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com");
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com", CancellationToken.None);
         
         // Assert
         request.Headers.Should().ContainKey("x-requested-by");
@@ -102,7 +103,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult, false);
 
         // Act
-        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com");
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com", CancellationToken.None);
         
         // Assert
         request.Headers.Should().NotContainKey("x-amz-cf-id");
@@ -118,7 +119,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult);
         
         // Act
-        await sut.TransformResponseAsync(context, responseMessage);
+        await sut.TransformResponseAsync(context, responseMessage, CancellationToken.None);
         
         // Assert
         context.Response.Headers.Should().ContainKey("Access-Control-Allow-Origin")
@@ -136,7 +137,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult);
         
         // Act
-        await sut.TransformResponseAsync(context, responseMessage);
+        await sut.TransformResponseAsync(context, responseMessage, CancellationToken.None);
         
         // Assert
         context.Response.Headers.Should().ContainKey("Access-Control-Allow-Origin")
@@ -154,7 +155,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult);
         
         // Act
-        await sut.TransformResponseAsync(context, responseMessage);
+        await sut.TransformResponseAsync(context, responseMessage, CancellationToken.None);
         
         // Assert
         context.Response.Headers.Should().ContainKey("Cache-Control")
@@ -178,7 +179,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult);
         
         // Act
-        await sut.TransformResponseAsync(context, responseMessage);
+        await sut.TransformResponseAsync(context, responseMessage, CancellationToken.None);
         
         // Assert
         context.Response.Headers.Should().ContainKey("Cache-Control")
@@ -196,7 +197,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult);
         
         // Act
-        await sut.TransformResponseAsync(context, responseMessage);
+        await sut.TransformResponseAsync(context, responseMessage, CancellationToken.None);
         
         // Assert
         context.Response.Headers.Should().ContainKey("Cache-Control")
@@ -216,7 +217,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult);
         
         // Act
-        await sut.TransformResponseAsync(context, responseMessage);
+        await sut.TransformResponseAsync(context, responseMessage, CancellationToken.None);
         
         // Assert
         context.Response.Headers.Should().ContainKey("Cache-Control")
@@ -242,7 +243,7 @@ public class PathRewriteTransformerTests
         var sut = new PathRewriteTransformer(actionResult);
         
         // Act
-        await sut.TransformResponseAsync(context, responseMessage);
+        await sut.TransformResponseAsync(context, responseMessage, CancellationToken.None);
         
         // Assert
         context.Response.Headers.Should().ContainKey("Cache-Control")

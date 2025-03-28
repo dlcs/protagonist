@@ -3,8 +3,6 @@ using DLCS.AWS.SQS;
 using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
 using Engine.Infrastructure.Logging;
-using Engine.Ingest.Models;
-using Serilog.Core;
 
 namespace Engine.Ingest;
 

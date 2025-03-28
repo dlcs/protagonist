@@ -2,7 +2,6 @@
 using DLCS.Model.Assets;
 using DLCS.Model.Page;
 using DLCS.Repository;
-using DLCS.Repository.Assets;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 

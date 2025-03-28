@@ -52,11 +52,10 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         IOptionsMonitor<BasicAuthenticationOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        ISystemClock clock,
         ICustomerRepository customerRepository,
         DlcsApiAuth dlcsApiAuth,
         JwtAuthHelper authHelper)
-        : base(options, logger, encoder, clock)
+        : base(options, logger, encoder)
     {
         this.customerRepository = customerRepository;
         this.dlcsApiAuth = dlcsApiAuth;

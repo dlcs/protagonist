@@ -1,5 +1,4 @@
 ﻿using DLCS.Core.Types;
-using DLCS.Model.Assets;
 using DLCS.Model.Templates;
 using Engine.Settings;
 

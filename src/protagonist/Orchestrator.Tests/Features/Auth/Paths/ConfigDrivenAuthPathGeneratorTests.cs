@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using DLCS.Core.Types;
 using DLCS.Web.Response;
-using FakeItEasy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Orchestrator.Features.Auth.Paths;

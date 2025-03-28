@@ -18,7 +18,7 @@ public static class DefaultDeliveryChannelConverters
             defaultDeliveryChannel.Id.ToString(), defaultDeliveryChannel.Space);
     }
 
-    private static string? GetFullyQualifiedPolicyName(DefaultDeliveryChannel defaultDeliveryChannel, string baseUrl)
+    private static string GetFullyQualifiedPolicyName(DefaultDeliveryChannel defaultDeliveryChannel, string baseUrl)
     {
         return $"{baseUrl}/customers/{defaultDeliveryChannel.Customer}/deliveryChannelPolicies/{defaultDeliveryChannel.DeliveryChannelPolicy.Channel}/{defaultDeliveryChannel.DeliveryChannelPolicy.Name}";
     }

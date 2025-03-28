@@ -143,6 +143,6 @@ public class LocalStackFixture : IAsyncLifetime
     private async Task CreateTopic(IAmazonSimpleNotificationService amazonSNSClient, string topicArn)
     {
         var topicName = topicArn.Split(":")[^1];
-        var response = await amazonSNSClient.CreateTopicAsync(topicName);
+        _ = await amazonSNSClient.CreateTopicAsync(topicName);
     }
 }

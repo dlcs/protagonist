@@ -1,6 +1,4 @@
 using DLCS.HydraModel;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Model.Tests.Assets;
 

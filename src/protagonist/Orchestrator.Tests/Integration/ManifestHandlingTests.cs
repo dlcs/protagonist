@@ -18,7 +18,6 @@ using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using IIIF3 = IIIF.Presentation.V3;
-using IIIF2 = IIIF.Presentation.V2;
 
 namespace Orchestrator.Tests.Integration;
 
@@ -790,7 +789,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         var paintable = manifest.Items.First()
             .Items.First()
             .Items.Cast<PaintingAnnotation>().Single()
-            .Body.As<IIIF.Presentation.V3.Content.Image>();
+            .Body.As<Image>();
             
         paintable.Service.Should().HaveCount(3);
         paintable.Service.OfType<ImageService2>().Single().Service.Should()

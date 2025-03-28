@@ -1,5 +1,3 @@
-using System.Runtime.Serialization;
-
 namespace API.Exceptions;
 
 /// <summary>
@@ -12,10 +10,6 @@ public class BadRequestException : APIException
     public override string Label => "Bad Request";
 
     public BadRequestException()
-    {
-    }
-
-    protected BadRequestException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
 

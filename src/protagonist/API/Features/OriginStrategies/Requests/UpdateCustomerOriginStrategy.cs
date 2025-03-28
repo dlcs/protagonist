@@ -87,7 +87,7 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
         
         if (request.Optimised.HasValue)
         {
-            if(request.Optimised.Value == true && existingStrategy.Strategy != OriginStrategyType.S3Ambient)
+            if(request.Optimised.Value && existingStrategy.Strategy != OriginStrategyType.S3Ambient)
                 return ModifyEntityResult<CustomerOriginStrategy>
                     .Failure("'Optimised' is only applicable when using s3-ambient as an origin strategy", WriteResult.FailedValidation);
             

@@ -24,9 +24,9 @@ public static class QueryableExtensions
              p.System == false &&
              p.Channel == channel &&
              p.Name == policy
-                 .Split('/', StringSplitOptions.None).Last()) ||
+                 .Split('/').Last()) ||
             (p.Customer == AdminCustomer &&
-             p.System == true &&
+             p.System &&
              p.Channel == channel &&
              p.Name == policy));
     }

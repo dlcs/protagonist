@@ -18,7 +18,7 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
             .NotEmpty().WithMessage("Members cannot be empty");
         
         RuleFor(c => c.Members)
-            .Must(m => m.IsNullOrEmpty() || m!.Select(a => a.ModelId).Distinct().Count() == m!.Length)
+            .Must(m => m.IsNullOrEmpty() || m.Select(a => a.ModelId).Distinct().Count() == m.Length)
             .WithMessage((_, mem) =>
             {
                 var dupes = mem!.Select(a => a.ModelId).GetDuplicates().ToList();

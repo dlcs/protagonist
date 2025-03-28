@@ -9,7 +9,6 @@ using DLCS.Model.PathElements;
 using DLCS.Web.Requests;
 using IIIF;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.IIIF;

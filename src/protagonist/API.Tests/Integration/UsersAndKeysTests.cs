@@ -31,7 +31,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     
     
     [Fact]
-    public async void Api_Grants_Key_And_Secret()
+    public async Task Api_Grants_Key_And_Secret()
     {
         var response = await httpClient.AsCustomer(99).PostAsync("/customers/99/keys", new StringContent(String.Empty));
         var key = await response.ReadAsHydraResponseAsync<ApiKey>();
@@ -40,7 +40,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async void Api_Yields_Keys()
+    public async Task Api_Yields_Keys()
     {
         // arrange
         var response1 = await httpClient.AsCustomer(99).PostAsync("/customers/99/keys", new StringContent(String.Empty));
@@ -59,7 +59,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async void Api_Key_Can_Be_Deleted()
+    public async Task Api_Key_Can_Be_Deleted()
     {
         // arrange
         var response1 = await httpClient.AsCustomer(99).PostAsync("/customers/99/keys", new StringContent(String.Empty));
@@ -81,7 +81,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
     
     [Fact]
-    public async void Admin_User_Cant_Delete_Last_Key()
+    public async Task Admin_User_Cant_Delete_Last_Key()
     {
         // arrange
         var key1 = Guid.NewGuid().ToString();
@@ -109,7 +109,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async void Customer_Can_Create_PortalUser()
+    public async Task Customer_Can_Create_PortalUser()
     {        
         // arrange
         const string portalUserJson = @"{
@@ -130,7 +130,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async void PortalUsers_Returned_For_Customer()
+    public async Task PortalUsers_Returned_For_Customer()
     {
         // arrange
         await dbContext.Users.AddTestUser(99, "user1@cust99.org");
@@ -152,7 +152,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     
 
     [Fact]
-    public async void Get_PortalUser_By_Id()
+    public async Task Get_PortalUser_By_Id()
     {
         // arrange
         var dbUser = await dbContext.Users.AddTestUser(99, "user100@cust99.org");
@@ -173,7 +173,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     
     
     [Fact]
-    public async void Get_PortalUser_By_Id_Returns_404_If_No_User()
+    public async Task Get_PortalUser_By_Id_Returns_404_If_No_User()
     {
         // act
         var response = await httpClient.AsCustomer(99).GetAsync($"/customers/99/portalUsers/not-a-real-id");
@@ -183,7 +183,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async void User_Can_Change_Email()
+    public async Task User_Can_Change_Email()
     {
         // arrange
         var dbUser = await dbContext.Users.AddTestUser(99, "user101@cust99.org");
@@ -205,7 +205,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async void User_Can_Change_Password()
+    public async Task User_Can_Change_Password()
     {
         // arrange
         string portalUserJson = @"{
@@ -238,7 +238,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async void User_Can_Be_Deleted()
+    public async Task User_Can_Be_Deleted()
     {
         // arrange
         var dbUser = await dbContext.Users.AddTestUser(99, "user401@cust99.org");

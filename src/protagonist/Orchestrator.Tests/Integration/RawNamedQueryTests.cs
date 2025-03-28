@@ -156,13 +156,13 @@ public class RawNamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         });
 
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/third"), num1: 1, num2: 10, ref1: "z",
-            ref2: "grace").WithTestThumbnailMetadata();;
+            ref2: "grace").WithTestThumbnailMetadata();
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/first"), num1: 1, num2: 20, ref1: "c",
-            ref2: "grace").WithTestThumbnailMetadata();;
+            ref2: "grace").WithTestThumbnailMetadata();
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/fourth"), num1: 2, num2: 10, ref1: "a",
-            ref2: "grace").WithTestThumbnailMetadata();;
+            ref2: "grace").WithTestThumbnailMetadata();
         await dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/second"), num1: 1, num2: 10, ref1: "x",
-            ref2: "grace").WithTestThumbnailMetadata();;
+            ref2: "grace").WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
 
         var expectedOrder = new[] { "99/1/first", "99/1/second", "99/1/third", "99/1/fourth" };

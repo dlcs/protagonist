@@ -5,7 +5,6 @@ using DLCS.Model.Assets;
 using DLCS.Repository;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
-using IIIF;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

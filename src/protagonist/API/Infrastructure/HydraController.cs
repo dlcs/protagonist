@@ -100,7 +100,7 @@ public abstract class HydraController : Controller
         {
             var result = await Mediator.Send(request, cancellationToken);
 
-            return ConvertDeleteToHttp(result.Value, result.Message);;
+            return ConvertDeleteToHttp(result.Value, result.Message);
         }, errorTitle);
     }
     

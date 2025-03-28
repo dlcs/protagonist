@@ -26,7 +26,7 @@ public class HttpResponseXTests
     {
         // Arrange
         var httpResponse = new DefaultHttpContext().Response;
-        httpResponse.Headers.Add("Location", "old-location");
+        httpResponse.Headers.Append("Location", "old-location");
         
         // Act
         httpResponse.SeeOther("new-location");

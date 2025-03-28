@@ -1,7 +1,5 @@
 ﻿using System;
 using DLCS.Model.Auth;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Model.Tests.Auth;
 

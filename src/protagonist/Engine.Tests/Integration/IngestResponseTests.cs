@@ -2,10 +2,8 @@
 using System.Text;
 using System.Text.Json;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using Engine.Ingest;
-using Engine.Ingest.Models;
 using FakeItEasy;
 using Microsoft.Extensions.DependencyInjection;
 using Test.Helpers.Integration;

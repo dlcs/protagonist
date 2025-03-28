@@ -41,7 +41,7 @@ public class DeleteNamedQueryHandler : IRequestHandler<DeleteNamedQuery, ResultM
         }
 
         dbContext.NamedQueries.Remove(namedQuery);
-        await dbContext.SaveChangesAsync(cancellationToken); ;
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         return new ResultMessage<DeleteResult>(string.Empty, DeleteResult.Deleted);
     }

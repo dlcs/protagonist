@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Model.Assets;
-using IIIF;
 using IIIF.ImageApi;
 
 namespace DLCS.Model.Tests.Assets;

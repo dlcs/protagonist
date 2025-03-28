@@ -250,7 +250,7 @@ public class ImageController : HydraController
     {
 
         logger.LogWarning(
-            "Warning: POST /customers/{CustomerId}/spaces/{SpaceId}/images/{ImageId} was called. This route is deprecated.",
+            "Warning: POST /customers/{CustomerId}/spaces/{SpaceId}/images/{ImageId} was called. This route is deprecated",
             customerId, spaceId, imageId);
         
         return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, cancellationToken);
@@ -297,7 +297,7 @@ public class ImageController : HydraController
 
         return HandleUpsert(
             createOrUpdateRequest,
-            asset => asset.ToHydra(GetUrlRoots()),
+            a => a.ToHydra(GetUrlRoots()),
             assetId.ToString(),
             "Upsert asset failed", cancellationToken);
     }

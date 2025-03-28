@@ -180,7 +180,7 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await AddControlFile("99/zip/test-zip/my-ref/1/2/tester.zip.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
-        zipCreator.AddCallbackFor(storageKey, (query, assets) =>
+        zipCreator.AddCallbackFor(storageKey, (_, _) =>
         {
             AddZipArchive(storageKey, fakeContent).Wait();
             return true;
@@ -205,7 +205,7 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await AddControlFile("99/zip/test-zip/my-ref/1/3/tester.json",
             new ControlFile { Created = DateTime.UtcNow.AddHours(-1), InProcess = false });
 
-        zipCreator.AddCallbackFor(storageKey, (query, assets) =>
+        zipCreator.AddCallbackFor(storageKey, (_, _) =>
         {
             AddZipArchive(storageKey, fakeContent).Wait();
             return true;
@@ -231,7 +231,7 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
 
         // return True but don't create object in s3
-        zipCreator.AddCallbackFor(storageKey, (query, assets) => true);
+        zipCreator.AddCallbackFor(storageKey, (_, _) => true);
 
         // Act
         var response = await httpClient.GetAsync(path);
@@ -250,7 +250,7 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await AddControlFile("99/test-zip/my-ref/1/5/tester.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
 
-        zipCreator.AddCallbackFor(storageKey, (query, assets) => false);
+        zipCreator.AddCallbackFor(storageKey, (_, _) => false);
 
         // Act
         var response = await httpClient.GetAsync(path);
@@ -294,7 +294,7 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
 
         List<Asset> savedAssets = null;
-        zipCreator.AddCallbackFor(storageKey, (query, assets) =>
+        zipCreator.AddCallbackFor(storageKey, (_, assets) =>
         {
             savedAssets = assets;
             return false;

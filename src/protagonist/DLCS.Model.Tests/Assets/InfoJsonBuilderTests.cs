@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Model.Assets;
-using FluentAssertions;
 using IIIF.Serialisation;
-using Xunit;
 
 namespace DLCS.Model.Tests.Assets;
 

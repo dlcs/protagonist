@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using DLCS.AWS.SNS;
 using DLCS.AWS.SNS.Messaging;
 using DLCS.Model.Assets;
 using DLCS.Repository;
@@ -62,10 +61,10 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
 
         if (IsBatchComplete(batchImages))
         {
-            logger.LogDebug("Batch {BatchId} complete.", request.BatchId);
+            logger.LogDebug("Batch {BatchId} complete", request.BatchId);
             if (batch.Finished == null)
             {
-                logger.LogInformation("Batch {BatchId} complete but not finished. Setting Finished.", request.BatchId);
+                logger.LogInformation("Batch {BatchId} complete but not finished. Setting Finished", request.BatchId);
                 changesMade = true;
                 batch.Finished = DateTime.UtcNow;
                 await batchCompletedNotificationSender.SendBatchCompletedMessage(batch, cancellationToken);
@@ -73,7 +72,7 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
 
             if (batch.Count != batchImages.Count)
             {
-                logger.LogInformation("Batch {BatchId} complete. Resetting counts.", request.BatchId);
+                logger.LogInformation("Batch {BatchId} complete. Resetting counts", request.BatchId);
                 changesMade = true;
                 batch.Count = batchImages.Count;
                 batch.Errors = batchImages.Count(i => !string.IsNullOrEmpty(i.Error));
