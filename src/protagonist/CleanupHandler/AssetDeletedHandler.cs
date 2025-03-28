@@ -1,4 +1,5 @@
 ﻿using CleanupHandler.Infrastructure;
+using CleanupHandler.Repository;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
@@ -24,6 +25,7 @@ public class AssetDeletedHandler : IMessageHandler
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IBucketWriter bucketWriter;
     private readonly IFileSystem fileSystem;
+    private readonly ICleanupHandlerAssetRepository cleanupHandlerAssetRepository;
     private readonly ILogger<AssetDeletedHandler> logger;
     private readonly ICacheInvalidator cacheInvalidator;
 
@@ -33,11 +35,13 @@ public class AssetDeletedHandler : IMessageHandler
         ICacheInvalidator cacheInvalidator,
         IFileSystem fileSystem,
         IOptions<CleanupHandlerSettings> handlerSettings,
+        ICleanupHandlerAssetRepository cleanupHandlerAssetRepository,
         ILogger<AssetDeletedHandler> logger)
     {
         this.storageKeyGenerator = storageKeyGenerator;
         this.bucketWriter = bucketWriter;
         this.fileSystem = fileSystem;
+        this.cleanupHandlerAssetRepository = cleanupHandlerAssetRepository;
         this.cacheInvalidator = cacheInvalidator;
         this.logger = logger;
         this.handlerSettings = handlerSettings.Value;
@@ -59,6 +63,13 @@ public class AssetDeletedHandler : IMessageHandler
         if (request?.Asset?.Id == null) return false;
 
         logger.LogDebug("Processing delete notification for {AssetId}", request.Asset.Id);
+        
+        // if the item exists in the db, assume the asset has been reingested after delete
+        if (await cleanupHandlerAssetRepository.CheckExists(request.Asset.Id))
+        {
+            logger.LogInformation("asset {Asset} can be found in the database, so will not be deleted", request.Asset.Id);
+            return true;
+        }
 
         await DeleteThumbnails(request.Asset.Id);
         await DeleteTileOptimised(request.Asset.Id);

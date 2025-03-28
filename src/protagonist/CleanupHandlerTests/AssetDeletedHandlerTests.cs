@@ -2,6 +2,7 @@
 using System.Text.Json.Nodes;
 using CleanupHandler;
 using CleanupHandler.Infrastructure;
+using CleanupHandler.Repository;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -22,6 +23,7 @@ namespace DeleteHandlerTests;
 public class AssetDeletedHandlerTests
 {
     private readonly CleanupHandlerSettings handlerSettings;
+    private readonly ICleanupHandlerAssetRepository assetRepository;
     private readonly IBucketWriter bucketWriter;
     private readonly FakeFileSystem fakeFileSystem;
     private readonly IStorageKeyGenerator storageKeyGenerator;
@@ -47,11 +49,12 @@ public class AssetDeletedHandlerTests
         bucketWriter = A.Fake<IBucketWriter>();
         fakeFileSystem = new FakeFileSystem();
         cacheInvalidator = A.Fake<ICacheInvalidator>();
+        assetRepository = A.Fake<ICleanupHandlerAssetRepository>();
     }
 
     private AssetDeletedHandler GetSut()
-        => new(storageKeyGenerator, bucketWriter, cacheInvalidator ,fakeFileSystem, Options.Create(handlerSettings),
-            new NullLogger<AssetDeletedHandler>());
+        => new(storageKeyGenerator, bucketWriter, cacheInvalidator, fakeFileSystem, Options.Create(handlerSettings),
+            assetRepository, new NullLogger<AssetDeletedHandler>());
 
     [Fact]
     public async Task Handle_ReturnsTrue_IfInvalidFormat()
@@ -89,6 +92,27 @@ public class AssetDeletedHandlerTests
         response.Should().BeFalse();
         fakeFileSystem.DeletedFiles.Should().BeEmpty();
         A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_DoesNotDeleteAnything_WhenDatabaseRecordExists()
+    {
+        // Arrange
+        var queueMessage = CreateMinimalQueueMessage();
+
+        A.CallTo(() => assetRepository.CheckExists(A<AssetId>._)).Returns(true);
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+
+        // Assert
+        response.Should().BeTrue();
+
+        // No files deleted from local disk or s3
+        fakeFileSystem.DeletedFiles.Should().BeEmpty();
+        A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
+        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
     
     [Fact]

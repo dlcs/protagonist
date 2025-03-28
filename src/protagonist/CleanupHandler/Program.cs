@@ -36,6 +36,7 @@ public class Program
                 services
                     .Configure<CleanupHandlerSettings>(hostContext.Configuration)
                     .AddAws(hostContext.Configuration, hostContext.HostingEnvironment)
+                    .AddDataAccess(hostContext.Configuration)
                     .AddQueueMonitoring();
             })
             .UseSerilog((hostingContext, loggerConfiguration)

@@ -1,8 +1,10 @@
 ﻿using DLCS.AWS.Cloudfront;
+using CleanupHandler.Repository;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.FileSystem;
+using DLCS.Repository;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -41,4 +43,12 @@ public static class ServiceCollectionX
             .AddDefaultQueueHandler<AssetDeletedHandler>()
             .AddSingleton<IFileSystem, FileSystem>()
             .AddHostedService<DeleteQueueMonitor>();
+
+    /// <summary>
+    /// Add all data access dependencies, including repositories and DLCS context 
+    /// </summary>
+    public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
+        => services
+            .AddScoped<ICleanupHandlerAssetRepository, CleanupHandlerAssetRepository>()
+            .AddDlcsContext(configuration);
 }
