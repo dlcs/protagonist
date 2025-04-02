@@ -380,6 +380,9 @@ public partial class DlcsContext : DbContext
                 .IsRequired()
                 .HasMaxLength(500)
                 .HasDefaultValueSql("'original'::character varying");
+            
+            entity.HasIndex(e => e.Manifests)
+                .HasMethod("gin");
 
             entity.Property(e => e.MaxUnauthorised).IsRequired();
             entity.Property(e => e.Width).IsRequired();
