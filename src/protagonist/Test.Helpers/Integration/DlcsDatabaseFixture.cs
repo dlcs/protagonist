@@ -193,19 +193,10 @@ public class DlcsDefaultDatabaseFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // Start DB + apply migrations
-        try
-        {
-            await postgresContainer.StartAsync();
-            SetPropertiesFromContainer();
-            await DbContext.Database.MigrateAsync();
-            await InitialiseDb();
-        }
-        catch (Exception ex)
-        {
-            _ = ex.Message;
-            throw;
-        }
+        await postgresContainer.StartAsync();
+        SetPropertiesFromContainer();
+        await DbContext.Database.MigrateAsync();
+        await InitialiseDb();
     }
 
     public Task DisposeAsync() => postgresContainer.StopAsync();
