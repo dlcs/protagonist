@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using DLCS.Repository.Auth;
-using FakeItEasy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Orchestrator.Features.Auth;

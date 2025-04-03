@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using DLCS.Model.Policies;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Model.Tests.Assets;
 

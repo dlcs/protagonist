@@ -61,7 +61,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 services.AddScoped<IEngineClient>(_ => EngineClient);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
-                        "API-Test", _ => { });
+                        "API-Test", o => { o.TimeProvider = TimeProvider.System;  });
             })
             .CreateClient(new WebApplicationFactoryClientOptions
             {

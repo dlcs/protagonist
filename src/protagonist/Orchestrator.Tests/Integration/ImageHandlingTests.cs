@@ -46,19 +46,20 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly FakeImageOrchestrator orchestrator = new();
     private const string SizesJsonContent = "{\"o\":[[800,800],[400,400],[200,200]],\"a\":[]}";
 
-    private readonly List<ImageDeliveryChannel> deliveryChannelsForImage = new()
-    {
+    private readonly List<ImageDeliveryChannel> deliveryChannelsForImage =
+    [
         new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Image,
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
         },
+
         new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Thumbnails,
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
         }
-    };
+    ];
 
     public ImageHandlingTests(ProtagonistAppFactory<Startup> factory, StorageFixture storageFixture)
     {
@@ -706,7 +707,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await httpClient.GetAsync($"iiif-img/{id}/info.json");
 
         // Assert
-        FakeImageOrchestrator.OrchestratedImages.Should().Contain(id);
+        FakeImageOrchestrator.OrchestratedImages.Should().ContainEquivalentOf(id);
     }
     
     [Fact]
@@ -1657,14 +1658,14 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // test runs 3 times so only add on first run
         if (await dbFixture.DbContext.Images.FindAsync(id) == null)
         {
-            await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: new List<ImageDeliveryChannel>()
-            {
+            await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels:
+            [
                 new()
                 {
                     Channel = AssetDeliveryChannels.File,
                     DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
                 }
-            });
+            ]);
             await dbFixture.DbContext.SaveChangesAsync();
         }
 
@@ -1678,7 +1679,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
 public class FakeImageOrchestrator : IImageOrchestrator
 {
-    public static List<AssetId> OrchestratedImages { get; } = new();
+    public static List<AssetId> OrchestratedImages { get; } = [];
 
     public static Dictionary<AssetId, OrchestrationResult> ConfiguredResponse { get; } = new();
 
@@ -1695,9 +1696,12 @@ public class FakeImageOrchestrator : IImageOrchestrator
 
 public class FakeImageServerClient : IImageServerClient
 {
-    public async Task<TImageService> GetInfoJson<TImageService>(OrchestrationImage orchestrationImage,
+    public Task<TImageService> GetInfoJson<TImageService>(OrchestrationImage orchestrationImage,
         Version version,
-        CancellationToken cancellationToken = default) where TImageService : JsonLdBase
+        CancellationToken cancellationToken = default) where TImageService : JsonLdBase =>
+        Task.FromResult(GetInfoJsonSynch<TImageService>(orchestrationImage, version));
+
+    private static TImageService GetInfoJsonSynch<TImageService>(OrchestrationImage orchestrationImage, Version version) where TImageService : class
     {
         if (typeof(TImageService) == typeof(ImageService2))
         {
@@ -1706,14 +1710,17 @@ public class FakeImageServerClient : IImageServerClient
                 Profile = ImageService2.Level1Profile,
                 Protocol = ImageService2.Image2Protocol,
                 Context = ImageService2.Image2Context,
-                Tiles = new List<Tile>{new Tile()
-                {
-                    Height = 512,
-                    Width = 512
-                }},
+                Tiles =
+                [
+                    new()
+                    {
+                        Height = 512,
+                        Width = 512
+                    }
+                ],
                 Width = 100,
                 Height = 100,
-                Sizes = new List<Size> { new(100, 100), new(25, 25), new(1, 1) },
+                Sizes = [new(100, 100), new(25, 25), new(1, 1)],
             } as TImageService;
         }
 
@@ -1722,14 +1729,17 @@ public class FakeImageServerClient : IImageServerClient
             Profile = ImageService3.Level1Profile,
             Protocol = ImageService3.ImageProtocol,
             Context = ImageService3.Image3Context,
-            Tiles = new List<Tile>{new Tile()
-            {
-                Height = 512,
-                Width = 512
-            }},
+            Tiles =
+            [
+                new()
+                {
+                    Height = 512,
+                    Width = 512
+                }
+            ],
             Width = 100,
             Height = 100,
-            Sizes = new List<Size> { new(100, 100), new(25, 25), new(1, 1) },
+            Sizes = [new(100, 100), new(25, 25), new(1, 1)],
         } as TImageService;
     }
 }

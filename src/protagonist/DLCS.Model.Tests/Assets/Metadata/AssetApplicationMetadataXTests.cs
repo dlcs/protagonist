@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
-using Newtonsoft.Json;
 
 namespace DLCS.Model.Tests.Assets.Metadata;
 

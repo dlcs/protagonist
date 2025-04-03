@@ -1,7 +1,5 @@
-﻿using DLCS.Core;
-using DLCS.Core.Collections;
+﻿using DLCS.Core.Collections;
 using DLCS.Model.Assets;
-using DLCS.Model.Policies;
 using FluentValidation;
 
 namespace API.Features.Image.Validation;
@@ -50,7 +48,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleFor(a => a.DeliveryChannels)
             .Must(dl => dl.All(d => !AssetDeliveryChannels.SingleOnly.Contains(d.Channel)))
             .When(a => a.DeliveryChannels!.Length > 1)
-            .WithMessage(d => $"If one of '{AssetDeliveryChannels.SingleOnlyString}' is a specified channel, then no other delivery channels are allowed");
+            .WithMessage(_ => $"If one of '{AssetDeliveryChannels.SingleOnlyString}' is a specified channel, then no other delivery channels are allowed");
 
         RuleForEach(a => a.DeliveryChannels)
             .Must(c => !string.IsNullOrEmpty(c.Channel))

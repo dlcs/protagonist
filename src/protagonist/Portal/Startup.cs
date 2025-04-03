@@ -82,7 +82,7 @@ public class Startup
             .AddSingleton<IEncryption, SHA256>()
             .AddSingleton<DlcsApiAuth>()
             .AddTransient<ClaimsPrincipal>(s => s.GetService<IHttpContextAccessor>().HttpContext.User)
-            .AddMediatR(typeof(Startup))
+            .AddMediatR(cfg=>cfg.RegisterServicesFromAssemblyContaining<Startup>())
             .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
             .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>))
             .AddAWSService<IAmazonS3>()

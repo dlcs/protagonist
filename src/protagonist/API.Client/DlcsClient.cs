@@ -146,7 +146,7 @@ public class DlcsClient : IDlcsClient
         var url = $"customers/{currentUser.GetCustomerId()}/keys";
         var response = await httpClient.GetAsync(url);
         var apiKeys = await response.ReadAsHydraResponseAsync<HydraCollection<ApiKey>>(jsonSerializerSettings);
-        return apiKeys?.Members.Select(m => m.Key);
+        return apiKeys?.Members?.Select(m => m.Key).OfType<string>();
     }
 
     public async Task<ApiKey> CreateNewApiKey()

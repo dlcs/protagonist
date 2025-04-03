@@ -6,7 +6,6 @@ using DLCS.Core.Encryption;
 using DLCS.Core.Types;
 using DLCS.Model.Customers;
 using DLCS.Web.Auth;
-using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.API;

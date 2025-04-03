@@ -162,7 +162,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         const string pdfStorageKey = "99/pdf/test-pdf/limited-ref/tester";
         await AddPdfControlFile("99/pdf/test-pdf/limited-ref/tester",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
-        pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
+        pdfCreator.AddCallbackFor(pdfStorageKey, (_, _) =>
         {
             AddPdf(pdfStorageKey, fakePdfContent).Wait();
             return true;
@@ -204,7 +204,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/2/tester.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
-        pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
+        pdfCreator.AddCallbackFor(pdfStorageKey, (_, _) =>
         {
             AddPdf(pdfStorageKey, fakePdfContent).Wait();
             return true;
@@ -229,7 +229,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/3/tester.json",
             new ControlFile { Created = DateTime.UtcNow.AddHours(-1), InProcess = false });
 
-        pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
+        pdfCreator.AddCallbackFor(pdfStorageKey, (_, _) =>
         {
             AddPdf(pdfStorageKey, fakePdfContent).Wait();
             return true;
@@ -277,7 +277,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 Created = DateTime.UtcNow.AddHours(-1), InProcess = false,
                 Roles = new List<string> { "clickthrough" }
             });
-        pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
+        pdfCreator.AddCallbackFor(pdfStorageKey, (_, _) =>
         {
             AddPdf(pdfStorageKey, fakePdfContent).Wait();
             return true;
@@ -319,7 +319,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
 
         // return True but don't create object
-        pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) => true);
+        pdfCreator.AddCallbackFor(pdfStorageKey, (_, _) => true);
 
         // Act
         var response = await httpClient.GetAsync(path);
@@ -338,7 +338,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await AddPdfControlFile("99/test-pdf/my-ref/1/5/tester.json",
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
 
-        pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) => false);
+        pdfCreator.AddCallbackFor(pdfStorageKey, (_, _) => false);
 
         // Act
         var response = await httpClient.GetAsync(path);
@@ -382,7 +382,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
             new ControlFile { Created = DateTime.UtcNow, InProcess = false });
 
         List<Asset> savedAssets = null;
-        pdfCreator.AddCallbackFor(pdfStorageKey, (query, assets) =>
+        pdfCreator.AddCallbackFor(pdfStorageKey, (_, assets) =>
         {
             savedAssets = assets;
             return false;

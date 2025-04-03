@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.Model.Assets;
-using DLCS.Model.Messaging;
 
 namespace DLCS.Repository.Messaging;
 

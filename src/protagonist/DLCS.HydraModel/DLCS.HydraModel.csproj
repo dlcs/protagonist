@@ -1,13 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
-      <ProjectReference Include="..\Hydra\Hydra.csproj" />
+        <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj"/>
+        <ProjectReference Include="..\Hydra\Hydra.csproj"/>
     </ItemGroup>
 
 </Project>

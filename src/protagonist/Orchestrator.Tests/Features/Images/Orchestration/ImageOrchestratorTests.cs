@@ -6,7 +6,6 @@ using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.Utils;
-using FakeItEasy;
 using LazyCache;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Caching.Memory;

@@ -7,10 +7,8 @@ using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
 using Microsoft.EntityFrameworkCore;
+using Testcontainers.PostgreSql;
 using Xunit;
 
 namespace Test.Helpers.Integration;
@@ -174,20 +172,17 @@ public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
 
 public class DlcsDefaultDatabaseFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlTestcontainer postgresContainer;
+    private readonly PostgreSqlContainer postgresContainer;
 
     public DlcsContext DbContext { get; private set; }
     public string ConnectionString { get; private set; }
 
     public DlcsDefaultDatabaseFixture()
     {
-        var postgresBuilder = new TestcontainersBuilder<PostgreSqlTestcontainer>()
-            .WithDatabase(new PostgreSqlTestcontainerConfiguration("postgres:13-alpine")
-            {
-                Database = "db",
-                Password = "postgres_pword",
-                Username = "postgres"
-            })
+        var postgresBuilder = new PostgreSqlBuilder()
+            .WithDatabase("db")
+            .WithPassword("postgres_pword")
+            .WithUsername("postgres")
             .WithCleanUp(true)
             .WithLabel("protagonist_test", "True");
 
@@ -198,30 +193,21 @@ public class DlcsDefaultDatabaseFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        // Start DB + apply migrations
-        try
-        {
-            await postgresContainer.StartAsync();
-            SetPropertiesFromContainer();
-            await DbContext.Database.MigrateAsync();
-            await InitialiseDb();
-        }
-        catch (Exception ex)
-        {
-            var m = ex.Message;
-            throw;
-        }
+        await postgresContainer.StartAsync();
+        SetPropertiesFromContainer();
+        await DbContext.Database.MigrateAsync();
+        await InitialiseDb();
     }
 
     public Task DisposeAsync() => postgresContainer.StopAsync();
     
     private void SetPropertiesFromContainer()
     {
-        ConnectionString = postgresContainer.ConnectionString;
+        ConnectionString = postgresContainer.GetConnectionString();
 
         // Create new DlcsContext using connection string for Postgres container
         var dbContextOptions = new DbContextOptionsBuilder<DlcsContext>()
-            .SetupDlcsContextOptions(postgresContainer.ConnectionString)
+            .SetupDlcsContextOptions(postgresContainer.GetConnectionString())
             .EnableSensitiveDataLogging();
         DbContext = new DlcsContext(dbContextOptions.Options);
         DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;

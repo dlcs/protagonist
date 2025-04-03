@@ -2,7 +2,6 @@
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
 using API.Tests.Integration.Infrastructure;

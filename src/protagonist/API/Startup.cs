@@ -104,7 +104,7 @@ public class Startup
                 builder => builder
                     .AllowAnyMethod()
                     .AllowAnyHeader()
-                    .SetIsOriginAllowed(host => true)
+                    .SetIsOriginAllowed(_ => true)
                     .AllowCredentials());
         });
 

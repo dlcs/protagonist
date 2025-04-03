@@ -3,7 +3,6 @@ using API.Features.Assets;
 using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
-using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using Microsoft.Extensions.Options;

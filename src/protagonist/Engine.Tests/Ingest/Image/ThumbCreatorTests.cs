@@ -2,7 +2,6 @@
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Policies;
 using Engine.Ingest.Image;
 using FakeItEasy;

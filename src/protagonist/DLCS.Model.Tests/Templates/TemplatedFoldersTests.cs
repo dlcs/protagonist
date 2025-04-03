@@ -1,7 +1,5 @@
 ﻿using DLCS.Core.Types;
 using DLCS.Model.Templates;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Model.Tests.Templates;
 

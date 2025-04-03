@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
 
 namespace DLCS.Model.Messaging;
 

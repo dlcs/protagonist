@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Model.Assets;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Model.Tests.Assets;
 

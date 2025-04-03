@@ -194,15 +194,15 @@ public class ImageServerThumbsClient : IThumbsClient
         {
             // always need h to match. e.g. for ,500: 399,500 + 401,500 are ok. 400,499 + 400,501 are not
             HandleMismatch(expectedSize.Height == actualSize.Height);
-            return;
         }
+        return;
 
         void HandleMismatch(bool allowed)
         {
             if (allowed)
             {
                 logger.LogTrace(
-                    "Size mismatch for {AssetId}, size '{Size}'. Expected:'{Expected}', actual:'{Actual}'.",
+                    "Size mismatch for {AssetId}, size '{Size}'. Expected:'{Expected}', actual:'{Actual}'",
                     assetId, sizeParam, expectedSize, actualSize);
                 return;
             }

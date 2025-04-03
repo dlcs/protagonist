@@ -86,7 +86,7 @@ public class ProtagonistAppFactory<TStartup> : WebApplicationFactory<TStartup>
         var configPath = Path.Combine(projectDir, "appsettings.Testing.json");
 
         builder
-            .ConfigureAppConfiguration((context, conf) =>
+            .ConfigureAppConfiguration((_, conf) =>
             {
                 conf.AddJsonFile(configPath);
                 conf.AddInMemoryCollection(configuration);
@@ -125,14 +125,14 @@ public class ProtagonistAppFactory<TStartup> : WebApplicationFactory<TStartup>
     {
         services.Remove(new ServiceDescriptor(typeof(IAmazonS3),
             a => a.GetService(typeof(IAmazonS3)), ServiceLifetime.Singleton));
-        services.AddSingleton<IAmazonS3>(p => localStack.AWSS3ClientFactory());
+        services.AddSingleton<IAmazonS3>(_ => localStack.AWSS3ClientFactory());
         
         services.Remove(new ServiceDescriptor(typeof(IAmazonSQS),
             a => a.GetService(typeof(IAmazonSQS)), ServiceLifetime.Singleton));
-        services.AddSingleton<IAmazonSQS>(p => localStack.AWSSQSClientFactory());
+        services.AddSingleton<IAmazonSQS>(_ => localStack.AWSSQSClientFactory());
         
         services.Remove(new ServiceDescriptor(typeof(IAmazonSimpleNotificationService), 
             a => a.GetService(typeof(IAmazonSimpleNotificationService)), ServiceLifetime.Singleton));
-        services.AddSingleton<IAmazonSimpleNotificationService>(p => localStack.AWSSNSFactory());
+        services.AddSingleton<IAmazonSimpleNotificationService>(_ => localStack.AWSSNSFactory());
     }
 }

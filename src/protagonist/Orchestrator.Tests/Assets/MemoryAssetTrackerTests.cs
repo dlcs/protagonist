@@ -4,8 +4,6 @@ using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
-using DLCS.Model.Policies;
-using FakeItEasy;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;

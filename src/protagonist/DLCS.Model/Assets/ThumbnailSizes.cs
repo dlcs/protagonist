@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using DLCS.Core.Collections;
 using DLCS.Model.IIIF;
 using IIIF;
 using Newtonsoft.Json;

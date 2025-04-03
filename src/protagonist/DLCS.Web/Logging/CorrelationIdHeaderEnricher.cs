@@ -59,13 +59,13 @@ public class CorrelationIdHeaderEnricher : ILogEventEnricher
         {
             if (!httpContext.Request.Headers.ContainsKey(headerKey))
             {
-                httpContext.Request.Headers.Add(headerKey, correlationId);
+                httpContext.Request.Headers.Append(headerKey, correlationId);
             }
         }
         
         if (!httpContext.Response.HasStarted && !httpContext.Response.Headers.ContainsKey(headerKey))
         {
-            httpContext.Response.Headers.Add(headerKey, correlationId);
+            httpContext.Response.Headers.Append(headerKey, correlationId);
         }
 
         return correlationId;

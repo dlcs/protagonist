@@ -9,7 +9,6 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
-using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.Processing;
 using Hydra.Collections;

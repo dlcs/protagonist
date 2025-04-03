@@ -59,7 +59,7 @@ public static class ServiceCollectionX
     /// </summary>
     public static IServiceCollection ConfigureMediatR(this IServiceCollection services)
         => services
-            .AddMediatR(typeof(Startup))
+            .AddMediatR(cfg=>cfg.RegisterServicesFromAssemblyContaining<Startup>())
             .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
             .AddScoped(typeof(IPipelineBehavior<,>), typeof(CacheInvalidationBehaviour<,>));
     

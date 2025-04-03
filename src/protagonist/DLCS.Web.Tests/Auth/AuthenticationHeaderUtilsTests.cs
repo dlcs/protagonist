@@ -29,7 +29,7 @@ public class AuthenticationHeaderUtilsTests
     {
         // Arrange
         var httpRequest = new DefaultHttpContext().Request;
-        httpRequest.Headers.Add("Authorization", authHeader);
+        httpRequest.Headers.Append("Authorization", authHeader);
 
         var parts = authHeader.Split(" ", StringSplitOptions.RemoveEmptyEntries);
         var scheme = parts[0];
@@ -50,7 +50,7 @@ public class AuthenticationHeaderUtilsTests
     {
         // Arrange
         var httpRequest = new DefaultHttpContext().Request;
-        httpRequest.Headers.Add("Authorization", authHeader);
+        httpRequest.Headers.Append("Authorization", authHeader);
         
         // Act
         var authHeadervalue = httpRequest.GetAuthHeaderValue(targetScheme);
@@ -68,7 +68,7 @@ public class AuthenticationHeaderUtilsTests
     {
         // Arrange
         var httpRequest = new DefaultHttpContext().Request;
-        httpRequest.Headers.Add("Authorization", authHeader);
+        httpRequest.Headers.Append("Authorization", authHeader);
 
         var parameter = authHeader.Split(" ", StringSplitOptions.RemoveEmptyEntries)[1];
 
