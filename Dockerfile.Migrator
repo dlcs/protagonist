@@ -24,7 +24,6 @@ LABEL org.opencontainers.image.source=https://github.com/dlcs/protagonist
 LABEL org.opencontainers.image.description="EF Migration runner for DLCS DB"
 
 WORKDIR /app
-ENV ASPNETCORE_HTTP_PORTS=80 ASPNETCORE_URLS=http://+:80
-EXPOSE 80
+EXPOSE 8080
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Migrator.dll"]
