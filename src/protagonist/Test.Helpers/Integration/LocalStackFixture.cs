@@ -48,7 +48,7 @@ public class LocalStackFixture : IAsyncLifetime
     {
         // Configure container binding to host port 0, which will use a random free port
         var localStackBuilder = new ContainerBuilder()
-            .WithImage("localstack/localstack")
+            .WithImage("localstack/localstack:4.3")
             .WithCleanUp(true)
             .WithLabel("protagonist_test", "True")
             .WithEnvironment("DEFAULT_REGION", "eu-west-1")
