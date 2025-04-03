@@ -75,11 +75,10 @@ public class ImageServerThumbsClient : IThumbsClient
         using var response = await imageServerClient.SendAsync(request, cancellationToken);
         
         AttemptToAddStickinessCookie(response);
-
+        
         if (response.StatusCode == HttpStatusCode.BadRequest &&
             await IsErrorDueToIncorrectImageRequest(response, cancellationToken))
         {
-            // This is due to thumb size being larger than image
             await LogErrorResponse(response, assetId, size, LogLevel.Information, cancellationToken);
             return null;
         }
