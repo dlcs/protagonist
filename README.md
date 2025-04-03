@@ -57,6 +57,13 @@ There are a variety of technologies used across the projects, including:
 
 The main entry point is [`run_build.yml`](.github/workflows/run_build.yml). This runs `dotnet test` then uses the parameterised `build_docker.yml` files to handle Docker image creation.
 
+PRs to `main`, `develop`, pushes to `main`, `develop` and `v*` tags will:
+* Build + test dotnet code
+* Build and push docker containers 
+  * This won't happen for draft PRs unless `build-image` label is added
+
+Pushes to `main`, `develop` and `v*` tags will also run sonar analysis.
+
 ## Getting Started
 
 There are 2 docker-compose files:
