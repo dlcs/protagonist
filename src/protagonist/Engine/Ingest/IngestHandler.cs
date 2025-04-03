@@ -2,7 +2,9 @@ using System.Text.Json;
 using DLCS.AWS.SQS;
 using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
+using Engine.Infrastructure.Logging;
 using Engine.Ingest.Models;
+using Serilog.Core;
 
 namespace Engine.Ingest;
 
@@ -28,12 +30,16 @@ public class IngestHandler : IMessageHandler
         var ingestEvent = DeserializeBody<IngestAssetRequest>(message);
         
         if (ingestEvent == null) return false;
-        
-        var ingestResult = await ingester.Ingest(ingestEvent, cancellationToken);
-        
-        logger.LogDebug("Message {MessageId} handled with result {IngestResult}", message.MessageId, ingestResult.Status);
-        await UpdateCustomerQueue(message, cancellationToken, ingestResult);
-        
+
+        using (LogContextHelpers.SetCorrelationId(message.MessageId))
+        {
+            var ingestResult = await ingester.Ingest(ingestEvent, cancellationToken);
+
+            logger.LogDebug("Message {MessageId} handled with result {IngestResult}", message.MessageId,
+                ingestResult.Status);
+            await UpdateCustomerQueue(message, cancellationToken, ingestResult);
+        }
+
         // return true so that the message is deleted from the queue in all instances.
         // This shouldn't be the case and can be revisited at a later date as it will need logic of how Batch.Errors is
         // calculated

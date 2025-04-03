@@ -12,25 +12,25 @@ using Microsoft.Net.Http.Headers;
 namespace Engine.Ingest.Image.ImageServer.Clients;
 
 /// <summary>
-/// Implementation of <see cref="IThumbCreator"/> using Cantaloupe for generation
+/// Implementation of <see cref="IThumbsClient"/> using IIIF ImageServer (e.g. Cantaloupe or Laya) for generation
 /// </summary>
-public class CantaloupeThumbsClient : IThumbsClient
+public class ImageServerThumbsClient : IThumbsClient
 {
-    private readonly HttpClient cantaloupeClient;
+    private readonly HttpClient imageServerClient;
     private readonly IFileSystem fileSystem;
     private readonly IImageMeasurer imageMeasurer;
-    private readonly ILogger<CantaloupeThumbsClient> logger;
+    private readonly ILogger<ImageServerThumbsClient> logger;
     private List<string> loadBalancerCookies = new();
     private readonly EngineSettings engineSettings;
 
-    public CantaloupeThumbsClient(
-        HttpClient cantaloupeClient,
+    public ImageServerThumbsClient(
+        HttpClient imageServerClient,
         IFileSystem fileSystem,
         IImageMeasurer imageMeasurer,
         IOptionsMonitor<EngineSettings> engineOptionsMonitor,
-        ILogger<CantaloupeThumbsClient> logger)
+        ILogger<ImageServerThumbsClient> logger)
     {
-        this.cantaloupeClient = cantaloupeClient;
+        this.imageServerClient = imageServerClient;
         this.fileSystem = fileSystem;
         this.imageMeasurer = imageMeasurer;
         this.logger = logger;
@@ -70,15 +70,15 @@ public class CantaloupeThumbsClient : IThumbsClient
         string convertedS3Location, string size, AssetId assetId, int count, List<ImageOnDisk> thumbsResponse,
         Size imageSize, bool shouldRetry, CancellationToken cancellationToken)
     {
-        var request = CreateCantaloupeRequestMessage(convertedS3Location, size);
+        var request = CreateRequestMessage(convertedS3Location, size);
 
-        using var response = await cantaloupeClient.SendAsync(request, cancellationToken);
+        using var response = await imageServerClient.SendAsync(request, cancellationToken);
         
         AttemptToAddStickinessCookie(response);
-
-        if (response.StatusCode == HttpStatusCode.BadRequest)
+        
+        if (response.StatusCode == HttpStatusCode.BadRequest &&
+            await IsErrorDueToIncorrectImageRequest(response, cancellationToken))
         {
-            // This is likely an error for the individual thumb size, so don't throw an error
             await LogErrorResponse(response, assetId, size, LogLevel.Information, cancellationToken);
             return null;
         }
@@ -90,12 +90,28 @@ public class CantaloupeThumbsClient : IThumbsClient
         }
 
         await LogErrorResponse(response, assetId, size, LogLevel.Error, cancellationToken);
-        throw new HttpException(response.StatusCode, "failed to retrieve data from the thumbs processor");
+        throw new HttpException(response.StatusCode, "Failed to retrieve data from the thumbs processor");
     }
 
-    private HttpRequestMessage CreateCantaloupeRequestMessage(string convertedS3Location, string size)
+    // Collection of known values found in 400 response body which signify error can be ignored
+    private static readonly string[] KnownIgnorableBadRequests = new[]
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, $"iiif/3/{convertedS3Location}/full/{size}/0/default.jpg");
+        "scales in excess of 100%", // Cantaloupe. For when size-param exceeds image dimensions and ^ not used
+        "image dimensions exceed largest", // Laya. For when size-param exceeds image dimensions and ^ not used
+    };
+
+    private static async Task<bool> IsErrorDueToIncorrectImageRequest(HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return KnownIgnorableBadRequests.Any(upscale => body.Contains(upscale));
+    }
+
+    private HttpRequestMessage CreateRequestMessage(string convertedS3Location, string size)
+    {
+        // use a dot-segment (./) to be explicit that this is a relative path or the colon in s3: makes http-client
+        // this it's absolute. see https://github.com/dotnet/runtime/issues/24266#issuecomment-347604913
+        var request = new HttpRequestMessage(HttpMethod.Get, $"./{convertedS3Location}/full/{size}/0/default.jpg");
 
         if (loadBalancerCookies.Any())
         {
@@ -148,7 +164,7 @@ public class CantaloupeThumbsClient : IThumbsClient
     {
         var errorResponse = await response.Content.ReadAsStringAsync(cancellationToken);
         logger.Log(logLevel,
-            "Cantaloupe responded with status code {StatusCode} when processing Asset {AssetId}, size '{Size}' and body {ErrorResponse}",
+            "ImageServer responded with status code {StatusCode} when processing Asset {AssetId}, size '{Size}' and body {ErrorResponse}",
             response.StatusCode, assetId, size, errorResponse);
     }
 

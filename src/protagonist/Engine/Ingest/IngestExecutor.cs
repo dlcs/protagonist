@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Assets;
+﻿using System.Diagnostics;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Storage;
 using Engine.Data;
@@ -34,6 +35,7 @@ public class IngestExecutor
     public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
+        var sw = Stopwatch.StartNew();
         var context = new IngestionContext(asset);
 
         // If the asset has the `none` delivery channel specified, skip processing and mark the ingest as being complete
@@ -108,6 +110,9 @@ public class IngestExecutor
             await postProcessor.PostIngest(context,
                 dbSuccess && overallStatus is IngestResultStatus.Success or IngestResultStatus.QueuedForProcessing);
         }
+        
+        sw.Stop();
+        logger.LogDebug("Processed {AssetId} in {Elapsed}ms", asset.Id, sw.ElapsedMilliseconds);
         return new IngestResult(asset.Id, dbSuccess ? overallStatus : IngestResultStatus.Failed);
     }
 
