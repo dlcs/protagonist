@@ -49,11 +49,11 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         Logger = logger;
     }
 
-    public T GenerateParsedNamedQueryFromRequest<T>(
+    public T2 GenerateParsedNamedQueryFromRequest<T2>(
         int customerId,
         string? namedQueryArgs,
         string namedQueryTemplate,
-        string namedQueryName) where T : ParsedNamedQuery
+        string namedQueryName) where T2 : ParsedNamedQuery
     {
         namedQueryTemplate.ThrowIfNullOrWhiteSpace(nameof(namedQueryTemplate));
 
@@ -67,7 +67,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         var assetQuery = GenerateParsedNamedQuery(customerId, templatePairing, queryArgs);
         assetQuery.NamedQueryName = namedQueryName;
         PostParsingOperations(assetQuery);
-        return (assetQuery as T)!;
+        return (assetQuery as T2)!;
     }
 
     /// <summary>
