@@ -47,6 +47,7 @@ public static class DatabaseTestDataPopulation
         string imageOptimisationPolicy = "",
         string thumbnailPolicy = "default",
         DateTime? finished = null,
+        List<string> manifests = null,
         List<ImageDeliveryChannel> imageDeliveryChannels = null)
     {
         return assets.AddAsync(new Asset
@@ -58,7 +59,7 @@ public static class DatabaseTestDataPopulation
             NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
             NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = error,
             ImageOptimisationPolicy = imageOptimisationPolicy, Batch = batch, Ingesting = ingesting,
-            Duration = duration, Finished = finished,
+            Duration = duration, Finished = finished, Manifests = manifests,
             ImageDeliveryChannels = imageDeliveryChannels ?? new List<ImageDeliveryChannel>()
         });
     }
