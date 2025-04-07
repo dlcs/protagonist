@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core;
 using DLCS.Core.Collections;
@@ -90,6 +91,11 @@ public static class AssetPreparer
         // Validate there are no issues
         var prepareAssetForUpsert = ValidateRequests(existingAsset, updateAsset, allowNonApiUpdates, isBatchUpdate, disallowedCharacters);
         if (prepareAssetForUpsert != null) return prepareAssetForUpsert;
+        
+        if (updateAsset.Manifests?.Count > 0)
+        {
+            updateAsset.Manifests = updateAsset.Manifests.Union(existingAsset?.Manifests ?? []).ToList();
+        }
 
         bool reCalculateFamily = false;
         if (existingAsset != null)

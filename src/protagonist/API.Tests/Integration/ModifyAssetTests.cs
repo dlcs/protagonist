@@ -74,11 +74,11 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task Put_NewImageAsset_Creates_Asset()
+    public async Task Put_NewMinimalImageAsset_Creates_Asset()
     {
         var customerAndSpace = await CreateCustomerAndSpace();
 
-        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_Creates_Asset));
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewMinimalImageAsset_Creates_Asset));
         var hydraImageBody = $@"{{
             ""@type"": ""Image"",
             ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -106,6 +106,38 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img");
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
         asset.BatchAssets.Should().BeEmpty();
+    }
+    
+    [Fact]
+    public async Task Put_NewImageAsset_CreatesAsset_WithManifestsAttached()
+    {
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_CreatesAsset_WithManifestsAttached));
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""manifests"": [""first""]
+        }}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
+        var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
+            .Single(x => x.Id == assetId);
+        asset.Id.Should().Be(assetId);
+        asset.Manifests.Should().BeEquivalentTo("first");
     }
     
     [Fact]
@@ -881,6 +913,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = await dbContext.Images.FindAsync(assetId);
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be(hydraJson.MediaType);
+        asset.Manifests.Should().BeEquivalentTo("first");
         
         // The image was saved to S3 with correct header
         var item = await amazonS3.GetObjectAsync(LocalStackFixture.OriginBucketName, assetId.ToString());
@@ -1153,6 +1186,125 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Entry(newAsset.Entity).ReloadAsync();
         newAsset.Entity.Ingesting.Should().BeTrue();
         newAsset.Entity.Error.Should().BeEmpty();
+    }
+    
+    [Fact]
+    public async Task Put_ExistingAsset_UpdatesManifests()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
+        var newAsset = await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""mediaType"": ""image/tiff"",
+            ""manifests"": [""second""]
+        }}";
+                
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        await dbContext.Entry(newAsset.Entity).ReloadAsync();
+        newAsset.Entity.Manifests.Should().BeEquivalentTo("first", "second");
+    }
+    
+    [Fact]
+    public async Task Put_ExistingAsset_MaintainsManifests_WhenManifestsNull()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
+        var newAsset = await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""mediaType"": ""image/tiff""
+        }}";
+                
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        await dbContext.Entry(newAsset.Entity).ReloadAsync();
+        newAsset.Entity.Manifests.Should().BeEquivalentTo("first");
+    }
+    
+    [Fact]
+    public async Task Put_ExistingAsset_ClearsManifests_WhenManifestsEmpty()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
+        var newAsset = await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""mediaType"": ""image/tiff"",
+            ""manifests"": []
+        }}";
+                
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        await dbContext.Entry(newAsset.Entity).ReloadAsync();
+        newAsset.Entity.Manifests.Should().BeEmpty();
+    }
+    
+    [Fact]
+    public async Task Put_ExistingAsset_MaintainsManifests_WhenDuplicatedManifests()
+    {
+        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
+        var newAsset = await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""mediaType"": ""image/tiff"",
+            ""manifests"": [""first""]
+        }}";
+                
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
+        
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        await dbContext.Entry(newAsset.Entity).ReloadAsync();
+        newAsset.Entity.Manifests.Should().BeEquivalentTo("first");
     }
     
     [Fact]
@@ -1942,17 +2094,18 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Theory]
     [InlineData(AssetFamily.Image)]
     [InlineData(AssetFamily.Timebased)] 
-    public async Task Patch_Asset_Updates_Asset_Without_Calling_Engine(AssetFamily family)
+    public async Task Patch_Asset_Updates_Asset_Without_Calling_Engine(AssetFamily family) 
     {
         var assetId = new AssetId(99, 1, $"{nameof(Patch_Asset_Updates_Asset_Without_Calling_Engine)}{family}");
 
         var testAsset = await dbContext.Images.AddTestAsset(assetId, family: family,
-            ref1: "I am string 1", origin: "https://images.org/image2.tiff");
+            ref1: "I am string 1", origin: "https://images.org/image2.tiff", manifests: ["first"]);
         await dbContext.SaveChangesAsync();
 
         var hydraImageBody = @"{
   ""@type"": ""Image"",
-  ""string1"": ""I am edited""
+  ""string1"": ""I am edited"",
+  ""manifests"": [""second""]
 }";
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -1969,6 +2122,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         await dbContext.Entry(testAsset.Entity).ReloadAsync();
         testAsset.Entity.Reference1.Should().Be("I am edited");
+        testAsset.Entity.Manifests.Should().BeEquivalentTo("first", "second");
     }
     
     [Fact]
