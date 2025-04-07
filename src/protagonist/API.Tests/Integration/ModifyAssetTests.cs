@@ -1191,7 +1191,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_ExistingAsset_UpdatesManifests()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
+        var assetId = new AssetId(99, 1, nameof(Put_ExistingAsset_UpdatesManifests));
         var newAsset = await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
         await dbContext.SaveChangesAsync();
         
@@ -1215,13 +1215,13 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         await dbContext.Entry(newAsset.Entity).ReloadAsync();
-        newAsset.Entity.Manifests.Should().BeEquivalentTo("first", "second");
+        newAsset.Entity.Manifests.Should().BeEquivalentTo("second");
     }
     
     [Fact]
     public async Task Put_ExistingAsset_MaintainsManifests_WhenManifestsNull()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
+        var assetId = new AssetId(99, 1, nameof(Put_ExistingAsset_MaintainsManifests_WhenManifestsNull));
         var newAsset = await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
         await dbContext.SaveChangesAsync();
         
@@ -1250,7 +1250,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_ExistingAsset_ClearsManifests_WhenManifestsEmpty()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
+        var assetId = new AssetId(99, 1, nameof(Put_ExistingAsset_ClearsManifests_WhenManifestsEmpty));
         var newAsset = await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
         await dbContext.SaveChangesAsync();
         
@@ -1274,37 +1274,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         await dbContext.Entry(newAsset.Entity).ReloadAsync();
-        newAsset.Entity.Manifests.Should().BeEmpty();
-    }
-    
-    [Fact]
-    public async Task Put_ExistingAsset_MaintainsManifests_WhenDuplicatedManifests()
-    {
-        var assetId = new AssetId(99, 1, nameof(Put_Existing_Asset_ClearsError_AndMarksAsIngesting));
-        var newAsset = await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
-        await dbContext.SaveChangesAsync();
-        
-        var hydraImageBody = $@"{{
-            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
-            ""mediaType"": ""image/tiff"",
-            ""manifests"": [""first""]
-        }}";
-                
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<Asset>.That.Matches(r => r.Id == assetId),
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
-        
-        // act
-        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
-        
-        // assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
-        await dbContext.Entry(newAsset.Entity).ReloadAsync();
-        newAsset.Entity.Manifests.Should().BeEquivalentTo("first");
+        newAsset.Entity.Manifests.Should().BeNull();
     }
     
     [Fact]
@@ -2122,7 +2092,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         await dbContext.Entry(testAsset.Entity).ReloadAsync();
         testAsset.Entity.Reference1.Should().Be("I am edited");
-        testAsset.Entity.Manifests.Should().BeEquivalentTo("first", "second");
+        testAsset.Entity.Manifests.Should().BeEquivalentTo("second");
     }
     
     [Fact]
