@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
+using DLCS.Model.Assets;
 using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Tests.Converters;
@@ -10,6 +12,7 @@ namespace API.Tests.Converters;
 public class AssetConverterTests
 {
     private const string AssetApiId = "https://dlcs.io/customers/1/spaces/99/images/asset";
+    private const int Customer = 1;
     
     [Fact]
     public void ToDlcsModel_Fails_IfCustomerNotAsserted()
@@ -24,13 +27,13 @@ public class AssetConverterTests
     {
         var hydraImage = new Image{ Id = AssetApiId };
         var asset = hydraImage.ToDlcsModel(1, 99);
-        asset.Id.Should().Be(AssetId.FromString("1/99/asset"));
+        asset.Id.Should().Be(AssetId.FromString($"{Customer}/99/asset"));
     }
     
     [Fact]
     public void ToDlcsModel_HydraId_Must_Be_Correct_Form()
     {
-        var hydraImage = new Image{ Id = "1/99/asset" };
+        var hydraImage = new Image{ Id = $"{Customer}/99/asset" };
         Action action = () => hydraImage.ToDlcsModel(1, 99);
         action.Should().Throw<APIException>();
     }
@@ -41,7 +44,7 @@ public class AssetConverterTests
         var hydraImage = new Image{ Space = 99, ModelId = "asset"};
         var asset = hydraImage.ToDlcsModel(1);
         asset.Space.Should().Be(99);
-        asset.Id.Should().Be(AssetId.FromString("1/99/asset"));
+        asset.Id.Should().Be(AssetId.FromString($"{Customer}/99/asset"));
     }
 
     [Fact]
@@ -105,6 +108,7 @@ public class AssetConverterTests
         var tags = new[] { "tag1", "tag2" };
         var mediaType = "image/jpeg";
         var thumbnailPolicy = "https://dlcs.io/thumbnailPolicies/thumb100";
+        var manifests = new[] { "firstManifest" };
         
         var hydraImage = new Image
         {
@@ -131,14 +135,15 @@ public class AssetConverterTests
             MaxUnauthorised = 400,
             MediaType = mediaType,
             ThumbnailPolicy = thumbnailPolicy,
+            Manifests = manifests,
         };
 
         var asset = hydraImage.ToDlcsModel(1);
 
-        asset.Id.Should().Be(AssetId.FromString("1/99/asset"));
+        asset.Id.Should().Be(AssetId.FromString($"{Customer}/99/asset"));
         asset.Created.Should().Be(created);
         asset.Finished.Should().Be(finished);
-        asset.Customer.Should().Be(1);
+        asset.Customer.Should().Be(Customer);
         asset.Space.Should().Be(99);
         asset.Width.Should().Be(1000);
         asset.Height.Should().Be(2000);
@@ -158,5 +163,76 @@ public class AssetConverterTests
         asset.MaxUnauthorised.Should().Be(400);
         asset.MediaType.Should().Be(mediaType);
         asset.ThumbnailPolicy.Should().Be("thumb100");
+        asset.Manifests.Should().BeEquivalentTo(manifests);
+    }
+    
+    [Fact]
+    public void ToHydraModel_All_Fields_Should_Convert()
+    {
+        var created = DateTime.UtcNow.AddDays(-1).Date;
+        var finished = DateTime.UtcNow;
+        var origin = "https://example.org/origin";
+        var roles = "role1,role2";
+        var tags = "tag1tag2";
+        var mediaType = "image/jpeg";
+        var thumbnailPolicy = "thumb100";
+        var manifests = new List<string> { "firstManifest" };
+        
+        var asset = new Asset()
+        {
+            Id = AssetId.FromString($"{Customer}/99/asset"),
+            Customer = 1,
+            Space = 99,
+            Created = created,
+            Finished = finished,
+            Width = 1000,
+            Height = 2000,
+            Duration = 3000,
+            Family = DLCS.Model.Assets.AssetFamily.Image,
+            Ingesting = true,
+            NumberReference1 = 1,
+            NumberReference2 = 2,
+            NumberReference3 = 3,
+            Reference1 = "1",
+            Reference2 = "2",
+            Reference3 = "3",
+            Origin = origin,
+            Roles = roles,
+            Tags = tags,
+            MaxUnauthorised = 400,
+            MediaType = mediaType,
+            ThumbnailPolicy = thumbnailPolicy,
+            Manifests = manifests,
+        };
+
+        var hydraImage = asset.ToHydra(new UrlRoots()
+        {
+            BaseUrl = "https://dlcs.io"
+        });
+
+        hydraImage.Id.Should().Be(AssetApiId);
+        hydraImage.Created.Should().Be(created);
+        hydraImage.Finished.Should().Be(finished);
+        hydraImage.CustomerId.Should().Be(1);
+        hydraImage.Space.Should().Be(99);
+        hydraImage.Width.Should().Be(1000);
+        hydraImage.Height.Should().Be(2000);
+        hydraImage.Duration.Should().Be(3000);
+        hydraImage.Family.Should().Be(AssetFamily.Image);
+        hydraImage.Ingesting.Should().Be(true);
+        hydraImage.Origin.Should().Be(origin);
+        hydraImage.Number1.Should().Be(1);
+        hydraImage.Number2.Should().Be(2);
+        hydraImage.Number3.Should().Be(3);
+        hydraImage.String1.Should().Be("1");
+        hydraImage.String2.Should().Be("2");
+        hydraImage.String3.Should().Be("3");
+        hydraImage.Roles.Should().BeEquivalentTo(roles.Split(','));
+        hydraImage.Tags.Should().BeEquivalentTo(tags.Split(','));
+        hydraImage.DeliveryChannels.Should().BeEmpty();
+        hydraImage.MaxUnauthorised.Should().Be(400);
+        hydraImage.MediaType.Should().Be(mediaType);
+        hydraImage.ThumbnailPolicy.Should().Be($"https://dlcs.io/thumbnailPolicies/{thumbnailPolicy}");
+        hydraImage.Manifests.Should().BeEquivalentTo(manifests);
     }
 }

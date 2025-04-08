@@ -57,6 +57,7 @@ public static class AssetConverter
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
             Roles = dbAsset.RolesList.ToArray(),
+            Manifests = dbAsset.Manifests?.ToArray(),
         };
 
         if (dbAsset.Batch > 0)
@@ -304,6 +305,8 @@ public static class AssetConverter
         {
             asset.ImageOptimisationPolicy = hydraImage.ImageOptimisationPolicy;
         }
+        
+        asset.Manifests = hydraImage.Manifests?.ToList();
         
         return asset;
     }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core;
 using DLCS.Core.Collections;
@@ -134,7 +135,9 @@ public static class AssetPreparer
         else
         {
             // Update existing asset - the DB record is what was in DB with any submitted changes applied
-            workingAsset.ApplyChanges(updateAsset);
+            workingAsset.ApplyChanges(updateAsset, i => i.Manifests);
+            
+            workingAsset.Manifests = WorkOutManifests(existingAsset, updateAsset);
             
             if (reCalculateFamily)
             {
@@ -148,6 +151,16 @@ public static class AssetPreparer
         }
 
         return AssetPreparationResult.Succeed(workingAsset, requiresReingest);
+    }
+
+    private static List<string>? WorkOutManifests(Asset existingAsset, Asset updateAsset)
+    {
+        if (updateAsset.Manifests == null)
+        {
+            return existingAsset.Manifests;
+        }
+
+        return updateAsset.Manifests.IsEmpty() ? null : updateAsset.Manifests;
     }
 
     private static AssetPreparationResult? ValidateRequests(Asset? existingAsset, Asset updateAsset,
