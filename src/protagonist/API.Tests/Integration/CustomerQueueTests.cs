@@ -10,7 +10,6 @@ using API.Client;
 using API.Infrastructure.Messaging;
 using API.Tests.Integration.Infrastructure;
 using DLCS.AWS.SNS.Messaging;
-using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
