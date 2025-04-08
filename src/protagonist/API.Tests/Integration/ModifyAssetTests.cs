@@ -111,9 +111,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_NewImageAsset_CreatesAsset_WithManifestsAttached()
     {
-        var customerAndSpace = await CreateCustomerAndSpace();
-
-        var assetId = new AssetId(customerAndSpace.customer, customerAndSpace.space, nameof(Put_NewImageAsset_CreatesAsset_WithManifestsAttached));
+        var assetId = AssetIdGenerator.GetAssetId();
+        
         var hydraImageBody = $@"{{
             ""@type"": ""Image"",
             ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
@@ -128,7 +127,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer().PutAsync(assetId.ToApiResourcePath(), content);
 
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -1188,7 +1187,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_ExistingAsset_UpdatesManifests()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_ExistingAsset_UpdatesManifests));
+        var assetId = AssetIdGenerator.GetAssetId();
         var newAsset = await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
         await dbContext.SaveChangesAsync();
         
@@ -1218,7 +1217,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_ExistingAsset_MaintainsManifests_WhenManifestsNull()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_ExistingAsset_MaintainsManifests_WhenManifestsNull));
+        var assetId = AssetIdGenerator.GetAssetId();
         var newAsset = await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
         await dbContext.SaveChangesAsync();
         
@@ -1247,7 +1246,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_ExistingAsset_ClearsManifests_WhenManifestsEmpty()
     {
-        var assetId = new AssetId(99, 1, nameof(Put_ExistingAsset_ClearsManifests_WhenManifestsEmpty));
+        var assetId = AssetIdGenerator.GetAssetId();
         var newAsset = await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
         await dbContext.SaveChangesAsync();
         
