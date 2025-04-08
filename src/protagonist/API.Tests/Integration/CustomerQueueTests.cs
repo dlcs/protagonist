@@ -786,24 +786,21 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""origin"": ""https://example.org/vid.mp4"",
           ""space"": 1,
           ""family"": ""T"",
-          ""mediaType"": ""video/mp4"",
-          ""manifests"": [""first""]
+          ""mediaType"": ""video/mp4""
         },
         {
           ""id"": """",
           ""origin"": ""https://example.org/vid.mp4"",
           ""space"": 1,
           ""family"": ""T"",
-          ""mediaType"": ""video/mp4"",
-          ""manifests"": [""first""]
+          ""mediaType"": ""video/mp4""
         },
         {
           ""id"": ""someId"",
           ""origin"": ""https://example.org/vid.mp4"",
           ""space"": 1,
           ""family"": ""T"",
-          ""mediaType"": ""video/mp4"",
-          ""manifests"": [""first""]
+          ""mediaType"": ""video/mp4""
         }
     ]
 }";
@@ -823,7 +820,6 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         Guid.TryParse(assetInDatabase.ToList()[0].Id.Asset, out _).Should().BeTrue();
         Guid.TryParse(assetInDatabase.ToList()[1].Id.Asset, out _).Should().BeTrue();
         assetInDatabase.ToList()[2].Id.Asset.Should().Be("someId");
-        assetInDatabase.ToList().All(a => a.Manifests.ContainsOnly("first")).Should().BeTrue();
     }
     
     [Fact]
@@ -1218,24 +1214,21 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""origin"": ""https://example.org/stuff.jpg"",
           ""space"": 1,
           ""family"": ""I"",
-          ""mediaType"": ""image/jpeg"",
-          ""manifests"": [""first""]
+          ""mediaType"": ""image/jpeg""
         },
         {
           ""id"": """",
           ""origin"": ""https://example.org/stuff.jpg"",
           ""space"": 1,
           ""family"": ""I"",
-          ""mediaType"": ""image/jpeg"",
-          ""manifests"": [""first""]
+          ""mediaType"": ""image/jpeg""
         },
         {
           ""id"": ""someId"",
           ""origin"": ""https://example.org/stuff.jpg"",
           ""space"": 1,
           ""family"": ""I"",
-          ""mediaType"": ""image/jpeg"",
-          ""manifests"": [""first""]
+          ""mediaType"": ""image/jpeg""
         }
     ]
 }";
@@ -1255,7 +1248,6 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         Guid.TryParse(assetInDatabase.ToList()[0].Id.Asset, out _).Should().BeTrue();
         Guid.TryParse(assetInDatabase.ToList()[1].Id.Asset, out _).Should().BeTrue();
         assetInDatabase.ToList()[2].Id.Asset.Should().Be("someId");
-        assetInDatabase.ToList().All(a => a.Manifests.ContainsOnly("first")).Should().BeTrue();
     }
     
     [Fact]
