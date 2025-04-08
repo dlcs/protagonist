@@ -118,8 +118,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ""@type"": ""Image"",
             ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
             ""family"": ""I"",
-            ""mediaType"": ""image/tiff"",
-            ""manifests"": [""first""]
+            ""mediaType"": ""image/tiff""
         }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
@@ -137,7 +136,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
             .Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
-        asset.Manifests.Should().BeEquivalentTo("first");
     }
     
     [Fact]
@@ -913,7 +911,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = await dbContext.Images.FindAsync(assetId);
         asset.Id.Should().Be(assetId);
         asset.MediaType.Should().Be(hydraJson.MediaType);
-        asset.Manifests.Should().BeEquivalentTo("first");
         
         // The image was saved to S3 with correct header
         var item = await amazonS3.GetObjectAsync(LocalStackFixture.OriginBucketName, assetId.ToString());
@@ -2069,13 +2066,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = new AssetId(99, 1, $"{nameof(Patch_Asset_Updates_Asset_Without_Calling_Engine)}{family}");
 
         var testAsset = await dbContext.Images.AddTestAsset(assetId, family: family,
-            ref1: "I am string 1", origin: "https://images.org/image2.tiff", manifests: ["first"]);
+            ref1: "I am string 1", origin: "https://images.org/image2.tiff");
         await dbContext.SaveChangesAsync();
 
         var hydraImageBody = @"{
   ""@type"": ""Image"",
-  ""string1"": ""I am edited"",
-  ""manifests"": [""second""]
+  ""string1"": ""I am edited""
 }";
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -2092,7 +2088,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         await dbContext.Entry(testAsset.Entity).ReloadAsync();
         testAsset.Entity.Reference1.Should().Be("I am edited");
-        testAsset.Entity.Manifests.Should().BeEquivalentTo("second");
     }
     
     [Fact]

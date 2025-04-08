@@ -443,9 +443,9 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var idRoot = $"99/1/{nameof(Get_BatchImages_200_IfImagesFound)}";
-        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}1"), batch: 4006, manifests: ["first"]);
-        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}2"), batch: 4006, manifests: ["first"]);
-        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}3"), batch: 4006, manifests: ["first"]);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}1"), batch: 4006);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}2"), batch: 4006);
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}3"), batch: 4006);
         await dbContext.SaveChangesAsync();
         
         // Note batch 4006 is added in ctor
@@ -460,7 +460,6 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
         images.TotalItems.Should().Be(3);
         images.Members.Should().HaveCount(3);
-        images.Members.All(x => x.Manifests.ContainsOnly("first")).Should().BeTrue();
     }
     
     [Fact]
@@ -556,8 +555,8 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var batch = await dbContext.Batches.AddTestBatch(batchId);
         batch.Entity.AddBatchAsset(assetId1).AddBatchAsset(assetId2);
-        await dbContext.Images.AddTestAsset(assetId1, batch: batchId, manifests: ["first"]);
-        await dbContext.Images.AddTestAsset(assetId2, batch: batchId, manifests: ["first"]);
+        await dbContext.Images.AddTestAsset(assetId1, batch: batchId);
+        await dbContext.Images.AddTestAsset(assetId2, batch: batchId);
         await dbContext.SaveChangesAsync();
         
         var path = $"customers/99/queue/batches/{batchId}/assets";
@@ -571,7 +570,6 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
         images.TotalItems.Should().Be(2);
         images.Members.Should().HaveCount(2);
-        images.Members.All(x => x.Manifests.ContainsOnly("first")).Should().BeTrue();
     }
     
     [Fact]

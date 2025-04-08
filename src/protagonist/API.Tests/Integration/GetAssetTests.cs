@@ -67,7 +67,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // arrange
         var modelId = nameof(Get_Asset_Returns_Asset);
         var id = AssetId.FromString($"99/1/{modelId}");
-        await dbContext.Images.AddTestAsset(id, customer:99, space:1, manifests: ["first"]);
+        await dbContext.Images.AddTestAsset(id, customer:99, space:1);
         await dbContext.SaveChangesAsync();
         var getUrl = $"/customers/99/spaces/1/images/{modelId}";
         
@@ -78,7 +78,6 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var hydraImage = await response.ReadAsHydraResponseAsync<Image>();
         hydraImage.Id.Should().EndWith(getUrl);
-        hydraImage.Manifests.Should().ContainSingle("first");
     }
     
     [Fact]
