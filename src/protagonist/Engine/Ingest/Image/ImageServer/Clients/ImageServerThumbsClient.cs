@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
 using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
@@ -52,6 +53,7 @@ public class ImageServerThumbsClient : IThumbsClient
         var count = 0;
         foreach (var size in thumbSizes)
         {
+            var sw = Stopwatch.StartNew();
             ++count;
             var imageOnDisk = await GenerateSingleThumbnail(thumbFolder, convertedS3Location, size, assetId, count,
                 thumbsResponse, imageSize, true, cancellationToken);
@@ -61,6 +63,10 @@ public class ImageServerThumbsClient : IThumbsClient
                 thumbsResponse.Add(imageOnDisk);
                 ValidateSize(size, imageSize, imageOnDisk, assetId);
             }
+            
+            sw.Stop();
+            logger.LogTrace("Processed thumb {ThumbSize} for {AssetId} in {Elapsed}ms", size, assetId,
+                sw.ElapsedMilliseconds);
         }
         
         return thumbsResponse;
