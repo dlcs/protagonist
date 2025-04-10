@@ -10,6 +10,7 @@ using DLCS.Repository;
 using DLCS.Web.Response;
 using Hydra.Collections;
 using Hydra.Model;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 
@@ -208,8 +209,8 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Patch_AllImages_TestManifestPermutations(string initial, string update, string operation, params string[] result)
     {
         // Arrange
-        var assetid = $"99/1/{nameof(Patch_AllImages_TestManifestPermutations)}";
-        var asset = await dbContext.Images.AddTestAsset(AssetId.FromString(assetid), manifests: initial?.Split(',').ToList());
+        var assetid = AssetIdGenerator.GetAssetId();
+        var asset = await dbContext.Images.AddTestAsset(assetid, manifests: initial?.Split(',').ToList());
         await dbContext.SaveChangesAsync();
 
         var patchAllImages = $@"{{
@@ -242,8 +243,8 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Patch_AllImages_TestManifestRemoval()
     {
         // Arrange
-        var assetid = $"99/1/{nameof(Patch_AllImages_TestManifestPermutations)}";
-        var asset = await dbContext.Images.AddTestAsset(AssetId.FromString(assetid), manifests: ["first"]);
+        var assetid = AssetIdGenerator.GetAssetId();
+        var asset = await dbContext.Images.AddTestAsset(assetid, manifests: ["first"]);
         await dbContext.SaveChangesAsync();
 
         var patchAllImages = $@"{{
@@ -302,10 +303,10 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Patch_AllImages_TestManifestMultiple()
     {
         // Arrange
-        var assetIdOne = $"99/1/{nameof(Patch_AllImages_TestManifestPermutations)}_1";
-        var assetIdTwo = $"99/1/{nameof(Patch_AllImages_TestManifestPermutations)}_2";
-        await dbContext.Images.AddTestAsset(AssetId.FromString(assetIdOne), manifests: ["first"]);
-        await dbContext.Images.AddTestAsset(AssetId.FromString(assetIdTwo), manifests: ["first"]);
+        var assetIdOne = AssetIdGenerator.GetAssetId(assetPostfix: "_1");
+        var assetIdTwo = AssetIdGenerator.GetAssetId(assetPostfix: "_2");
+        await dbContext.Images.AddTestAsset(assetIdOne, manifests: ["first"]);
+        await dbContext.Images.AddTestAsset(assetIdTwo, manifests: ["first"]);
         await dbContext.SaveChangesAsync();
 
         var patchAllImages = $@"{{
@@ -337,8 +338,8 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Patch_AllImages_BadRequest_WhenValueNotCorrect()
     {
         // Arrange
-        var assetId = $"99/1/{nameof(Patch_AllImages_BadRequest_WhenValueNotCorrect)}_1";
-        await dbContext.Images.AddTestAsset(AssetId.FromString(assetId), manifests: ["first"]);
+        var assetId = AssetIdGenerator.GetAssetId();;
+        await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
         await dbContext.SaveChangesAsync();
 
         var patchAllImages = $@"{{
@@ -367,8 +368,8 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Patch_AllImages_BadRequest_WhenFieldNotCorrect()
     {
         // Arrange
-        var assetId = $"99/1/{nameof(Patch_AllImages_BadRequest_WhenFieldNotCorrect)}_1";
-        await dbContext.Images.AddTestAsset(AssetId.FromString(assetId), manifests: ["first"]);
+        var assetId = AssetIdGenerator.GetAssetId();;
+        await dbContext.Images.AddTestAsset(assetId, manifests: ["first"]);
         await dbContext.SaveChangesAsync();
 
         var patchAllImages = $@"{{
