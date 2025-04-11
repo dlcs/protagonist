@@ -10,12 +10,14 @@ namespace API.Features.Image.Requests;
 /// </summary>
 public class GetImage : IRequest<Asset?>
 {
-    public GetImage(AssetId assetId)
+    public GetImage(AssetId assetId, bool noCache)
     {
         AssetId = assetId;
+        NoCache = noCache;
     }
     
     public AssetId AssetId { get; }
+    public bool NoCache { get; }
 }
 
 public class GetImageHandler : IRequestHandler<GetImage, Asset?>
@@ -29,7 +31,7 @@ public class GetImageHandler : IRequestHandler<GetImage, Asset?>
     
     public async Task<Asset?> Handle(GetImage request, CancellationToken cancellationToken)
     {
-        var image = await assetRepository.GetAsset(request.AssetId);
+        var image = await assetRepository.GetAsset(request.AssetId, noCache: request.NoCache);
         return image;
     }
 }
