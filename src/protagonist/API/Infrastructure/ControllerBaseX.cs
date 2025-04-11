@@ -129,7 +129,7 @@ public static class ControllerBaseX
     /// This will be a 201 status code with Location header set to Id of resource.
     /// </summary>
     /// <returns>The created <see cref="ObjectResult"/> for the response.</returns>
-    public static CreatedResult HydraCreated(this ControllerBase controller, DlcsResource hydraResource) 
+    public static CreatedResult HydraCreated(this ControllerBase controller, JsonLdBase hydraResource) 
         => controller.Created(hydraResource.Id, hydraResource);
 
     /// <summary>
@@ -151,7 +151,7 @@ public static class ControllerBaseX
     /// </returns>
     public static IActionResult ModifyResultToHttpResult<T>(this ControllerBase controller,
         ModifyEntityResult<T> entityResult,
-        Func<T, DlcsResource> hydraBuilder, string? instance,
+        Func<T, JsonLdBase> hydraBuilder, string? instance,
         string? errorTitle)
         where T : class =>
         entityResult.WriteResult switch

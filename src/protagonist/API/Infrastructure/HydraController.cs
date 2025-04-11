@@ -7,6 +7,7 @@ using DLCS.Core;
 using DLCS.HydraModel;
 using DLCS.Model.Page;
 using DLCS.Web.Requests;
+using Hydra;
 using Hydra.Collections;
 using Hydra.Model;
 using MediatR;
@@ -65,7 +66,7 @@ public abstract class HydraController : Controller
     /// </returns>
     protected async Task<IActionResult> HandleUpsert<T>(
         IRequest<ModifyEntityResult<T>> request,
-        Func<T, DlcsResource> hydraBuilder,
+        Func<T, JsonLdBase> hydraBuilder,
         string? instance = null,
         string? errorTitle = "Operation failed",
         CancellationToken cancellationToken = default)

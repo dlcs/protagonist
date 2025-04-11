@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using API.Auth;
+using API.Features.Customer.Requests;
 using API.Features.DeliveryChannels.Validation;
 using API.Features.Image.Ingest;
 using API.Features.OriginStrategies.Credentials;
@@ -75,6 +76,7 @@ public class Startup
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
             .AddScoped<AssetProcessor>()
+            .AddScoped<IAssetUpdater, AssetUpdater>()
             .AddScoped<DeliveryChannelProcessor>()
             .AddTransient<TimingHandler>()
             .AddScoped<DeliveryChannelPolicyDataValidator>()
