@@ -1,4 +1,5 @@
 using DLCS.Core;
+using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model;
 using DLCS.Model.Assets;
@@ -49,7 +50,7 @@ public class ApiAssetRepository : IApiAssetRepository
         // Only go via cache if this is a read-only operation
         var asset = forUpdate
             ? await LoadAssetFromDb(assetId)
-            : await assetCachingHelper.GetCachedAsset(assetId, LoadAssetFromDb);
+            : await assetCachingHelper.GetCachedAsset(assetId, LoadAssetFromDb, CacheDuration.Short);
         return asset;
     }
 

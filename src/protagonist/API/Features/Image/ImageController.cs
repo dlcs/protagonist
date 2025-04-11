@@ -44,14 +44,16 @@ public class ImageController : HydraController
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(DLCS.HydraModel.Image))]
     [ProducesResponseType(404, Type = typeof(Error))]
-    public async Task<IActionResult> GetImage(int customerId, int spaceId, string imageId)
+    public async Task<IActionResult> GetImage(int customerId, int spaceId, string imageId,
+        [FromQuery] bool noCache = false)
     {
         var assetId = new AssetId(customerId, spaceId, imageId);
-        var dbImage = await Mediator.Send(new GetImage(assetId));
+        var dbImage = await Mediator.Send(new GetImage(assetId, noCache));
         if (dbImage == null)
         {
             return this.HydraNotFound();
         }
+
         return Ok(dbImage.ToHydra(GetUrlRoots()));
     }
 
