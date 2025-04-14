@@ -1,5 +1,5 @@
-﻿using Hydra.Collections;
-using Hydra.Model;
+﻿using System.Collections.Generic;
+using Hydra.Collections;
 using Newtonsoft.Json;
 
 namespace DLCS.HydraModel;
@@ -13,5 +13,5 @@ public class BulkPatch<T> : HydraCollection<T>
     public OperationType Operation { get; set; }
     
     [JsonProperty(Order = 32, PropertyName = "value")]
-    public required object Value { get; set; }
+    public required List<string>? Value { get; set; }
 }

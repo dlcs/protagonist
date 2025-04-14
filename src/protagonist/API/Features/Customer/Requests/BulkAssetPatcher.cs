@@ -14,7 +14,7 @@ namespace API.Features.Customer.Requests;
 public interface IBulkAssetPatcher
 {
     /// <summary>
-    /// Updates assets with new values from all image requests
+    /// Updates assets with new values from bulk asset patch requests
     /// </summary>
     public Task<List<Asset>> UpdateAssets(UpdateAllImages request, CancellationToken cancellationToken);
 }
@@ -44,26 +44,23 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
         return updatedAssets;
     }
 
-    private async Task UpdateManifests(BulkPatch<IdentifierOnly> hydraUpdate, List<AssetId> assetIds, CancellationToken cancellationToken)
+    private async Task UpdateManifests(BulkPatch<IdentifierOnly> hydraBulkPatch, List<AssetId> assetIds, CancellationToken cancellationToken)
     {
-        var convertedValuesJArray = hydraUpdate.Value as JArray;
-        var convertedValues = convertedValuesJArray?.ToObject<List<string>>();
-
-        if (convertedValues == null) throw new InvalidOperationException($"Unsupported value '{hydraUpdate.Value}'");
+        if (hydraBulkPatch.Value == null) throw new InvalidOperationException($"Unsupported value '{hydraBulkPatch.Value}'");
         
-        if (convertedValues.IsEmpty()) convertedValues = null;
+        if (hydraBulkPatch.Value.IsEmpty()) hydraBulkPatch.Value = null;
 
-        switch (hydraUpdate.Operation)
+        switch (hydraBulkPatch.Operation)
         {
             case OperationType.Add:
                 await dlcsContext.Images
                     .Where(a => assetIds.Any(aid => aid == a.Id))
                     .ExecuteUpdateAsync(setters =>
-                        setters.SetProperty(a => a.Manifests, a => a.Manifests.Concat(convertedValues)), cancellationToken);
+                        setters.SetProperty(a => a.Manifests, a => a.Manifests.Concat(hydraBulkPatch.Value)), cancellationToken);
                 break;
             case OperationType.Remove:
                 var convertedAssetIds = $"{string.Join("','", assetIds)}";
-                foreach (var valueToRemove in convertedValues ?? [])
+                foreach (var valueToRemove in hydraBulkPatch.Value ?? [])
                 {
                     await dlcsContext.Database.ExecuteSqlAsync(
                         $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", {valueToRemove}) where \"Id\" in ({convertedAssetIds})",
@@ -73,10 +70,10 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
             case OperationType.Replace:
                 await dlcsContext.Images
                     .Where(a => assetIds.Any(aid => aid == a.Id))
-                    .ExecuteUpdateAsync(setters => setters.SetProperty(a => a.Manifests, convertedValues), cancellationToken);
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(a => a.Manifests, hydraBulkPatch.Value), cancellationToken);
                 break;
             default:
-                throw new InvalidOperationException($"Unsupported operation '{hydraUpdate.Operation}'");
+                throw new InvalidOperationException($"Unsupported operation '{hydraBulkPatch.Operation}'");
         }
     }
 }
