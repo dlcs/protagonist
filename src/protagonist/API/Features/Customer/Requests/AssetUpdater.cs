@@ -4,6 +4,7 @@ using AngleSharp.Common;
 using API.Features.Customer.Validation;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
+using DLCS.HydraModel;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Repository;
@@ -48,7 +49,7 @@ public class AssetUpdater(DlcsContext dlcsContext) : IAssetUpdater
         return updatedAssets;
     }
 
-    private async Task UpdateManifests(HydraBulkPatch<IdentifierOnly> hydraUpdate, List<AssetId> assetIds, CancellationToken cancellationToken)
+    private async Task UpdateManifests(BulkPatch<IdentifierOnly> hydraUpdate, List<AssetId> assetIds, CancellationToken cancellationToken)
     {
         var convertedValuesJArray = hydraUpdate.Value as JArray;
         var convertedValues = convertedValuesJArray?.ToObject<List<string>>();

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using API.Infrastructure.Requests;
 using DLCS.Core;
+using DLCS.HydraModel;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using Hydra.Collections;
@@ -9,10 +10,10 @@ using Microsoft.Extensions.Logging;
 
 namespace API.Features.Customer.Requests;
 
-public class UpdateAllImages(HydraBulkPatch<IdentifierOnly> hydraBulkPatch, int customerId)
+public class UpdateAllImages(BulkPatch<IdentifierOnly> hydraBulkPatch, int customerId)
     : IRequest<ModifyEntityResult<List<Asset>>>
 {
-    public HydraBulkPatch<IdentifierOnly> HydraBulkPatch { get; } = hydraBulkPatch;
+    public BulkPatch<IdentifierOnly> HydraBulkPatch { get; } = hydraBulkPatch;
 
     public int CustomerId { get; set; } = customerId;
 }

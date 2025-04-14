@@ -1,9 +1,10 @@
-﻿using Hydra.Model;
+﻿using Hydra.Collections;
+using Hydra.Model;
 using Newtonsoft.Json;
 
-namespace Hydra.Collections;
+namespace DLCS.HydraModel;
 
-public class HydraBulkPatch<T> : HydraCollection<T>
+public class BulkPatch<T> : HydraCollection<T>
 {
     [JsonProperty(Order = 30, PropertyName = "field")]
     public required string Field { get; set; }

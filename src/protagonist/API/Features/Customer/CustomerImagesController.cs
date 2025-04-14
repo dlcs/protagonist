@@ -3,6 +3,7 @@ using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.HydraModel;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests;
@@ -96,7 +97,7 @@ public class CustomerImagesController : HydraController
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> UpdateAllImages(
         [FromRoute] int customerId,
-        [FromBody] HydraBulkPatch<IdentifierOnly> imageIdentifiers,
+        [FromBody] BulkPatch<IdentifierOnly> imageIdentifiers,
         [FromServices] ImageIdListValidator validator,
         CancellationToken cancellationToken = default)
     {

@@ -2,7 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace Hydra.Model;
+namespace DLCS.HydraModel;
 
 [JsonConverter(typeof(StringEnumConverter))]
 public enum OperationType
