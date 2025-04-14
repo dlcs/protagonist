@@ -96,7 +96,7 @@ public class CustomerImagesController : HydraController
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> UpdateAllImages(
         [FromRoute] int customerId,
-        [FromBody] HydraUpdate<IdentifierOnly> imageIdentifiers,
+        [FromBody] HydraBulkPatch<IdentifierOnly> imageIdentifiers,
         [FromServices] ImageIdListValidator validator,
         CancellationToken cancellationToken = default)
     {

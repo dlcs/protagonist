@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Text;
+using AngleSharp.Common;
 using API.Features.Customer.Validation;
 using DLCS.Core.Collections;
+using DLCS.Core.Types;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Repository;
@@ -24,25 +27,28 @@ public class AssetUpdater(DlcsContext dlcsContext) : IAssetUpdater
 {
     public async Task<List<Asset>> UpdateAssets(UpdateAllImages request, CancellationToken cancellationToken = default)
     {
-        var assetIds = ImageIdListValidation.ValidateRequest(request.HydraUpdate.Members!.Select(m => m.Id).ToList(),
+        var assetIds = ImageIdListValidation.ValidateRequest(request.HydraBulkPatch.Members!.Select(m => m.Id).ToList(),
             request.CustomerId);
 
-        var assets = await dlcsContext.Images
-            .Where(i => i.Customer == request.CustomerId && assetIds.Contains(i.Id))
-            .IncludeDeliveryChannelsWithPolicy()
-            .ToListAsync(cancellationToken);
-
-        var updatedAssets = request.HydraUpdate.Field switch
+        switch (request.HydraBulkPatch.Field)
         {
-            "manifests" => UpdateManifests(request.HydraUpdate, assets),
-            _ => throw new InvalidOperationException($"Unsupported field '{request.HydraUpdate.Field}'"),
+            case "manifests":
+                await UpdateManifests(request.HydraBulkPatch, assetIds, cancellationToken);
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported field '{request.HydraBulkPatch.Field}'");
         };
         
-        await dlcsContext.SaveChangesAsync(cancellationToken);
+        //await dlcsContext.SaveChangesAsync(cancellationToken);
+        
+        var updatedAssets = await dlcsContext.Images.AsNoTracking()
+            .Where(i => i.Customer == request.CustomerId && assetIds.Contains(i.Id))
+            .ToListAsync(cancellationToken);
+        
         return updatedAssets;
     }
 
-    private static List<Asset> UpdateManifests(HydraUpdate<IdentifierOnly> hydraUpdate, List<Asset> assets)
+    private async Task UpdateManifests(HydraBulkPatch<IdentifierOnly> hydraUpdate, List<AssetId> assetIds, CancellationToken cancellationToken)
     {
         var convertedValuesJArray = hydraUpdate.Value as JArray;
         var convertedValues = convertedValuesJArray?.ToObject<List<string>>();
@@ -54,20 +60,27 @@ public class AssetUpdater(DlcsContext dlcsContext) : IAssetUpdater
         switch (hydraUpdate.Operation)
         {
             case OperationType.Add:
-                assets.ForEach(a =>
-                    a.Manifests = a.Manifests != null ? a.Manifests.Concat(convertedValues).ToList() : convertedValues);
+                await dlcsContext.Images
+                    .Where(a => assetIds.Any(aid => aid == a.Id))
+                    .ExecuteUpdateAsync(setters =>
+                        setters.SetProperty(a => a.Manifests, a => a.Manifests.Concat(convertedValues)), cancellationToken);
                 break;
             case OperationType.Remove:
-                assets.ForEach(a => a.Manifests?.RemoveAll(m => convertedValues.Any(v => m == v)));
+                var convertedAssetIds = $"{string.Join("','", assetIds)}";
+                foreach (var valueToRemove in convertedValues ?? [])
+                {
+                    await dlcsContext.Database.ExecuteSqlAsync(
+                        $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", {valueToRemove}) where \"Id\" in ({convertedAssetIds})",
+                        cancellationToken);
+                }
                 break;
             case OperationType.Replace:
-                assets.ForEach(a => a.Manifests = convertedValues);
+                await dlcsContext.Images
+                    .Where(a => assetIds.Any(aid => aid == a.Id))
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(a => a.Manifests, convertedValues), cancellationToken);
                 break;
             default:
                 throw new InvalidOperationException($"Unsupported operation '{hydraUpdate.Operation}'");
-                break;
         }
-        
-        return assets;
     }
 }

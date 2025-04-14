@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 
 namespace Hydra.Collections;
 
-public class HydraUpdate<T> : HydraCollection<T>
+public class HydraBulkPatch<T> : HydraCollection<T>
 {
     [JsonProperty(Order = 30, PropertyName = "field")]
     public required string Field { get; set; }

@@ -9,17 +9,12 @@ using Microsoft.Extensions.Logging;
 
 namespace API.Features.Customer.Requests;
 
-public class UpdateAllImages : IRequest<ModifyEntityResult<List<Asset>>>
+public class UpdateAllImages(HydraBulkPatch<IdentifierOnly> hydraBulkPatch, int customerId)
+    : IRequest<ModifyEntityResult<List<Asset>>>
 {
-    public UpdateAllImages(HydraUpdate<IdentifierOnly> hydraUpdate, int customerId)
-    {
-        HydraUpdate = hydraUpdate;
-        CustomerId = customerId;
-    }
-    
-    public HydraUpdate<IdentifierOnly> HydraUpdate { get; }
-    
-    public int CustomerId { get; set; }
+    public HydraBulkPatch<IdentifierOnly> HydraBulkPatch { get; } = hydraBulkPatch;
+
+    public int CustomerId { get; set; } = customerId;
 }
 
 public class UpdateAllImagesHandler(IAssetUpdater assetUpdater, ILogger<UpdateAllImagesHandler> logger)
@@ -35,8 +30,13 @@ public class UpdateAllImagesHandler(IAssetUpdater assetUpdater, ILogger<UpdateAl
         }
         catch (InvalidOperationException e)
         {
-            logger.LogError(e, "Failed to update assets {Assets}", request.HydraUpdate.Members);
+            logger.LogError(e, "Failed to update assets {Assets}", request.HydraBulkPatch.Members);
             return ModifyEntityResult<List<Asset>>.Failure(e.Message, WriteResult.BadRequest);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Unknown error updating assets {Assets}", request.HydraBulkPatch.Members);
+            return ModifyEntityResult<List<Asset>>.Failure(e.Message);
         }
     }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -10,6 +11,7 @@ using DLCS.Repository;
 using DLCS.Web.Response;
 using Hydra.Collections;
 using Hydra.Model;
+using Newtonsoft.Json;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
@@ -200,12 +202,16 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Theory]
-    [InlineData("first", "second", "add", "first", "second")]
-    [InlineData(null, "first", "add", "first")]
-    [InlineData("first", "second", "replace", "second")]
-    [InlineData(null, "first", "replace", "first")]
-    [InlineData("first,second", "first", "remove", "second")]
-    [InlineData("first", "second", "remove", "first")]
+    [InlineData("first", "[\"second\"]", "add", "first", "second")]
+    [InlineData("first", "[\"second\",\"third\"]", "add", "first", "second", "third")]
+    [InlineData(null, "[\"first\"]", "add", "first")]
+    [InlineData("first", "[\"second\"]", "replace", "second")]
+    [InlineData(null, "[\"first\"]", "replace", "first")]
+    [InlineData("first", "[\"first\",\"second\"]", "replace", "first", "second")]
+    [InlineData("first,second", "[\"first\"]", "remove", "second")]
+    [InlineData("first", "[\"second\"]", "remove", "first")]
+    [InlineData("first,second,third", "[\"second\",\"third\"]", "remove", "first")]
+    [InlineData("first,second", "[]", "remove", "first", "second")]
     public async Task Patch_AllImages_TestManifestPermutations(string initial, string update, string operation, params string[] result)
     {
         // Arrange
@@ -219,7 +225,7 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {{ ""id"": ""{assetid}"" }},
     ],
   ""field"": ""manifests"",
-  ""value"": [""{update}""],
+  ""value"": {update},
   ""operation"": ""{operation}""
 }}";
         
