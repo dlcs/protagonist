@@ -76,7 +76,7 @@ public class Startup
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
             .AddScoped<AssetProcessor>()
-            .AddScoped<IAssetUpdater, AssetUpdater>()
+            .AddScoped<IBulkAssetPatcher, BulkAssetPatcher>()
             .AddScoped<DeliveryChannelProcessor>()
             .AddTransient<TimingHandler>()
             .AddScoped<DeliveryChannelPolicyDataValidator>()

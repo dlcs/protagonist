@@ -1,6 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Text;
-using AngleSharp.Common;
 using API.Features.Customer.Validation;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
@@ -8,15 +6,12 @@ using DLCS.HydraModel;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Repository;
-using DLCS.Repository.Assets;
-using Hydra.Collections;
-using Hydra.Model;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 
 namespace API.Features.Customer.Requests;
 
-public interface IAssetUpdater
+public interface IBulkAssetPatcher
 {
     /// <summary>
     /// Updates assets with new values from all image requests
@@ -24,7 +19,7 @@ public interface IAssetUpdater
     public Task<List<Asset>> UpdateAssets(UpdateAllImages request, CancellationToken cancellationToken);
 }
 
-public class AssetUpdater(DlcsContext dlcsContext) : IAssetUpdater
+public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
 {
     public async Task<List<Asset>> UpdateAssets(UpdateAllImages request, CancellationToken cancellationToken = default)
     {

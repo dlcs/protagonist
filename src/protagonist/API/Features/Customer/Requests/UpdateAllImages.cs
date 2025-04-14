@@ -4,7 +4,6 @@ using DLCS.Core;
 using DLCS.HydraModel;
 using DLCS.Model;
 using DLCS.Model.Assets;
-using Hydra.Collections;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -18,7 +17,7 @@ public class UpdateAllImages(BulkPatch<IdentifierOnly> hydraBulkPatch, int custo
     public int CustomerId { get; set; } = customerId;
 }
 
-public class UpdateAllImagesHandler(IAssetUpdater assetUpdater, ILogger<UpdateAllImagesHandler> logger)
+public class UpdateAllImagesHandler(IBulkAssetPatcher assetUpdater, ILogger<UpdateAllImagesHandler> logger)
     : IRequestHandler<UpdateAllImages, ModifyEntityResult<List<Asset>>>
 {
     public async Task<ModifyEntityResult<List<Asset>>> Handle(UpdateAllImages request, CancellationToken cancellationToken)
@@ -33,11 +32,6 @@ public class UpdateAllImagesHandler(IAssetUpdater assetUpdater, ILogger<UpdateAl
         {
             logger.LogError(e, "Failed to update assets {Assets}", request.HydraBulkPatch.Members);
             return ModifyEntityResult<List<Asset>>.Failure(e.Message, WriteResult.BadRequest);
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "Unknown error updating assets {Assets}", request.HydraBulkPatch.Members);
-            return ModifyEntityResult<List<Asset>>.Failure(e.Message);
         }
     }
 }
