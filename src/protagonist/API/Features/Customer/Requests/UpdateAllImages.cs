@@ -17,14 +17,14 @@ public class UpdateAllImages(BulkPatch<IdentifierOnly> hydraBulkPatch, int custo
     public int CustomerId { get; set; } = customerId;
 }
 
-public class UpdateAllImagesHandler(IBulkAssetPatcher assetUpdater, ILogger<UpdateAllImagesHandler> logger)
+public class UpdateAllImagesHandler(BulkAssetPatcher bulkAssetPatcher, ILogger<UpdateAllImagesHandler> logger)
     : IRequestHandler<UpdateAllImages, ModifyEntityResult<List<Asset>>>
 {
     public async Task<ModifyEntityResult<List<Asset>>> Handle(UpdateAllImages request, CancellationToken cancellationToken)
     {
         try
         {
-            var assets = await assetUpdater.UpdateAssets(request, cancellationToken);
+            var assets = await bulkAssetPatcher.UpdateAssets(request, cancellationToken);
 
             return ModifyEntityResult<List<Asset>>.Success(assets);
         }

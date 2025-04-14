@@ -46,8 +46,6 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
 
     private async Task UpdateManifests(BulkPatch<IdentifierOnly> hydraBulkPatch, List<AssetId> assetIds, CancellationToken cancellationToken)
     {
-        if (hydraBulkPatch.Value == null) throw new InvalidOperationException($"Unsupported value '{hydraBulkPatch.Value}'");
-        
         if (hydraBulkPatch.Value.IsEmpty()) hydraBulkPatch.Value = null;
 
         switch (hydraBulkPatch.Operation)

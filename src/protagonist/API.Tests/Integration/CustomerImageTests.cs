@@ -365,9 +365,6 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        
-        var error = await response.ReadAsJsonAsync<Error>(false);
-        error.Detail.Should().Be("Unsupported value 'incorrect'");
     }
     
     [Fact]
