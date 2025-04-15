@@ -55,7 +55,7 @@ public class CustomerImagesController : HydraController
         [FromServices] ImageIdListValidator validator,
         CancellationToken cancellationToken = default)
     {
-        var validationResult = await validator.ValidateAsync(imageIdentifiers, cancellationToken);
+        var validationResult = await validator.ValidateAsync(imageIdentifiers.Members, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
@@ -101,7 +101,7 @@ public class CustomerImagesController : HydraController
         [FromServices] ImageIdListValidator validator,
         CancellationToken cancellationToken = default)
     {
-        var validationResult = await validator.ValidateAsync(bulkPatch, cancellationToken);
+        var validationResult = await validator.ValidateAsync(bulkPatch.Members, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
@@ -152,7 +152,7 @@ public class CustomerImagesController : HydraController
         [FromServices] ImageIdListValidator validator,
         CancellationToken cancellationToken = default)
     {
-        var validationResult = await validator.ValidateAsync(imageIdentifiers, cancellationToken);
+        var validationResult = await validator.ValidateAsync(imageIdentifiers.Members, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);

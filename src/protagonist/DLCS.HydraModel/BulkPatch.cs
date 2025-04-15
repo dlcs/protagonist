@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace DLCS.HydraModel;
 
-public class BulkPatch<T> : IMember<T>
+public class BulkPatch<T>
 {
     [JsonProperty(Order = 30, PropertyName = "field")]
     public required string Field { get; set; }

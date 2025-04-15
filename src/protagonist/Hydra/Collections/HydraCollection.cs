@@ -7,7 +7,7 @@ namespace Hydra.Collections;
 /// If you really have to mix, use object.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class HydraCollection<T> : JsonLdBaseWithHydraContext, IMember<T>
+public class HydraCollection<T> : JsonLdBaseWithHydraContext
 {
     public override string Type => "Collection";
 
