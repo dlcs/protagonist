@@ -6,6 +6,7 @@ using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
+using DLCS.Model.Page;
 using DLCS.Repository;
 using DLCS.Web.Response;
 using Hydra.Collections;
@@ -437,5 +438,28 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var error = await response.ReadAsJsonAsync<Error>(false);
         error.Detail.Should().Be("Unsupported field 'incorrect'");
+    }
+    
+    [Fact]
+    public async Task Get_AllImages_200_WithMatches()
+    {
+        // Arrange
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_1"));
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_2"));
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/2/allImages_3"), space: 2);
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync("/customers/99/allImages");
+
+        // Assert
+        var stuff = await response.Content.ReadAsStringAsync();
+        
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var collection = await response.ReadAsHydraResponseAsync<PageOf<Image>>();
+        collection.Page.Should().Be(1);
+        collection.PageSize.Should().Be(3);
+        collection.Entities.Should().HaveCount(3);
     }
 }
