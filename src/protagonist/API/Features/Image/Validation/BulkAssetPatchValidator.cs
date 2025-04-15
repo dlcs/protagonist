@@ -1,4 +1,5 @@
-﻿using API.Features.Customer.Requests;
+﻿using API.Features.Customer;
+using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure.Requests;
 using API.Settings;

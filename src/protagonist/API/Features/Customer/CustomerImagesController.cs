@@ -14,7 +14,6 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using OperationType = API.Infrastructure.Models.OperationType;
 
 namespace API.Features.Customer;
 
@@ -108,11 +107,8 @@ public class CustomerImagesController : HydraController
         {
             return this.ValidationFailed(validationResult);
         }
-        
-        var assetIds = ImageIdListValidation.ValidateRequest(bulkPatch.Members!.Select(m => m.Id).ToList(),
-            customerId);
 
-        return await HandleUpsert(new UpdateAllImages(assetIds, customerId, bulkPatch.Value, bulkPatch.Field, 
+        return await HandleUpsert(new UpdateAllImages(bulkPatch.Members!.Select(m => m.Id).ToList(), customerId, bulkPatch.Value, bulkPatch.Field, 
                 (OperationType)bulkPatch.Operation), al =>
         {
             return new HydraCollection<DLCS.HydraModel.Image>

@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using API.Auth;
+using API.Features.Customer;
 using API.Features.Customer.Requests;
 using API.Features.DeliveryChannels.Validation;
 using API.Features.Image.Ingest;

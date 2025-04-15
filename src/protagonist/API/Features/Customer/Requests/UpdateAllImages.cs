@@ -1,19 +1,18 @@
 ﻿using System.Collections.Generic;
+using API.Features.Customer.Validation;
 using API.Infrastructure.Requests;
 using DLCS.Core;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using OperationType = API.Infrastructure.Models.OperationType;
 
 namespace API.Features.Customer.Requests;
 
-public class UpdateAllImages(List<AssetId> assetIds,  int customerId, List<string>? value, string field, 
+public class UpdateAllImages(List<string> assetIds,  int customerId, List<string>? value, string field, 
     OperationType operation)
     : IRequest<ModifyEntityResult<List<Asset>>>
 {
-    public List<AssetId> AssetIds { get; } = assetIds;
+    public List<string> AssetIds { get; } = assetIds;
 
     public List<string>? Value { get; } = value;
 
@@ -31,7 +30,9 @@ public class UpdateAllImagesHandler(IBulkAssetPatcher bulkAssetPatcher, ILogger<
     {
         try
         {
-            var assets = await bulkAssetPatcher.UpdateAssets(request, cancellationToken);
+            var assetIds = ImageIdListValidation.ValidateRequest(request.AssetIds, request.CustomerId);
+            var assets = await bulkAssetPatcher.UpdateAssets(assetIds, request.Value, request.Operation, request.Field,
+                request.CustomerId, cancellationToken);
 
             return ModifyEntityResult<List<Asset>>.Success(assets);
         }
