@@ -1,18 +1,25 @@
 ﻿using System.Collections.Generic;
 using API.Infrastructure.Requests;
 using DLCS.Core;
-using DLCS.HydraModel;
-using DLCS.Model;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.CustomerImage;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace API.Features.Customer.Requests;
 
-public class UpdateAllImages(BulkPatch<IdentifierOnly> hydraBulkPatch, int customerId)
+public class UpdateAllImages(List<AssetId> assetIds,  int customerId, List<string>? value, string field, 
+    OperationType operation)
     : IRequest<ModifyEntityResult<List<Asset>>>
 {
-    public BulkPatch<IdentifierOnly> HydraBulkPatch { get; } = hydraBulkPatch;
+    public List<AssetId> AssetIds { get; } = assetIds;
+
+    public List<string>? Value { get; } = value;
+
+    public string Field { get; } = field;
+    
+    public OperationType Operation { get; } = operation;
 
     public int CustomerId { get; set; } = customerId;
 }
@@ -30,7 +37,7 @@ public class UpdateAllImagesHandler(IBulkAssetPatcher bulkAssetPatcher, ILogger<
         }
         catch (InvalidOperationException e)
         {
-            logger.LogError(e, "Failed to update assets {Assets}", request.HydraBulkPatch.Members);
+            logger.LogError(e, "Failed to update assets {Assets}", request.AssetIds);
             return ModifyEntityResult<List<Asset>>.Failure(e.Message, WriteResult.BadRequest);
         }
     }

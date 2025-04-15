@@ -97,17 +97,21 @@ public class CustomerImagesController : HydraController
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> UpdateAllImages(
         [FromRoute] int customerId,
-        [FromBody] BulkPatch<IdentifierOnly> imageIdentifiers,
+        [FromBody] BulkPatch<IdentifierOnly> bulkPatch,
         [FromServices] ImageIdListValidator validator,
         CancellationToken cancellationToken = default)
     {
-        var validationResult = await validator.ValidateAsync(imageIdentifiers, cancellationToken);
+        var validationResult = await validator.ValidateAsync(bulkPatch, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
         }
+        
+        var assetIds = ImageIdListValidation.ValidateRequest(bulkPatch.Members!.Select(m => m.Id).ToList(),
+            customerId);
 
-        return await HandleUpsert(new UpdateAllImages(imageIdentifiers, customerId), al =>
+        return await HandleUpsert(new UpdateAllImages(assetIds, customerId, bulkPatch.Value, bulkPatch.Field, 
+                (DLCS.Model.CustomerImage.OperationType)bulkPatch.Operation), al =>
         {
             return new HydraCollection<DLCS.HydraModel.Image>
             {

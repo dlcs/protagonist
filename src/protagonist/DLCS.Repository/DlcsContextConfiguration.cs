@@ -65,8 +65,5 @@ public static class DlcsContextConfiguration
     }
 
     private static void SetupOptions(IConfiguration configuration, DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.SetupDlcsContextOptions(configuration.GetConnectionString(ConnectionStringKey))
-            .LogTo(s => System.Diagnostics.Debug.WriteLine(s))
-            .EnableDetailedErrors()
-            .EnableSensitiveDataLogging();
+        => optionsBuilder.SetupDlcsContextOptions(configuration.GetConnectionString(ConnectionStringKey));
 }
