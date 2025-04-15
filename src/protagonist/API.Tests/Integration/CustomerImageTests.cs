@@ -218,7 +218,6 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.SaveChangesAsync();
 
         var patchAllImages = $@"{{
-  ""@type"": ""BulkPatch"",
   ""member"": [
     {{ ""id"": ""{assetid}"" }},
     ],
@@ -252,7 +251,6 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.SaveChangesAsync();
 
         var patchAllImages = $@"{{
-  ""@type"": ""BulkPatch"",
   ""member"": [
     {{ ""id"": ""{assetid}"" }},
     ],
@@ -282,7 +280,6 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var patchAllImages = $@"{{
-  ""@type"": ""BulkPatch"",
   ""member"": [
     {{ ""id"": ""99/1/not-found"" }},
     ],
@@ -314,7 +311,6 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.SaveChangesAsync();
 
         var patchAllImages = $@"{{
-  ""@type"": ""BulkPatch"",
   ""member"": [
     {{ ""id"": ""{assetIdOne}"" }},
     {{ ""id"": ""{assetIdTwo}"" }}
@@ -347,7 +343,6 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.SaveChangesAsync();
 
         var patchAllImages = $@"{{
-  ""@type"": ""BulkPatch"",
   ""member"": [
     {{ ""id"": ""{assetId}"" }}
     ],
@@ -374,7 +369,6 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.SaveChangesAsync();
 
         var patchAllImages = $@"{{
-  ""@type"": ""BulkPatch"",
   ""member"": [
     {{ ""id"": ""{assetId}"" }}
     ],
