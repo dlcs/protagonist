@@ -1,10 +1,10 @@
 ﻿using API.Converters;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
+using API.Features.Image.Validation;
 using API.Infrastructure;
 using API.Infrastructure.Requests;
 using API.Settings;
-using DLCS.HydraModel;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests;
@@ -100,10 +100,10 @@ public class CustomerImagesController : HydraController
     public async Task<IActionResult> UpdateAllImages(
         [FromRoute] int customerId,
         [FromBody] BulkPatch<IdentifierOnly> bulkPatch,
-        [FromServices] ImageIdListValidator validator,
+        [FromServices] BulkAssetPatchValidator validator,
         CancellationToken cancellationToken = default)
     {
-        var validationResult = await validator.ValidateAsync(bulkPatch.Members, cancellationToken);
+        var validationResult = await validator.ValidateAsync(bulkPatch, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);

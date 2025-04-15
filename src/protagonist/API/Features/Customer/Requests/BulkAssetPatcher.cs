@@ -21,7 +21,7 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
     {
         switch (request.Field)
         {
-            case "manifests":
+            case SupportedFields.ManifestField:
                 await UpdateManifests(request, cancellationToken);
                 break;
             default:
@@ -67,5 +67,10 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
             default:
                 throw new InvalidOperationException($"Unsupported operation '{request.Operation}'");
         }
+    }
+    
+    public class SupportedFields
+    {
+        public const string ManifestField = "manifests";
     }
 }
