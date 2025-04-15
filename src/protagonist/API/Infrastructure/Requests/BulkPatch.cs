@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using Hydra.Collections;
+using DLCS.HydraModel;
 using Newtonsoft.Json;
 
-namespace DLCS.HydraModel;
+namespace API.Infrastructure.Requests;
 
 public class BulkPatch<T>
 {

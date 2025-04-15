@@ -2,6 +2,7 @@
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
+using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.HydraModel;
 using DLCS.Model;

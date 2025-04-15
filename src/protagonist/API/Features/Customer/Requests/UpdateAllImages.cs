@@ -3,9 +3,9 @@ using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.CustomerImage;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using OperationType = DLCS.Model.CustomerImage.OperationType;
 
 namespace API.Features.Customer.Requests;
 
@@ -21,7 +21,7 @@ public class UpdateAllImages(List<AssetId> assetIds,  int customerId, List<strin
     
     public OperationType Operation { get; } = operation;
 
-    public int CustomerId { get; set; } = customerId;
+    public int CustomerId { get; } = customerId;
 }
 
 public class UpdateAllImagesHandler(IBulkAssetPatcher bulkAssetPatcher, ILogger<UpdateAllImagesHandler> logger)

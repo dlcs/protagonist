@@ -2,7 +2,6 @@
 using DLCS.Core.Collections;
 using DLCS.Model;
 using FluentValidation;
-using Hydra.Collections;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Customer.Validation;
