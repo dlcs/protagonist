@@ -10,7 +10,7 @@ namespace API.Features.Customer.Validation;
 /// <summary>
 /// Validator for body sent to POST /customer/{id}/allImages
 /// </summary>
-public class ImageIdListValidator : AbstractValidator<HydraCollection<IdentifierOnly>>
+public class ImageIdListValidator : AbstractValidator<IMember<IdentifierOnly>>
 {
     public ImageIdListValidator(IOptions<ApiSettings> apiSettings)
     {

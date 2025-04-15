@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace DLCS.HydraModel;
 
-public class BulkPatch<T> : HydraCollection<T>
+public class BulkPatch<T> : IMember<T>
 {
     [JsonProperty(Order = 30, PropertyName = "field")]
     public required string Field { get; set; }
@@ -14,4 +14,7 @@ public class BulkPatch<T> : HydraCollection<T>
     
     [JsonProperty(Order = 32, PropertyName = "value")]
     public required List<string>? Value { get; set; }
+    
+    [JsonProperty(Order = 33, PropertyName = "member")]
+    public T[]? Members { get; set; }
 }

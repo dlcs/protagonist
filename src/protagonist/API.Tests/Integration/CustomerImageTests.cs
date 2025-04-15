@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -11,7 +10,6 @@ using DLCS.Repository;
 using DLCS.Web.Response;
 using Hydra.Collections;
 using Hydra.Model;
-using Newtonsoft.Json;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
