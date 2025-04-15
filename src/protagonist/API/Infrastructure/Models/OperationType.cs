@@ -1,4 +1,4 @@
-﻿namespace DLCS.Model.CustomerImage;
+﻿namespace API.Infrastructure.Models;
 
 public enum OperationType
 {

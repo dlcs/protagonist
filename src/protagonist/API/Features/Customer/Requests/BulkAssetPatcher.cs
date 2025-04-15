@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
+using API.Infrastructure.Models;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
-using DLCS.Model.CustomerImage;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
 

@@ -5,7 +5,7 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using OperationType = DLCS.Model.CustomerImage.OperationType;
+using OperationType = API.Infrastructure.Models.OperationType;
 
 namespace API.Features.Customer.Requests;
 
