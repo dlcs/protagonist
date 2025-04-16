@@ -72,9 +72,9 @@ public class AssetFilterTests
     [Fact]
     public void Update_AssetFilter_From_Specific_Params()
     {
-        var q = @"{""string3"":""s3"",""number1"":1}";
+        var q = @"{""string3"":""s3"",""number1"":1,""manifests"":[""first""]}";
         var httpRequest = new DefaultHttpContext().Request;
-        httpRequest.QueryString = new QueryString("?q=" + q + "&string1=s1&string3=s3updated&number3=3");
+        httpRequest.QueryString = new QueryString("?q=" + q + "&string1=s1&string3=s3updated&number3=3&manifests=second");
         
         // act
         var filter = httpRequest.GetAssetFilterFromQParam();
@@ -88,6 +88,7 @@ public class AssetFilterTests
         filter.NumberReference1.Should().Be(1);
         filter.NumberReference2.Should().BeNull();
         filter.NumberReference3.Should().Be(3);
+        filter.Manifests.Should().BeEquivalentTo("second");
         filter.Space.Should().BeNull();
     }
     

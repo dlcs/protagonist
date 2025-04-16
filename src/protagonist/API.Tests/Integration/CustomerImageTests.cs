@@ -479,4 +479,63 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         collection.Members.Should().HaveCount(2);
         collection.TotalItems.Should().Be(2);
     }
+    
+    [Fact]
+    public async Task Get_AllImages_WithMatches_WhenManifestsFilterWithMultipleManifests()
+    {
+        // Arrange
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_1"), manifests: ["first"]);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_2"));
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_3"), manifests: ["second"]);
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync("/customers/99/allImages?q={\"manifests\":[\"first\",\"second\"]}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        collection.Members.Should().HaveCount(2);
+        collection.TotalItems.Should().Be(2);
+    }
+    
+    [Fact]
+    public async Task Get_AllImages_NoMatches_WhenManifestsFilterWithWronManifest()
+    {
+        // Arrange
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_1"), manifests: ["first"]);
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync("/customers/99/allImages?q={\"manifests\":[\"wrong\"]}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_AllImages_WithMatches_WhenOrderByAndPagingSet()
+    {
+        // Arrange
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_1"));
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_2"));
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_3"));
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync("/customers/99/allImages?page=1&pageSize=2&orderByDescending=id");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        collection.Members.Should().HaveCount(2);
+        collection.TotalItems.Should().Be(3);
+        collection.PageSize.Should().Be(2);
+        collection.View.Page.Should().Be(1);
+        collection.View.PageSize.Should().Be(2);
+        collection.Members[0].Id.Should().Be("http://localhost/customers/99/spaces/1/images/allImages_3");
+        collection.View.Next.Should().Be("http://localhost/customers/99/allImages?page=2&pageSize=2");
+    }
 }
