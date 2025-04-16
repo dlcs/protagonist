@@ -7,7 +7,6 @@ using DLCS.Model.Assets;
 using DLCS.Web.Requests;
 using Hydra;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
 using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Converters;
