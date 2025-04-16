@@ -1,10 +1,13 @@
 ﻿using API.Converters;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
+using API.Features.Image.Validation;
 using API.Infrastructure;
+using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Model;
 using DLCS.Model.Assets;
+using DLCS.Web.Requests;
 using Hydra.Collections;
 using Hydra.Model;
 using MediatR;
@@ -53,7 +56,7 @@ public class CustomerImagesController : HydraController
         [FromServices] ImageIdListValidator validator,
         CancellationToken cancellationToken = default)
     {
-        var validationResult = await validator.ValidateAsync(imageIdentifiers, cancellationToken);
+        var validationResult = await validator.ValidateAsync(imageIdentifiers.Members, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
@@ -66,6 +69,58 @@ public class CustomerImagesController : HydraController
             a => a.ToHydra(GetUrlRoots()),
             "Get customer images failed",
             cancellationToken: cancellationToken);
+    }
+    
+    /// <summary>
+    /// Accepts a list of image identifiers, will update a list of matching images.
+    ///
+    /// This endpoint doesn't support paging - all results are returned in single page 
+    /// </summary>
+    /// <remarks>
+    /// Sample request:
+    /// 
+    ///     PATCH: /customers/1/allImages
+    ///     {
+    ///         "@context": "http://www.w3.org/ns/hydra/context.jsonld",
+    ///         "@type":"Collection",
+    ///         "member": [
+    ///             { "id": "1/1/foo" },
+    ///             { "id": "1/99/bar" }
+    ///         ],
+    ///         "field": "manifests",
+    ///         "operation": "add"
+    ///         "value": "["first"]"
+    ///     }
+    /// </remarks>
+    [HttpPatch]
+    [Route("allImages")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    public async Task<IActionResult> UpdateAllImages(
+        [FromRoute] int customerId,
+        [FromBody] BulkPatch<IdentifierOnly> bulkPatch,
+        [FromServices] BulkAssetPatchValidator validator,
+        CancellationToken cancellationToken = default)
+    {
+        var validationResult = await validator.ValidateAsync(bulkPatch, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return this.ValidationFailed(validationResult);
+        }
+
+        return await HandleUpsert(new UpdateAllImages(bulkPatch.Members!.Select(m => m.Id).ToList(), 
+                customerId, bulkPatch.Value, bulkPatch.Field, bulkPatch.Operation), al =>
+        {
+            return new HydraCollection<DLCS.HydraModel.Image>
+            {
+                WithContext = true,
+                Members = al.Select(a => a.ToHydra(GetUrlRoots())).ToArray(),
+                TotalItems = al.Count,
+                PageSize = al.Count,
+                Id = Request.GetJsonLdId()
+            };
+        }, errorTitle: "Failed to patch all images",
+        cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -95,7 +150,7 @@ public class CustomerImagesController : HydraController
         [FromServices] ImageIdListValidator validator,
         CancellationToken cancellationToken = default)
     {
-        var validationResult = await validator.ValidateAsync(imageIdentifiers, cancellationToken);
+        var validationResult = await validator.ValidateAsync(imageIdentifiers.Members, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
