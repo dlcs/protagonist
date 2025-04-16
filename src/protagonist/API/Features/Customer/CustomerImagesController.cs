@@ -108,8 +108,8 @@ public class CustomerImagesController : HydraController
             return this.ValidationFailed(validationResult);
         }
 
-        return await HandleUpsert(new UpdateAllImages(bulkPatch.Members!.Select(m => m.Id).ToList(), customerId, bulkPatch.Value, bulkPatch.Field, 
-                (OperationType)bulkPatch.Operation), al =>
+        return await HandleUpsert(new UpdateAllImages(bulkPatch.Members!.Select(m => m.Id).ToList(), 
+                customerId, bulkPatch.Value, bulkPatch.Field, bulkPatch.Operation), al =>
         {
             return new HydraCollection<DLCS.HydraModel.Image>
             {
