@@ -8,18 +8,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Customer.Requests;
 
-public class GetQueriedAllImages : IRequest<FetchEntityResult<PageOf<Asset>>>, IPagedRequest, IOrderableRequest,
+public class GetQueriedAllImages(int customerId, AssetFilter? assetFilter) : IRequest<FetchEntityResult<PageOf<Asset>>>,
+    IPagedRequest, IOrderableRequest,
     IAssetFilterableRequest
 {
-    public GetQueriedAllImages(int customerId, AssetFilter? assetFilter)
-    {
-        CustomerId = customerId;
-        AssetFilter = assetFilter;
-    }
-    
-    public int CustomerId { get; }
+    public int CustomerId { get; } = customerId;
 
-    public AssetFilter? AssetFilter { get; }
+    public AssetFilter? AssetFilter { get; } = assetFilter;
 
     public int Page { get; set; }
 
@@ -39,7 +34,6 @@ public class GetQueriedAllImagesHandler(DlcsContext dlcsContext)
     {
         var result = await dlcsContext.Images
             .AsNoTracking()
-            .Include(a => a.Batch)
             .Include(a => a.ImageDeliveryChannels.OrderBy(idc => idc.Channel))
             .ThenInclude(dc => dc.DeliveryChannelPolicy)
             .Where(a => a.Customer == request.CustomerId).CreatePagedResult(

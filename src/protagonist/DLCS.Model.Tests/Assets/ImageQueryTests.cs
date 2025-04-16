@@ -9,7 +9,7 @@ public class ImageQueryTests
     {
         // arrange
         var s =
-            @"{""string1"":""s1"",""string2"":""s2"",""string3"":""s3"",""number1"":1,""number2"":2,""number3"":3,""space"":99}";
+            @"{""string1"":""s1"",""string2"":""s2"",""string3"":""s3"",""number1"":1,""number2"":2,""number3"":3,""space"":99,""manifests"":[""first""]}";
         
         // act
         var iq = ImageQuery.Parse(s);
@@ -22,5 +22,6 @@ public class ImageQueryTests
         iq.Number1.Should().Be(1);
         iq.Number2.Should().Be(2);
         iq.Number3.Should().Be(3);
+        iq.Manifests.Should().BeEquivalentTo("first");
     }
 }

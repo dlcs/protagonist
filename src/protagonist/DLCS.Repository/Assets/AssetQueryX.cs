@@ -106,6 +106,11 @@ public static class AssetQueryX
         {
             filtered = filtered.Where(a => a.NumberReference3 == assetFilter.NumberReference3);
         }
+        if (assetFilter.Manifests != null)
+        {
+            filtered = filtered.Where(a =>
+                a.Manifests != null && a.Manifests.Any(manifest => assetFilter.Manifests.Contains(manifest)));
+        }
 
         if (filterOnSpace && assetFilter.Space is > 0)
         {

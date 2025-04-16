@@ -453,13 +453,30 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer().GetAsync("/customers/99/allImages");
 
         // Assert
-        var stuff = await response.Content.ReadAsStringAsync();
-        
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var collection = await response.ReadAsHydraResponseAsync<PageOf<Image>>();
-        collection.Page.Should().Be(1);
-        collection.PageSize.Should().Be(3);
-        collection.Entities.Should().HaveCount(3);
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        collection.Members.Should().HaveCount(3);
+        collection.TotalItems.Should().Be(3);
+    }
+    
+    [Fact]
+    public async Task Get_AllImages_WithMatches_WhenManifestsFilter()
+    {
+        // Arrange
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_1"), manifests: ["first"]);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/allImages_2"));
+        await dbContext.Images.AddTestAsset(AssetId.FromString("99/2/allImages_3"), space: 2, manifests: ["first"]);
+        await dbContext.SaveChangesAsync();
+        
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync("/customers/99/allImages?q={\"manifests\":[\"first\"]}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        collection.Members.Should().HaveCount(2);
+        collection.TotalItems.Should().Be(2);
     }
 }

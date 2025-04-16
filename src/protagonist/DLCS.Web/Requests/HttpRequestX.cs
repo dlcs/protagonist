@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using DLCS.Core.Collections;
 using Microsoft.AspNetCore.Http;
 
@@ -71,6 +73,16 @@ public static class HttpRequestX
         if (int.TryParse(value, out var num))
         {
             return num;
+        }
+
+        return null;
+    }
+    
+    public static List<string>? GetFirstQueryParamValueAsList(this HttpRequest request, string paramName)
+    {
+        if (request.Query.ContainsKey(paramName))
+        {
+            return request.Query[paramName].ToString().Split(',').ToList();
         }
 
         return null;
