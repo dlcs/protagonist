@@ -242,6 +242,56 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Entity.Manifests.Should().BeEquivalentTo(result);
     }
     
+    [Theory]
+    [InlineData("first", "[\"second\"]", "add", "first", "second")]
+    [InlineData("first", "[\"second\",\"third\"]", "add", "first", "second", "third")]
+    [InlineData(null, "[\"first\"]", "add", "first")]
+    [InlineData("first", "[\"second\"]", "replace", "second")]
+    [InlineData(null, "[\"first\"]", "replace", "first")]
+    [InlineData("first", "[\"first\",\"second\"]", "replace", "first", "second")]
+    [InlineData("first,second", "[\"first\"]", "remove", "second")]
+    [InlineData("first", "[\"second\"]", "remove", "first")]
+    [InlineData("first,second,third", "[\"second\",\"third\"]", "remove", "first")]
+    [InlineData("first,second", "[]", "remove", "first", "second")]
+    public async Task Patch_AllImages_TestManifestPermutations_MultipleAssets(string initial, string update, string operation, params string[] result)
+    {
+        // Arrange
+        var assetIdOne = AssetIdGenerator.GetAssetId(assetPostfix: "_1");
+        var assetIdTwo = AssetIdGenerator.GetAssetId(assetPostfix: "_2");
+        var assetOne = await dbContext.Images.AddTestAsset(assetIdOne, manifests: initial?.Split(',').ToList());
+        var assetTwo = await dbContext.Images.AddTestAsset(assetIdTwo, manifests: initial?.Split(',').ToList());
+        await dbContext.SaveChangesAsync();
+
+        var patchAllImages = $@"{{
+  ""member"": [
+    {{ ""id"": ""{assetIdOne}"" }},
+    {{ ""id"": ""{assetIdTwo}"" }}
+    ],
+  ""field"": ""manifests"",
+  ""value"": {update},
+  ""operation"": ""{operation}""
+}}";
+        
+        var content = new StringContent(patchAllImages, Encoding.UTF8, "application/json");
+        
+        // Act
+        var response = await httpClient.AsCustomer().PatchAsync("/customers/99/allImages", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        collection.Members.Should().HaveCount(2);
+        collection.Members[0].Manifests.Should().BeEquivalentTo(result);
+        collection.Members[1].Manifests.Should().BeEquivalentTo(result);
+
+        await assetOne.ReloadAsync();
+        assetOne.Entity.Manifests.Should().BeEquivalentTo(result);
+        
+        await assetTwo.ReloadAsync();
+        assetTwo.Entity.Manifests.Should().BeEquivalentTo(result);
+    }
+    
     [Fact]
     public async Task Patch_AllImages_TestManifestRemoval()
     {

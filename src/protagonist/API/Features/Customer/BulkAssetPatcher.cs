@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using API.Infrastructure.Requests;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
@@ -42,7 +43,7 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
         CancellationToken cancellationToken)
     {
         if (value.IsEmpty()) value = null;
-
+        
         switch (operation)
         {
             case OperationType.Add:
@@ -53,11 +54,14 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
                 break;
             case OperationType.Remove:
                 var convertedAssetIds = $"{string.Join("','", assetIds)}";
+
                 foreach (var valueToRemove in value ?? [])
                 {
-                    await dlcsContext.Database.ExecuteSqlAsync(
-                        $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", {valueToRemove}) where \"Id\" in ({convertedAssetIds}) and \"Customer\" = {customerId}",
-                        cancellationToken);
+                    FormattableString template = FormattableStringFactory
+                        .Create(
+                            "update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", '{0}') where \"Id\" in ('{1}') and \"Customer\" = {2}",
+                            valueToRemove, convertedAssetIds, customerId);
+                    await dlcsContext.Database.ExecuteSqlRawAsync(template.ToString(), cancellationToken);
                 }
                 break;
             case OperationType.Replace:
