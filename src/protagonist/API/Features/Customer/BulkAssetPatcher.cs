@@ -71,7 +71,7 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
     {
         // use a dictionary, so that this doesn't need to be declared in the loop
         var parameters = assetIds.Select((id, index) =>
-                new NpgsqlParameter($"@p{index}", id.ToString()))
+                new NpgsqlParameter($"@p{index}", id.ToString())) // => {"@p0", "1/1/assetId_1"} etc.
             .ToDictionary(param => param.ParameterName, param => param);
         var parameterNames = string.Join(", ", parameters.Select(p => p.Key));
  
