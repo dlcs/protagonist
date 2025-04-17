@@ -511,7 +511,11 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer().GetAsync("/customers/99/allImages?q={\"manifests\":[\"wrong\"]}");
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        collection.Members.Should().HaveCount(0);
+        collection.TotalItems.Should().Be(0);
     }
     
     [Fact]

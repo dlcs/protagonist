@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Customer.Requests;
 
+/// <summary>
+/// Retrieves all images that match supported query parameters
+/// </summary>
 public class GetQueriedAllImages(int customerId, AssetFilter? assetFilter) : IRequest<FetchEntityResult<PageOf<Asset>>>,
     IPagedRequest, IOrderableRequest,
     IAssetFilterableRequest
@@ -34,19 +37,15 @@ public class GetQueriedAllImagesHandler(DlcsContext dlcsContext)
     {
         var result = await dlcsContext.Images
             .AsNoTracking()
-            .Include(a => a.ImageDeliveryChannels.OrderBy(idc => idc.Channel))
-            .ThenInclude(dc => dc.DeliveryChannelPolicy)
-            .Where(a => a.Customer == request.CustomerId).CreatePagedResult(
+            .IncludeDeliveryChannelsWithPolicy()
+            .Where(a => a.Customer == request.CustomerId)
+            .CreatePagedResult(
                 request,
                 i => i
                     .ApplyAssetFilter(request.AssetFilter)
                     .AsSplitQuery(),
                 images => images.AsOrderedAssetQuery(request),
                 cancellationToken);
-
-        // Any empty result set could be the result of an applied asset filter
-        return result.Total == 0
-            ? FetchEntityResult<PageOf<Asset>>.NotFound()
-            : FetchEntityResult<PageOf<Asset>>.Success(result);
+        return  FetchEntityResult<PageOf<Asset>>.Success(result);
     }
 }
