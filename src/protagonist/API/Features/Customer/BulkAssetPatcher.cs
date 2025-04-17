@@ -69,14 +69,14 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
     // allows a dynamic query to be generated, while avoiding issues with SQL injection
     private async Task RemoveManifests(List<AssetId> assetIds, List<string>? value, int customerId, CancellationToken cancellationToken)
     {
+        // use a dictionary, so that this doesn't need to be declared in the loop
         var parameters = assetIds.Select((id, index) =>
                 new NpgsqlParameter($"@p{index}", id.ToString()))
             .ToDictionary(param => param.ParameterName, param => param);
         var parameterNames = string.Join(", ", parameters.Select(p => p.Key));
-                
+ 
         foreach (var valueToRemove in value ?? [])
         {
-                    
             var query =
                 $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", @remove) where \"Id\" in ({parameterNames}) and \"Customer\" = @customer";
             parameters["@remove"] = new NpgsqlParameter("@remove", valueToRemove);
