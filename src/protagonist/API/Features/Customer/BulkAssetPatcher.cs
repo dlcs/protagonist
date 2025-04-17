@@ -66,7 +66,7 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
         }
     }
 
-    // allows a dynamic query to be generated, while avoiding issues with SQL injection
+    // allows a query to be generated using a list, while avoiding issues with SQL injection
     private async Task RemoveManifests(List<AssetId> assetIds, List<string>? value, int customerId, CancellationToken cancellationToken)
     {
         // use a dictionary, so that this doesn't need to be declared in the loop
