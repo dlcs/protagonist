@@ -11,6 +11,6 @@ public class AssetFilter
     public int? NumberReference1 { get; set; }
     public int? NumberReference2 { get; set; }
     public int? NumberReference3 { get; set; }
-    public List<string>? Manifests { get; set; }
+    public string[]? Manifests { get; set; }
     public string[]? Tags { get; set; }
 }

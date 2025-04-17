@@ -78,11 +78,11 @@ public static class HttpRequestX
         return null;
     }
     
-    public static List<string>? GetFirstQueryParamValueAsList(this HttpRequest request, string paramName)
+    public static string[]? GetFirstQueryParamValueAsArray(this HttpRequest request, string paramName)
     {
         if (request.Query.ContainsKey(paramName))
         {
-            return request.Query[paramName].ToString().Split(',').ToList();
+            return request.Query[paramName].ToString().Split(',').ToArray();
         }
 
         return null;

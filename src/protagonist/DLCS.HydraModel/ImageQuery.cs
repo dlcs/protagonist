@@ -27,7 +27,7 @@ public class ImageQuery
     public int? Number2 { get; set; }
     public int? Number3 { get; set; }
     
-    public List<string>? Manifests { get; set; }
+    public string[]? Manifests { get; set; }
 
     public static ImageQuery? Parse(string s)
     {

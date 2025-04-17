@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
+using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Page;
@@ -106,10 +107,10 @@ public static class AssetQueryX
         {
             filtered = filtered.Where(a => a.NumberReference3 == assetFilter.NumberReference3);
         }
-        if (assetFilter.Manifests != null)
+        if (!assetFilter.Manifests.IsNullOrEmpty())
         {
             filtered = filtered.Where(a =>
-                a.Manifests != null && a.Manifests.Any(manifest => assetFilter.Manifests.Contains(manifest)));
+                a.Manifests.Any(manifest => assetFilter.Manifests.Contains(manifest)));
         }
 
         if (filterOnSpace && assetFilter.Space is > 0)

@@ -415,7 +415,7 @@ public static class AssetConverter
             assetFilter ??= new AssetFilter();
             assetFilter.NumberReference3 = number3;
         }
-        var manifests = request.GetFirstQueryParamValueAsList("manifests");
+        var manifests = request.GetFirstQueryParamValueAsArray("manifests");
         if (manifests != null)
         {
             assetFilter ??= new AssetFilter();
