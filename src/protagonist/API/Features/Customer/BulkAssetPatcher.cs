@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using API.Infrastructure.Requests;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace API.Features.Customer;
 
@@ -53,16 +53,7 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
                         setters.SetProperty(a => a.Manifests, a => a.Manifests.Concat(value)), cancellationToken);
                 break;
             case OperationType.Remove:
-                var convertedAssetIds = $"{string.Join("','", assetIds)}";
-
-                foreach (var valueToRemove in value ?? [])
-                {
-                    FormattableString template = FormattableStringFactory
-                        .Create(
-                            "update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", '{0}') where \"Id\" in ('{1}') and \"Customer\" = {2}",
-                            valueToRemove, convertedAssetIds, customerId);
-                    await dlcsContext.Database.ExecuteSqlRawAsync(template.ToString(), cancellationToken);
-                }
+                await RemoveManifests(assetIds, value, customerId, cancellationToken);
                 break;
             case OperationType.Replace:
                 await dlcsContext.Images
@@ -74,7 +65,28 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
                 throw new InvalidOperationException($"Unsupported operation '{operation}'");
         }
     }
-    
+
+    // allows a dynamic query to be generated, while avoiding issues with SQL injection
+    private async Task RemoveManifests(List<AssetId> assetIds, List<string>? value, int customerId, CancellationToken cancellationToken)
+    {
+        var parameters = assetIds.Select((id, index) =>
+                new NpgsqlParameter($"@p{index}", id.ToString()))
+            .ToDictionary(param => param.ParameterName, param => param);
+        var parameterNames = string.Join(", ", parameters.Select(p => p.Key));
+                
+        foreach (var valueToRemove in value ?? [])
+        {
+                    
+            var query =
+                $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", @remove) where \"Id\" in ({parameterNames}) and \"Customer\" = @customer";
+            parameters["@remove"] = new NpgsqlParameter("@remove", valueToRemove);
+            parameters["@customer"] = new NpgsqlParameter("@customer", customerId);
+                   
+            await dlcsContext.Database.ExecuteSqlRawAsync(query,
+                parameters.Values, cancellationToken);
+        }
+    }
+
     public class SupportedFields
     {
         public const string ManifestField = "manifests";
