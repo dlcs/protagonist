@@ -76,16 +76,17 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
                     // index + 2 is due to one-based index for positional parameters + valueToRemove parameter being set in the $1
                     new KeyValuePair<int,NpgsqlParameter>(index + 2, new NpgsqlParameter { Value = id.ToString() }))
                 .ToList();
-            var parameterNames = string.Join(", ", parameters.Select(p => $"${p.Key}::text"));
+            var parameterNames = string.Join(", ", parameters.Select(p => $"${p.Key}"));
             parameters.Add(new KeyValuePair<int, NpgsqlParameter>(1, new NpgsqlParameter {Value = valueToRemove}));
+            var customerIndex = parameters.Count + 1;
+            parameters.Add(new KeyValuePair<int, NpgsqlParameter>(customerIndex, new NpgsqlParameter {Value = customerId}));
             
             var query =
-                $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", $1) where \"Id\" in ({parameterNames}) and \"Customer\" = {customerId}";
+                $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", $1) where \"Id\" in ({parameterNames}) and \"Customer\" = ${customerIndex}";
             var orderedParameters = parameters.OrderBy(x => x.Key);
 
             await using var cmd = new NpgsqlCommand(query, await dlcsContext.GetOpenNpgSqlConnection());
             cmd.Parameters.AddRange(orderedParameters.Select(x => x.Value).ToArray());
-            
             await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
         }
     }
