@@ -6,6 +6,7 @@ using DLCS.Model.Assets;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using NpgsqlTypes;
 
 namespace API.Features.Customer;
 
@@ -69,21 +70,23 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
     // allows a query to be generated using a list, while avoiding issues with SQL injection
     private async Task RemoveManifests(List<AssetId> assetIds, List<string>? value, int customerId, CancellationToken cancellationToken)
     {
-        // use a dictionary, so that this doesn't need to be declared in the loop
-        var parameters = assetIds.Select((id, index) =>
-                new NpgsqlParameter($"@p{index}", id.ToString())) // => {"@p0", "1/1/assetId_1"} etc.
-            .ToDictionary(param => param.ParameterName, param => param);
-        var parameterNames = string.Join(", ", parameters.Select(p => p.Key));
- 
         foreach (var valueToRemove in value ?? [])
         {
+            var parameters = assetIds.Select((id, index) =>
+                    // index + 2 is due to one-based index for positional parameters + valueToRemove parameter being set in the $1
+                    new KeyValuePair<int,NpgsqlParameter>(index + 2, new NpgsqlParameter { Value = id.ToString() }))
+                .ToList();
+            var parameterNames = string.Join(", ", parameters.Select(p => $"${p.Key}::text"));
+            parameters.Add(new KeyValuePair<int, NpgsqlParameter>(1, new NpgsqlParameter {Value = valueToRemove}));
+            
             var query =
-                $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", @remove) where \"Id\" in ({parameterNames}) and \"Customer\" = @customer";
-            parameters["@remove"] = new NpgsqlParameter("@remove", valueToRemove);
-            parameters["@customer"] = new NpgsqlParameter("@customer", customerId);
-                   
-            await dlcsContext.Database.ExecuteSqlRawAsync(query,
-                parameters.Values, cancellationToken);
+                $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", $1) where \"Id\" in ({parameterNames}) and \"Customer\" = {customerId}";
+            var orderedParameters = parameters.OrderBy(x => x.Key);
+
+            await using var cmd = new NpgsqlCommand(query, await dlcsContext.GetOpenNpgSqlConnection());
+            cmd.Parameters.AddRange(orderedParameters.Select(x => x.Value).ToArray());
+            
+            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
         }
     }
 
