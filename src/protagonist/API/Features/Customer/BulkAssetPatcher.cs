@@ -70,6 +70,8 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
     // allows a query to be generated using a list, while avoiding issues with SQL injection
     private async Task RemoveManifests(List<AssetId> assetIds, List<string>? value, int customerId, CancellationToken cancellationToken)
     {
+        await using var batchedQuery = new NpgsqlBatch(await dlcsContext.GetOpenNpgSqlConnection());
+        
         foreach (var valueToRemove in value ?? [])
         {
             var parameters = assetIds.Select((id, index) =>
@@ -78,17 +80,18 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
                 .ToList();
             var parameterNames = string.Join(", ", parameters.Select(p => $"${p.Key}"));
             parameters.Add(new KeyValuePair<int, NpgsqlParameter>(1, new NpgsqlParameter {Value = valueToRemove}));
+            // customer is last in the query and the index is +2, so the index of the last value becomes count + 1
             var customerIndex = parameters.Count + 1;
             parameters.Add(new KeyValuePair<int, NpgsqlParameter>(customerIndex, new NpgsqlParameter {Value = customerId}));
-            
-            var query =
-                $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", $1) where \"Id\" in ({parameterNames}) and \"Customer\" = ${customerIndex}";
-            var orderedParameters = parameters.OrderBy(x => x.Key);
 
-            await using var cmd = new NpgsqlCommand(query, await dlcsContext.GetOpenNpgSqlConnection());
-            cmd.Parameters.AddRange(orderedParameters.Select(x => x.Value).ToArray());
-            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
+            var command = new NpgsqlBatchCommand(
+                $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", $1) where \"Id\" in ({parameterNames}) and \"Customer\" = ${customerIndex}");
+            var orderedParameters = parameters.OrderBy(x => x.Key);
+            command.Parameters.AddRange(orderedParameters.Select(x => x.Value).ToArray());
+            batchedQuery.BatchCommands.Add(command);
         }
+        
+        await batchedQuery.ExecuteNonQueryAsync(cancellationToken);
     }
 
     public class SupportedFields
