@@ -29,11 +29,11 @@ This means we need a visual indication of which images are in progress (from a B
 
 `number1` governs the sequence ordering. If it's possible to use the Space as the aggregator, we don't need any other metadata fields set:
 
-`manifest=space&canvas=n1&space=p1`
+`space&canvas=n1&space=p1`
 
 However, that might not be possible and we need to use string1 as well:
 
-`manifest=s1&canvas=n1&space=p1&s1=p2` (This NQ already exists, it's called "manifest")
+`canvas=n1&space=p1&s1=p2` (This NQ already exists, it's called "manifest")
 
 The ordering can be set in the UI. Each row has buttons (small icons):
 ↑ Move up

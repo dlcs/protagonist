@@ -135,17 +135,17 @@ public class IIIFNamedQueryParserTests
         },
         new object[]
         {
-            "manifest=s1&spacename=p1", "10",
+            "spacename=p1", "10",
             new IIIFParsedNamedQuery(Customer)
-                { SpaceName = "10", Manifest = ParsedNamedQuery.QueryMapping.String1, NamedQueryName = "my-query" },
+                { SpaceName = "10", NamedQueryName = "my-query" },
             "Spacename from param"
         },
         new object[]
         {
-            "manifest=s1&canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
+            "canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
             new IIIFParsedNamedQuery(Customer)
             {
-                String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
+                String1 = "string-1", Number1 = 40, Space = 1,
                 AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.Number2) },
                 NamedQueryName = "my-query"
             },
@@ -153,10 +153,10 @@ public class IIIFNamedQueryParserTests
         },
         new object[]
         {
-            "manifest=s1&sequence=n1&canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40/10/100",
+            "sequence=n1&canvas=n2&s1=p1&n1=p2&space=p3&#=1", "string-1/40/10/100",
             new IIIFParsedNamedQuery(Customer)
             {
-                String1 = "string-1", Number1 = 40, Space = 10, Manifest = ParsedNamedQuery.QueryMapping.String1,
+                String1 = "string-1", Number1 = 40, Space = 10,
                 AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.Number2) },
                 NamedQueryName = "my-query"
             },
@@ -164,10 +164,10 @@ public class IIIFNamedQueryParserTests
         },
         new object[]
         {
-            "manifest=s1&&n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
+            "n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
             new IIIFParsedNamedQuery(Customer)
             {
-                String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
+                String1 = "string-1", Number1 = 40, Space = 1,
                 AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.Number2) },
                 NamedQueryName = "my-query"
             },
@@ -175,10 +175,10 @@ public class IIIFNamedQueryParserTests
         },
         new object[]
         {
-            "manifest=s1&canvas=n2&s1=p1&n1=p2&batch=p3&space=p4&#=1", "string-1/40/10,20,30",
+            "canvas=n2&s1=p1&n1=p2&batch=p3&space=p4&#=1", "string-1/40/10,20,30",
             new IIIFParsedNamedQuery(Customer)
             {
-                String1 = "string-1", Number1 = 40, Space = 1, Manifest = ParsedNamedQuery.QueryMapping.String1,
+                String1 = "string-1", Number1 = 40, Space = 1,
                 AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.Number2) },
                 NamedQueryName = "my-query", Batches = new[] { 10, 20, 30 }
             },
