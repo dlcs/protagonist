@@ -18,6 +18,7 @@ namespace DLCS.Repository.NamedQueries.Parsing;
 /// space-fields:      space, spacename
 /// ordering-fields:   assetOrder, canvas
 /// batch:             batch
+/// manifest:          manifest
 /// auto-added-values: #
 /// parameter-values:  p*
 /// </summary>
@@ -43,6 +44,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     protected const string AssetOrdering = "assetOrder";
     protected const string PathReplacement = "%2F";
     protected const string Batch = "batch";
+    protected const string Manifest = "manifest";
     
     public BaseNamedQueryParser(ILogger logger)
     {
@@ -144,6 +146,10 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
                         assetQuery.Batches =
                             ConvertToIntArrayQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
+                    case Manifest:
+                        assetQuery.Manifests =
+                            ConvertToArrayQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                        break;
                 }
 
                 CustomHandling(queryArgs, elements[0], elements[1], assetQuery);
@@ -163,6 +169,9 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
 
     private static int[]? ConvertToIntArrayQueryArg(string? argToConvert)
         => argToConvert.IsNullOrEmpty() ? null : argToConvert.SplitSeparatedString(",").Select(int.Parse).ToArray();
+    
+    private static string[]? ConvertToArrayQueryArg(string? argToConvert)
+        => argToConvert.IsNullOrEmpty() ? null : argToConvert.SplitSeparatedString(",").ToArray();
 
     /// <summary>
     /// Adds handling for any custom key/value pairs, in addition to the core s1, s2, p1 etc

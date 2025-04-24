@@ -130,8 +130,14 @@ public class IIIFNamedQueryParserTests
         new object[]
         {
             "batch=p1&#=10", "",
-            new IIIFParsedNamedQuery(Customer) { Batches = new[] { 10 }, NamedQueryName = "my-query" },
+            new IIIFParsedNamedQuery(Customer) { Batches = [10], NamedQueryName = "my-query" },
             "Single batch from template"
+        },
+        new object[]
+        {
+            "manifest=p1&#=foo-bar", "",
+            new IIIFParsedNamedQuery(Customer) { Manifests = ["foo-bar"], NamedQueryName = "my-query" },
+            "Single manifest from template"
         },
         new object[]
         {
@@ -175,14 +181,14 @@ public class IIIFNamedQueryParserTests
         },
         new object[]
         {
-            "canvas=n2&s1=p1&n1=p2&batch=p3&space=p4&#=1", "string-1/40/10,20,30",
+            "canvas=n2&s1=p1&n1=p2&batch=p3&manifest=p4&space=p5&#=1", "string-1/40/10,20,30/foo,bar",
             new IIIFParsedNamedQuery(Customer)
             {
                 String1 = "string-1", Number1 = 40, Space = 1,
                 AssetOrdering = new List<ParsedNamedQuery.QueryOrder> { new(ParsedNamedQuery.QueryMapping.Number2) },
-                NamedQueryName = "my-query", Batches = new[] { 10, 20, 30 }
+                NamedQueryName = "my-query", Batches = [10, 20, 30], Manifests = ["foo", "bar"]
             },
-            "All params including multi Batch"
+            "All params including multi Batch and multi Manifest"
         }
     };
 }

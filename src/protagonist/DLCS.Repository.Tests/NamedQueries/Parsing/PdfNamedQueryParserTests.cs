@@ -161,9 +161,18 @@ public class PdfNamedQueryParserTests
             "batch=p1", "10,20,40",
             new PdfParsedNamedQuery(99)
             {
-                NamedQueryName = "my-query", Batches = new[] { 10, 20, 40 }, Args = new List<string> { "10,20,40" }
+                NamedQueryName = "my-query", Batches = [10, 20, 40], Args = new List<string> { "10,20,40" }
             },
             "Batch from template"
+        },
+        new object[]
+        {
+            "manifest=p1", "foo,bar",
+            new PdfParsedNamedQuery(99)
+            {
+                NamedQueryName = "my-query", Manifests = ["foo", "bar"], Args = new List<string> { "foo,bar" }
+            },
+            "Manifest from template"
         },
         new object[]
         {
@@ -189,7 +198,7 @@ public class PdfNamedQueryParserTests
         },
         new object[]
         {
-            "manifest=s1&&n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
+            "unknown=s1&&n3=&canvas=n2&=10&s1=p1&n1=p2&space=p3&#=1", "string-1/40",
             new PdfParsedNamedQuery(99)
             {
                 String1 = "string-1", Number1 = 40, Space = 1,
