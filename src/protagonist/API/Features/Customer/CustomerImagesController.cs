@@ -5,6 +5,7 @@ using API.Features.Image.Validation;
 using API.Infrastructure;
 using API.Infrastructure.Requests;
 using API.Settings;
+using DLCS.Core.Strings;
 using DLCS.Model;
 using DLCS.Model.Assets;
 using DLCS.Web.Requests;
@@ -69,6 +70,37 @@ public class CustomerImagesController : HydraController
             a => a.ToHydra(GetUrlRoots()),
             "Get customer images failed",
             cancellationToken: cancellationToken);
+    }
+    
+    /// <summary>
+    /// Accepts a list of image identifiers in a query string, will return a list of matching images.
+    ///
+    /// This endpoint supports paging 
+    /// </summary>
+    [HttpGet]
+    [Route("allImages")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    public async Task<IActionResult> GetAllImagesPaged(
+        [FromRoute] int customerId,
+        [FromQuery] string? q = null,
+        CancellationToken cancellationToken = default)
+    {
+        var assetFilter = Request.GetAssetFilterFromQParam(q);
+        assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
+        if (q.HasText() && assetFilter == null)
+        {
+            return this.HydraProblem("Could not parse query", null, 400);
+        }
+
+        var getQueriedAllImages = new GetQueriedAllImages(customerId, assetFilter);
+
+        return await HandlePagedFetch<Asset, GetQueriedAllImages, DLCS.HydraModel.Image>(
+            getQueriedAllImages,
+            image => image.ToHydra(GetUrlRoots()),
+            errorTitle: "Get All Images failed",
+            cancellationToken: cancellationToken
+        );
     }
     
     /// <summary>
