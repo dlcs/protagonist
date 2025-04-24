@@ -5,6 +5,8 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace API.Features.Customer;
 
@@ -42,7 +44,7 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
         CancellationToken cancellationToken)
     {
         if (value.IsEmpty()) value = null;
-
+        
         switch (operation)
         {
             case OperationType.Add:
@@ -52,13 +54,7 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
                         setters.SetProperty(a => a.Manifests, a => a.Manifests.Concat(value)), cancellationToken);
                 break;
             case OperationType.Remove:
-                var convertedAssetIds = $"{string.Join("','", assetIds)}";
-                foreach (var valueToRemove in value ?? [])
-                {
-                    await dlcsContext.Database.ExecuteSqlAsync(
-                        $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", {valueToRemove}) where \"Id\" in ({convertedAssetIds}) and \"Customer\" = {customerId}",
-                        cancellationToken);
-                }
+                await RemoveManifests(assetIds, value, customerId, cancellationToken);
                 break;
             case OperationType.Replace:
                 await dlcsContext.Images
@@ -70,7 +66,34 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
                 throw new InvalidOperationException($"Unsupported operation '{operation}'");
         }
     }
-    
+
+    // allows a query to be generated using a list, while avoiding issues with SQL injection
+    private async Task RemoveManifests(List<AssetId> assetIds, List<string>? value, int customerId, CancellationToken cancellationToken)
+    {
+        await using var batchedQuery = new NpgsqlBatch(await dlcsContext.GetOpenNpgSqlConnection());
+        
+        foreach (var valueToRemove in value ?? [])
+        {
+            var parameters = assetIds.Select((id, index) =>
+                    // index + 2 is due to one-based index for positional parameters + valueToRemove parameter being set in the $1
+                    new KeyValuePair<int,NpgsqlParameter>(index + 2, new NpgsqlParameter { Value = id.ToString() }))
+                .ToList();
+            var parameterNames = string.Join(", ", parameters.Select(p => $"${p.Key}"));
+            parameters.Add(new KeyValuePair<int, NpgsqlParameter>(1, new NpgsqlParameter {Value = valueToRemove}));
+            // customer is last in the query and the index is +2, so the index of the last value becomes count + 1
+            var customerIndex = parameters.Count + 1;
+            parameters.Add(new KeyValuePair<int, NpgsqlParameter>(customerIndex, new NpgsqlParameter {Value = customerId}));
+
+            var command = new NpgsqlBatchCommand(
+                $"update \"Images\" set \"Manifests\" = array_remove(\"Manifests\", $1) where \"Id\" in ({parameterNames}) and \"Customer\" = ${customerIndex}");
+            var orderedParameters = parameters.OrderBy(x => x.Key);
+            command.Parameters.AddRange(orderedParameters.Select(x => x.Value).ToArray());
+            batchedQuery.BatchCommands.Add(command);
+        }
+        
+        await batchedQuery.ExecuteNonQueryAsync(cancellationToken);
+    }
+
     public class SupportedFields
     {
         public const string ManifestField = "manifests";
