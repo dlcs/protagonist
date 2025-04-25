@@ -55,9 +55,14 @@ public class ParsedNamedQuery
     public long? Number3 { get; set; }
     
     /// <summary>
-    /// Value of "batches" after parsing
+    /// Value of "batch" after parsing
     /// </summary>
     public int[]? Batches { get; set; } 
+    
+    /// <summary>
+    /// Value of "manifest" after parsing
+    /// </summary>
+    public string[]? Manifests { get; set; }
     
     /// <summary>
     /// The name of the namedQuery this object was parsed from.
