@@ -89,7 +89,7 @@ public static class ApplicationBuilderX
                 var overridesDict = JsonConvert.DeserializeObject<Dictionary<string, string>>(opts.OverridesAsJson);
                 foreach (var (key, value) in overridesDict)
                 {
-                    opts.Overrides.Add(key, value);
+                    opts.Overrides.Add(key, new PathTemplate { Path = value });
                 }
             }
         });

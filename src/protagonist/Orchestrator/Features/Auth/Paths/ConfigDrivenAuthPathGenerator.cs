@@ -27,7 +27,7 @@ public class ConfigDrivenAuthPathGenerator : IAuthPathGenerator
         var host = request.Host.Value;
         var template = orchestratorSettings.Auth.AuthPathRules.GetPathTemplateForHost(host);
 
-        var path = DlcsPathHelpers.GenerateAuthPathFromTemplate(template, customer, behaviour);
+        var path = DlcsPathHelpers.GenerateAuthPathFromTemplate(template.Path, customer, behaviour);
         return request.GetDisplayUrl(path, includeQueryParams: false);
     }
 

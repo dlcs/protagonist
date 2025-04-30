@@ -48,10 +48,10 @@ public class ConfigDrivenAssetPathGenerator : IAssetPathGenerator
         var request = httpContextAccessor.HttpContext.Request;
         var host = request.Host.Value ?? string.Empty;
         var template = useNativeFormat
-            ? PathTemplateOptions.DefaultPathFormat
+            ? PathTemplateOptions.DefaultPathTemplate
             : pathTemplateOptions.GetPathTemplateForHost(host);
 
-        var path = pathGenerator(assetRequest, template);
+        var path = pathGenerator(assetRequest, template.Path);
 
         return fullRequest ? request.GetDisplayUrl(path, includeQueryParams) : path;
     }

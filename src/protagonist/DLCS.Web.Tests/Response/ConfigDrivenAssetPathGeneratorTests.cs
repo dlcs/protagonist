@@ -153,9 +153,9 @@ public class ConfigDrivenAssetPathGeneratorTests
 
         var options = Options.Create(new PathTemplateOptions
         {
-            Overrides = new Dictionary<string, string>
+            Overrides = new Dictionary<string, PathTemplate>
             {
-                ["test.example.com"] = "/{prefix}/{assetPath}"
+                ["test.example.com"] = new() { Path = "/{prefix}/{assetPath}" }
             }
         });
 
