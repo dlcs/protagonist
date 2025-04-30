@@ -12,8 +12,10 @@ using IIIF.ImageApi.V3;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.IIIF.Manifests;
+using Orchestrator.Settings;
 using Test.Helpers.Data;
 
 namespace Orchestrator.Tests.Infrastructure.IIIF.Manifests;
@@ -36,7 +38,10 @@ public class ManifestV3BuilderTests
                 new List<Size> { new(150, 100), new(300, 200) },
                 new(300, 200)));
 
-        sut = new ManifestV3Builder(builderUtils, assetPathGenerator, authBuilder, new NullLogger<ManifestV3Builder>());
+        var options = Options.Create(new OrchestratorSettings());
+
+        sut = new ManifestV3Builder(builderUtils, assetPathGenerator, authBuilder, options,
+            new NullLogger<ManifestV3Builder>());
     }
 
     [Fact]

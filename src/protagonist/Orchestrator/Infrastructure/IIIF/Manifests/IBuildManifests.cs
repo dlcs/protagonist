@@ -10,7 +10,7 @@ namespace Orchestrator.Infrastructure.IIIF.Manifests;
 /// <summary>
 /// Interface for construction of a manifest
 /// </summary>
-/// <typeparam name="T">Type of manifest build</typeparam>
+/// <typeparam name="T">Type of manifest to build</typeparam>
 public interface IBuildManifests<T>
     where T : JsonLdBase
 {

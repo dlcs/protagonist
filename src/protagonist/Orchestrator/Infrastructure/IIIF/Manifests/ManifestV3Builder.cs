@@ -22,6 +22,8 @@ using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Orchestrator.Settings;
 using IIIFAuth2 = IIIF.Auth.V2;
 
 namespace Orchestrator.Infrastructure.IIIF.Manifests;
@@ -29,26 +31,15 @@ namespace Orchestrator.Infrastructure.IIIF.Manifests;
 /// <summary>
 /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v3 manifest
 /// </summary>
-public class ManifestV3Builder : IBuildManifests<Manifest>
+public class ManifestV3Builder(
+    IManifestBuilderUtils builderUtils,
+    IAssetPathGenerator assetPathGenerator,
+    IIIIFAuthBuilder authBuilder,
+    ILogger<ManifestV3Builder> logger)
+    : IBuildManifests<Manifest>
 {
-    private readonly IManifestBuilderUtils builderUtils;
-    private readonly IAssetPathGenerator assetPathGenerator;
-    private readonly IIIIFAuthBuilder authBuilder;
-    private readonly ILogger<ManifestV3Builder> logger;
     private const string ManifestLanguage = "en";
     private const string CanvasLanguage = "none";
-
-    public ManifestV3Builder(
-        IManifestBuilderUtils builderUtils,
-        IAssetPathGenerator assetPathGenerator,
-        IIIIFAuthBuilder authBuilder, 
-        ILogger<ManifestV3Builder> logger)
-    {
-        this.builderUtils = builderUtils;
-        this.assetPathGenerator = assetPathGenerator;
-        this.authBuilder = authBuilder;
-        this.logger = logger;
-    }
 
     public async Task<Manifest> BuildManifest(string manifestId, string label, List<Asset> assets,
         CustomerPathElement customerPathElement, ManifestType manifestType, CancellationToken cancellationToken)
@@ -403,26 +394,26 @@ public class ManifestV3Builder : IBuildManifests<Manifest>
     private string GetPathForTranscode(Asset asset, CustomerPathElement customerPathElement,
         AVTranscode avTranscode)
     {
-        var imageRequest = new BasicPathElements
+        var transcodeRequest = new BasicPathElements
         {
             Space = asset.Space,
             AssetPath = asset.Id.Asset.ToConcatenated('/', avTranscode.GetTranscodeRequestPath()),
             RoutePrefix = AssetDeliveryChannels.Timebased,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
+        return assetPathGenerator.GetFullPathForRequest(transcodeRequest, builderUtils.UseNativeFormatForAssets, false);
     }
     
     private string GetFilePath(Asset asset, CustomerPathElement customerPathElement)
     {
-        var imageRequest = new BasicPathElements
+        var fileRequest = new BasicPathElements
         {
             Space = asset.Space,
             AssetPath = asset.Id.Asset,
             RoutePrefix = AssetDeliveryChannels.File,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
+        return assetPathGenerator.GetFullPathForRequest(fileRequest, builderUtils.UseNativeFormatForAssets, false);
     }
     
     private async Task<Dictionary<AssetId, AuthProbeService2>?> GetProbeServices(IReadOnlyCollection<Asset> assets,

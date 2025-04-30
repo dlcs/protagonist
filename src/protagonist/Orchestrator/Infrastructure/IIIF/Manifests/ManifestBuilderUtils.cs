@@ -19,6 +19,8 @@ namespace Orchestrator.Infrastructure.IIIF.Manifests;
 
 public interface IManifestBuilderUtils
 {
+    bool UseNativeFormatForAssets { get; }
+    
     Task<ImageSizeDetails> RetrieveThumbnails(Asset asset, CancellationToken cancellationToken);
 
     List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
@@ -41,21 +43,15 @@ public interface IManifestBuilderUtils
 /// <summary>
 /// Class containing common methods for building different version Manifests 
 /// </summary>
-public class ManifestBuilderUtils : IManifestBuilderUtils
+public class ManifestBuilderUtils(
+    IAssetPathGenerator assetPathGenerator,
+    IOptions<OrchestratorSettings> orchestratorSettings,
+    IThumbSizeProvider thumbSizeProvider)
+    : IManifestBuilderUtils
 {
-    private readonly IAssetPathGenerator assetPathGenerator;
-    private readonly OrchestratorSettings orchestratorSettings;
-    private readonly IThumbSizeProvider thumbSizeProvider;
-
-    public ManifestBuilderUtils(
-        IAssetPathGenerator assetPathGenerator,
-        IOptions<OrchestratorSettings> orchestratorSettings,
-        IThumbSizeProvider thumbSizeProvider)
-    {
-        this.assetPathGenerator = assetPathGenerator;
-        this.thumbSizeProvider = thumbSizeProvider;
-        this.orchestratorSettings = orchestratorSettings.Value;
-    }
+    private readonly OrchestratorSettings orchestratorSettings = orchestratorSettings.Value;
+    
+    public bool UseNativeFormatForAssets { get; } = !orchestratorSettings.Value.RewriteAssetPathsOnManifests;
 
     public async Task<ImageSizeDetails> RetrieveThumbnails(Asset asset, CancellationToken cancellationToken)
     {
@@ -77,7 +73,8 @@ public class ManifestBuilderUtils : IManifestBuilderUtils
         {
             var imageService = new ImageService2
             {
-                Id = GetFullyQualifiedId(asset, customerPathElement, true, global::IIIF.ImageApi.Version.V2),
+                Id = GetFullyQualifiedId(asset, customerPathElement, true, UseNativeFormatForAssets,
+                    global::IIIF.ImageApi.Version.V2),
                 Profile = ImageService2.Level0Profile,
                 Sizes = thumbnailSizes,
                 Context = ImageService2.Image2Context,
@@ -95,7 +92,8 @@ public class ManifestBuilderUtils : IManifestBuilderUtils
         {
             services.Add(new ImageService3
             {
-                Id = GetFullyQualifiedId(asset, customerPathElement, true, global::IIIF.ImageApi.Version.V3),
+                Id = GetFullyQualifiedId(asset, customerPathElement, true, UseNativeFormatForAssets,
+                    global::IIIF.ImageApi.Version.V3),
                 Profile = ImageService3.Level0Profile,
                 Sizes = thumbnailSizes,
                 Context = ImageService3.Image3Context,
@@ -123,15 +121,15 @@ public class ManifestBuilderUtils : IManifestBuilderUtils
         {
             Space = asset.Space,
             AssetPath = $"{asset.Id.Asset}/full/{size.Width},{size.Height}/0/default.jpg",
-            RoutePrefix = isThumb ? orchestratorSettings.Proxy.ThumbsPath : orchestratorSettings.Proxy.ImagePath,
+            RoutePrefix = isThumb ? AssetDeliveryChannels.Thumbnails : AssetDeliveryChannels.Image,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(request, true, false);
+        return assetPathGenerator.GetFullPathForRequest(request, UseNativeFormatForAssets, false);
     }
 
     public string GetCanvasId(Asset asset, CustomerPathElement customerPathElement, int index)
     {
-        var fullyQualifiedImageId = GetFullyQualifiedId(asset, customerPathElement, false);
+        var fullyQualifiedImageId = GetFullyQualifiedId(asset, customerPathElement, false, true);
         return string.Concat(fullyQualifiedImageId, "/canvas/c/", index);
     }
 
@@ -145,7 +143,8 @@ public class ManifestBuilderUtils : IManifestBuilderUtils
         {
             var imageService = new ImageService2
             {
-                Id = GetFullyQualifiedId(asset, customerPathElement, false, global::IIIF.ImageApi.Version.V2),
+                Id = GetFullyQualifiedId(asset, customerPathElement, false, UseNativeFormatForAssets,
+                    global::IIIF.ImageApi.Version.V2),
                 Profile = ImageService2.Level2Profile,
                 Context = ImageService2.Image2Context,
                 Width = asset.Width ?? 0,
@@ -154,7 +153,7 @@ public class ManifestBuilderUtils : IManifestBuilderUtils
             };
 
             // '@Type' is not used in Presentation2 embedded
-            if (forPresentation2) imageService.Type = null; 
+            if (forPresentation2) imageService.Type = null;
 
             services.Add(imageService);
         }
@@ -166,7 +165,8 @@ public class ManifestBuilderUtils : IManifestBuilderUtils
         {
             services.Add(new ImageService3
             {
-                Id = GetFullyQualifiedId(asset, customerPathElement, false, global::IIIF.ImageApi.Version.V3),
+                Id = GetFullyQualifiedId(asset, customerPathElement, false, UseNativeFormatForAssets,
+                    global::IIIF.ImageApi.Version.V3),
                 Profile = ImageService3.Level2Profile,
                 Context = ImageService3.Image3Context,
                 Width = asset.Width ?? 0,
@@ -209,17 +209,17 @@ public class ManifestBuilderUtils : IManifestBuilderUtils
         asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails) && !thumbnailSizes.OpenThumbnails.IsNullOrEmpty();
     
     private string GetFullyQualifiedId(Asset asset, CustomerPathElement customerPathElement,
-        bool isThumb, global::IIIF.ImageApi.Version imageApiVersion = global::IIIF.ImageApi.Version.Unknown)
+        bool isThumb, bool useNativeFormat, global::IIIF.ImageApi.Version imageApiVersion = global::IIIF.ImageApi.Version.Unknown)
     {
         var versionPart= imageApiVersion == orchestratorSettings.DefaultIIIFImageVersion ||
                          imageApiVersion == global::IIIF.ImageApi.Version.Unknown
             ? string.Empty
             : $"/{imageApiVersion.ToString().ToLower()}";
 
-        var routePrefix= isThumb
-            ? orchestratorSettings.Proxy.ThumbsPath
-            : orchestratorSettings.Proxy.ImagePath;
-
+        var routePrefix = isThumb
+            ? AssetDeliveryChannels.Thumbnails
+            : AssetDeliveryChannels.Image;
+        
         var imageRequest = new BasicPathElements
         {
             Space = asset.Space,
@@ -228,7 +228,7 @@ public class ManifestBuilderUtils : IManifestBuilderUtils
             RoutePrefix = routePrefix,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(imageRequest, true, false);
+        return assetPathGenerator.GetFullPathForRequest(imageRequest, useNativeFormat, false);
     }
 }
 
