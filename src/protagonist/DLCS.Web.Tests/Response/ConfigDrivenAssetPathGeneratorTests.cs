@@ -66,6 +66,32 @@ public class ConfigDrivenAssetPathGeneratorTests
     [Theory]
     [InlineData("123")]
     [InlineData("test-customer")]
+    public void GetFullPathForRequest_Override_WithPrefixReplacement(string customerPathValue)
+    {
+        // Arrange
+        var sut = GetSut("other.example.com");
+        var request = new BaseAssetRequest
+        {
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "iiif-img"
+        };
+
+        var expected = "https://other.example.com/foo/img/path/to/asset";
+        
+        // Act
+        var actual = sut.GetFullPathForRequest(request);
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
     public void GetFullPathForRequest_OverrideAvailable_ButIgnoredIfNativeFormatRequested(string customerPathValue)
     {
         // Arrange
@@ -140,8 +166,138 @@ public class ConfigDrivenAssetPathGeneratorTests
         // Assert
         actual.Should().Be(expected);
     }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetRelativePathForRequest_Default(string customerPathValue)
+    {
+        // Arrange
+        var sut = GetSut("default.com");
+        var request = new BaseAssetRequest
+        {
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "thumbs"
+        };
 
-    private ConfigDrivenAssetPathGenerator GetSut(string host, Action<HttpRequest> requestModifier = null)
+        var expected = $"/thumbs/{customerPathValue}/10/path/to/asset";
+        
+        // Act
+        var actual = sut.GetRelativePathForRequest(request);
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetRelativePathForRequest_Override(string customerPathValue)
+    {
+        // Arrange
+        var sut = GetSut("test.example.com");
+        var request = new BaseAssetRequest
+        {
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "thumbs"
+        };
+
+        var expected = "/thumbs/path/to/asset";
+        
+        // Act
+        var actual = sut.GetRelativePathForRequest(request);
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetRelativePathForRequest_Override_WithPrefixReplacement(string customerPathValue)
+    {
+        // Arrange
+        var sut = GetSut("other.example.com");
+        var request = new BaseAssetRequest
+        {
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "iiif-img"
+        };
+
+        var expected = "/foo/img/path/to/asset";
+        
+        // Act
+        var actual = sut.GetRelativePathForRequest(request);
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetRelativePathForRequest_OverrideAvailable_ButIgnoredIfNativeFormatRequested(string customerPathValue)
+    {
+        // Arrange
+        var sut = GetSut("test.example.com");
+        var request = new BaseAssetRequest
+        {
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "thumbs"
+        };
+
+        var expected = $"/thumbs/{customerPathValue}/10/path/to/asset";
+        
+        // Act
+        var actual = sut.GetRelativePathForRequest(request, true);
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetRelativePathForRequest_Default_QueryParamsAreRemoved(string customerPathValue)
+    {
+        // Arrange
+        var sut = GetSut("default.com", req => req.QueryString = new QueryString("?foo=bar"));
+        var request = new BaseAssetRequest
+        {
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "thumbs/123/10",
+            RoutePrefix = "thumbs"
+        };
+
+        var expected = $"/thumbs/{customerPathValue}/10/path/to/asset";
+        
+        // Act
+        var actual = sut.GetRelativePathForRequest(request);
+        
+        // Assert
+        actual.Should().Be(expected);
+    }
+
+    private static ConfigDrivenAssetPathGenerator GetSut(string host, Action<HttpRequest> requestModifier = null)
     {
         var context = new DefaultHttpContext();
         var request = context.Request;
@@ -155,7 +311,14 @@ public class ConfigDrivenAssetPathGeneratorTests
         {
             Overrides = new Dictionary<string, PathTemplate>
             {
-                ["test.example.com"] = new() { Path = "/{prefix}/{assetPath}" }
+                ["test.example.com"] = new() { Path = "/{prefix}/{assetPath}" },
+                ["other.example.com"] = new()
+                {
+                    Path = "/foo/{prefix}/{assetPath}", PrefixReplacements = new Dictionary<string, string>
+                    {
+                        ["iiif-img"] = "img",
+                    }
+                }
             }
         });
 

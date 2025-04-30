@@ -14,19 +14,12 @@ namespace DLCS.Web.Response;
 /// this allows e.g. "id" values on manifests to use different URL structures than the default DLCS paths.
 /// e.g. /images/{assetPath}/ rather than default of /iiif-img/{cust}/{space}/{assetPath} 
 /// </remarks>
-public class ConfigDrivenAssetPathGenerator : IAssetPathGenerator
+public class ConfigDrivenAssetPathGenerator(
+    IOptions<PathTemplateOptions> pathTemplateOptions,
+    IHttpContextAccessor httpContextAccessor) : IAssetPathGenerator
 {
-    private readonly IHttpContextAccessor httpContextAccessor;
-    private readonly PathTemplateOptions pathTemplateOptions;
+    private readonly PathTemplateOptions pathTemplateOptions = pathTemplateOptions.Value;
 
-    public ConfigDrivenAssetPathGenerator(
-        IOptions<PathTemplateOptions> pathTemplateOptions,
-        IHttpContextAccessor httpContextAccessor)
-    {
-        this.httpContextAccessor = httpContextAccessor;
-        this.pathTemplateOptions = pathTemplateOptions.Value;
-    }
-    
     public string GetRelativePathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false)
         => GetForPath(assetRequest, false, useNativeFormat, false);
 
@@ -34,32 +27,33 @@ public class ConfigDrivenAssetPathGenerator : IAssetPathGenerator
         bool includeQueryParams = true)
         => GetForPath(assetRequest, true, useNativeFormat, includeQueryParams);
 
-    private string GetForPath(IBasicPathElements assetRequest, bool fullRequest, bool useNativeFormat, bool includeQueryParams)
+    private string GetForPath(IBasicPathElements assetRequest, bool fullRequest, bool useNativeFormat,
+        bool includeQueryParams)
         => GetPathForRequestInternal(
-            assetRequest, 
-            (request, template) => GeneratePathFromTemplate(request, template),
+            assetRequest,
+            GeneratePathFromTemplate,
             fullRequest,
             useNativeFormat,
             includeQueryParams);
-    
+
     private string GetPathForRequestInternal(IBasicPathElements assetRequest, PathGenerator pathGenerator,
         bool fullRequest, bool useNativeFormat, bool includeQueryParams)
     {
-        var request = httpContextAccessor.HttpContext.Request;
-        var host = request.Host.Value ?? string.Empty;
+        var request = httpContextAccessor.SafeHttpContext().Request;
+        var host = request.Host.Value;
         var template = useNativeFormat
             ? PathTemplateOptions.DefaultPathTemplate
             : pathTemplateOptions.GetPathTemplateForHost(host);
 
-        var path = pathGenerator(assetRequest, template.Path);
+        var path = pathGenerator(assetRequest, template);
 
         return fullRequest ? request.GetDisplayUrl(path, includeQueryParams) : path;
     }
 
     // Default path replacements
-    private string GeneratePathFromTemplate(IBasicPathElements assetRequest, string template)
-        => DlcsPathHelpers.GeneratePathFromTemplate(template,
-            prefix: assetRequest.RoutePrefix,
+    private static string GeneratePathFromTemplate(IBasicPathElements assetRequest, PathTemplate template)
+        => DlcsPathHelpers.GeneratePathFromTemplate(template.Path,
+            prefix: template.GetPrefixForPath(assetRequest.RoutePrefix),
             customer: assetRequest.CustomerPathValue,
             version: assetRequest.VersionPathValue,
             space: assetRequest.Space.ToString(),

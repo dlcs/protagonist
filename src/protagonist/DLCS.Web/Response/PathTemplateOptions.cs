@@ -64,6 +64,13 @@ public class PathTemplate
     /// Used to generate value to use for "{prefix}" replacement
     /// </summary>
     public Dictionary<string, string> PrefixReplacements { get; set; } = new();
+
+    /// <summary>
+    /// Get prefix value to use for provided native-prefix. Return value from prefix-replacements, if found, else
+    /// returns native prefix 
+    /// </summary>
+    public string GetPrefixForPath(string nativePrefix)
+        => PrefixReplacements.GetValueOrDefault(nativePrefix, nativePrefix);
 }
 
 /// <summary>

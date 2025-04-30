@@ -5,7 +5,7 @@ namespace DLCS.Web.Response;
 /// <summary>
 /// Delegate that uses values in <see cref="IBasicPathElements"/> to make replacements in given template
 /// </summary>
-public delegate string PathGenerator(IBasicPathElements assetRequest, string template);
+public delegate string PathGenerator(IBasicPathElements assetRequest, PathTemplate template);
 
 /// <summary>
 /// Generate paths related to running Dlcs instance.
