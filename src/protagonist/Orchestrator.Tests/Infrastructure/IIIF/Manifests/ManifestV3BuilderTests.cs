@@ -15,7 +15,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.IIIF.Manifests;
-using Orchestrator.Settings;
 using Test.Helpers.Data;
 
 namespace Orchestrator.Tests.Infrastructure.IIIF.Manifests;
@@ -38,10 +37,7 @@ public class ManifestV3BuilderTests
                 new List<Size> { new(150, 100), new(300, 200) },
                 new(300, 200)));
 
-        var options = Options.Create(new OrchestratorSettings());
-
-        sut = new ManifestV3Builder(builderUtils, assetPathGenerator, authBuilder, options,
-            new NullLogger<ManifestV3Builder>());
+        sut = new ManifestV3Builder(builderUtils, assetPathGenerator, authBuilder, new NullLogger<ManifestV3Builder>());
     }
 
     [Fact]
@@ -74,7 +70,7 @@ public class ManifestV3BuilderTests
     [Fact]
     public async Task BuildManifest_ImageThumb()
     {
-        var asset = GetImageAsset("iiif-img", "thumbs");
+        var asset = GetImageAsset("iiif-img,thumbs");
         
         var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
@@ -104,7 +100,7 @@ public class ManifestV3BuilderTests
     [Fact]
     public async Task BuildManifest_ImageThumbFile()
     {
-        var asset = GetImageAsset("iiif-img", "thumbs", "file");
+        var asset = GetImageAsset("iiif-img,thumbs,file");
         
         var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
@@ -164,7 +160,7 @@ public class ManifestV3BuilderTests
     [Fact]
     public async Task BuildManifest_ThumbFile()
     {
-        var asset = GetImageAsset("thumbs", "file");
+        var asset = GetImageAsset("thumbs,file");
         
         var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, true))
@@ -199,10 +195,7 @@ public class ManifestV3BuilderTests
             Id = AssetIdGenerator.GetAssetId(),
             MediaType = "audio/wav",
             Duration = 15000,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new() { Channel = "iiif-av" }
-            }
+            ImageDeliveryChannels = "iiif-av".GenerateDeliveryChannels()
         }.WithTestTranscodeMetadata(new AVTranscode
         {
             Duration = 14666, MediaType = "audio/mp3",
@@ -233,10 +226,7 @@ public class ManifestV3BuilderTests
             Id = AssetIdGenerator.GetAssetId(),
             MediaType = "audio/wav",
             Duration = 15000,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new() { Channel = "iiif-av" }, new() { Channel = "file" }
-            }
+            ImageDeliveryChannels = "iiif-av,file".GenerateDeliveryChannels()
         }.WithTestTranscodeMetadata(new AVTranscode
         {
             Duration = 14666, MediaType = "audio/mp3",
@@ -272,10 +262,7 @@ public class ManifestV3BuilderTests
             Duration = 15000,
             Width = 800,
             Height = 800,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new() { Channel = "iiif-av" }
-            }
+            ImageDeliveryChannels = "iiif-av".GenerateDeliveryChannels()
         }.WithTestTranscodeMetadata(new List<AVTranscode>
         {
             new()
@@ -326,10 +313,7 @@ public class ManifestV3BuilderTests
             Duration = 15000,
             Width = 800,
             Height = 800,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new() { Channel = "iiif-av" }, new() { Channel = "file" }
-            }
+            ImageDeliveryChannels = "iiif-av,file".GenerateDeliveryChannels()
         }.WithTestTranscodeMetadata(new List<AVTranscode>
         {
             new()
@@ -385,10 +369,7 @@ public class ManifestV3BuilderTests
             Duration = 15000,
             Width = 800,
             Height = 800,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new() { Channel = "iiif-av" }
-            }
+            ImageDeliveryChannels = "iiif-av".GenerateDeliveryChannels()
         };
         
         var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
@@ -438,13 +419,13 @@ public class ManifestV3BuilderTests
         image.Service.Should().BeNull("No image service");
     }
     
-    private static Asset GetImageAsset(params string[] deliveryChannels) =>
+    private static Asset GetImageAsset(string deliveryChannels) =>
         new()
         {
             Id = AssetIdGenerator.GetAssetId(),
             MediaType = "image/tiff",
             Width = 1500,
             Height = 1000,
-            ImageDeliveryChannels = deliveryChannels.Select(dc => new ImageDeliveryChannel { Channel = dc }).ToList()
+            ImageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels()
         };
 }

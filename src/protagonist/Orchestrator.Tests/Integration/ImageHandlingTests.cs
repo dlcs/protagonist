@@ -46,20 +46,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly FakeImageOrchestrator orchestrator = new();
     private const string SizesJsonContent = "{\"o\":[[800,800],[400,400],[200,200]],\"a\":[]}";
 
-    private readonly List<ImageDeliveryChannel> deliveryChannelsForImage =
-    [
-        new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Image,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
-        },
-
-        new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Thumbnails,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
-        }
-    ];
+    private readonly List<ImageDeliveryChannel> deliveryChannelsForImage;
 
     public ImageHandlingTests(ProtagonistAppFactory<Startup> factory, StorageFixture storageFixture)
     {
@@ -80,6 +67,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     .AddSingleton<TestProxyHandler>();
             })
             .CreateClient(new WebApplicationFactoryClientOptions {AllowAutoRedirect = false});
+
+        deliveryChannelsForImage = dbFixture.DbContext.GetImageDeliveryChannels();
         
         dbFixture.CleanUp();
     }

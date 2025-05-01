@@ -22,7 +22,7 @@ using IIIF3 = IIIF.Presentation.V3;
 namespace Orchestrator.Tests.Integration;
 
 /// <summary>
-/// Test of all iiif-manifest handling
+/// Tests iiif-manifest handling
 /// </summary>
 [Trait("Category", "Integration")]
 [Collection(DatabaseCollection.CollectionName)]
@@ -30,7 +30,6 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
 {
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
-    private JToken imageServices;
     private readonly List<ImageDeliveryChannel> imageDeliveryChannels;
 
     public ManifestHandlingTests(ProtagonistAppFactory<Startup> factory, DlcsDatabaseFixture databaseFixture)
@@ -45,22 +44,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             .WithConnectionString(dbFixture.ConnectionString)
             .CreateClient();
 
-        var thumbsPolicy = dbFixture.DbContext.DeliveryChannelPolicies.Single(d =>
-            d.Channel == AssetDeliveryChannels.Thumbnails && d.Customer == 99);
-
-        imageDeliveryChannels = new()
-        {
-            new ImageDeliveryChannel
-            {
-                Channel = AssetDeliveryChannels.Image,
-                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
-            },
-            new ImageDeliveryChannel
-            {
-                Channel = AssetDeliveryChannels.Thumbnails,
-                DeliveryChannelPolicyId = thumbsPolicy.Id,
-            }
-        };
+        imageDeliveryChannels = dbFixture.DbContext.GetImageDeliveryChannels();
         
         dbFixture.CleanUp();
     }
@@ -279,7 +263,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     }
     
     [Fact]
-    public async Task Get_V2ManifestForImage_ReturnsManifest_FromMetadata()
+    public async Task Get_V2ManifestForImage_ReturnsManifest_WithThumbsFromMetadata()
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
@@ -408,7 +392,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     }
 
     [Fact]
-    public async Task Get_V3ManifestForImage_ReturnsManifest_AssetMetadata()
+    public async Task Get_V3ManifestForImage_ReturnsManifest_WithAssetMetadata()
     {
         // Arrange
         const string defaultLanguage = "none"; 
@@ -753,7 +737,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         // Assert
         var jsonResponse = JObject.Parse(await response.Content.ReadAsStringAsync());
 
-        imageServices = jsonResponse.SelectToken("items[0].items[0].items[0].body.service");
+        var imageServices = jsonResponse.SelectToken("items[0].items[0].items[0].body.service");
         imageServices.Should().HaveCount(2);
             
         // Image2, non-canonical so Id has version in path

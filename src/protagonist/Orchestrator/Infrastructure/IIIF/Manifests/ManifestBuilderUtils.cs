@@ -19,6 +19,9 @@ namespace Orchestrator.Infrastructure.IIIF.Manifests;
 
 public interface IManifestBuilderUtils
 {
+    /// <summary>
+    /// Feature flag can control whether to rewrite asset-paths, in accordance to pathTemplate, or use native paths
+    /// </summary>
     bool UseNativeFormatForAssets { get; }
     
     Task<ImageSizeDetails> RetrieveThumbnails(Asset asset, CancellationToken cancellationToken);
