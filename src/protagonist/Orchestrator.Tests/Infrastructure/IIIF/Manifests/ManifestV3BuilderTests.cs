@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.IIIF.Manifests;
+using Test.Helpers;
 using Test.Helpers.Data;
 
 namespace Orchestrator.Tests.Infrastructure.IIIF.Manifests;
@@ -60,7 +61,7 @@ public class ManifestV3BuilderTests
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
         image.Id.Should().Be("https://dlcs.test/image-url/");
@@ -90,7 +91,7 @@ public class ManifestV3BuilderTests
         canvas.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
         image.Id.Should().Be("https://dlcs.test/image-url/");
@@ -123,7 +124,7 @@ public class ManifestV3BuilderTests
         rendering.Width.Should().Be(1500, "Width of origin");
         rendering.Height.Should().Be(1000, "Height of origin");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
         image.Id.Should().Be("https://dlcs.test/image-url/");
@@ -150,7 +151,7 @@ public class ManifestV3BuilderTests
         canvas.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
         image.Id.Should().Be("https://dlcs.test/thumbs-url/");
@@ -180,7 +181,7 @@ public class ManifestV3BuilderTests
         rendering.Width.Should().Be(1500, "Width of origin");
         rendering.Height.Should().Be(1000, "Height of origin");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
         image.Id.Should().Be("https://dlcs.test/thumbs-url/");
@@ -214,7 +215,7 @@ public class ManifestV3BuilderTests
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
-        var sound = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Sound;
+        var sound = canvas.GetCanvasPaintingBody<Sound>();
         sound.Duration.Should().Be(14666, "Duration of transcode");
     }
     
@@ -248,7 +249,7 @@ public class ManifestV3BuilderTests
         rendering.Duration.Should().Be(15000, "Duration of origin");
         rendering.Format.Should().Be("audio/wav", "Mediatype of origin");
         
-        var sound = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Sound;
+        var sound = canvas.GetCanvasPaintingBody<Sound>();
         sound.Duration.Should().Be(14666, "Duration of transcode");
     }
     
@@ -289,7 +290,7 @@ public class ManifestV3BuilderTests
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
-        var choice = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as PaintingChoice;
+        var choice = canvas.GetCanvasPaintingBody<PaintingChoice>();
         choice.Items.Should().HaveCount(2, "2 transcodes for video");
         var first = choice.Items[0].As<Video>();
         first.Duration.Should().Be(14666, "From first transcode");
@@ -345,7 +346,7 @@ public class ManifestV3BuilderTests
         rendering.Height.Should().Be(800, "Height of origin");
         rendering.Format.Should().Be("video/raw", "Mediatype of origin");
         
-        var choice = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as PaintingChoice;
+        var choice = canvas.GetCanvasPaintingBody<PaintingChoice>();
         choice.Items.Should().HaveCount(2, "2 transcodes for video");
         var first = choice.Items[0].As<Video>();
         first.Duration.Should().Be(14666, "From first transcode");
@@ -412,7 +413,7 @@ public class ManifestV3BuilderTests
         rendering.Height.Should().Be(1000, "Height of origin");
         rendering.Format.Should().Be("image/tiff", "Format of origin");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(1000, "Width of static placeholder");
         image.Height.Should().Be(1000, "Height of static placeholder");
         image.Format.Should().Be("image/png", "Type of static placeholder");
