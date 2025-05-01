@@ -70,41 +70,13 @@ public class ManifestBuilderUtils(
 
     public List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
         bool forPresentation2, List<Size> thumbnailSizes)
-    {
-        var services = new List<IService>();
-        if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V2))
-        {
-            var imageService = new ImageService2
-            {
-                Id = GetFullyQualifiedId(asset, customerPathElement, true, UseNativeFormatForAssets,
-                    global::IIIF.ImageApi.Version.V2),
-                Profile = ImageService2.Level0Profile,
-                Sizes = thumbnailSizes,
-                Context = ImageService2.Image2Context,
-            };
-
-            if (forPresentation2) imageService.Type = null; // '@Type' is not used in Presentation2
-
-            services.Add(imageService);
-        }
-
-        // NOTE - we never include ImageService3 on Presentation2 manifests
-        if (forPresentation2) return services;
-
-        if (orchestratorSettings.ImageServerConfig.VersionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V3))
-        {
-            services.Add(new ImageService3
-            {
-                Id = GetFullyQualifiedId(asset, customerPathElement, true, UseNativeFormatForAssets,
-                    global::IIIF.ImageApi.Version.V3),
-                Profile = ImageService3.Level0Profile,
-                Sizes = thumbnailSizes,
-                Context = ImageService3.Image3Context,
-            });
-        }
-
-        return services;
-    }
+        => GetImageServicesInternal(
+            asset,
+            customerPathElement,
+            forPresentation2,
+            true,
+            image2 => image2.Sizes = thumbnailSizes,
+            image3 => image3.Sizes = thumbnailSizes);
 
     public string GetFullQualifiedThumbPath(Asset asset, CustomerPathElement customerPathElement,
         List<Size> availableThumbs)
@@ -139,45 +111,26 @@ public class ManifestBuilderUtils(
     public List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement, bool forPresentation2,
         List<IService>? authServices)
     {
-        var versionPathTemplates = orchestratorSettings.ImageServerConfig.VersionPathTemplates;
-
-        var services = new List<IService>();
-        if (versionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V2))
-        {
-            var imageService = new ImageService2
+        var services  = GetImageServicesInternal(
+            asset,
+            customerPathElement,
+            forPresentation2,
+            true,
+            image2 =>
             {
-                Id = GetFullyQualifiedId(asset, customerPathElement, false, UseNativeFormatForAssets,
-                    global::IIIF.ImageApi.Version.V2),
-                Profile = ImageService2.Level2Profile,
-                Context = ImageService2.Image2Context,
-                Width = asset.Width ?? 0,
-                Height = asset.Height ?? 0,
-                Service = authServices,
-            };
-
-            // '@Type' is not used in Presentation2 embedded
-            if (forPresentation2) imageService.Type = null;
-
-            services.Add(imageService);
-        }
-
+                image2.Width = asset.Width ?? 0;
+                image2.Height = asset.Height ?? 0;
+                image2.Service = authServices;
+            },
+            image3 => {
+                image3.Width = asset.Width ?? 0;
+                image3.Height = asset.Height ?? 0;
+                image3.Service = authServices;
+            });
+        
         // NOTE - we never include ImageService3 on Presentation2 manifests
         if (forPresentation2) return services;
-
-        if (versionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V3))
-        {
-            services.Add(new ImageService3
-            {
-                Id = GetFullyQualifiedId(asset, customerPathElement, false, UseNativeFormatForAssets,
-                    global::IIIF.ImageApi.Version.V3),
-                Profile = ImageService3.Level2Profile,
-                Context = ImageService3.Image3Context,
-                Width = asset.Width ?? 0,
-                Height = asset.Height ?? 0,
-                Service = authServices,
-            });
-        }
-
+        
         // AuthServices are included on both the ImageService and the "Image" body. This allows viewers to see the
         // static image requires auth, as well as the ImageService(s) 
         if (!authServices.IsNullOrEmpty())
@@ -211,6 +164,51 @@ public class ManifestBuilderUtils(
     public bool ShouldAddThumbs(Asset asset, ImageSizeDetails thumbnailSizes) =>
         asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails) && !thumbnailSizes.OpenThumbnails.IsNullOrEmpty();
     
+    // Helper function - has shared logic for generating ImageServices for thumbs + images while taking delegates to
+    // customise
+    private List<IService> GetImageServicesInternal(Asset asset, CustomerPathElement customerPathElement,
+        bool forPresentation2, bool isThumb, Action<ImageService2> customiseImage2,
+        Action<ImageService3> customiseImage3)
+    {
+        var versionPathTemplates = orchestratorSettings.ImageServerConfig.VersionPathTemplates;
+        var services = new List<IService>();
+        if (versionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V2))
+        {
+            var image2 = new ImageService2
+            {
+                Id = GetFullyQualifiedId(asset, customerPathElement, isThumb, UseNativeFormatForAssets,
+                    global::IIIF.ImageApi.Version.V2),
+                Profile = ImageService2.Level2Profile,
+                Context = ImageService2.Image2Context,
+            };
+            customiseImage2(image2);
+
+            // '@Type' is not used in Presentation2 embedded
+            if (forPresentation2) image2.Type = null;
+
+            services.Add(image2);
+        }
+
+        // NOTE - we never include ImageService3 on Presentation2 manifests
+        if (forPresentation2) return services;
+
+        if (versionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V3))
+        {
+            var image3 = new ImageService3
+            {
+                Id = GetFullyQualifiedId(asset, customerPathElement, isThumb, UseNativeFormatForAssets,
+                    global::IIIF.ImageApi.Version.V3),
+                Profile = ImageService3.Level2Profile,
+                Context = ImageService3.Image3Context,
+            };
+            customiseImage3(image3);
+
+            services.Add(image3);
+        }
+
+        return services;
+    }
+    
     private string GetFullyQualifiedId(Asset asset, CustomerPathElement customerPathElement,
         bool isThumb, bool useNativeFormat, global::IIIF.ImageApi.Version imageApiVersion = global::IIIF.ImageApi.Version.Unknown)
     {
@@ -238,21 +236,15 @@ public class ManifestBuilderUtils(
 /// <summary>
 /// Class containing details of available thumbnail sizes
 /// </summary>
-public class ImageSizeDetails
+public class ImageSizeDetails(List<Size> openThumbnails, Size maxDerivativeSize)
 {
-    public ImageSizeDetails(List<Size> openThumbnails, Size maxDerivativeSize)
-    {
-        OpenThumbnails = openThumbnails;
-        MaxDerivativeSize = maxDerivativeSize;
-    }
-
     /// <summary>
     /// List of open available thumbnails
     /// </summary>
-    public List<Size> OpenThumbnails { get; }
+    public List<Size> OpenThumbnails { get; } = openThumbnails;
 
     /// <summary>
     /// The size of the largest derivative, according to thumbnail policy.
     /// </summary>
-    public Size MaxDerivativeSize { get; }
+    public Size MaxDerivativeSize { get; } = maxDerivativeSize;
 }
