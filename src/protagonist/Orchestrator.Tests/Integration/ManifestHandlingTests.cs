@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using DLCS.Model.Assets;
-using DLCS.Model.Policies;
 using IIIF.Auth.V2;
 using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
@@ -165,7 +164,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
             
         var path = $"iiif-manifest/v2/{id}";
@@ -192,7 +191,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
             
         var path = $"iiif-manifest/v2/{id}";
@@ -219,7 +218,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
             
         var path = $"iiif-manifest/v2/{id}";
@@ -244,7 +243,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
             
         var path = $"iiif-manifest/v2/{id}";
@@ -267,7 +266,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels)
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels)
             .WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
             
@@ -293,7 +292,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin")
+        await dbFixture.DbContext.Images.AddTestAsset(id)
             .WithTestDeliveryChannel(AssetDeliveryChannels.Image)
             .WithTestThumbnailMetadata();
         await dbFixture.DbContext.SaveChangesAsync();
@@ -568,7 +567,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 400,
-            origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+            imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
 
         var path = $"iiif-manifest/v2/{id}";
@@ -598,7 +597,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/{id}";
             
@@ -625,7 +624,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/v2/{id}";
         const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/presentation/2/context.json\"";
@@ -653,7 +652,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/{id}";
             
@@ -680,7 +679,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/{id}";
         const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
@@ -704,7 +703,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/{id}";
         const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
@@ -727,7 +726,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"iiif-manifest/{id}";
             
@@ -755,7 +754,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 400,
-            origin: "testorigin", imageDeliveryChannels: imageDeliveryChannels);
+            imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
 
         var path = $"iiif-manifest/v3/{id}";

@@ -22,8 +22,6 @@ using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Orchestrator.Settings;
 using IIIFAuth2 = IIIF.Auth.V2;
 
 namespace Orchestrator.Infrastructure.IIIF.Manifests;
