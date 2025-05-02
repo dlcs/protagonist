@@ -31,12 +31,6 @@ public class PathTemplateOptions
     public Dictionary<string, PathTemplate> Overrides { get; init; } = new();
 
     /// <summary>
-    /// "Overrides" dictionary as JSON blob, will be used to populate Overrides
-    /// Added as convenience for setting per-env settings using string-based config settings like ParameterStore
-    /// </summary>
-    public string? OverridesAsJson { get; init; }
-
-    /// <summary>
     /// Get <see cref="PathTemplate"/> for host. 
     /// </summary>
     /// <param name="host">Host to get template path for.</param>
