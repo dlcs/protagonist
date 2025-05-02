@@ -139,10 +139,12 @@ public class ManifestRewriteEnabledTests : IClassFixture<ProtagonistAppFactory<S
     [Theory]
     [InlineData("my-proxy.com", "1", "/const_value/99/|asset|", "/const_value/v2/99/|asset|")]
     [InlineData("versioned.com", "2", "/th/_|asset|", "/th/v2_|asset|")]
-    [InlineData("non-versioned.com", "3", "/thumbs/99/|asset|", "/thumbs/99/|asset|")]
-    public async Task Get_V3ManifestForImage_ReturnsManifest_PathsRewritten_ForThumb(string hostname, string postfix,
+    public async Task Get_V3ManifestForImage_ReturnsManifest_PathsRewritten_ForThumb_IfTemplateVersioned(string hostname, string postfix,
         string expectedThumb, string expectedService)
     {
+        // See https://github.com/dlcs/protagonist/issues/983 - if pathTemplate has {version} then all ImageService
+        // paths are rewritten to match that format
+        
         // Arrange
         var id = AssetIdGenerator.GetAssetId(assetPostfix: postfix);
         expectedThumb = $"http://{hostname}{expectedThumb.Replace("|asset|", id.Asset)}";
@@ -184,17 +186,19 @@ public class ManifestRewriteEnabledTests : IClassFixture<ProtagonistAppFactory<S
             image3.Id.Should().Be(expectedService3, because);
         }
     }
-
+    
     [Theory]
     [InlineData("my-proxy.com", "1", "/const_value/99/|asset|", "/const_value/v2/99/|asset|")]
     [InlineData("versioned.com", "2", "/image/_|asset|", "/image/v2_|asset|")]
-    [InlineData("non-versioned.com", "3", "/image/99/|asset|", "/image/99/|asset|")]
-    public async Task Get_V3ManifestForImage_ReturnsManifest_PathsRewritten_ForImage(string hostname, string postfix,
-        string expectedThumb, string expectedService)
+    public async Task Get_V3ManifestForImage_ReturnsManifest_PathsRewritten_ForImage_IfTemplateVersioned(string hostname, string postfix,
+        string expectedImg, string expectedService)
     {
+        // See https://github.com/dlcs/protagonist/issues/983 - if pathTemplate has {version} then all ImageService
+        // paths are rewritten to match that format
+        
         // Arrange
         var id = AssetIdGenerator.GetAssetId(assetPostfix: postfix);
-        expectedThumb = $"http://{hostname}{expectedThumb.Replace("|asset|", id.Asset)}";
+        expectedImg = $"http://{hostname}{expectedImg.Replace("|asset|", id.Asset)}";
         var (expectedService2, expectedService3) = GetImageVersionSpecific(hostname, expectedService, id);
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
@@ -216,7 +220,7 @@ public class ManifestRewriteEnabledTests : IClassFixture<ProtagonistAppFactory<S
         canvas.Id.Should().Be($"http://{hostname}/iiif-img/{id}/canvas/c/1", "Canvas id never changed");
 
         var imageResource = canvas.GetCanvasPaintingBody<Image>();
-        imageResource.Id.Should().Be($"{expectedThumb}/full/1024,1024/0/default.jpg", "id is jpeg");
+        imageResource.Id.Should().Be($"{expectedImg}/full/1024,1024/0/default.jpg", "id is jpeg");
         
         var image2 = imageResource.GetService<ImageService2>();
         image2.Id.Should().Be(expectedService2, "ImageService2 is image service with version");
@@ -224,6 +228,98 @@ public class ManifestRewriteEnabledTests : IClassFixture<ProtagonistAppFactory<S
         // imageService3 id will be path to a image service. This is canonical so doesn't contain version
         var image3 = imageResource.GetService<ImageService3>();
         image3.Id.Should().Be(expectedService3, "ImageService3 is image service with version");
+    }
+    
+    [Theory]
+    [InlineData("non-versioned.com", "1", "/thumbs/99/|asset|", "/thumbs/99/|asset|")]
+    public async Task Get_V3ManifestForImage_ReturnsManifest_PathsRewritten_ForThumb_NotVersioned(string hostname, string postfix,
+        string expectedThumb, string expectedService)
+    {
+        // See https://github.com/dlcs/protagonist/issues/983 - if pathTemplate doesn't have {version} then all
+        // only the default/canonical ImageService (in this case v3) is rewritten to match that format, the rest use
+        // canonical
+        
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId(assetPostfix: postfix);
+        expectedThumb = $"http://{hostname}{expectedThumb.Replace("|asset|", id.Asset)}";
+        var (_, expectedService3) = GetImageVersionSpecific(hostname, expectedService, id);
+        var expectedService2 = $"http://{hostname}/thumbs/v2/{id}";
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        var path = $"iiif-manifest/v3/{id}";
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Add("Host", hostname);
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+
+        manifest.Id.Should().Be($"http://{hostname}/iiif-manifest/v3/{id}", "Manifest id never changed");
+        
+        var canvas = manifest.Items.Single();
+        canvas.Id.Should().Be($"http://{hostname}/iiif-img/{id}/canvas/c/1", "Canvas id never changed");
+        ValidateThumbnail(canvas.Thumbnail, "Canvas thumbnail rewritten");
+        ValidateThumbnail(manifest.Thumbnail, "Manifest thumbnail rewritten");
+
+        void ValidateThumbnail(List<ExternalResource> thumbnails, string because)
+        {
+            var thumbnail = thumbnails.Single();
+            
+            // thumbnail.id will be path to a jpeg
+            thumbnail.Id.Should().Be($"{expectedThumb}/full/200,200/0/default.jpg", because);
+
+            // imageService2 id will be path to a image service. This is not canonical so contains version
+            var image2 = thumbnail.GetService<ImageService2>();
+            image2.Id.Should().Be(expectedService2, because);
+            
+            // imageService3 id will be path to a image service. This is canonical so doesn't contain version
+            var image3 = thumbnail.GetService<ImageService3>();
+            image3.Id.Should().Be(expectedService3, because);
+        }
+    }
+    
+    [Theory]
+    [InlineData("non-versioned.com", "3", "/image/99/|asset|", "/image/99/|asset|")]
+    public async Task Get_V3ManifestForImage_ReturnsManifest_PathsRewritten_ForImage_NotVersioned(string hostname, string postfix,
+        string expectedImg, string expectedService)
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId(assetPostfix: postfix);
+        expectedImg = $"http://{hostname}{expectedImg.Replace("|asset|", id.Asset)}";
+        var (_, expectedService3) = GetImageVersionSpecific(hostname, expectedService, id);
+        var expectedService2 = $"http://{hostname}/iiif-img/v2/{id}";
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels);
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        var path = $"iiif-manifest/v3/{id}";
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Add("Host", hostname);
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        manifest.Id.Should().Be($"http://{hostname}/iiif-manifest/v3/{id}", "Manifest id never changed");
+        
+        var canvas = manifest.Items.Single();
+        canvas.Id.Should().Be($"http://{hostname}/iiif-img/{id}/canvas/c/1", "Canvas id never changed");
+
+        var imageResource = canvas.GetCanvasPaintingBody<Image>();
+        imageResource.Id.Should().Be($"{expectedImg}/full/1024,1024/0/default.jpg", "id is jpeg");
+        
+        var image2 = imageResource.GetService<ImageService2>();
+        image2.Id.Should().Be(expectedService2, "ImageService2 is canonical path");
+            
+        // imageService3 id will be path to a image service. This is canonical so doesn't contain version
+        var image3 = imageResource.GetService<ImageService3>();
+        image3.Id.Should().Be(expectedService3, "ImageService3 is rewritten as canonical path");
     }
     
     [Theory]

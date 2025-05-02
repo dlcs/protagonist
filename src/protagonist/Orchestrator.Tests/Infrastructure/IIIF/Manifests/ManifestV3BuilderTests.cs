@@ -49,7 +49,7 @@ public class ManifestV3BuilderTests
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
             .Returns("https://dlcs.test/image-url/");
         var imageServices = new List<IService> { new ImageService3 { Id = "test-service" } };
-        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, false, null))
+        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, null))
             .Returns(imageServices);
 
         var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
@@ -77,7 +77,7 @@ public class ManifestV3BuilderTests
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
             .Returns("https://dlcs.test/image-url/");
         var imageServices = new List<IService> { new ImageService3 { Id = "test-service" } };
-        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, false, null))
+        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, null))
             .Returns(imageServices);
         A.CallTo(() => builderUtils.ShouldAddThumbs(asset, A<ImageSizeDetails>._)).Returns(true);
 
@@ -107,7 +107,7 @@ public class ManifestV3BuilderTests
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
             .Returns("https://dlcs.test/image-url/");
         var imageServices = new List<IService> { new ImageService3 { Id = "test-service" } };
-        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, false, null))
+        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, null))
             .Returns(imageServices);
         A.CallTo(() => builderUtils.ShouldAddThumbs(asset, A<ImageSizeDetails>._)).Returns(true);
 

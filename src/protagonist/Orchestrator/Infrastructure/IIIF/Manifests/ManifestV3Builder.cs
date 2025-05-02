@@ -23,25 +23,41 @@ using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Logging;
 using IIIFAuth2 = IIIF.Auth.V2;
+using PresentationApiVersion = IIIF.Presentation.Version;
 
 namespace Orchestrator.Infrastructure.IIIF.Manifests;
 
 /// <summary>
 /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v3 manifest
 /// </summary>
-public class ManifestV3Builder(
-    IManifestBuilderUtils builderUtils,
-    IAssetPathGenerator assetPathGenerator,
-    IIIIFAuthBuilder authBuilder,
-    ILogger<ManifestV3Builder> logger)
-    : IBuildManifests<Manifest>
+public class ManifestV3Builder : ManifestBuilderBase<Manifest>
 {
+    private readonly IAssetPathGenerator assetPathGenerator;
+    private readonly IIIIFAuthBuilder authBuilder;
+    private readonly ILogger<ManifestV3Builder> logger;
+
+    /// <summary>
+    /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v3 manifest
+    /// </summary>
+    public ManifestV3Builder(IManifestBuilderUtils builderUtils,
+        IAssetPathGenerator assetPathGenerator,
+        IIIIFAuthBuilder authBuilder,
+        ILogger<ManifestV3Builder> logger) : base(builderUtils)
+    {
+        this.assetPathGenerator = assetPathGenerator;
+        this.authBuilder = authBuilder;
+        this.logger = logger;
+    }
+    
+    protected override PresentationApiVersion PresentationApiVersion => PresentationApiVersion.V3;
+
     private const string ManifestLanguage = "en";
     private const string CanvasLanguage = "none";
 
-    public async Task<Manifest> BuildManifest(string manifestId, string label, List<Asset> assets,
+    protected override async Task<Manifest> BuildManifestImpl(string manifestId, string label, List<Asset> assets,
         CustomerPathElement customerPathElement, ManifestType manifestType, CancellationToken cancellationToken)
     {
+        BuilderUtils.SetPresentationVersion(PresentationApiVersion.V3);
         var probeServices = await GetProbeServices(assets, cancellationToken);
         var anyAssetRequireAuth = !probeServices.IsNullOrEmpty();
 
@@ -121,7 +137,7 @@ public class ManifestV3Builder(
         // The basic properties of a canvas are identical regardless of how the asset is available
         var canvas = new Canvas
         {
-            Id = builderUtils.GetCanvasId(asset, customerPathElement, canvasIndex),
+            Id = BuilderUtils.GetCanvasId(asset, customerPathElement, canvasIndex),
             Label = new LanguageMap("en", $"Canvas {canvasIndex}"),
             Metadata = ManifestBuilderUtils.GetCanvasMetadata(asset).ToV3Metadata(CanvasLanguage),
         };
@@ -202,7 +218,7 @@ public class ManifestV3Builder(
         CancellationToken cancellationToken)
     {
         logger.LogTrace("{CanvasId} is image, processing", canvas.Id);
-        var thumbnailSizes = await builderUtils.RetrieveThumbnails(asset, cancellationToken);
+        var thumbnailSizes = await BuilderUtils.RetrieveThumbnails(asset, cancellationToken);
 
         var canvasId = canvas.Id;
         canvas.Width = asset.Width;
@@ -220,26 +236,25 @@ public class ManifestV3Builder(
                 Id = $"{canvasId}/page/image",
                 Body = new Image
                 {
-                    Id = builderUtils.GetFullQualifiedImagePath(asset, customerPathElement,
+                    Id = BuilderUtils.GetFullQualifiedImagePath(asset, customerPathElement,
                         thumbnailSizes.MaxDerivativeSize, renderThumbsPath),
                     Format = "image/jpeg",
                     Width = thumbnailSizes.MaxDerivativeSize.Width,
                     Height = thumbnailSizes.MaxDerivativeSize.Height,
                     Service = asset.HasDeliveryChannel(AssetDeliveryChannels.Image)
-                        ? builderUtils.GetImageServices(asset, customerPathElement, false, authServices)
+                        ? BuilderUtils.GetImageServices(asset, customerPathElement, authServices)
                         : null,
                 },
             }.AsListOf<IAnnotation>(),
         };
 
-        if (!builderUtils.ShouldAddThumbs(asset, thumbnailSizes)) return (annotationPage, null);
+        if (!BuilderUtils.ShouldAddThumbs(asset, thumbnailSizes)) return (annotationPage, null);
 
         var thumbnail = new Image
         {
-            Id = builderUtils.GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
+            Id = BuilderUtils.GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
             Format = "image/jpeg",
-            Service = builderUtils.GetImageServiceForThumbnail(asset, customerPathElement, false,
-                thumbnailSizes.OpenThumbnails)
+            Service = BuilderUtils.GetImageServiceForThumbnail(asset, customerPathElement, thumbnailSizes.OpenThumbnails)
         };
         return (annotationPage, thumbnail);
     }
@@ -399,7 +414,7 @@ public class ManifestV3Builder(
             RoutePrefix = AssetDeliveryChannels.Timebased,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(transcodeRequest, builderUtils.UseNativeFormatForAssets, false);
+        return assetPathGenerator.GetFullPathForRequest(transcodeRequest, BuilderUtils.UseNativeFormatForAssets, false);
     }
     
     private string GetFilePath(Asset asset, CustomerPathElement customerPathElement)
@@ -411,7 +426,7 @@ public class ManifestV3Builder(
             RoutePrefix = AssetDeliveryChannels.File,
             CustomerPathValue = customerPathElement.Id.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(fileRequest, builderUtils.UseNativeFormatForAssets, false);
+        return assetPathGenerator.GetFullPathForRequest(fileRequest, BuilderUtils.UseNativeFormatForAssets, false);
     }
     
     private async Task<Dictionary<AssetId, AuthProbeService2>?> GetProbeServices(IReadOnlyCollection<Asset> assets,

@@ -12,23 +12,26 @@ using IIIF.Presentation;
 using IIIF.Presentation.V2;
 using IIIF.Presentation.V2.Annotation;
 using IIIF.Presentation.V2.Strings;
+using PresentationApiVersion = IIIF.Presentation.Version;
 
 namespace Orchestrator.Infrastructure.IIIF.Manifests;
 
 /// <summary>
 /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v2 manifest
 /// </summary>
-public class ManifestV2Builder : IBuildManifests<Manifest>
+public class ManifestV2Builder : ManifestBuilderBase<Manifest>
 {
-    private readonly IManifestBuilderUtils builderUtils;
-
-    public ManifestV2Builder(IManifestBuilderUtils builderUtils)
+    /// <summary>
+    /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v2 manifest
+    /// </summary>
+    public ManifestV2Builder(IManifestBuilderUtils builderUtils) : base(builderUtils)
     {
-        this.builderUtils = builderUtils;
     }
 
-    public async Task<Manifest> BuildManifest(string manifestId, string label, List<Asset> assets,
-        CustomerPathElement customerPathElement, ManifestType manifestType, CancellationToken cancellationToken)
+    protected override PresentationApiVersion PresentationApiVersion => PresentationApiVersion.V2;
+
+    protected override async Task<Manifest> BuildManifestImpl(string manifestId, string label, List<Asset> assets, CustomerPathElement customerPathElement,
+        ManifestType manifestType, CancellationToken cancellationToken)
     {
         var manifest = new Manifest
         {
@@ -72,8 +75,8 @@ public class ManifestV2Builder : IBuildManifests<Manifest>
         var canvases = new List<Canvas>(results.Count);
         foreach (var asset in results)
         {
-            var canvasId = builderUtils.GetCanvasId(asset, customerPathElement, ++counter);
-            var thumbnailSizes = await builderUtils.RetrieveThumbnails(asset, cancellationToken);
+            var canvasId = BuilderUtils.GetCanvasId(asset, customerPathElement, ++counter);
+            var thumbnailSizes = await BuilderUtils.RetrieveThumbnails(asset, cancellationToken);
 
             var canvas = new Canvas
             {
@@ -89,22 +92,22 @@ public class ManifestV2Builder : IBuildManifests<Manifest>
                     Resource = asset.HasDeliveryChannel(AssetDeliveryChannels.Image)
                         ? new ImageResource
                         {
-                            Id = builderUtils.GetFullQualifiedImagePath(asset, customerPathElement,
+                            Id = BuilderUtils.GetFullQualifiedImagePath(asset, customerPathElement,
                                 thumbnailSizes.MaxDerivativeSize, false),
                             Width = thumbnailSizes.MaxDerivativeSize.Width,
                             Height = thumbnailSizes.MaxDerivativeSize.Height,
-                            Service = builderUtils.GetImageServices(asset, customerPathElement, true, null)
+                            Service = BuilderUtils.GetImageServices(asset, customerPathElement, null)
                         }
                         : null,
                 }.AsList()
             };
 
-            if (builderUtils.ShouldAddThumbs(asset, thumbnailSizes))
+            if (BuilderUtils.ShouldAddThumbs(asset, thumbnailSizes))
             {
                 canvas.Thumbnail = new Thumbnail
                 {
-                    Id = builderUtils.GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
-                    Service = builderUtils.GetImageServiceForThumbnail(asset, customerPathElement, true,
+                    Id = BuilderUtils.GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
+                    Service = BuilderUtils.GetImageServiceForThumbnail(asset, customerPathElement,
                         thumbnailSizes.OpenThumbnails)
                 }.AsList();
             }

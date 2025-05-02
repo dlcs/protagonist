@@ -14,6 +14,8 @@ using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
 using Microsoft.Extensions.Options;
 using Orchestrator.Settings;
+using ImageApiVersion = IIIF.ImageApi.Version;
+using PresentationApiVersion = IIIF.Presentation.Version;
 
 namespace Orchestrator.Infrastructure.IIIF.Manifests;
 
@@ -23,11 +25,16 @@ public interface IManifestBuilderUtils
     /// Feature flag can control whether to rewrite asset-paths, in accordance to pathTemplate, or use native paths
     /// </summary>
     bool UseNativeFormatForAssets { get; }
-    
+
+    /// <summary>
+    /// Manifest presentation version  
+    /// </summary>
+    public void SetPresentationVersion(PresentationApiVersion presentationApiVersion);
+
     Task<ImageSizeDetails> RetrieveThumbnails(Asset asset, CancellationToken cancellationToken);
 
     List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
-        bool forPresentation2, List<Size> thumbnailSizes);
+        List<Size> thumbnailSizes);
 
     string GetFullQualifiedThumbPath(Asset asset, CustomerPathElement customerPathElement,
         List<Size> availableThumbs);
@@ -37,9 +44,8 @@ public interface IManifestBuilderUtils
 
     string GetCanvasId(Asset asset, CustomerPathElement customerPathElement, int index);
 
-    List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement, bool forPresentation2,
-        List<IService>? authServices);
-    
+    List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement, List<IService>? authServices);
+
     bool ShouldAddThumbs(Asset asset, ImageSizeDetails thumbnailSizes);
 }
 
@@ -53,8 +59,12 @@ public class ManifestBuilderUtils(
     : IManifestBuilderUtils
 {
     private readonly OrchestratorSettings orchestratorSettings = orchestratorSettings.Value;
-    
+    private PresentationApiVersion presentationVersion = orchestratorSettings.Value.DefaultIIIFPresentationVersion;
+
     public bool UseNativeFormatForAssets { get; } = !orchestratorSettings.Value.RewriteAssetPathsOnManifests;
+
+    public void SetPresentationVersion(PresentationApiVersion presentationApiVersion)
+        => presentationVersion = presentationApiVersion;
 
     public async Task<ImageSizeDetails> RetrieveThumbnails(Asset asset, CancellationToken cancellationToken)
     {
@@ -69,11 +79,10 @@ public class ManifestBuilderUtils(
     }
 
     public List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
-        bool forPresentation2, List<Size> thumbnailSizes)
+        List<Size> thumbnailSizes)
         => GetImageServicesInternal(
             asset,
             customerPathElement,
-            forPresentation2,
             true,
             image2 => image2.Sizes = thumbnailSizes,
             image3 => image3.Sizes = thumbnailSizes);
@@ -108,14 +117,13 @@ public class ManifestBuilderUtils(
         return string.Concat(fullyQualifiedImageId, "/canvas/c/", index);
     }
 
-    public List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement, bool forPresentation2,
-        List<IService>? authServices)
+    public List<IService> GetImageServices(Asset asset, CustomerPathElement customerPathElement, List<IService>? authServices)
     {
+        var forPresentation2 = presentationVersion == PresentationApiVersion.V2;
         var services  = GetImageServicesInternal(
             asset,
             customerPathElement,
-            forPresentation2,
-            true,
+            false,
             image2 =>
             {
                 image2.Width = asset.Width ?? 0;
@@ -165,19 +173,19 @@ public class ManifestBuilderUtils(
         asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails) && !thumbnailSizes.OpenThumbnails.IsNullOrEmpty();
     
     // Helper function - has shared logic for generating ImageServices for thumbs + images while taking delegates to
-    // customise
+    // customise depending on use
     private List<IService> GetImageServicesInternal(Asset asset, CustomerPathElement customerPathElement,
-        bool forPresentation2, bool isThumb, Action<ImageService2> customiseImage2,
-        Action<ImageService3> customiseImage3)
+        bool isThumb, Action<ImageService2> customiseImage2, Action<ImageService3> customiseImage3)
     {
+        var forPresentation2 = presentationVersion == PresentationApiVersion.V2;
         var versionPathTemplates = orchestratorSettings.ImageServerConfig.VersionPathTemplates;
         var services = new List<IService>();
-        if (versionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V2))
+        if (versionPathTemplates.ContainsKey(ImageApiVersion.V2))
         {
             var image2 = new ImageService2
             {
                 Id = GetFullyQualifiedId(asset, customerPathElement, isThumb, UseNativeFormatForAssets,
-                    global::IIIF.ImageApi.Version.V2),
+                    ImageApiVersion.V2),
                 Profile = ImageService2.Level2Profile,
                 Context = ImageService2.Image2Context,
             };
@@ -192,12 +200,12 @@ public class ManifestBuilderUtils(
         // NOTE - we never include ImageService3 on Presentation2 manifests
         if (forPresentation2) return services;
 
-        if (versionPathTemplates.ContainsKey(global::IIIF.ImageApi.Version.V3))
+        if (versionPathTemplates.ContainsKey(ImageApiVersion.V3))
         {
             var image3 = new ImageService3
             {
                 Id = GetFullyQualifiedId(asset, customerPathElement, isThumb, UseNativeFormatForAssets,
-                    global::IIIF.ImageApi.Version.V3),
+                    ImageApiVersion.V3),
                 Profile = ImageService3.Level2Profile,
                 Context = ImageService3.Image3Context,
             };
@@ -210,12 +218,23 @@ public class ManifestBuilderUtils(
     }
     
     private string GetFullyQualifiedId(Asset asset, CustomerPathElement customerPathElement,
-        bool isThumb, bool useNativeFormat, global::IIIF.ImageApi.Version imageApiVersion = global::IIIF.ImageApi.Version.Unknown)
+        bool isThumb, bool useNativeFormat, ImageApiVersion imageApiVersion = ImageApiVersion.Unknown)
     {
-        var versionPart= imageApiVersion == orchestratorSettings.DefaultIIIFImageVersion ||
-                         imageApiVersion == global::IIIF.ImageApi.Version.Unknown
+        var versionIsCanonical = imageApiVersion == orchestratorSettings.DefaultIIIFImageVersion;
+        
+        // Get the version slug, this will be "" for the Canonical path, or if this is not for an ImageApi request
+        var versionPart= versionIsCanonical || imageApiVersion == ImageApiVersion.Unknown
             ? string.Empty
             : $"/{imageApiVersion.ToString().ToLower()}";
+
+        if (!useNativeFormat && !versionIsCanonical && presentationVersion != PresentationApiVersion.V2 &&
+            !assetPathGenerator.PathHasVersion())
+        {
+            // If non-native format, this isn't the canonical version, it's not for IIIF P2 (as this only has image2)
+            // AND there is no {version} slug in path template, then we want to default to nativeFormat.
+            // see https://github.com/dlcs/protagonist/issues/983
+            useNativeFormat = true;
+        }
 
         var routePrefix = isThumb
             ? AssetDeliveryChannels.Thumbnails
