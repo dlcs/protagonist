@@ -27,6 +27,13 @@ public class ConfigDrivenAssetPathGenerator(
         bool includeQueryParams = true)
         => GetForPath(assetRequest, true, useNativeFormat, includeQueryParams);
 
+    public bool PathHasVersion()
+    {
+        var request = httpContextAccessor.SafeHttpContext().Request;
+        var template = pathTemplateOptions.GetPathTemplateForHost(request.Host.Value);
+        return template.Path.Contains(DlcsPathHelpers.Replacements.Version);
+    }
+
     private string GetForPath(IBasicPathElements assetRequest, bool fullRequest, bool useNativeFormat,
         bool includeQueryParams)
         => GetPathForRequestInternal(
@@ -40,10 +47,9 @@ public class ConfigDrivenAssetPathGenerator(
         bool fullRequest, bool useNativeFormat, bool includeQueryParams)
     {
         var request = httpContextAccessor.SafeHttpContext().Request;
-        var host = request.Host.Value;
         var template = useNativeFormat
             ? PathTemplateOptions.DefaultPathTemplate
-            : pathTemplateOptions.GetPathTemplateForHost(host);
+            : pathTemplateOptions.GetPathTemplateForHost(request.Host.Value);
 
         var path = pathGenerator(assetRequest, template);
 

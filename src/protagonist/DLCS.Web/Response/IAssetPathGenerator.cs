@@ -32,4 +32,9 @@ public interface IAssetPathGenerator
     /// <param name="includeQueryParams">If true, query params are included in path. Else they are omitted</param>
     string GetFullPathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false,
         bool includeQueryParams = true);
+
+    /// <summary>
+    /// Check if the path template for current host contains {version} replacement slug
+    /// </summary>
+    bool PathHasVersion();
 }

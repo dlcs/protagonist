@@ -297,6 +297,20 @@ public class ConfigDrivenAssetPathGeneratorTests
         actual.Should().Be(expected);
     }
 
+    [Fact]
+    public void PathHasVersion_True_ForFallbackPath() 
+        => GetSut("default.com").PathHasVersion().Should().BeTrue("Default native path contains {version}");
+
+    [Fact]
+    public void PathHasVersion_True_IfHostSpecificHasVersion()
+        => GetSut("versioned.example.com").PathHasVersion().Should().BeTrue("Host template contains {version}");
+    
+    [Theory]
+    [InlineData("test.example.com")]
+    [InlineData("other.example.com")]
+    public void PathHasVersion_False_IfHostSpecificHasNoVersion(string hostname) 
+        => GetSut(hostname).PathHasVersion().Should().BeFalse("Host template contains {version}");
+
     private static ConfigDrivenAssetPathGenerator GetSut(string host, Action<HttpRequest> requestModifier = null)
     {
         var context = new DefaultHttpContext();
@@ -318,7 +332,8 @@ public class ConfigDrivenAssetPathGeneratorTests
                     {
                         ["iiif-img"] = "img",
                     }
-                }
+                },
+                ["versioned.example.com"] = new() { Path = "/{prefix}/{version}_{assetPath}" },
             }
         });
 
