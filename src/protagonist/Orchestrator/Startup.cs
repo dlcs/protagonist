@@ -84,8 +84,7 @@ public class Startup
             .AddCorrelationIdHeaderPropagation()
             .AddInfoJsonClient()
             .AddIIIFBuilding()
-            .AddIIIFAuth(orchestratorSettings)
-            .HandlePathTemplates();
+            .AddIIIFAuth(orchestratorSettings);
         
         // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
         services.Configure<ForwardedHeadersOptions>(opts =>

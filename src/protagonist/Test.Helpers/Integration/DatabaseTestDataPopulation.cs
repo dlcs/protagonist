@@ -207,18 +207,6 @@ public static class DatabaseTestDataPopulation
             TotalSizeOfThumbnails = sizeOfThumbs
         });
 
-    public static ValueTask<EntityEntry<AssetApplicationMetadata>> AddTestAssetApplicationMetadata(
-        this DbSet<AssetApplicationMetadata> assetApplicationMetadata, AssetId assetId,
-        string metadataType, string metadataValue)
-        => assetApplicationMetadata.AddAsync(new AssetApplicationMetadata()
-        {
-            AssetId = assetId,
-            MetadataType = metadataType,
-            MetadataValue = metadataValue,
-            Created = DateTime.UtcNow,
-            Modified = DateTime.UtcNow
-        });
-
     public static ValueTask<EntityEntry<Asset>> WithTestThumbnailMetadata(
         this ValueTask<EntityEntry<Asset>> asset,
         string metadataValue = "{\"a\": [], \"o\": [[769,1024],[300,400],[150,200],[75,100]]}")
@@ -232,7 +220,7 @@ public static class DatabaseTestDataPopulation
         string deliveryChannel,
         int? policyId = null)
     {
-        asset.Result.Entity.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+        asset.Result.Entity.ImageDeliveryChannels.Add(new ImageDeliveryChannel
         {
             Channel = deliveryChannel,
             DeliveryChannelPolicyId = policyId ?? deliveryChannel switch

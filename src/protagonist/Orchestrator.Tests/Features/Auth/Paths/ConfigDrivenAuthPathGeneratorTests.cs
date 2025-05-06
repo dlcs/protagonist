@@ -84,10 +84,10 @@ public class ConfigDrivenAuthPathGeneratorTests
             {
                 AuthPathRules = new PathTemplateOptions
                 {
-                    Default = "/auth/{customer}/{behaviour}",
-                    Overrides = new Dictionary<string, string>
+                    Default = new PathTemplate { Path = "/auth/{customer}/{behaviour}" },
+                    Overrides = new Dictionary<string, PathTemplate>
                     {
-                        ["test.example.com"] = "/authentication_{customer}/{behaviour}"
+                        ["test.example.com"] = new() { Path = "/authentication_{customer}/{behaviour}" }
                     }
                 },
                 Auth2PathRules = new TypedPathTemplateOptions

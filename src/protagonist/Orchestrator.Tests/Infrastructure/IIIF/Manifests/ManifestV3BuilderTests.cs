@@ -12,8 +12,10 @@ using IIIF.ImageApi.V3;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.IIIF.Manifests;
+using Test.Helpers;
 using Test.Helpers.Data;
 
 namespace Orchestrator.Tests.Infrastructure.IIIF.Manifests;
@@ -47,7 +49,7 @@ public class ManifestV3BuilderTests
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
             .Returns("https://dlcs.test/image-url/");
         var imageServices = new List<IService> { new ImageService3 { Id = "test-service" } };
-        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, false, null))
+        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, null))
             .Returns(imageServices);
 
         var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
@@ -59,7 +61,7 @@ public class ManifestV3BuilderTests
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
         image.Id.Should().Be("https://dlcs.test/image-url/");
@@ -69,13 +71,13 @@ public class ManifestV3BuilderTests
     [Fact]
     public async Task BuildManifest_ImageThumb()
     {
-        var asset = GetImageAsset("iiif-img", "thumbs");
+        var asset = GetImageAsset("iiif-img,thumbs");
         
         var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
             .Returns("https://dlcs.test/image-url/");
         var imageServices = new List<IService> { new ImageService3 { Id = "test-service" } };
-        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, false, null))
+        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, null))
             .Returns(imageServices);
         A.CallTo(() => builderUtils.ShouldAddThumbs(asset, A<ImageSizeDetails>._)).Returns(true);
 
@@ -89,7 +91,7 @@ public class ManifestV3BuilderTests
         canvas.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
         image.Id.Should().Be("https://dlcs.test/image-url/");
@@ -99,13 +101,13 @@ public class ManifestV3BuilderTests
     [Fact]
     public async Task BuildManifest_ImageThumbFile()
     {
-        var asset = GetImageAsset("iiif-img", "thumbs", "file");
+        var asset = GetImageAsset("iiif-img,thumbs,file");
         
         var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
             .Returns("https://dlcs.test/image-url/");
         var imageServices = new List<IService> { new ImageService3 { Id = "test-service" } };
-        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, false, null))
+        A.CallTo(() => builderUtils.GetImageServices(asset, pathElement, null))
             .Returns(imageServices);
         A.CallTo(() => builderUtils.ShouldAddThumbs(asset, A<ImageSizeDetails>._)).Returns(true);
 
@@ -122,7 +124,7 @@ public class ManifestV3BuilderTests
         rendering.Width.Should().Be(1500, "Width of origin");
         rendering.Height.Should().Be(1000, "Height of origin");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
         image.Id.Should().Be("https://dlcs.test/image-url/");
@@ -149,7 +151,7 @@ public class ManifestV3BuilderTests
         canvas.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
         image.Id.Should().Be("https://dlcs.test/thumbs-url/");
@@ -159,7 +161,7 @@ public class ManifestV3BuilderTests
     [Fact]
     public async Task BuildManifest_ThumbFile()
     {
-        var asset = GetImageAsset("thumbs", "file");
+        var asset = GetImageAsset("thumbs,file");
         
         var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, true))
@@ -179,7 +181,7 @@ public class ManifestV3BuilderTests
         rendering.Width.Should().Be(1500, "Width of origin");
         rendering.Height.Should().Be(1000, "Height of origin");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(300, "Width of largest derivative");
         image.Height.Should().Be(200, "Height of largest derivative");
         image.Id.Should().Be("https://dlcs.test/thumbs-url/");
@@ -194,10 +196,7 @@ public class ManifestV3BuilderTests
             Id = AssetIdGenerator.GetAssetId(),
             MediaType = "audio/wav",
             Duration = 15000,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new() { Channel = "iiif-av" }
-            }
+            ImageDeliveryChannels = "iiif-av".GenerateDeliveryChannels()
         }.WithTestTranscodeMetadata(new AVTranscode
         {
             Duration = 14666, MediaType = "audio/mp3",
@@ -216,7 +215,7 @@ public class ManifestV3BuilderTests
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
-        var sound = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Sound;
+        var sound = canvas.GetCanvasPaintingBody<Sound>();
         sound.Duration.Should().Be(14666, "Duration of transcode");
     }
     
@@ -228,10 +227,7 @@ public class ManifestV3BuilderTests
             Id = AssetIdGenerator.GetAssetId(),
             MediaType = "audio/wav",
             Duration = 15000,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new() { Channel = "iiif-av" }, new() { Channel = "file" }
-            }
+            ImageDeliveryChannels = "iiif-av,file".GenerateDeliveryChannels()
         }.WithTestTranscodeMetadata(new AVTranscode
         {
             Duration = 14666, MediaType = "audio/mp3",
@@ -253,7 +249,7 @@ public class ManifestV3BuilderTests
         rendering.Duration.Should().Be(15000, "Duration of origin");
         rendering.Format.Should().Be("audio/wav", "Mediatype of origin");
         
-        var sound = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Sound;
+        var sound = canvas.GetCanvasPaintingBody<Sound>();
         sound.Duration.Should().Be(14666, "Duration of transcode");
     }
     
@@ -267,10 +263,7 @@ public class ManifestV3BuilderTests
             Duration = 15000,
             Width = 800,
             Height = 800,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new() { Channel = "iiif-av" }
-            }
+            ImageDeliveryChannels = "iiif-av".GenerateDeliveryChannels()
         }.WithTestTranscodeMetadata(new List<AVTranscode>
         {
             new()
@@ -297,7 +290,7 @@ public class ManifestV3BuilderTests
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
-        var choice = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as PaintingChoice;
+        var choice = canvas.GetCanvasPaintingBody<PaintingChoice>();
         choice.Items.Should().HaveCount(2, "2 transcodes for video");
         var first = choice.Items[0].As<Video>();
         first.Duration.Should().Be(14666, "From first transcode");
@@ -321,10 +314,7 @@ public class ManifestV3BuilderTests
             Duration = 15000,
             Width = 800,
             Height = 800,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new() { Channel = "iiif-av" }, new() { Channel = "file" }
-            }
+            ImageDeliveryChannels = "iiif-av,file".GenerateDeliveryChannels()
         }.WithTestTranscodeMetadata(new List<AVTranscode>
         {
             new()
@@ -356,7 +346,7 @@ public class ManifestV3BuilderTests
         rendering.Height.Should().Be(800, "Height of origin");
         rendering.Format.Should().Be("video/raw", "Mediatype of origin");
         
-        var choice = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as PaintingChoice;
+        var choice = canvas.GetCanvasPaintingBody<PaintingChoice>();
         choice.Items.Should().HaveCount(2, "2 transcodes for video");
         var first = choice.Items[0].As<Video>();
         first.Duration.Should().Be(14666, "From first transcode");
@@ -380,10 +370,7 @@ public class ManifestV3BuilderTests
             Duration = 15000,
             Width = 800,
             Height = 800,
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>
-            {
-                new() { Channel = "iiif-av" }
-            }
+            ImageDeliveryChannels = "iiif-av".GenerateDeliveryChannels()
         };
         
         var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
@@ -426,20 +413,20 @@ public class ManifestV3BuilderTests
         rendering.Height.Should().Be(1000, "Height of origin");
         rendering.Format.Should().Be("image/tiff", "Format of origin");
         
-        var image = canvas.Items.Single().Items.Single().As<PaintingAnnotation>().Body as Image;
+        var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(1000, "Width of static placeholder");
         image.Height.Should().Be(1000, "Height of static placeholder");
         image.Format.Should().Be("image/png", "Type of static placeholder");
         image.Service.Should().BeNull("No image service");
     }
     
-    private static Asset GetImageAsset(params string[] deliveryChannels) =>
+    private static Asset GetImageAsset(string deliveryChannels) =>
         new()
         {
             Id = AssetIdGenerator.GetAssetId(),
             MediaType = "image/tiff",
             Width = 1500,
             Height = 1000,
-            ImageDeliveryChannels = deliveryChannels.Select(dc => new ImageDeliveryChannel { Channel = dc }).ToList()
+            ImageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels()
         };
 }

@@ -59,7 +59,6 @@ public class Startup
             opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
         });
         services.AddHttpContextAccessor();
-        services.HandlePathTemplates();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
