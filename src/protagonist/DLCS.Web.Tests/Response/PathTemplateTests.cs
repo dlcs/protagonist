@@ -19,6 +19,6 @@ public class PathTemplateTests
         const string replacement = "foo";
         var pathTemplate = new PathTemplate { Path = "/path" };
         pathTemplate.PrefixReplacements.Add(prefix, "foo");
-        pathTemplate.GetPrefixForPath(prefix).Should().Be(replacement, "No replacement found");
+        pathTemplate.GetPrefixForPath(prefix).Should().Be(replacement, "Replacement found");
     }
 }
