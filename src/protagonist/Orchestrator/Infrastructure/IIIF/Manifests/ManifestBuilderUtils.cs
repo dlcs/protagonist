@@ -186,7 +186,7 @@ public class ManifestBuilderUtils(
             {
                 Id = GetFullyQualifiedId(asset, customerPathElement, isThumb, UseNativeFormatForAssets,
                     ImageApiVersion.V2),
-                Profile = ImageService2.Level2Profile,
+                Profile = isThumb ? ImageService2.Level0Profile : ImageService2.Level2Profile,
                 Context = ImageService2.Image2Context,
             };
             customiseImage2(image2);
@@ -206,7 +206,7 @@ public class ManifestBuilderUtils(
             {
                 Id = GetFullyQualifiedId(asset, customerPathElement, isThumb, UseNativeFormatForAssets,
                     ImageApiVersion.V3),
-                Profile = ImageService3.Level2Profile,
+                Profile = isThumb ? ImageService3.Level0Profile : ImageService3.Level2Profile,
                 Context = ImageService3.Image3Context,
             };
             customiseImage3(image3);

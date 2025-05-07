@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Tests.Integration.Infrastructure;
+using Test.Helpers;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using IIIF3 = IIIF.Presentation.V3;
@@ -430,7 +431,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     }
     
     [Fact]
-    public async Task Get_V3ManifestForImage_ReturnsManifest_WithThumbsFromMetadata()
+    public async Task Get_V3ManifestForImage_ReturnsManifest_WithThumbsFromAssetApplicationMetadata()
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
@@ -446,8 +447,21 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
-        manifest.Id.Should().Be($"http://localhost/iiif-manifest/{id}");
-        manifest.Items[0].Thumbnail[0].Id.Should().StartWith($"http://localhost/thumbs/{id}/full");
+
+        // Validate manifest and Canvas level thumbs are valid 
+        ValidateThumb(manifest.GetSingleThumbnail());
+        ValidateThumb(manifest.Items!.Single().GetSingleThumbnail());
+
+        void ValidateThumb(IIIF3.ResourceBase thumbnail)
+        {
+            var imageService2 = thumbnail.GetService<ImageService2>();
+            imageService2.Profile.Should().Be(ImageService2.Level0Profile, "Thumb image services are level0");
+            
+            var imageService3 = thumbnail.GetService<ImageService3>();
+            imageService3.Profile.Should().Be(ImageService3.Level0Profile, "Thumb image services are level0");
+
+            thumbnail.Id.Should().StartWith($"http://localhost/thumbs/{id}/full");
+        }
     }
     
     [Fact]
@@ -489,11 +503,14 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
-        manifest
-            .Items.Single()
-            .Items.Single()
-            .Items.Cast<PaintingAnnotation>().Single()
-            .Body.Should().BeOfType<Image>();
+        var paintingAnnotation = manifest.Items.Single().GetCanvasPaintingBody<Image>();
+        var imageService2 = paintingAnnotation.GetService<ImageService2>();
+        imageService2.Profile.Should().Be(ImageService2.Level2Profile, "Image image services are level2");
+        imageService2.Id.Should().StartWith($"http://localhost/iiif-img/v2/{id}");
+        
+        var imageService3 = paintingAnnotation.GetService<ImageService3>();
+        imageService3.Profile.Should().Be(ImageService3.Level2Profile, "Image image services are level2");
+        imageService3.Id.Should().StartWith($"http://localhost/iiif-img/{id}");
     }
     
     [Fact]
@@ -515,11 +532,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
         var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
-        manifest
-            .Items.Single()
-            .Items.Single()
-            .Items.Cast<PaintingAnnotation>().Single()
-            .Body.Service.Should().BeNull();
+        manifest.Items.Single().GetCanvasPaintingBody<Image>().Service.Should().BeNull();
     }
     
     [Fact]
