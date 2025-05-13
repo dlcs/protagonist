@@ -44,8 +44,7 @@ public class ThumbsMiddleware
         defaultImageApiVersion = configuration.GetValue<Version>("DefaultIIIFImageVersion", Version.V3);
     }
 
-    public async Task Invoke(HttpContext context,
-        AssetDeliveryPathParser parser)
+    public async Task Invoke(HttpContext context, AssetDeliveryPathParser parser)
     {
         try
         {

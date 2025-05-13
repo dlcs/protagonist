@@ -107,6 +107,11 @@ public class NamedQueryRepository : INamedQueryRepository
             imageFilter = imageFilter.Where(i => i.BatchAssets.Any(ba => query.Batches.Contains(ba.BatchId)));
         }
 
+        if (!query.Manifests.IsNullOrEmpty())
+        {
+            imageFilter = imageFilter.Where(a => a.Manifests.Any(manifest => query.Manifests.Contains(manifest)));
+        }
+
         return imageFilter;
     }
 }

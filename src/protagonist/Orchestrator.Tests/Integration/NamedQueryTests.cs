@@ -312,13 +312,13 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Theory]
     [InlineData("iiif-resource/99/manifest-slash-test/with%2Fforward%2Fslashes/1")]
     [InlineData("iiif-resource/99/manifest-slash-test/with%2fforward%2fslashes/1")]
-    public async Task Get_ReturnsManifestWithSlashes(string path)
+    public async Task Get_ReturnsV3Manifest_ArgsWithSlashes(string path)
     {
         // Arrange
         dbFixture.DbContext.NamedQueries.Add(new NamedQuery
         {
             Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "manifest-slash-test",
-            Template = "manifest=s1&canvas=n1&s1=p1&space=p2"
+            Template = "canvas=n1&s1=p1&space=p2"
         });
 
         await dbFixture.DbContext.Images

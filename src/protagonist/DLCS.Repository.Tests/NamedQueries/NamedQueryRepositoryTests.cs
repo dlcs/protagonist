@@ -55,6 +55,15 @@ public class NamedQueryRepositoryTests
             .AddBatchAsset(batchedAsset2, BatchAssetStatus.Completed)
             .AddBatchAsset(batchedAsset3, BatchAssetStatus.Error);
         
+        // Images with manifests - first with 2 and second with 2. 1 manifest is in both
+        var manifestAsset1 = AssetId.FromString("99/3/1");
+        var manifestAsset2 = AssetId.FromString("99/3/2");
+        const string manifestId1 = "foo";
+        const string manifestId2 = "bar";
+        const string manifestId3 = "baz";
+        dbContext.Images.AddTestAsset(manifestAsset1, space: 3, manifests: [manifestId1, manifestId2]);
+        dbContext.Images.AddTestAsset(manifestAsset2, space: 3, num3: 1, manifests: [manifestId2, manifestId3]);
+        
         var batch2 = dbContext.Batches.AddTestBatch(batchId2).Result;
         batch2.Entity.AddBatchAsset(batchedAsset1).AddBatchAsset(batchedAsset4);
         dbContext.SaveChanges();
@@ -138,7 +147,7 @@ public class NamedQueryRepositoryTests
         var result = await sut.GetNamedQueryResults(query).ToListAsync();
 
         // Assert
-        result.Should().HaveCount(12);
+        result.Should().HaveCount(14);
     }
 
     [Fact]
@@ -308,7 +317,7 @@ public class NamedQueryRepositoryTests
         // Arrange
         var query = new ParsedNamedQuery(99)
         {
-            Batches = new[] { 101010 }
+            Batches = [101010]
         };
 
         // Act
@@ -324,7 +333,7 @@ public class NamedQueryRepositoryTests
         // Arrange
         var query = new ParsedNamedQuery(99)
         {
-            Batches = new[] { 101010, 101011 }
+            Batches = [101010, 101011]
         };
 
         // Act
@@ -340,7 +349,7 @@ public class NamedQueryRepositoryTests
         // Arrange
         var query = new ParsedNamedQuery(99)
         {
-            Batches = new[] { 101010, 101011 }, Number3 = 1 
+            Batches = [101010, 101011], Number3 = 1 
         };
 
         // Act
@@ -348,5 +357,53 @@ public class NamedQueryRepositoryTests
 
         // Assert
         result.Should().HaveCount(3);
+    }
+    
+    [Fact]
+    public async Task GetNamedQueryResults_FilterBySingleManifest()
+    {
+        // Arrange
+        var query = new ParsedNamedQuery(99)
+        {
+            Manifests = ["bar"]
+        };
+
+        // Act
+        var result = await sut.GetNamedQueryResults(query).ToListAsync();
+
+        // Assert
+        result.Should().HaveCount(2, "'bar' is used by 2 manifests");
+    }
+    
+    [Fact]
+    public async Task GetNamedQueryResults_FilterByMultipleManifest()
+    {
+        // Arrange
+        var query = new ParsedNamedQuery(99)
+        {
+            Manifests = ["foo", "baz"]
+        };
+
+        // Act
+        var result = await sut.GetNamedQueryResults(query).ToListAsync();
+
+        // Assert
+        result.Should().HaveCount(2, "'foo' is used by one manifest and 'baz' another");
+    }
+    
+    [Fact]
+    public async Task GetNamedQueryResults_FilterByMultipleManifest_AndOtherCriteria()
+    {
+        // Arrange
+        var query = new ParsedNamedQuery(99)
+        {
+            Manifests = ["bar"], Number3 = 1 
+        };
+
+        // Act
+        var result = await sut.GetNamedQueryResults(query).ToListAsync();
+
+        // Assert
+        result.Should().HaveCount(1, "'bar' is used by 2 manifests but only 1 has number3=1");
     }
 }

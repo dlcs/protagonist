@@ -9,23 +9,14 @@ namespace DLCS.Repository.NamedQueries.Parsing;
 /// </summary>
 public class IIIFNamedQueryParser : BaseNamedQueryParser<IIIFParsedNamedQuery>
 {
-    // IIIF specific
-    private const string Manifest = "manifest";
-    
     public IIIFNamedQueryParser(ILogger<IIIFNamedQueryParser> logger)
         : base(logger)
     {
     }
 
-    protected override void CustomHandling(List<string> queryArgs, string key, string value,
-        IIIFParsedNamedQuery assetQuery)
+    protected override void CustomHandling(List<string> queryArgs, string key, string value, IIIFParsedNamedQuery assetQuery)
     {
-        switch (key)
-        {
-            case Manifest:
-                assetQuery.Manifest = GetQueryMappingFromTemplateElement(value);
-                break;
-        }
+        // no-op
     }
 
     protected override IIIFParsedNamedQuery GenerateParsedQueryObject(int customerId)

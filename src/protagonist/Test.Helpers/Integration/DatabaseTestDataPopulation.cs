@@ -47,6 +47,7 @@ public static class DatabaseTestDataPopulation
         string imageOptimisationPolicy = "",
         string thumbnailPolicy = "default",
         DateTime? finished = null,
+        List<string> manifests = null,
         List<ImageDeliveryChannel> imageDeliveryChannels = null)
     {
         return assets.AddAsync(new Asset
@@ -58,7 +59,7 @@ public static class DatabaseTestDataPopulation
             NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
             NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = error,
             ImageOptimisationPolicy = imageOptimisationPolicy, Batch = batch, Ingesting = ingesting,
-            Duration = duration, Finished = finished,
+            Duration = duration, Finished = finished, Manifests = manifests,
             ImageDeliveryChannels = imageDeliveryChannels ?? new List<ImageDeliveryChannel>()
         });
     }
@@ -94,7 +95,7 @@ public static class DatabaseTestDataPopulation
             });
 
     public static ValueTask<EntityEntry<NamedQuery>> AddTestNamedQuery(this DbSet<NamedQuery> namedQueries,
-        string name, int customer = 99, string template = "manifest=s3&canvas=n2&space=p1", bool global = true)
+        string name, int customer = 99, string template = "canvas=n2&space=p1", bool global = true)
         => namedQueries.AddAsync(
             new NamedQuery
             {
@@ -206,18 +207,6 @@ public static class DatabaseTestDataPopulation
             TotalSizeOfThumbnails = sizeOfThumbs
         });
 
-    public static ValueTask<EntityEntry<AssetApplicationMetadata>> AddTestAssetApplicationMetadata(
-        this DbSet<AssetApplicationMetadata> assetApplicationMetadata, AssetId assetId,
-        string metadataType, string metadataValue)
-        => assetApplicationMetadata.AddAsync(new AssetApplicationMetadata()
-        {
-            AssetId = assetId,
-            MetadataType = metadataType,
-            MetadataValue = metadataValue,
-            Created = DateTime.UtcNow,
-            Modified = DateTime.UtcNow
-        });
-
     public static ValueTask<EntityEntry<Asset>> WithTestThumbnailMetadata(
         this ValueTask<EntityEntry<Asset>> asset,
         string metadataValue = "{\"a\": [], \"o\": [[769,1024],[300,400],[150,200],[75,100]]}")
@@ -231,7 +220,7 @@ public static class DatabaseTestDataPopulation
         string deliveryChannel,
         int? policyId = null)
     {
-        asset.Result.Entity.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+        asset.Result.Entity.ImageDeliveryChannels.Add(new ImageDeliveryChannel
         {
             Channel = deliveryChannel,
             DeliveryChannelPolicyId = policyId ?? deliveryChannel switch

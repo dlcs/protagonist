@@ -217,6 +217,11 @@ public class Image : DlcsResource
         Range = "vocab:ThumbnailPolicy", ReadOnly = true, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 81, PropertyName = "thumbnailPolicy")]
     public string? ThumbnailPolicy { get; set; }
+    
+    [HydraLink(Description = "The manifests associated with this asset",
+        Range = "vocab:Manifests", ReadOnly = true, WriteOnly = false, SetManually = true)]
+    [JsonProperty(Order = 82, PropertyName = "manifests")]
+    public string[]? Manifests { get; set; }
 }
 
 public class ImageClass: Class

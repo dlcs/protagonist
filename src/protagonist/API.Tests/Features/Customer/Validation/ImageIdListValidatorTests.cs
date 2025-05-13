@@ -17,71 +17,65 @@ public class ImageIdListValidatorTests
         var apiSettings = new ApiSettings { MaxImageListSize = 4 };
         sut = new ImageIdListValidator(Options.Create(apiSettings));
     }
-
-    [Fact]
-    public void Members_Null()
-    {
-        var model = new HydraCollection<IdentifierOnly>();
-        var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(r => r.Members);
-    }
     
     [Fact]
     public void Members_Empty()
     {
-        var model = new HydraCollection<IdentifierOnly> { Members = Array.Empty<IdentifierOnly>() };
-        var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(r => r.Members);
+        IdentifierOnly[] members = [];
+        var result = sut.TestValidate(members);
+        result.ShouldHaveValidationErrorFor(r => r)
+            .WithErrorMessage("Members cannot be empty");;
+    }
+    
+    [Fact]
+    public void Members_Null()
+    {
+        IdentifierOnly[] members = null;
+        var result = sut.TestValidate(members);
+        result.ShouldHaveValidationErrorFor(r => r)
+            .WithErrorMessage("Members cannot be null");;
     }
 
     [Fact]
     public void Members_GreaterThanMaxBatchSize()
     {
-        var model = new HydraCollection<IdentifierOnly>
+
+        var members = new[]
         {
-            Members = new[]
-            {
-                new IdentifierOnly { Id = "one" }, new IdentifierOnly { Id = "two" },
-                new IdentifierOnly { Id = "three" }, new IdentifierOnly { Id = "four" },
-                new IdentifierOnly { Id = "five" }
-            }
+            new IdentifierOnly { Id = "one" }, new IdentifierOnly { Id = "two" },
+            new IdentifierOnly { Id = "three" }, new IdentifierOnly { Id = "four" },
+            new IdentifierOnly { Id = "five" }
         };
-        var result = sut.TestValidate(model);
+        var result = sut.TestValidate(members);
         result
-            .ShouldHaveValidationErrorFor(r => r.Members)
+            .ShouldHaveValidationErrorFor(r => r)
             .WithErrorMessage("Maximum assets in single batch is 4");
     }
     
     [Fact]
     public void Members_EqualToMaxBatchSize_IsValid()
     {
-        var model = new HydraCollection<IdentifierOnly>
+        var members = new[]
         {
-            Members = new[]
-            {
-                new IdentifierOnly { Id = "one" }, new IdentifierOnly { Id = "two" },
-                new IdentifierOnly { Id = "three" }, new IdentifierOnly { Id = "four" },
-            }
+            new IdentifierOnly { Id = "one" }, new IdentifierOnly { Id = "two" },
+            new IdentifierOnly { Id = "three" }, new IdentifierOnly { Id = "four" },
         };
-        var result = sut.TestValidate(model);
-        result.ShouldNotHaveValidationErrorFor(r => r.Members);
+        var result = sut.TestValidate(members);
+        result.ShouldNotHaveValidationErrorFor(r => r);
     }
 
     [Fact]
     public void Members_ContainsDuplicateIds()
     {
-        var model = new HydraCollection<IdentifierOnly>
+        var members = new[]
         {
-            Members = new[]
-            {
-                new IdentifierOnly { Id = "1/2/foo" },
-                new IdentifierOnly { Id = "1/2/bar" },
-                new IdentifierOnly { Id = "1/2/foo" },
-            }
+            new IdentifierOnly { Id = "1/2/foo" },
+            new IdentifierOnly { Id = "1/2/bar" },
+            new IdentifierOnly { Id = "1/2/foo" },
         };
-        var result = sut.TestValidate(model);
+        var result = sut.TestValidate(members);
         result
-            .ShouldHaveValidationErrorFor(r => r.Members)
+            .ShouldHaveValidationErrorFor(r => r)
             .WithErrorMessage("Members contains 1 duplicate Id(s): 1/2/foo");
     }
 }
