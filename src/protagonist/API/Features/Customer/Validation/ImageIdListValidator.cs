@@ -31,8 +31,10 @@ public class ImageIdListValidator : AbstractValidator<IdentifierOnly[]?>
             .WithMessage($"Maximum assets in single batch is {maxBatch}");
     }
     
-    protected override bool PreValidate(ValidationContext<IdentifierOnly[]?> context, ValidationResult result) {
-        if (context.InstanceToValidate == null) {
+    protected override bool PreValidate(ValidationContext<IdentifierOnly[]?> context, ValidationResult result) 
+    {
+        if (context.InstanceToValidate == null) 
+        {
             result.Errors.Add(new ValidationFailure("", "Members cannot be null"));
             return false;
         }

@@ -23,8 +23,10 @@ public class BulkAssetPatchValidator : AbstractValidator<BulkPatch<IdentifierOnl
             .WithMessage(f => $"Unsupported field '{f.Field}'");
     }
     
-    protected override bool PreValidate(ValidationContext<BulkPatch<IdentifierOnly>> context, ValidationResult result) {
-        if (context.InstanceToValidate.Members == null) {
+    protected override bool PreValidate(ValidationContext<BulkPatch<IdentifierOnly>> context, ValidationResult result) 
+    {
+        if (context.InstanceToValidate.Members == null) 
+        {
             result.Errors.Add(new ValidationFailure("Members", "Member cannot be null"));
             return false;
         }
