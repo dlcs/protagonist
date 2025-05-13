@@ -2,6 +2,7 @@
 using DLCS.Core.Collections;
 using DLCS.Model;
 using FluentValidation;
+using FluentValidation.Results;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Customer.Validation;
@@ -28,5 +29,15 @@ public class ImageIdListValidator : AbstractValidator<IdentifierOnly[]?>
         RuleFor(c => c)
             .Must(m => (m?.Length ?? 0) <= maxBatch)
             .WithMessage($"Maximum assets in single batch is {maxBatch}");
+    }
+    
+    protected override bool PreValidate(ValidationContext<IdentifierOnly[]?> context, ValidationResult result) 
+    {
+        if (context.InstanceToValidate == null) 
+        {
+            result.Errors.Add(new ValidationFailure("", "Members cannot be null"));
+            return false;
+        }
+        return true;
     }
 }

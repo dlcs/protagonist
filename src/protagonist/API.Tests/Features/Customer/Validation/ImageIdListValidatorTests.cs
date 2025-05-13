@@ -26,6 +26,15 @@ public class ImageIdListValidatorTests
         result.ShouldHaveValidationErrorFor(r => r)
             .WithErrorMessage("Members cannot be empty");;
     }
+    
+    [Fact]
+    public void Members_Null()
+    {
+        IdentifierOnly[] members = null;
+        var result = sut.TestValidate(members);
+        result.ShouldHaveValidationErrorFor(r => r)
+            .WithErrorMessage("Members cannot be null");;
+    }
 
     [Fact]
     public void Members_GreaterThanMaxBatchSize()
