@@ -170,6 +170,38 @@ public class ConfigDrivenAssetPathGeneratorTests
     [Theory]
     [InlineData("123")]
     [InlineData("test-customer")]
+    public void GetFullPathForRequest_UseNativeFormat_UsesNativeFormat_IfDefaultOverwritten(string customerPathValue)
+    {
+        // Arrange
+        var contextAccessor = GetContextAccessor("default.com");
+        var options = Options.Create(new PathTemplateOptions
+        {
+            Default = new PathTemplate { Path = "/something" }
+        });
+        var sut = new ConfigDrivenAssetPathGenerator(options, contextAccessor);
+        
+        var request = new BaseAssetRequest
+        {
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "iiif-img/123/10",
+            RoutePrefix = "iiif-img"
+        };
+
+        var expected = $"https://default.com/iiif-img/{customerPathValue}/10/path/to/asset";
+        
+        // Act
+        var actual = sut.GetFullPathForRequest(request, useNativeFormat: true);
+        
+        // Assert
+        actual.Should().Be(expected, "Default is non-canonical but ignored as native requested");
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
     public void GetRelativePathForRequest_Default(string customerPathValue)
     {
         // Arrange
@@ -296,6 +328,71 @@ public class ConfigDrivenAssetPathGeneratorTests
         // Assert
         actual.Should().Be(expected);
     }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetRelativePathForRequest_UseNativeFormat_UsesNativeFormat_IfDefaultOverwritten(string customerPathValue)
+    {
+        // Arrange
+        var contextAccessor = GetContextAccessor("default.com");
+        var options = Options.Create(new PathTemplateOptions
+        {
+            Default = new PathTemplate { Path = "/something" }
+        });
+        var sut = new ConfigDrivenAssetPathGenerator(options, contextAccessor);
+        
+        var request = new BaseAssetRequest
+        {
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "iiif-img/123/10",
+            RoutePrefix = "iiif-img"
+        };
+
+        var expected = $"/iiif-img/{customerPathValue}/10/path/to/asset";
+        
+        // Act
+        var actual = sut.GetRelativePathForRequest(request, useNativeFormat: true);
+        
+        // Assert
+        actual.Should().Be(expected, "Default is non-canonical but ignored as native requested");
+    }
+    
+    [Theory]
+    [InlineData("123")]
+    [InlineData("test-customer")]
+    public void GetRelativePathForRequest_CanOverrideDefault(string customerPathValue)
+    {
+        // Arrange
+        var contextAccessor = GetContextAccessor("default.com");
+        var options = Options.Create(new PathTemplateOptions
+        {
+            Default = new PathTemplate { Path = "/{prefix}/{assetPath}" }
+        });
+        var sut = new ConfigDrivenAssetPathGenerator(options, contextAccessor);
+        
+        var request = new BaseAssetRequest
+        {
+            Customer = new CustomerPathElement(123, "test-customer"),
+            CustomerPathValue = customerPathValue,
+            Space = 10,
+            AssetPath = "path/to/asset",
+            BasePath = "iiif-img/123/10",
+            RoutePrefix = "iiif-img"
+        };
+
+        const string expected = "/iiif-img/path/to/asset";
+        
+        // Act
+        var actual = sut.GetRelativePathForRequest(request);
+        
+        // Assert
+        actual.Should().Be(expected, "Default is non-canonical");
+    }
+
 
     [Fact]
     public void PathHasVersion_True_ForFallbackPath() 
@@ -313,13 +410,7 @@ public class ConfigDrivenAssetPathGeneratorTests
 
     private static ConfigDrivenAssetPathGenerator GetSut(string host, Action<HttpRequest> requestModifier = null)
     {
-        var context = new DefaultHttpContext();
-        var request = context.Request;
-        var contextAccessor = A.Fake<IHttpContextAccessor>();
-        A.CallTo(() => contextAccessor.HttpContext).Returns(context);
-        request.Host = new HostString(host);
-        request.Scheme = "https";
-        requestModifier?.Invoke(request);
+        var contextAccessor = GetContextAccessor(host, requestModifier);
 
         var options = Options.Create(new PathTemplateOptions
         {
@@ -338,5 +429,17 @@ public class ConfigDrivenAssetPathGeneratorTests
         });
 
         return new ConfigDrivenAssetPathGenerator(options, contextAccessor);
+    }
+
+    private static IHttpContextAccessor GetContextAccessor(string host, Action<HttpRequest> requestModifier = null)
+    {
+        var context = new DefaultHttpContext();
+        var request = context.Request;
+        var contextAccessor = A.Fake<IHttpContextAccessor>();
+        A.CallTo(() => contextAccessor.HttpContext).Returns(context);
+        request.Host = new HostString(host);
+        request.Scheme = "https";
+        requestModifier?.Invoke(request);
+        return contextAccessor;
     }
 }

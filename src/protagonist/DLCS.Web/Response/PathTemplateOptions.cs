@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 
 namespace DLCS.Web.Response;
 
@@ -11,14 +12,16 @@ namespace DLCS.Web.Response;
 public class PathTemplateOptions
 {
     /// <summary>
-    /// The default path format for DLCS
+    /// The default/canonical path format for DLCS
     /// </summary>
-    internal const string DefaultPathFormat = "/{prefix}/{version}/{customer}/{space}/{assetPath}";
+    internal const string NativePathFormat = "/{prefix}/{version}/{customer}/{space}/{assetPath}";
+    internal static readonly PathTemplate NativePathTemplate = new() { Path = NativePathFormat };
 
     /// <summary>
-    /// The default <see cref="PathTemplate"/> for DLCS
+    /// The default <see cref="PathTemplate"/> for DLCS. This defaults to <see cref="NativePathFormat"/> but can be
+    /// overwritten
     /// </summary>
-    internal static readonly PathTemplate DefaultPathTemplate = new() { Path = DefaultPathFormat };
+    internal static readonly PathTemplate DefaultPathTemplate = new() { Path = NativePathFormat };
 
     /// <summary>
     /// Default path template if no host-specific overrides found.

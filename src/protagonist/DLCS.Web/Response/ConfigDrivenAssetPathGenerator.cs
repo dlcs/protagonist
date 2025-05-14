@@ -48,7 +48,7 @@ public class ConfigDrivenAssetPathGenerator(
     {
         var request = httpContextAccessor.SafeHttpContext().Request;
         var template = useNativeFormat
-            ? PathTemplateOptions.DefaultPathTemplate
+            ? PathTemplateOptions.NativePathTemplate
             : pathTemplateOptions.GetPathTemplateForHost(request.Host.Value);
 
         var path = pathGenerator(assetRequest, template);
