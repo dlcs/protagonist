@@ -23,7 +23,7 @@ public class PathTemplateOptions
     /// <summary>
     /// Default path template if no host-specific overrides found.
     /// </summary>
-    public PathTemplate Default { get; init; } = DefaultPathTemplate;
+    public PathTemplate Default { get; init; } = new() { Path = DefaultPathFormat };
 
     /// <summary>
     /// Collection of path template overrides, keyed by hostname.
