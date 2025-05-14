@@ -1,12 +1,6 @@
 name: DLCS Run Sonar Analysis
 
-on:
-  push:
-    branches: [ "main", "develop" ]
-    tags: [ "v*" ]
-    paths-ignore:
-      - "docs/**"
-      - "scripts/**"
+on: workflow_dispatch
 
 jobs:    
   run-sonar-analysis:
