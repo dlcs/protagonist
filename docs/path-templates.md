@@ -17,6 +17,9 @@ The default prefixes, listed above, can be changed by using `"PrefixReplacements
 
 ## Output
 
+> [!WARNING]
+> As this is a breaking change, feature flag `RewriteAssetPathsOnManifests` needs to be enabled for manifests to contain rewritten paths
+
 In manifests, image and thumb paths can have `{version}` slug as a path replacement values. As the NQ serves as an _"output everything we have"_ skeleton manifest we will always output all supported ImageApi versions. The logic for handling image paths (which are versioned) will be:
 
 * NQ will continue to always output all ImageApi versions (current v2 + v3)
