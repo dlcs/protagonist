@@ -86,7 +86,7 @@ public class TopicPublisher : ITopicPublisher
             {
                 {"CustomerId", new MessageAttributeValue
                 {
-                    StringValue = message.CustomerId.ToString(),
+                    StringValue = message.Customer.ToString(),
                     DataType = "String"
                 }}
             } 
