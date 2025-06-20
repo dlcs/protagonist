@@ -123,18 +123,13 @@ public class Startup
         services
             .AddHealthChecks()
             .AddDbContextCheck<DlcsContext>("DLCS-DB");
-        
-        services.Configure<KestrelServerOptions>(options =>
-        {
-            options.Limits.MaxRequestBodySize = 100_000_000; // if don't set default value is: 30 MB
-        });
-        
-        // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
-        services.Configure<ForwardedHeadersOptions>(opts =>
-        {
-            opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
-        });
-        
+
+        services
+            .Configure<KestrelServerOptions>(options =>
+            {
+                options.Limits.MaxRequestBodySize = 100_000_000; // if don't set default value is: 30 MB
+            })
+            .ConfigureForwardedHeaders(configuration);
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)

@@ -86,11 +86,8 @@ public class Startup
             .AddIIIFBuilding()
             .AddIIIFAuth(orchestratorSettings);
         
-        // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
-        services.Configure<ForwardedHeadersOptions>(opts =>
-        {
-            opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
-        });
+        
+        services.ConfigureForwardedHeaders(configuration);
 
         services
             .AddFeatureFolderViews()
