@@ -68,6 +68,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
 
         bool updateFailed = false;
         var failureMessage = string.Empty;
+        WriteResult? failureType = null;
 
         await using var transaction = 
             await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
@@ -93,6 +94,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                     logger.LogDebug("Processing asset {AssetId} failed, aborting batch. Error: '{Error}'", assetId,
                         processAssetResult.Result.Error);
                     updateFailed = true;
+                    failureType = processAssetResult.Result.WriteResult;
                     failureMessage = processAssetResult.Result.Error;
                     break;
                 }
@@ -141,7 +143,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 await transaction.RollbackAsync(cancellationToken);
             }
 
-            return ModifyEntityResult<Batch>.Failure(failureMessage, WriteResult.Error);
+            return ModifyEntityResult<Batch>.Failure(failureMessage, failureType ?? WriteResult.Error);
         }
         else
         {
