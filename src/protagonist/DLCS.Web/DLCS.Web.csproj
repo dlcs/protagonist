@@ -15,6 +15,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
         <PackageReference Include="Serilog"/>
+        <PackageReference Include="Serilog.Extensions.Logging" />
         <PackageReference Include="Swashbuckle.AspNetCore"/>
     </ItemGroup>
 

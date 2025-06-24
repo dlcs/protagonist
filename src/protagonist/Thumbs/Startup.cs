@@ -54,11 +54,9 @@ public class Startup
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>();
 
         // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
-        services.Configure<ForwardedHeadersOptions>(opts =>
-        {
-            opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
-        });
-        services.AddHttpContextAccessor();
+        services
+            .ConfigureForwardedHeaders(configuration)
+            .AddHttpContextAccessor();
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
