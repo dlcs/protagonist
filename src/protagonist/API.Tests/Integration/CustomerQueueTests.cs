@@ -659,7 +659,32 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(99).PostAsync(path, content);
 
         // Assert
-        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, "mediaType is missing");
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_400_IfOriginMissing()
+    {
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": ""one"",
+          ""space"": 1,
+          ""mediaType"": ""image/jpeg""
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = "/customers/99/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(99).PostAsync(path, content);
+
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
@@ -1117,8 +1142,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
         
         // Assert
-        // status code correct
-        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         // Items not queued for processing
         A.CallTo(() =>
