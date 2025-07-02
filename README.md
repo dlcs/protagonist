@@ -55,7 +55,7 @@ There are a variety of technologies used across the projects, including:
 
 [Github actions](.github/workflows) are used to build and push new Docker images to github container registry.
 
-The main entry point is [`run_build.yml`](.github/workflows/run_build.yml). This runs `dotnet test` then uses the parameterised `build_docker.yml` files to handle Docker image creation.
+The main entry point is [`run_build.yml`](.github/workflows/run_build.yml). This runs `dotnet test` then uses the parameterised `docker-build-and-push` files to handle Docker image creation.
 
 PRs to `main`, `develop`, pushes to `main`, `develop` and `v*` tags will:
 * Build + test dotnet code
