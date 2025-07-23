@@ -114,7 +114,7 @@ public class CustomerQueueController : HydraController
     /// <remarks>
     /// Sample request:
     ///
-    ///     POST: /customers/99/queue/priority
+    ///     POST: /customers/99/queue/priority  
     ///     {
     ///         "@context": "http://www.w3.org/ns/hydra/context.jsonld",
     ///         "@type": "Collection",
