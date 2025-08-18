@@ -27,7 +27,7 @@ public abstract class GetBatchAssetsBase<T> : IRequestHandler<T, FetchEntityResu
             request,
             i => i
                 .ApplyAssetFilter(request.AssetFilter, true)
-                .AsSplitQuery(),
+                .AsSingleQuery(),
             images => images.AsOrderedAssetQuery(request),
             cancellationToken);
 
