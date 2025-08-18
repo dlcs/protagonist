@@ -1,4 +1,4 @@
-# Engine ImageServer for Thumbs
+# ElasticTranscoder replacement
 
 * Status: decided
 * Deciders: Donald Gray, Tom Crane
