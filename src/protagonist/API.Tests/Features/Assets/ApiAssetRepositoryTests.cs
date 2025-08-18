@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using API.Features.Assets;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core;
@@ -15,7 +14,6 @@ using DLCS.Repository.Assets;
 using DLCS.Repository.Entities;
 using LazyCache.Mocks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Test.Helpers.Integration;
@@ -43,12 +41,8 @@ public class ApiAssetRepositoryTests
         );
         // We want this turned on to match live behaviour
         dbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
-        var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new[]
-                { new KeyValuePair<string, string>("ConnectionStrings:PostgreSQLConnection", dbFixture.ConnectionString) })
-            .Build();
-        
-        var entityCounterRepo = new EntityCounterRepository(dbContext);
+
+        var entityCounterRepo = new EntityCounterRepository(dbContext, new NullLogger<EntityCounterRepository>());
 
         var assetRepositoryCachingHelper = new AssetCachingHelper(
             new MockCachingService(),
@@ -299,7 +293,7 @@ public class ApiAssetRepositoryTests
     }
     
     [Fact]
-    public async Task AssetRepository_FailsToSaveAsset_WhichHasRestrictedCharacters()
+    public void AssetRepository_FailsToSaveAsset_WhichHasRestrictedCharacters()
     {
         var assetId = AssetId.FromString("100/10/id with restricted characters 2");
         var newAsset = new Asset(assetId)

@@ -29,7 +29,8 @@ public class BatchRepository : IDapperContextRepository, IBatchRepository
             Customer = customerId,
             Errors = 0,
             Submitted = DateTime.UtcNow,
-            Superseded = false
+            Superseded = false,
+            BatchAssets = new List<BatchAsset>(assets.Count)
         };
         
         postCreate?.Invoke(batch);

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;

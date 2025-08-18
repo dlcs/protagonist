@@ -3,7 +3,6 @@ using API.Features.Assets;
 using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
-using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using Microsoft.Extensions.Options;
@@ -91,17 +90,7 @@ public class AssetProcessor
 
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
-            else if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing.IsNullOrEmpty() && alwaysReingest)
-            {
-                return new ProcessAssetResult
-                {
-                    Result = ModifyEntityResult<Asset>.Failure(
-                        "Delivery channels are required when updating an existing Asset via PUT",
-                        WriteResult.BadRequest
-                    )
-                };
-            }
-            
+
             var existingAsset = assetFromDatabase?.Clone();
             var assetPreparationResult =
                 AssetPreparer.PrepareAssetForUpsert(assetFromDatabase, assetBeforeProcessing.Asset, false, isBatchUpdate,
@@ -118,12 +107,15 @@ public class AssetProcessor
             
             var updatedAsset = assetPreparationResult.UpdatedAsset!; // this is from Database
             var requiresEngineNotification = assetPreparationResult.RequiresReingest || alwaysReingest;
-
-            var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(assetFromDatabase,
-                updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
-            if (deliveryChannelChanged)
+            
+            if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing != null || assetFromDatabase == null)
             {
-                requiresEngineNotification = true;
+                var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(
+                    assetFromDatabase, updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
+                if (deliveryChannelChanged)
+                {
+                    requiresEngineNotification = true;
+                }
             }
 
             if (requiresEngineNotification)

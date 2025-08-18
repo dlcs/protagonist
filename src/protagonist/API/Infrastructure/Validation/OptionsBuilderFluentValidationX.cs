@@ -36,10 +36,10 @@ public class FluentValidationOptions<TOptions>
         this.name = name; // Handle named options
     }
 
-    public ValidateOptionsResult Validate(string? name, TOptions options)
+    public ValidateOptionsResult Validate(string? vName, TOptions options)
     {
         // Null name is used to configure all named options.
-        if (this.name != null && this.name != name)
+        if (name != null && name != vName)
         {
             // Ignored if not validating this instance.
             return ValidateOptionsResult.Skip;

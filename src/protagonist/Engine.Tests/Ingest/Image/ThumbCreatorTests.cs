@@ -2,7 +2,6 @@
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Policies;
 using Engine.Ingest.Image;
 using FakeItEasy;
@@ -15,7 +14,6 @@ public class ThumbCreatorTests
 {
     private readonly TestBucketWriter bucketWriter;
     private readonly ThumbCreator sut;
-    private readonly IAssetApplicationMetadataRepository assetApplicationMetadataRepository;
     private readonly List<ImageDeliveryChannel> thumbsDeliveryChannel = new()
     {
         new ImageDeliveryChannel
@@ -29,7 +27,6 @@ public class ThumbCreatorTests
     {
         bucketWriter = new TestBucketWriter();
         var storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
-        assetApplicationMetadataRepository = A.Fake<IAssetApplicationMetadataRepository>();
         
         A.CallTo(() => storageKeyGenerator.GetThumbsSizesJsonLocation(A<AssetId>._))
             .ReturnsLazily((AssetId assetId) => new ObjectInBucket("thumbs-bucket", $"{assetId}/s.json"));
@@ -40,7 +37,7 @@ public class ThumbCreatorTests
                 return new ObjectInBucket("thumbs-bucket", $"{assetId}/{authSlug}/{size}.jpg");
             });
 
-        sut = new ThumbCreator(bucketWriter, storageKeyGenerator, assetApplicationMetadataRepository,new NullLogger<ThumbCreator>());
+        sut = new ThumbCreator(bucketWriter, storageKeyGenerator, new NullLogger<ThumbCreator>());
     }
 
     [Fact]
@@ -96,9 +93,8 @@ public class ThumbCreatorTests
             .WithContents(thumbSizes);
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
-        A.CallTo(() =>
-            assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId, "ThumbSizes", thumbSizes,
-                A<CancellationToken>._)).MustHaveHappened();
+        asset.AssetApplicationMetadata.Should()
+            .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
     
     [Fact]
@@ -141,9 +137,8 @@ public class ThumbCreatorTests
             .WithContents(thumbSizes);
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
-        A.CallTo(() =>
-            assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId, "ThumbSizes", thumbSizes,
-                A<CancellationToken>._)).MustHaveHappened();
+        asset.AssetApplicationMetadata.Should()
+            .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
     
     [Fact]
@@ -186,9 +181,8 @@ public class ThumbCreatorTests
             .WithContents(thumbSizes);
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
-        A.CallTo(() =>
-            assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId, "ThumbSizes", thumbSizes,
-                A<CancellationToken>._)).MustHaveHappened();
+        asset.AssetApplicationMetadata.Should()
+            .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
     
     [Fact]
@@ -231,9 +225,8 @@ public class ThumbCreatorTests
             .WithContents(thumbSizes);
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
-        A.CallTo(() =>
-            assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId, "ThumbSizes", thumbSizes,
-                A<CancellationToken>._)).MustHaveHappened();
+        asset.AssetApplicationMetadata.Should()
+            .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
     
     [Fact]
@@ -274,9 +267,8 @@ public class ThumbCreatorTests
             .WithContents(thumbSizes);
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
-        A.CallTo(() =>
-            assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId, "ThumbSizes", thumbSizes,
-                A<CancellationToken>._)).MustHaveHappened();
+        asset.AssetApplicationMetadata.Should()
+            .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
     
     [Fact]
@@ -318,8 +310,7 @@ public class ThumbCreatorTests
             .WithContents(thumbSizes);
         
         bucketWriter.ShouldHaveNoUnverifiedPaths();
-        A.CallTo(() =>
-            assetApplicationMetadataRepository.UpsertApplicationMetadata(assetId, "ThumbSizes", thumbSizes,
-                A<CancellationToken>._)).MustHaveHappened();
+        asset.AssetApplicationMetadata.Should()
+            .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
 }

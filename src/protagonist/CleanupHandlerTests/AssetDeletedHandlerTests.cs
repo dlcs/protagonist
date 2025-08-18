@@ -2,6 +2,7 @@
 using System.Text.Json.Nodes;
 using CleanupHandler;
 using CleanupHandler.Infrastructure;
+using CleanupHandler.Repository;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -22,6 +23,7 @@ namespace DeleteHandlerTests;
 public class AssetDeletedHandlerTests
 {
     private readonly CleanupHandlerSettings handlerSettings;
+    private readonly ICleanupHandlerAssetRepository assetRepository;
     private readonly IBucketWriter bucketWriter;
     private readonly FakeFileSystem fakeFileSystem;
     private readonly IStorageKeyGenerator storageKeyGenerator;
@@ -47,10 +49,11 @@ public class AssetDeletedHandlerTests
         bucketWriter = A.Fake<IBucketWriter>();
         fakeFileSystem = new FakeFileSystem();
         cacheInvalidator = A.Fake<ICacheInvalidator>();
+        assetRepository = A.Fake<ICleanupHandlerAssetRepository>();
     }
 
     private AssetDeletedHandler GetSut()
-        => new(storageKeyGenerator, bucketWriter, cacheInvalidator ,fakeFileSystem, Options.Create(handlerSettings),
+        => new(storageKeyGenerator, bucketWriter, cacheInvalidator ,fakeFileSystem, Options.Create(handlerSettings), assetRepository,
             new NullLogger<AssetDeletedHandler>());
 
     [Fact]
@@ -125,6 +128,45 @@ public class AssetDeletedHandlerTests
             bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
                 a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
             ), A<bool>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_DoesNotDeleteAnything_WhenDatabaseRecordExists()
+    {
+        // Arrange
+        const string assetId = "1/99/foo";
+        var queueMessage = CreateMinimalQueueMessage();
+        
+        A.CallTo(() => assetRepository.CheckExists(A<AssetId>._))
+            .Returns(true);
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        
+        // File deleted from local disk
+        fakeFileSystem.DeletedFiles.Should().BeEmpty();
+        
+        // Thumbs deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
+            ), A<bool>._)).MustNotHaveHappened();
+        
+        // storage deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
+            ), A<bool>._)).MustNotHaveHappened();
+        
+        // origin deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
+            ), A<bool>._)).MustNotHaveHappened();
     }
     
     [Fact]

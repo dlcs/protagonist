@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
@@ -25,6 +26,8 @@ public class ImageQuery
     public int? Number1 { get; set; }
     public int? Number2 { get; set; }
     public int? Number3 { get; set; }
+    
+    public string[]? Manifests { get; set; }
 
     public static ImageQuery? Parse(string s)
     {

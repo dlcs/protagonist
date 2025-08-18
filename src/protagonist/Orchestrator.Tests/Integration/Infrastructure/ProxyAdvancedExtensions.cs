@@ -44,7 +44,7 @@ internal static class ProxyAdvancedExtensions
         return requestMessage;
     }
 
-    public static async Task CopyProxyHttpResponse(this HttpContext context, HttpResponseMessage responseMessage)
+    public static Task CopyProxyHttpResponse(this HttpContext context, HttpResponseMessage responseMessage)
     {
         if (responseMessage == null)
         {
@@ -66,6 +66,7 @@ internal static class ProxyAdvancedExtensions
 
         // SendAsync removes chunking from the response. This removes the header so it doesn't expect a chunked response.
         response.Headers.Remove("transfer-encoding");
+        return Task.CompletedTask;
 
         /*using (var responseStream = await responseMessage.Content.ReadAsStreamAsync())
         {

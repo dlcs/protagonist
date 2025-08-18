@@ -5,7 +5,7 @@ namespace DLCS.Web.Response;
 /// <summary>
 /// Delegate that uses values in <see cref="IBasicPathElements"/> to make replacements in given template
 /// </summary>
-public delegate string PathGenerator(IBasicPathElements assetRequest, string template);
+public delegate string PathGenerator(IBasicPathElements assetRequest, PathTemplate template);
 
 /// <summary>
 /// Generate paths related to running Dlcs instance.
@@ -32,4 +32,9 @@ public interface IAssetPathGenerator
     /// <param name="includeQueryParams">If true, query params are included in path. Else they are omitted</param>
     string GetFullPathForRequest(IBasicPathElements assetRequest, bool useNativeFormat = false,
         bool includeQueryParams = true);
+
+    /// <summary>
+    /// Check if the path template for current host contains {version} replacement slug
+    /// </summary>
+    bool PathHasVersion();
 }

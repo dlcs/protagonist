@@ -34,7 +34,7 @@ public class DeliveryChannelPolicyDataValidator
         {
             policyData = JsonSerializer.Deserialize<string[]>(policyDataJson);
         }
-        catch(JsonException)
+        catch (JsonException)
         {
             return Array.Empty<string>();
         }
@@ -72,8 +72,10 @@ public class DeliveryChannelPolicyDataValidator
     private async Task<bool> ValidateTimeBasedPolicyData(string policyDataJson)
     {
         var policyData = ParseJsonPolicyData(policyDataJson);
-        
-        if (policyData.IsNullOrEmpty() || policyData.Any(string.IsNullOrEmpty))
+
+        // Invalid if no data, contains empty values or duplicate values
+        if (policyData.IsNullOrEmpty() || policyData.Any(string.IsNullOrEmpty) ||
+            policyData.Distinct().Count() != policyData.Length)
         {
             return false;
         }

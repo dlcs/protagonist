@@ -14,6 +14,7 @@ using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Assets.CustomHeaders;
 using DLCS.Repository.Auth;
+using DLCS.Repository.CustomerPath;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Strategy;
@@ -31,9 +32,12 @@ using Orchestrator.Infrastructure.API;
 using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Auth.V2;
 using Orchestrator.Infrastructure.IIIF;
+using Orchestrator.Infrastructure.IIIF.Manifests;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using ImageServiceVersion = IIIF.ImageApi.Version;
+using IIIF2 = IIIF.Presentation.V2;
+using IIIF3 = IIIF.Presentation.V3;
 
 namespace Orchestrator.Infrastructure;
 
@@ -50,7 +54,7 @@ public static class ServiceCollectionX
     public static IServiceCollection AddDataAccess(this IServiceCollection services, IConfiguration configuration)
         => services
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
-            .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
+            .AddSingleton<IPathCustomerRepository, GranularCustomerPathElementRepository>()
             .AddSingleton<AssetCachingHelper>()
             .AddSingleton<IAssetRepository, DapperAssetRepository>()
             .AddSingleton<IThumbRepository, ThumbRepository>()
@@ -145,6 +149,17 @@ public static class ServiceCollectionX
             .AddHttpMessageHandler<TimingHandler>();
         return services;
     }
+
+    /// <summary>
+    /// Services for building IIIF Manifests 
+    /// </summary>
+    public static IServiceCollection AddIIIFBuilding(this IServiceCollection services) =>
+        services
+            .AddScoped<IIIFManifestBuilder>()
+            .AddScoped<IThumbSizeProvider, MetadataWithFallbackThumbSizeProvider>()
+            .AddScoped<IManifestBuilderUtils, ManifestBuilderUtils>()
+            .AddScoped<IBuildManifests<IIIF2.Manifest>, ManifestV2Builder>()
+            .AddScoped<IBuildManifests<IIIF3.Manifest>, ManifestV3Builder>();
 
     /// <summary>
     /// Add required orchestrator dependencies

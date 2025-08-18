@@ -56,32 +56,19 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         this.assetNotificationSender = assetNotificationSender;
         this.logger = logger;
     }
-
+    
     public async Task<ModifyEntityResult<Batch>> Handle(CreateBatchOfImages request,
         CancellationToken cancellationToken)
     {
-        // TODO - we may need to support non-Image assets here 
-        if (request.IsPriority)
-        {
-            if (request.AssetsBeforeProcessing.Any(a =>
-                    a.Asset.Family != AssetFamily.Image && !a.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image) &&
-                    !MIMEHelper.IsImage(a.Asset.MediaType)))
-            {
-                return ModifyEntityResult<Batch>.Failure("Priority queue only supports image assets",
-                    WriteResult.FailedValidation);
-            }
-        }
+        var priorityValidation = ValidatePriorityQueueRequest(request);
+        if (priorityValidation != null) return priorityValidation;
         
-        var (exists, missing) = await DoAllSpacesExist(request.CustomerId, request.AssetsBeforeProcessing.Select(a => a.Asset), cancellationToken);
-        if (!exists)
-        {
-            var spaceList = string.Join(", ", missing);
-            return ModifyEntityResult<Batch>.Failure($"The following space(s) could not be found: {spaceList}",
-                WriteResult.FailedValidation);
-        }
+        var spaceValidation = await ValidateAllSpaces(request, cancellationToken);
+        if (spaceValidation != null) return spaceValidation; 
 
         bool updateFailed = false;
         var failureMessage = string.Empty;
+        WriteResult? failureType = null;
 
         await using var transaction = 
             await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
@@ -97,50 +84,47 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
 
             foreach (var assetBeforeProcessing in request.AssetsBeforeProcessing)
             {
-                logger.LogDebug("Processing asset {AssetId}", assetBeforeProcessing.Asset.Id);
+                var assetId = assetBeforeProcessing.Asset.Id;
+                logger.LogDebug("Processing asset {AssetId}", assetId);
                 var processAssetResult =
                     await assetProcessor.Process(assetBeforeProcessing, false, true, true,
                         cancellationToken: cancellationToken);
                 if (!processAssetResult.IsSuccess)
                 {
-                    logger.LogDebug("Processing asset {AssetId} failed, aborting batch. Error: '{Error}'", assetBeforeProcessing.Asset.Id,
+                    logger.LogDebug("Processing asset {AssetId} failed, aborting batch. Error: '{Error}'", assetId,
                         processAssetResult.Result.Error);
                     updateFailed = true;
+                    failureType = processAssetResult.Result.WriteResult;
                     failureMessage = processAssetResult.Result.Error;
                     break;
                 }
 
                 var savedAsset = processAssetResult.Result.Entity!;
-                
-                var existingAsset = processAssetResult.ExistingAsset;
-                var assetModificationRecord = existingAsset == null
-                    ? AssetModificationRecord.Create(savedAsset)
-                    : AssetModificationRecord.Update(existingAsset, savedAsset, processAssetResult.RequiresEngineNotification);
-                assetModifiedNotificationList.Add(assetModificationRecord);
+                assetModifiedNotificationList.Add(GetAssetModificationRecord(processAssetResult, savedAsset));
                 
                 if (processAssetResult.RequiresEngineNotification)
                 {
                     engineNotificationList.Add(savedAsset);
+                    batch.AddBatchAsset(assetId);
                 }
                 else
                 {
+                    // NOTE(DG) - I think this code block is no longer accessible as alwaysReingest:true is sent to
+                    // the assetProcessor
                     logger.LogDebug(
                         "Asset {AssetId} of Batch {BatchId} does not require engine notification. Marking as complete",
-                        assetBeforeProcessing.Asset.Id, batch.Id);
+                        assetId, batch.Id);
+                    batch.AddBatchAsset(assetId, BatchAssetStatus.Completed);
                     batch.Completed += 1;
                 }
             }
-            
-            await assetNotificationSender.SendAssetModifiedMessage(assetModifiedNotificationList, cancellationToken);
-            
-            if (batch.Completed > 0)
-            {
-                await dlcsContext.SaveChangesAsync(cancellationToken);
-            }
+
+            await dlcsContext.SaveChangesAsync(cancellationToken);
 
             if (!updateFailed)
             {
                 await transaction.CommitAsync(cancellationToken);
+                await assetNotificationSender.SendAssetModifiedMessage(assetModifiedNotificationList, cancellationToken);
             }
         }
         catch (Exception ex)
@@ -159,7 +143,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 await transaction.RollbackAsync(cancellationToken);
             }
 
-            return ModifyEntityResult<Batch>.Failure(failureMessage, WriteResult.Error);
+            return ModifyEntityResult<Batch>.Failure(failureMessage, failureType ?? WriteResult.Error);
         }
         else
         {
@@ -170,6 +154,32 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         }
         
         return ModifyEntityResult<Batch>.Success(batch, WriteResult.Created);
+    }
+
+    private ModifyEntityResult<Batch>? ValidatePriorityQueueRequest(CreateBatchOfImages request)
+    {
+        if (!request.IsPriority) return null;
+
+        if (request.AssetsBeforeProcessing.Any(a =>
+                a.Asset.Family != AssetFamily.Image && !a.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image) &&
+                !MIMEHelper.IsImage(a.Asset.MediaType)))
+        {
+            return ModifyEntityResult<Batch>.Failure("Priority queue only supports image assets",
+                WriteResult.FailedValidation);
+        }
+
+        return null;
+    }
+
+    private async Task<ModifyEntityResult<Batch>?> ValidateAllSpaces(CreateBatchOfImages request,
+        CancellationToken cancellationToken)
+    {
+        var (exists, missing) = await DoAllSpacesExist(request.CustomerId, request.AssetsBeforeProcessing.Select(a => a.Asset), cancellationToken);
+        if (exists) return null;
+
+        var spaceList = string.Join(", ", missing);
+        return ModifyEntityResult<Batch>.Failure($"The following space(s) could not be found: {spaceList}",
+            WriteResult.FailedValidation);
     }
 
     private async Task<(bool Exists, IEnumerable<int> NonExistant)> DoAllSpacesExist(int customer,
@@ -188,5 +198,15 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
 
         var missing = uniqueSpaceIds.Except(matchingIds);
         return (false, missing);
+    }
+    
+    private static AssetModificationRecord GetAssetModificationRecord(ProcessAssetResult processAssetResult,
+        Asset savedAsset)
+    {
+        var existingAsset = processAssetResult.ExistingAsset;
+        var assetModificationRecord = existingAsset == null
+            ? AssetModificationRecord.Create(savedAsset)
+            : AssetModificationRecord.Update(existingAsset, savedAsset, processAssetResult.RequiresEngineNotification);
+        return assetModificationRecord;
     }
 }

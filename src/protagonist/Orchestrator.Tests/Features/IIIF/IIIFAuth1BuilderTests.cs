@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using DLCS.Core.Types;
 using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
-using FakeItEasy;
 using IIIF.Auth.V1;
 using IIIF.Presentation.V2.Strings;
 using Microsoft.Extensions.Logging.Abstractions;

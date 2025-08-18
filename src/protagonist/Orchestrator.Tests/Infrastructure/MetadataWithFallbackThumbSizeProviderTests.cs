@@ -3,7 +3,6 @@ using System.Threading;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
-using IIIF;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure;

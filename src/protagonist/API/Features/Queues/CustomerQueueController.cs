@@ -9,7 +9,6 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
-using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using DLCS.Model.Processing;
 using Hydra.Collections;
@@ -115,7 +114,7 @@ public class CustomerQueueController : HydraController
     /// <remarks>
     /// Sample request:
     ///
-    ///     POST: /customers/99/queue/priority
+    ///     POST: /customers/99/queue/priority  
     ///     {
     ///         "@context": "http://www.w3.org/ns/hydra/context.jsonld",
     ///         "@type": "Collection",
@@ -187,7 +186,7 @@ public class CustomerQueueController : HydraController
     }
 
     /// <summary>
-    /// Get details of all images within specified batch.
+    /// Get details of all images currently associated with specified batch.
     ///
     /// Supports the following query parameters:
     ///   ?q= parameter for filtering
@@ -229,6 +228,53 @@ public class CustomerQueueController : HydraController
             getCustomerRequest,
             image => image.ToHydra(GetUrlRoots()),
             errorTitle: "Get Batch Images failed",
+            cancellationToken: cancellationToken
+        );
+    }
+    
+    /// <summary>
+    /// Get details of all images within specified batch.
+    ///
+    /// Supports the following query parameters:
+    ///   ?q= parameter for filtering
+    ///   ?orderBy= and ?orderByDescending= for ordering
+    ///   ?page= and ?pageSize= for paging 
+    /// </summary>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="batchId">Id of batch to load images from</param>
+    /// <param name="q">
+    /// Optional query parameter. A serialised JSON <see cref="AssetFilter"/> object</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Hydra JSON-LD Queue object</returns>
+    /// <remarks>
+    /// Sample request:
+    ///
+    ///     GET: /customers/1/queue/12345/assets?q={"string1":"metadata-value"}
+    ///     GET: /customers/1/queue/12345/assets?orderByDescending=width
+    ///     GET: /customers/1/queue/12345/assets?orderBy=height
+    ///     GET: /customers/1/queue/12345/assets?orderBy=width&page=2&pageSize=10
+    /// </remarks>
+    [HttpGet]
+    [Route("batches/{batchId}/assets")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    public async Task<IActionResult> GetBatchAssets([FromRoute] int customerId, [FromRoute] int batchId,
+        [FromQuery] string? q = null, CancellationToken cancellationToken = default)
+    {
+        var assetFilter = Request.GetAssetFilterFromQParam(q);
+        assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
+        if (q.HasText() && assetFilter == null)
+        {
+            return this.HydraProblem("Could not parse query", null, 400);
+        }
+
+        var getCustomerRequest = new GetBatchAssets(customerId, batchId, assetFilter);
+
+        return await HandlePagedFetch<Asset, GetBatchAssets, DLCS.HydraModel.Image>(
+            getCustomerRequest,
+            image => image.ToHydra(GetUrlRoots()),
+            errorTitle: "Get Batch Assets failed",
             cancellationToken: cancellationToken
         );
     }
@@ -377,7 +423,7 @@ public class CustomerQueueController : HydraController
     {
         var assetsBeforeProcessing = images.Members!
             .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId),
-                (i.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+                i.DeliveryChannels?
                 .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.Policy)).ToArray())).ToList();
         return assetsBeforeProcessing;
     }

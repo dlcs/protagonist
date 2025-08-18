@@ -2,16 +2,13 @@
 using System.Threading.Tasks;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
-using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
 using Microsoft.EntityFrameworkCore;
+using Testcontainers.PostgreSql;
 using Xunit;
 
 namespace Test.Helpers.Integration;
@@ -20,27 +17,9 @@ namespace Test.Helpers.Integration;
 /// Xunit fixture that manages lifecycle for Postgres 12 container with basic migration applied.
 /// Seeds Customer 99 with 1 space and default thumbnailPolicy
 /// </summary>
-public class DlcsDatabaseFixture : IAsyncLifetime
+public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
 {
-    private readonly PostgreSqlTestcontainer postgresContainer;
-
-    public DlcsContext DbContext { get; private set; }
-    public string ConnectionString { get; private set; }
-
-    public DlcsDatabaseFixture()
-    {
-        var postgresBuilder = new TestcontainersBuilder<PostgreSqlTestcontainer>()
-            .WithDatabase(new PostgreSqlTestcontainerConfiguration("postgres:13-alpine")
-            {
-                Database = "db",
-                Password = "postgres_pword",
-                Username = "postgres"
-            })
-            .WithCleanUp(true)
-            .WithLabel("protagonist_test", "True");
-
-        postgresContainer = postgresBuilder.Build();
-    }
+    protected override Task InitialiseDb() => SeedCustomer();
 
     /// <summary>
     /// Delete any standing data - leaves data set in Seed method
@@ -189,35 +168,48 @@ public class DlcsDatabaseFixture : IAsyncLifetime
         
         await DbContext.SaveChangesAsync();
     }
+}
+
+public class DlcsDefaultDatabaseFixture : IAsyncLifetime
+{
+    private readonly PostgreSqlContainer postgresContainer;
+
+    public DlcsContext DbContext { get; private set; }
+    public string ConnectionString { get; private set; }
+
+    public DlcsDefaultDatabaseFixture()
+    {
+        var postgresBuilder = new PostgreSqlBuilder()
+            .WithDatabase("db")
+            .WithPassword("postgres_pword")
+            .WithUsername("postgres")
+            .WithCleanUp(true)
+            .WithLabel("protagonist_test", "True");
+
+        postgresContainer = postgresBuilder.Build();
+    }
+    
+    protected virtual Task InitialiseDb() => Task.CompletedTask;
 
     public async Task InitializeAsync()
     {
-        // Start DB + apply migrations
-        try
-        {
-            await postgresContainer.StartAsync();
-            SetPropertiesFromContainer();
-            await DbContext.Database.MigrateAsync();
-            await SeedCustomer();
-        }
-        catch (Exception ex)
-        {
-            var m = ex.Message;
-            throw;
-        }
+        await postgresContainer.StartAsync();
+        SetPropertiesFromContainer();
+        await DbContext.Database.MigrateAsync();
+        await InitialiseDb();
     }
 
     public Task DisposeAsync() => postgresContainer.StopAsync();
     
     private void SetPropertiesFromContainer()
     {
-        ConnectionString = postgresContainer.ConnectionString;
+        ConnectionString = postgresContainer.GetConnectionString();
 
         // Create new DlcsContext using connection string for Postgres container
-        DbContext = new DlcsContext(
-            new DbContextOptionsBuilder<DlcsContext>()
-                .UseNpgsql(postgresContainer.ConnectionString, builder => builder.SetPostgresVersion(13, 0)).Options
-        );
+        var dbContextOptions = new DbContextOptionsBuilder<DlcsContext>()
+            .SetupDlcsContextOptions(postgresContainer.GetConnectionString())
+            .EnableSensitiveDataLogging();
+        DbContext = new DlcsContext(dbContextOptions.Options);
         DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
     }
 }

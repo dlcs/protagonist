@@ -1,5 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.IO.Enumeration;
+﻿using System.IO.Enumeration;
 using CleanupHandler.Infrastructure;
 using CleanupHandler.Repository;
 using DLCS.AWS.ElasticTranscoder;
@@ -29,8 +28,7 @@ public class AssetUpdatedHandler  : IMessageHandler
     private readonly ILogger<AssetUpdatedHandler> logger;
     private readonly IEngineClient engineClient;
     private readonly ICleanupHandlerAssetRepository cleanupHandlerAssetRepository;
-
-
+    
     public AssetUpdatedHandler(
         IStorageKeyGenerator storageKeyGenerator,
         IBucketWriter bucketWriter,
@@ -82,7 +80,7 @@ public class AssetUpdatedHandler  : IMessageHandler
         if (NoCleanupRequired(message, assetAfter, assetBefore)) return true;
         if (AssetStillIngesting(assetAfter, assetBefore)) return false;
 
-        var (modifiedOrAdded, removed) = GetChangeSets(assetAfter, assetBefore);
+        var (modifiedOrAddedChannels, removedChannels) = GetChangeSets(assetAfter, assetBefore);
 
         if (handlerSettings.AssetModifiedSettings.DryRun)
         {
@@ -94,19 +92,19 @@ public class AssetUpdatedHandler  : IMessageHandler
         s3Objects.objectsToRemove = new HashSet<ObjectInBucket>();
         s3Objects.foldersToRemove = new HashSet<ObjectInBucket>();
         
-        if (removed.Any())
+        if (removedChannels.Any())
         {
-            foreach (var deliveryChannel in removed)
+            foreach (var deliveryChannel in removedChannels)
             {
                 await CleanupRemoved(deliveryChannel, assetAfter, s3Objects);
             }
         }
         
-        if (modifiedOrAdded.Any())
+        if (modifiedOrAddedChannels.Any())
         {
             try
             {
-                await CleanupModified(modifiedOrAdded, assetBefore, assetAfter, s3Objects);
+                await CleanupModified(modifiedOrAddedChannels, assetBefore, assetAfter, s3Objects);
             }
             catch (Exception ex)
             {
@@ -133,9 +131,10 @@ public class AssetUpdatedHandler  : IMessageHandler
         return true;
     }
 
-    private static (List<ImageDeliveryChannel> modifiedOrAdded,  List<ImageDeliveryChannel> removed) GetChangeSets(
+    private static (List<ImageDeliveryChannel> modifiedOrAdded, List<ImageDeliveryChannel> removed) GetChangeSets(
         Asset? assetAfter, Asset assetBefore)
     {
+        // Get a list of deliveryChannel changes - split by modifiedOrAdded + removed
         var modifiedOrAdded =
             assetAfter!.ImageDeliveryChannels.Where(after =>
                 assetBefore.ImageDeliveryChannels.All(before =>
@@ -151,7 +150,7 @@ public class AssetUpdatedHandler  : IMessageHandler
         return assetAfter.Ingesting == true && assetBefore.Finished > assetAfter.Finished;
     }
     
-    private static bool NoCleanupRequired([NotNullWhen(true)] QueueMessage message, Asset? assetAfter, Asset assetBefore)
+    private static bool NoCleanupRequired(QueueMessage message, Asset? assetAfter, Asset assetBefore)
     {
         return !message.MessageAttributes.Keys.Contains("engineNotified") &&
             (assetBefore.Roles ?? string.Empty) == (assetAfter.Roles ?? string.Empty);
@@ -214,7 +213,7 @@ public class AssetUpdatedHandler  : IMessageHandler
                 await CleanupChangedTimebasedDeliveryChannel(deliveryChannelModified, assetAfter, objectsToRemove);
                 break;
             default:
-                logger.LogDebug("policy {PolicyName} does not require any changes for asset {AssetId}",
+                logger.LogDebug("Policy {PolicyName} does not require any changes for asset {AssetId}",
                     deliveryChannelModified.DeliveryChannelPolicy.Name, assetAfter.Id);
                 break;
         }
@@ -233,12 +232,12 @@ public class AssetUpdatedHandler  : IMessageHandler
         if (presetDictionary.IsNullOrEmpty())
         {
             logger.LogWarning(
-                "retrieved no timebased presets from engine, {AssetId} will not be cleaned up for the timebased channel",
+                "Retrieved no timebased presets from engine, {AssetId} will not be cleaned up for the timebased channel",
                 assetAfter.Id);
             throw new ArgumentNullException(nameof(presetDictionary), "Failed to retrieve any preset values");
         }
 
-        foreach (var presetIdentifier in presetList ?? new List<string>())
+        foreach (var presetIdentifier in presetList)
         {
             if (presetDictionary.TryGetValue(presetIdentifier, out var transcoderPreset))
             {
@@ -305,6 +304,12 @@ public class AssetUpdatedHandler  : IMessageHandler
         var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetAfter.Id);
         var keys = await bucketReader.GetMatchingKeys(timebasedFolder);
         var path = RetrieveMediaPath(assetAfter);
+        
+        if (!handlerSettings.AssetModifiedSettings.DryRun)
+        {
+            await assetMetadataRepository.DeleteAssetApplicationMetadata(assetAfter.Id,
+                AssetApplicationMetadataTypes.AVTranscodes);
+        }
 
         foreach (var key in keys)
         {
@@ -377,7 +382,7 @@ public class AssetUpdatedHandler  : IMessageHandler
     
     private async Task RemoveObjectsFromBucket(HashSet<ObjectInBucket> bucketObjectsTobeRemoved)
     {
-        logger.LogInformation("locations to potentially be removed: {Objects}", bucketObjectsTobeRemoved);
+        logger.LogInformation("Locations to potentially be removed: {Objects}", bucketObjectsTobeRemoved);
         
         if (handlerSettings.AssetModifiedSettings.DryRun) return;
 
@@ -386,7 +391,7 @@ public class AssetUpdatedHandler  : IMessageHandler
     
     private async Task RemoveFolderInBucket(HashSet<ObjectInBucket> bucketFoldersToBeRemoved)
     {
-        logger.LogInformation("bucket folders to potentially be removed: {Objects}", bucketFoldersToBeRemoved);
+        logger.LogInformation("Bucket folders to potentially be removed: {Objects}", bucketFoldersToBeRemoved);
         
         if (handlerSettings.AssetModifiedSettings.DryRun) return;
 

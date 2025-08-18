@@ -47,6 +47,13 @@ public class OrchestratorSettings
     /// If true, requests for info.json will cause image to be orchestrated.
     /// </summary>
     public bool OrchestrateOnInfoJson { get; set; } = true;
+
+    /// <summary>
+    /// If true, asset paths on single-item and NamedQuery manifests are rewritten in accordance with
+    /// <see cref="PathTemplateOptions"/>.
+    /// If false, native paths are always used.
+    /// </summary>
+    public bool RewriteAssetPathsOnManifests { get; set; }
     
     /// <summary>
     /// Optional date, any info.json files generated prior to this date will be considered stale and regenerated.
@@ -119,11 +126,6 @@ public class ProxySettings
     /// Get the root path that thumb handler is listening on
     /// </summary>
     public string ThumbResizePath { get; set; } = "thumbs";
-
-    /// <summary>
-    /// Get the root path for serving images
-    /// </summary>
-    public string ImagePath { get; set; } = "iiif-img";
 
     /// <summary>
     /// A collection of resize config for serving resized thumbs rather than handling requests via image-server

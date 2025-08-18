@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿﻿using System.Collections.Generic;
 using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
@@ -34,7 +34,7 @@ public class DeliveryChannelProcessor
     /// <param name="deliveryChannelsBeforeProcessing">List of deliveryChannels submitted in body</param>
     /// <returns>Boolean indicating whether asset requires processing Engine</returns>
     public async Task<bool> ProcessImageDeliveryChannels(Asset? existingAsset, Asset updatedAsset,
-        DeliveryChannelsBeforeProcessing[] deliveryChannelsBeforeProcessing)
+        DeliveryChannelsBeforeProcessing[]? deliveryChannelsBeforeProcessing)
     {
         if (existingAsset == null ||
             DeliveryChannelsRequireReprocessing(existingAsset, deliveryChannelsBeforeProcessing))
@@ -42,7 +42,7 @@ public class DeliveryChannelProcessor
             try
             {
                 var deliveryChannelChanged = await SetImageDeliveryChannels(updatedAsset,
-                    deliveryChannelsBeforeProcessing, existingAsset != null);
+                    deliveryChannelsBeforeProcessing ?? Array.Empty<DeliveryChannelsBeforeProcessing>(), existingAsset != null);
                 return deliveryChannelChanged;
             }
             catch (InvalidOperationException ioEx)
@@ -76,14 +76,15 @@ public class DeliveryChannelProcessor
     private async Task<bool> SetImageDeliveryChannels(Asset asset, DeliveryChannelsBeforeProcessing[] deliveryChannelsBeforeProcessing, bool isUpdate)
     {
         var assetId = asset.Id;
+        var isDefaultChannel = deliveryChannelsBeforeProcessing.Any(d => d.Channel == AssetDeliveryChannels.Default);
         
-        if (!isUpdate)
+        if (!isUpdate || isDefaultChannel)
         {
             logger.LogTrace("Asset {AssetId} is new, resetting ImageDeliveryChannels", assetId);
             asset.ImageDeliveryChannels = new List<ImageDeliveryChannel>();
             
             // Only valid for creation - set image delivery channels to default values for media type
-            if (deliveryChannelsBeforeProcessing.IsNullOrEmpty())
+            if (deliveryChannelsBeforeProcessing.IsNullOrEmpty() || isDefaultChannel)
             {
                 logger.LogDebug("Asset {AssetId} is new, no deliveryChannels specified. Assigning defaults for mediaType",
                     assetId);

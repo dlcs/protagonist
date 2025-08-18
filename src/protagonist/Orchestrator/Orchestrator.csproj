@@ -1,30 +1,31 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="6.0.2" />
-        <PackageReference Include="AspNetCore.HealthChecks.Uris" Version="6.0.3" />
-        <PackageReference Include="AWSSDK.SecurityToken" Version="3.7.1.150" />
-        <PackageReference Include="JetBrains.Annotations" Version="2022.1.0" />
-        <PackageReference Include="LazyCache.AspNetCore" Version="2.4.0" />
-        <PackageReference Include="MediatR" Version="10.0.1" />
-        <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="10.0.1" />
-        <PackageReference Include="Microsoft.AspNetCore.HeaderPropagation" Version="6.0.21" />
-        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="6.0.5" />
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.22" />
-        <PackageReference Include="Serilog.AspNetCore" Version="5.0.0" />
-        <PackageReference Include="Yarp.ReverseProxy" Version="1.1.2" />
+        <PackageReference Include="AspNetCore.HealthChecks.NpgSql"/>
+        <PackageReference Include="AspNetCore.HealthChecks.Uris"/>
+        <PackageReference Include="AWSSDK.SecurityToken"/>
+        <PackageReference Include="JetBrains.Annotations"/>
+        <PackageReference Include="LazyCache.AspNetCore"/>
+        <PackageReference Include="MediatR"/>
+        <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection"/>
+        <PackageReference Include="Microsoft.AspNetCore.HeaderPropagation"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore"/>
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL"/>
+        <PackageReference Include="Serilog.AspNetCore"/>
+        <PackageReference Include="Yarp.ReverseProxy"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\API.Client\API.Client.csproj" />
-      <ProjectReference Include="..\DLCS.Mediatr\DLCS.Mediatr.csproj" />
-      <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj" />
-      <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj" />
+        <ProjectReference Include="..\API.Client\API.Client.csproj"/>
+        <ProjectReference Include="..\DLCS.Mediatr\DLCS.Mediatr.csproj"/>
+        <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj"/>
+        <ProjectReference Include="..\DLCS.Web\DLCS.Web.csproj"/>
     </ItemGroup>
 
 </Project>

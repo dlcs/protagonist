@@ -46,11 +46,11 @@ public class QueuePostValidatorTests
         {
             Members = new[]
             {
-                new Image { ModelId = "1/2/f" },
-                new Image { ModelId = "1/2/fo" },
-                new Image { ModelId = "1/2/foo" },
-                new Image { ModelId = "1/2/bar" },
-                new Image { ModelId = "1/2/baz" },
+                new Image { ModelId = "f" },
+                new Image { ModelId = "fo" },
+                new Image { ModelId = "foo" },
+                new Image { ModelId = "bar" },
+                new Image { ModelId = "baz" },
             }
         };
         var result = sut.TestValidate(model);
@@ -66,10 +66,10 @@ public class QueuePostValidatorTests
         {
             Members = new[]
             {
-                new Image { ModelId = "1/2/fo" },
-                new Image { ModelId = "1/2/foo" },
-                new Image { ModelId = "1/2/bar" },
-                new Image { ModelId = "1/2/baz" },
+                new Image { ModelId = "fo" },
+                new Image { ModelId = "foo" },
+                new Image { ModelId = "bar" },
+                new Image { ModelId = "baz" },
             }
         };
         var result = sut.TestValidate(model);
@@ -84,15 +84,33 @@ public class QueuePostValidatorTests
         {
             Members = new[]
             {
-                new Image { ModelId = "1/2/foo" },
-                new Image { ModelId = "1/2/bar" },
-                new Image { ModelId = "1/2/foo" },
+                new Image { ModelId = "foo", Space = 2 },
+                new Image { ModelId = "bar", Space = 2 },
+                new Image { ModelId = "foo", Space = 2 },
+                new Image { ModelId = "foo", Space = 3 },
             }
         };
         var result = sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(r => r.Members)
-            .WithErrorMessage("Members contains 1 duplicate Id(s): 1/2/foo");
+            .WithErrorMessage("Members contains 1 duplicate Id(s): Id:foo,Space:2");
+    }
+    
+    [Fact]
+    public void Members_NoValidationError_IfContainsDuplicateIds_WithDifferentSpace()
+    {
+        var sut = GetSut();
+        var model = new HydraCollection<Image>
+        {
+            Members = new[]
+            {
+                new Image { ModelId = "foo", Space = 10, },
+                new Image { ModelId = "bar", Space = 10, },
+                new Image { ModelId = "foo", Space = 20, },
+            }
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(r => r.Members);
     }
 
     [Theory]

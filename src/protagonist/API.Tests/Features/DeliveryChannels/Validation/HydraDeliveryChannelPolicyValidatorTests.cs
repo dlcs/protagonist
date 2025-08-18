@@ -105,7 +105,7 @@ public class HydraDeliveryChannelPolicyValidatorTests
     }
     
     [Fact]
-    public async void NewDeliveryChannelPolicy_Requires_ValidTranscodePolicy_ForAvChannel()
+    public async Task NewDeliveryChannelPolicy_Requires_ValidTranscodePolicy_ForAvChannel()
     {
         var policy = new DeliveryChannelPolicy()
         {

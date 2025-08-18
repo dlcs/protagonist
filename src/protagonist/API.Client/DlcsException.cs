@@ -1,15 +1,10 @@
 using System;
-using System.Runtime.Serialization;
 
 namespace API.Client;
 
 public class DlcsException : Exception
 {
     public DlcsException()
-    {
-    }
-
-    protected DlcsException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
 

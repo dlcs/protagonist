@@ -1,17 +1,17 @@
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
+using DLCS.AWS.SNS;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
-using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Model.Policies;
 using DLCS.Model.Processing;
 using DLCS.Model.Storage;
 using DLCS.Repository;
-using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Policies;
@@ -49,9 +49,12 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
+            .AddSingleton<IElasticTranscoderPresetLookup, ElasticTranscoderPresetLookup>()
+            .AddScoped<ITopicPublisher, TopicPublisher>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS()
+            .WithAmazonSNS()
             .WithAmazonElasticTranscoder();
 
         return services;
@@ -109,11 +112,16 @@ public static class ServiceCollectionX
                     client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
                 }).AddHttpMessageHandler<TimingHandler>();
 
-            services.AddHttpClient<IThumbsClient, CantaloupeThumbsClient>(client =>
+            services.AddHttpClient<IThumbsClient, ImageServerThumbsClient>(client =>
                 {
-                    client.BaseAddress = engineSettings.ImageIngest.ThumbsProcessorUrl;
+                    var thumbsClient = new UriBuilder(engineSettings.ImageIngest.ThumbsProcessorUrl)
+                    {
+                        Path = engineSettings.ImageIngest.ThumbsProcessorPathBase
+                    };
+                    client.BaseAddress = thumbsClient.Uri;
                     client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
-                }).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler() { UseCookies = false })
+                })
+                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false })
                 .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<IOrchestratorClient, InfoJsonOrchestratorClient>(client =>
@@ -137,7 +145,6 @@ public static class ServiceCollectionX
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
             .AddScoped<IStorageRepository, CustomerStorageRepository>()
             .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
-            .AddScoped<IAssetApplicationMetadataRepository, AssetApplicationMetadataRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>
@@ -162,6 +169,17 @@ public static class ServiceCollectionX
             .AddDbContextCheck<DlcsContext>("DLCS-DB")
             .AddQueueHealthCheck();
 
+        return services;
+    }
+
+    /// <summary>
+    /// Add topic notifiers
+    /// </summary>
+    public static IServiceCollection AddTopicNotifiers(this IServiceCollection services)
+    {
+        services
+            .AddScoped<IBatchCompletedNotificationSender, BatchCompletedNotificationSender>();
+        
         return services;
     }
 }

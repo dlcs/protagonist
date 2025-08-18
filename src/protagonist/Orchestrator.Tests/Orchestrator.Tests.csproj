@@ -1,43 +1,42 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
 
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AngleSharp" Version="0.17.1" />
-        <PackageReference Include="FakeItEasy" Version="7.3.1" />
-        <PackageReference Include="FluentAssertions" Version="6.6.0" />
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="6.0.5" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.11.0" />
-        <PackageReference Include="NBuilder" Version="6.1.0" />
-        <PackageReference Include="Stubbery" Version="2.8.3" />
-        <PackageReference Include="xunit" Version="2.4.1" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+        <PackageReference Include="AngleSharp"/>
+        <PackageReference Include="FakeItEasy"/>
+        <PackageReference Include="FluentAssertions"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk"/>
+        <PackageReference Include="NBuilder"/>
+        <PackageReference Include="Stubbery"/>
+        <PackageReference Include="xunit"/>
+        <PackageReference Include="xunit.runner.visualstudio">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="coverlet.collector" Version="3.1.2">
+        <PackageReference Include="coverlet.collector">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Orchestrator\Orchestrator.csproj" />
-      <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj" />
+        <ProjectReference Include="..\Orchestrator\Orchestrator.csproj"/>
+        <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="appsettings.Testing.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </Content>
+        <Content Include="appsettings.Testing.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Integration\Files\dummy.pdf" />
+        <None Remove="Integration\Files\dummy.pdf"/>
     </ItemGroup>
 
 </Project>

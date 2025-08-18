@@ -46,19 +46,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly FakeImageOrchestrator orchestrator = new();
     private const string SizesJsonContent = "{\"o\":[[800,800],[400,400],[200,200]],\"a\":[]}";
 
-    private readonly List<ImageDeliveryChannel> deliveryChannelsForImage = new()
-    {
-        new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Image,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
-        },
-        new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Thumbnails,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
-        }
-    };
+    private readonly List<ImageDeliveryChannel> deliveryChannelsForImage;
 
     public ImageHandlingTests(ProtagonistAppFactory<Startup> factory, StorageFixture storageFixture)
     {
@@ -79,6 +67,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     .AddSingleton<TestProxyHandler>();
             })
             .CreateClient(new WebApplicationFactoryClientOptions {AllowAutoRedirect = false});
+
+        deliveryChannelsForImage = dbFixture.DbContext.GetImageDeliveryChannels();
         
         dbFixture.CleanUp();
     }
@@ -102,6 +92,16 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKeys(corsHeaders);
+    }
+    
+    [Fact]
+    public async Task Get_CanvasIdUrl_NotFound()
+    {
+        // Act
+        var response = await httpClient.GetAsync("/iiif-img/2/1/image/canvas/c/10");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
     
     [Theory]
@@ -191,8 +191,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_Correct_ViaDisplayName()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3)}");
-        var namedId = $"test/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3)}";
+        var id = AssetIdGenerator.GetAssetId();
+        var namedId = $"test/1/{id.Asset}";
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -228,8 +228,8 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_Correct_IgnoresQueryParamOnRequestUri()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_Correct_IgnoresQueryParamOnRequestUri)}");
-        var namedId = $"test/1/{nameof(GetInfoJson_Correct_IgnoresQueryParamOnRequestUri)}";
+        var id = AssetIdGenerator.GetAssetId();
+        var namedId = $"test/1/{id.Asset}";
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -306,7 +306,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV2_RestrictedImage_NoRole_HasMaxWidthSet()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_RestrictedImage_NoRole_HasMaxWidthSet)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -335,7 +335,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_RestrictedImage_NoRole_HasMaxWidthSet()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_RestrictedImage_NoRole_HasMaxWidthSet)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -365,7 +365,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV2_ReturnsImageServerSizes_IfS3GetFails()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_ReturnsImageServerSizes_IfS3GetFails)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -403,7 +403,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_NotInS3_CustomPathRules)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -451,7 +451,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -490,7 +490,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3_CustomPathRules()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaDirectPath_AlreadyInS3_CustomPathRules)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -532,7 +532,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV2_Correct_ViaConneg()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV2_Correct_ViaConneg)}");
+        var id = AssetIdGenerator.GetAssetId();
         const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/image/2/context.json\"";
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
@@ -565,7 +565,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV3_RedirectsToCanonical()
     {
         // Arrange
-        var id = $"99/1/{nameof(GetInfoJsonV3_RedirectsToCanonical)}";
+        var id = AssetIdGenerator.GetAssetId();
 
         // Act
         var response = await httpClient.GetAsync($"iiif-img/v3/{id}/info.json");
@@ -579,7 +579,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV3_Correct_ViaConneg_CustomPathRules()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV3_Correct_ViaConneg_CustomPathRules)}"); 
+        var id = AssetIdGenerator.GetAssetId();
         const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
@@ -616,7 +616,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJsonV3_Correct_ViaConneg()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJsonV3_Correct_ViaConneg)}");
+        var id = AssetIdGenerator.GetAssetId();
         const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
@@ -648,7 +648,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_OpenImage_Correct()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_OpenImage_Correct)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -675,7 +675,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_OrchestratesImage_IfServedFromS3()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_OrchestratesImage_IfServedFromS3)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -696,7 +696,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await httpClient.GetAsync($"iiif-img/{id}/info.json");
 
         // Assert
-        FakeImageOrchestrator.OrchestratedImages.Should().Contain(id);
+        FakeImageOrchestrator.OrchestratedImages.Should().ContainEquivalentOf(id);
     }
     
     [Fact]
@@ -706,7 +706,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // the imageserver to serve but this isn't caught in these tests 
         
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_DoesNotOrchestratesImage_IfServedFromImageServer)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -728,7 +728,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_DoesNotOrchestratesImage_IfQueryParamPassed()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_DoesNotOrchestratesImage_IfQueryParamPassed)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -750,7 +750,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_OpenImage_ForwardedFor_Correct()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_OpenImage_ForwardedFor_Correct)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -780,7 +780,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_RestrictedImage_Correct()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_RestrictedImage_Correct)}");
+        var id = AssetIdGenerator.GetAssetId();
         const string roleName = "my-test-role";
         const string authServiceName = "my-auth-service";
         const string logoutServiceName = "my-logout-service";
@@ -829,7 +829,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_RestrictedImage_Correct_CustomPathRules()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_RestrictedImage_Correct_CustomPathRules)}");
+        var id = AssetIdGenerator.GetAssetId();
         const string roleName = "my-test-role";
         const string authServiceName = "my-auth-service";
         const string logoutServiceName = "my-logout-service";
@@ -883,7 +883,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_RestrictedImage_NoRole_HasNoService()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_RestrictedImage_NoRole_HasNoService)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 500, imageDeliveryChannels: deliveryChannelsForImage);
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
@@ -914,8 +914,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns401WithoutServices()
     {
         // Arrange
-        var id = AssetId.FromString(
-            $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401WithoutServices)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "unknown-role", maxUnauthorised: 500,
             imageDeliveryChannels: deliveryChannelsForImage);
 
@@ -945,8 +944,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfNoBearerTokenProvided()
     {
         // Arrange
-        var id = AssetId.FromString(
-            $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfNoBearerTokenProvided)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500,
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.SaveChangesAsync();
@@ -974,8 +972,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfUnknownBearerTokenProvided()
     {
         // Arrange
-        var id = AssetId.FromString(
-            $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfUnknownBearerTokenProvided)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500,
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.SaveChangesAsync();
@@ -1005,8 +1002,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfExpiredBearerTokenProvided()
     {
         // Arrange
-        var id = AssetId.FromString(
-            $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns401_IfExpiredBearerTokenProvided)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500,
             imageDeliveryChannels: deliveryChannelsForImage);
         var userSession =
@@ -1041,8 +1037,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_RestrictedImage_WithUnknownRole_Returns200_AndRefreshesToken_IfValidBearerTokenProvided()
     {
         // Arrange
-        var id = AssetId.FromString(
-            $"99/1/{nameof(GetInfoJson_RestrictedImage_WithUnknownRole_Returns200_AndRefreshesToken_IfValidBearerTokenProvided)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 500,
             imageDeliveryChannels: deliveryChannelsForImage);
         var userSession =
@@ -1137,7 +1132,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_ImageRequiresAuth_Returns401_IfNoCookie(string path, string type)
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/test-auth-nocook{type}");
+        var id = AssetIdGenerator.GetAssetId(asset: "test-auth-nocook", assetPostfix: type);
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", maxUnauthorised: 100,
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
@@ -1157,7 +1152,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_ImageRequiresAuth_Returns401_IfInvalidCookie(string path, string type)
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/test-auth-invalidcook{type}");
+        var id = AssetIdGenerator.GetAssetId(asset: "test-auth-invalidcook", assetPostfix: type);
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", maxUnauthorised: 100,
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
@@ -1179,7 +1174,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_ImageRequiresAuth_Returns401_IfExpiredCookie(string path, string type)
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/test-auth-expcook{type}");
+        var id = AssetIdGenerator.GetAssetId(asset: "test-auth-expcook", assetPostfix: type);
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 100,
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
@@ -1206,7 +1201,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_ImageRequiresAuth_RedirectsToImageServer_AndSetsCookie_IfCookieProvided_TileRequest(string path, string type)
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/test-auth-cook-tile{type}");
+        var id = AssetIdGenerator.GetAssetId(asset: "test-auth-cook-tile", assetPostfix: type);
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 100,
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
@@ -1244,7 +1239,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_ImageRequiresAuth_RedirectsToImageServer_AndSetsCookie_IfCookieProvided_FullRequest(string path, string type)
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/test-auth-cook{type}");
+        var id = AssetIdGenerator.GetAssetId(asset: "test-auth-cook", assetPostfix: type);
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 100,
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
@@ -1286,7 +1281,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ContentBody = "{\"o\": [[200,200]]}",
         });
 
-        var id = AssetId.FromString("99/1/known-thumb");
+        var id = AssetIdGenerator.GetAssetId(asset: "known-thumb");
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
@@ -1306,7 +1301,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_FullRegion_LargerThumbExists_RedirectsToResizeThumbs()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_FullRegion_LargerThumbExists_RedirectsToResizeThumbs)}");
+        var id = AssetIdGenerator.GetAssetId();
         
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -1333,8 +1328,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_FullRegion_SmallerThumbExists_NoMatchingUpscaleConfig_RedirectsToSpecialServer()
     {
         // Arrange
-        var id = AssetId.FromString(
-            $"99/1/{nameof(Get_FullRegion_SmallerThumbExists_NoMatchingUpscaleConfig_RedirectsToSpecialServer)}");
+        var id = AssetIdGenerator.GetAssetId();
         
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -1360,7 +1354,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_FullRegion_NoOpenThumbs_RedirectsToSpecialServer()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_FullRegion_NoOpenThumbs_RedirectsToSpecialServer)}");
+        var id = AssetIdGenerator.GetAssetId();
         
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -1387,8 +1381,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_FullRegion_HasSmallerThumb_MatchesUpscaleRegex_ThresholdTooLarge_RedirectsToSpecialServer()
     {
         // Arrange
-        var id = AssetId.FromString(
-            $"99/1/upscale{nameof(Get_FullRegion_HasSmallerThumb_MatchesUpscaleRegex_ThresholdTooLarge_RedirectsToSpecialServer)}");
+        var id = AssetIdGenerator.GetAssetId();
         
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -1467,7 +1460,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ContentBody = "{\"o\": []}",
         });
 
-        var id = AssetId.FromString($"99/1/{imageName}");
+        var id = AssetIdGenerator.GetAssetId(asset: imageName);
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
@@ -1501,7 +1494,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ContentBody = "{\"o\": []}",
         });
 
-        var id = AssetId.FromString($"99/1/{imageName}");
+        var id = AssetIdGenerator.GetAssetId(asset: imageName);
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
@@ -1525,7 +1518,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_RedirectsSpecialServer_ForTileRequests_IfRegionEquivalentToFull_WithNoMatchingThumbs()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_RedirectsSpecialServer_ForTileRequests_IfRegionEquivalentToFull_WithNoMatchingThumbs)}");
+        var id = AssetIdGenerator.GetAssetId();
         
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -1557,7 +1550,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_Returns404_IfRedirectsImageServer_ButOrchestratorNotFound()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfRedirectsImageServer_ButOrchestratorNotFound)}");
+        var id = AssetIdGenerator.GetAssetId();
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -1586,7 +1579,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_Returns500_IfRedirectsImageServer_ButOrchestratorError()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_Returns500_IfRedirectsImageServer_ButOrchestratorError)}");
+        var id = AssetIdGenerator.GetAssetId();
 
         await amazonS3.PutObjectAsync(new PutObjectRequest
         {
@@ -1618,7 +1611,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_404_IfNotForDelivery(string path)
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_404_IfNotForDelivery)}");
+        var id = AssetIdGenerator.GetAssetId();
 
         // test runs 3 times so only add on first run
         if (await dbFixture.DbContext.Images.FindAsync(id) == null)
@@ -1642,19 +1635,19 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_404_IfNotForImageDeliveryChannel(string path)
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_404_IfNotForImageDeliveryChannel)}");
+        var id = AssetIdGenerator.GetAssetId();
 
         // test runs 3 times so only add on first run
         if (await dbFixture.DbContext.Images.FindAsync(id) == null)
         {
-            await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: new List<ImageDeliveryChannel>()
-            {
+            await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels:
+            [
                 new()
                 {
                     Channel = AssetDeliveryChannels.File,
                     DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
                 }
-            });
+            ]);
             await dbFixture.DbContext.SaveChangesAsync();
         }
 
@@ -1668,7 +1661,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
 public class FakeImageOrchestrator : IImageOrchestrator
 {
-    public static List<AssetId> OrchestratedImages { get; } = new();
+    public static List<AssetId> OrchestratedImages { get; } = [];
 
     public static Dictionary<AssetId, OrchestrationResult> ConfiguredResponse { get; } = new();
 
@@ -1685,9 +1678,12 @@ public class FakeImageOrchestrator : IImageOrchestrator
 
 public class FakeImageServerClient : IImageServerClient
 {
-    public async Task<TImageService> GetInfoJson<TImageService>(OrchestrationImage orchestrationImage,
+    public Task<TImageService> GetInfoJson<TImageService>(OrchestrationImage orchestrationImage,
         Version version,
-        CancellationToken cancellationToken = default) where TImageService : JsonLdBase
+        CancellationToken cancellationToken = default) where TImageService : JsonLdBase =>
+        Task.FromResult(GetInfoJsonSynch<TImageService>(orchestrationImage, version));
+
+    private static TImageService GetInfoJsonSynch<TImageService>(OrchestrationImage orchestrationImage, Version version) where TImageService : class
     {
         if (typeof(TImageService) == typeof(ImageService2))
         {
@@ -1696,14 +1692,17 @@ public class FakeImageServerClient : IImageServerClient
                 Profile = ImageService2.Level1Profile,
                 Protocol = ImageService2.Image2Protocol,
                 Context = ImageService2.Image2Context,
-                Tiles = new List<Tile>{new Tile()
-                {
-                    Height = 512,
-                    Width = 512
-                }},
+                Tiles =
+                [
+                    new()
+                    {
+                        Height = 512,
+                        Width = 512
+                    }
+                ],
                 Width = 100,
                 Height = 100,
-                Sizes = new List<Size> { new(100, 100), new(25, 25), new(1, 1) },
+                Sizes = [new(100, 100), new(25, 25), new(1, 1)],
             } as TImageService;
         }
 
@@ -1712,14 +1711,17 @@ public class FakeImageServerClient : IImageServerClient
             Profile = ImageService3.Level1Profile,
             Protocol = ImageService3.ImageProtocol,
             Context = ImageService3.Image3Context,
-            Tiles = new List<Tile>{new Tile()
-            {
-                Height = 512,
-                Width = 512
-            }},
+            Tiles =
+            [
+                new()
+                {
+                    Height = 512,
+                    Width = 512
+                }
+            ],
             Width = 100,
             Height = 100,
-            Sizes = new List<Size> { new(100, 100), new(25, 25), new(1, 1) },
+            Sizes = [new(100, 100), new(25, 25), new(1, 1)],
         } as TImageService;
     }
 }

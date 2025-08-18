@@ -3,7 +3,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
 using Amazon.S3;
 using API.Client;
 using API.Tests.Integration.Infrastructure;

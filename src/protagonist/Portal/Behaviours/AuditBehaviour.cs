@@ -22,8 +22,8 @@ public class AuditBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, T
         this.claimsPrincipal = claimsPrincipal;
     }
 
-    public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken,
-        RequestHandlerDelegate<TResponse> next)
+    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next
+        , CancellationToken cancellationToken)
     {
         var response = await next();
         logger.LogInformation("User '{UserId}': req:{@Request} - res:{@Response}", claimsPrincipal.GetUserId(),

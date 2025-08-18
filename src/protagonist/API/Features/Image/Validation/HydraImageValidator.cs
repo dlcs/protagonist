@@ -1,7 +1,5 @@
-﻿using DLCS.Core;
-using DLCS.Core.Collections;
+﻿using DLCS.Core.Collections;
 using DLCS.Model.Assets;
-using DLCS.Model.Policies;
 using FluentValidation;
 
 namespace API.Features.Image.Validation;
@@ -13,13 +11,10 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 {
     public HydraImageValidator()
     {
-        RuleSet("patch", () =>
-        {
-            RuleFor(p => p.DeliveryChannels)
-                .Must(a => a!.Any())
-                .When(a => a.DeliveryChannels != null)
-                .WithMessage("'deliveryChannels' cannot be an empty array when updating an existing asset via PATCH");
-        });
+        RuleFor(p => p.DeliveryChannels)
+            .Must(a => a!.Any())
+            .When(a => a.DeliveryChannels != null)
+            .WithMessage("'deliveryChannels' cannot be an empty array");
         
         RuleSet("create", () =>
         {
@@ -49,11 +44,11 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleForEach(a => a.DeliveryChannels)
             .Must(dc => AssetDeliveryChannels.IsValidChannel(dc.Channel))
             .WithMessage($"DeliveryChannel must be one of {AssetDeliveryChannels.AllString}");
-
+        
         RuleFor(a => a.DeliveryChannels)
-            .Must(d => d.All(d => d.Channel != AssetDeliveryChannels.None))
+            .Must(dl => dl.All(d => !AssetDeliveryChannels.SingleOnly.Contains(d.Channel)))
             .When(a => a.DeliveryChannels!.Length > 1)
-            .WithMessage("If 'none' is the specified channel, then no other delivery channels are allowed");
+            .WithMessage(_ => $"If one of '{AssetDeliveryChannels.SingleOnlyString}' is a specified channel, then no other delivery channels are allowed");
 
         RuleForEach(a => a.DeliveryChannels)
             .Must(c => !string.IsNullOrEmpty(c.Channel))

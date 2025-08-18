@@ -1,8 +1,6 @@
 ﻿using System;
 using DLCS.Core;
 using DLCS.Model.Assets;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Model.Tests;
 

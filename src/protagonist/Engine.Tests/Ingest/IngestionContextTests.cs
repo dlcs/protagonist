@@ -7,9 +7,9 @@ namespace Engine.Tests.Ingest;
 public class IngestionContextTests
 {
     [Theory]
-    [InlineData(100, 200)]
-    [InlineData(100, null)]
-    [InlineData(null, 200)]
+    [InlineData(100L, 200L)]
+    [InlineData(100L, null)]
+    [InlineData(null, 200L)]
     [InlineData(null, null)]
     public void WithStorage_SetsValue_IfDoesnotExist(long? size, long? thumb)
     {
@@ -30,9 +30,9 @@ public class IngestionContextTests
     }
     
     [Theory]
-    [InlineData(100, 200)]
-    [InlineData(100, null)]
-    [InlineData(null, 200)]
+    [InlineData(100L, 200L)]
+    [InlineData(100L, null)]
+    [InlineData(null, 200L)]
     [InlineData(null, null)]
     public void WithStorage_IncrementsImageStorageValue_IfExists(long? size, long? thumb)
     {

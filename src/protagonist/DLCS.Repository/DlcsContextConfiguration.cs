@@ -49,6 +49,14 @@ public static class DlcsContextConfiguration
     public static DlcsContext GetNewDbContext(IConfiguration configuration)
         => new(GetOptionsBuilder(configuration).Options);
 
+    /// <summary>
+    /// Setup <see cref="DbContextOptionsBuilder"/> specific to DLCS
+    /// </summary>
+    /// <remarks>This is a single place to setup options for both running app and testing</remarks>
+    public static T SetupDlcsContextOptions<T>(this T optionsBuilder, string connectionString)
+        where T : DbContextOptionsBuilder
+        => (T)optionsBuilder.UseNpgsql(connectionString, builder => builder.SetPostgresVersion(13, 0));
+
     private static DbContextOptionsBuilder<DlcsContext> GetOptionsBuilder(IConfiguration configuration)
     {
         var optionsBuilder = new DbContextOptionsBuilder<DlcsContext>();
@@ -56,8 +64,6 @@ public static class DlcsContextConfiguration
         return optionsBuilder;
     }
 
-    private static void SetupOptions(IConfiguration configuration,
-        DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseNpgsql(configuration.GetConnectionString(ConnectionStringKey), builder => builder.SetPostgresVersion(13, 0));
-
+    private static void SetupOptions(IConfiguration configuration, DbContextOptionsBuilder optionsBuilder)
+        => optionsBuilder.SetupDlcsContextOptions(configuration.GetConnectionString(ConnectionStringKey));
 }

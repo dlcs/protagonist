@@ -2,7 +2,6 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
@@ -51,6 +50,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var apiSpace = await response.ReadAsHydraResponseAsync<Space>();
         
         // assert
+        apiSpace.ApproximateNumberOfImages.Should().Be(0);
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be($"{postUrl}/{expectedSpace}");
         apiSpace.Should().NotBeNull();
@@ -62,7 +62,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Post_ComplexSpace_Creates_Space()
     {
         // arrange
-        int? customerId = 99; //  await EnsureCustomerForSpaceTests("Post_ComplexSpace_Creates_Space");
+        int? customerId = 99;
         
         const string newSpaceJson = @"{
   ""@type"": ""Space"",
@@ -152,12 +152,12 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
+        var coll = await response.ReadAsHydraResponseAsync<HydraCollection<Space>>();
         coll.Should().NotBeNull();
         coll.Type.Should().Be("Collection");
         coll.Members.Should().HaveCount(10);
-        coll.Members.Should().Contain(jo => jo["@id"].Value<string>().EndsWith($"{spacesUrl}/1"));
-        coll.Members.Should().Contain(jo => jo["@id"].Value<string>().EndsWith($"{spacesUrl}/10"));
+        coll.Members.Should().Contain(jo => jo.Id.EndsWith($"{spacesUrl}/1"));
+        coll.Members.Should().Contain(jo => jo.Id.EndsWith($"{spacesUrl}/10"));
     }
 
     [Fact]

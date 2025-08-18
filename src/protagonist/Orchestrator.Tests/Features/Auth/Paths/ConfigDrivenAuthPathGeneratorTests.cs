@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using DLCS.Core.Types;
 using DLCS.Web.Response;
-using FakeItEasy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using Orchestrator.Features.Auth.Paths;
@@ -85,10 +84,10 @@ public class ConfigDrivenAuthPathGeneratorTests
             {
                 AuthPathRules = new PathTemplateOptions
                 {
-                    Default = "/auth/{customer}/{behaviour}",
-                    Overrides = new Dictionary<string, string>
+                    Default = new PathTemplate { Path = "/auth/{customer}/{behaviour}" },
+                    Overrides = new Dictionary<string, PathTemplate>
                     {
-                        ["test.example.com"] = "/authentication_{customer}/{behaviour}"
+                        ["test.example.com"] = new() { Path = "/authentication_{customer}/{behaviour}" }
                     }
                 },
                 Auth2PathRules = new TypedPathTemplateOptions

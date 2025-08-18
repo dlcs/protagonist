@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using DLCS.Core.Collections;
-using DLCS.Core.Strings;
 
 namespace DLCS.Core.Settings;
 
@@ -47,4 +43,16 @@ public class DlcsSettings
     /// List of valid issuers of JWT for authentication
     /// </summary>
     public string[] JwtValidIssuers { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// Max number of stored items for "default" storage policy 
+    /// </summary>
+    /// <remarks>These are used during 1 off setup only</remarks>
+    public long DefaultPolicyMaxNumber { get; set; } = 1000000000;
+    
+    /// <summary>
+    /// Max number of stored bytes for "default" storage policy
+    /// </summary>
+    /// <remarks>These are used during 1 off setup only</remarks>
+    public long DefaultPolicyMaxSize { get; set; } = 1000000000000000;
 }

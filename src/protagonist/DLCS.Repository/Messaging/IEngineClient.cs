@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.Model.Assets;
-using DLCS.Model.Messaging;
 
 namespace DLCS.Repository.Messaging;
 
@@ -15,7 +14,6 @@ public interface IEngineClient
     /// This shouldn't be used frequently as it can be relatively long running.
     /// </summary>
     /// <param name="asset">The asset the request is for</param>
-    /// <param name="derivativesOnly">If true, only derivatives will be generated</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>HttpStatusCode returned from engine.</returns>
     Task<HttpStatusCode> SynchronousIngest(Asset asset,  CancellationToken cancellationToken = default);

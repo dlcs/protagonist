@@ -32,7 +32,7 @@ public class CredentialsExporter
 
             if (string.IsNullOrWhiteSpace(credentials?.User))
                 return ExportCredentialsResult.Error("The credentials object requires an username");
-            if (string.IsNullOrWhiteSpace(credentials?.Password))
+            if (string.IsNullOrWhiteSpace(credentials.Password))
                 return ExportCredentialsResult.Error("The credentials object requires a password");
 
             var credentialsJson = JsonSerializer.Serialize(credentials, JsonSettings);

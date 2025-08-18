@@ -30,10 +30,10 @@ public static class DlcsPathHelpers
         string? assetPath = null)
         => DoubleSlashRegex.Replace(
             template
-                .Replace("{prefix}", prefix ?? string.Empty)
-                .Replace("{version}", version ?? string.Empty)
-                .Replace("{customer}", customer ?? string.Empty)
-                .Replace("{space}", space ?? string.Empty)
+                .Replace(Replacements.Prefix, prefix ?? string.Empty)
+                .Replace(Replacements.Version, version ?? string.Empty)
+                .Replace(Replacements.Customer, customer ?? string.Empty)
+                .Replace(Replacements.Space, space ?? string.Empty)
                 .ReplaceAssetPath(assetPath ?? string.Empty), "/");
 
     /// <summary>
@@ -48,8 +48,8 @@ public static class DlcsPathHelpers
         string? customer = null, 
         string? behaviour = null) =>
         template
-            .Replace("{customer}", customer ?? string.Empty)
-            .Replace("{behaviour}", behaviour ?? string.Empty);
+            .Replace(Replacements.Customer, customer ?? string.Empty)
+            .Replace(Replacements.Behaviour, behaviour ?? string.Empty);
     
     /// <summary>
     /// Replace known slugs in DLCS auth 2 path template.
@@ -68,13 +68,28 @@ public static class DlcsPathHelpers
         if (assetId != null)
         {
             template = template
-                .Replace("{assetId}", assetId.ToString())
-                .Replace("{asset}", assetId.Asset)
-                .Replace("{space}", assetId.Space.ToString());
+                .Replace(Replacements.AssetId, assetId.ToString())
+                .Replace(Replacements.Asset, assetId.Asset)
+                .Replace(Replacements.Space, assetId.Space.ToString());
         }
         
         return template
-            .Replace("{customer}", customer ?? string.Empty)
-            .Replace("{accessService}", accessService ?? string.Empty);
+            .Replace(Replacements.Customer, customer ?? string.Empty)
+            .Replace(Replacements.AccessService, accessService ?? string.Empty);
+    }
+    
+    /// <summary>
+    /// Class containing path values that are replaceable
+    /// </summary>
+    public static class Replacements
+    {
+        public const string Prefix = "{prefix}";
+        public const string Version = "{version}";
+        public const string Customer = "{customer}";
+        public const string Space = "{space}";
+        public const string Behaviour = "{behaviour}";
+        public const string AssetId = "{assetId}";
+        public const string Asset = "{asset}";
+        public const string AccessService = "{accessService}";
     }
 }

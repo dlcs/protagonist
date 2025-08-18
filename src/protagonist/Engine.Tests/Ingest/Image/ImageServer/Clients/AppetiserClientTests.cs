@@ -2,9 +2,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
-using Engine.Ingest;
-using Engine.Ingest.Image.ImageServer;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Models;
 using Engine.Settings;

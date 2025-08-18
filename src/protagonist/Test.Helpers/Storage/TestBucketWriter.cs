@@ -80,7 +80,7 @@ public class TestBucketWriter : IBucketWriter
     /// </summary>
     public TestBucketWriter ShouldNotHaveKey(string key)
     {
-        if (Operations.TryGetValue(key, out var op))
+        if (Operations.TryGetValue(key, out _))
         {
             throw new AssertionFailedException($"{key} found but should not exist");
         }

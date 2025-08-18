@@ -1,5 +1,3 @@
-using System.Runtime.Serialization;
-
 namespace API.Exceptions;
 
 public class APIException : Exception
@@ -9,10 +7,6 @@ public class APIException : Exception
     public virtual string Label { get; set; }
     
     public APIException()
-    {
-    }
-
-    protected APIException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
 

@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Net;
-using System.Text.Json.Nodes;
 using System.Threading;
 using DLCS.Core.Exceptions;
 using DLCS.Core.Settings;
@@ -9,7 +7,6 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
-using FakeItEasy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;

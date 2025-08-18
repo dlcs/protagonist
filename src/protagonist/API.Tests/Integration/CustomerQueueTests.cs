@@ -7,7 +7,9 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using API.Client;
+using API.Infrastructure.Messaging;
 using API.Tests.Integration.Infrastructure;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
@@ -20,6 +22,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using Batch = DLCS.Model.Assets.Batch;
@@ -35,6 +38,8 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
     private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
+    private static readonly IAssetNotificationSender AssetNotificationSender = A.Fake<IAssetNotificationSender>();
+    private static readonly IBatchCompletedNotificationSender NotificationSender = A.Fake<IBatchCompletedNotificationSender>();
     
     public CustomerQueueTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
@@ -43,7 +48,9 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .WithConnectionString(dbFixture.ConnectionString)
             .WithTestServices(services =>
             {
+                services.AddSingleton(NotificationSender);
                 services.AddScoped<IEngineClient>(_ => EngineClient);
+                services.AddScoped<IAssetNotificationSender>(_ => AssetNotificationSender);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                         "API-Test", _ => { });
@@ -440,7 +447,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(AssetId.FromString($"{idRoot}3"), batch: 4006);
         await dbContext.SaveChangesAsync();
         
-        // Not batch 4006 is added in ctor
+        // Note batch 4006 is added in ctor
         const string path = "customers/99/queue/batches/4006/images";
 
         // Act
@@ -504,6 +511,132 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Get_BatchAssets_404_IfBatchNotFoundForCustomer()
+    {
+        // Arrange
+        const string path = "customers/99/queue/batches/-1200/assets";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_BatchAssets_404_IfBatchExistsForOtherCustomer()
+    {
+        // Arrange
+        const int batchId = 6004;
+        const int customerId = 6004;
+        var assetId1 = AssetIdGenerator.GetAssetId(customer: customerId, assetPostfix: "1");
+        
+        var batch = await dbContext.Batches.AddTestBatch(batchId, customer: customerId);
+        batch.Entity.AddBatchAsset(assetId1);
+        await dbContext.Images.AddTestAsset(assetId1, batch: batchId, customer: customerId);
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/99/queue/batches/{batchId}/assets";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task Get_BatchAssets_200_IfImagesFound()
+    {
+        // Arrange
+        const int batchId = 6005;
+        var assetId1 = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetId2 = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+        
+        var batch = await dbContext.Batches.AddTestBatch(batchId);
+        batch.Entity.AddBatchAsset(assetId1).AddBatchAsset(assetId2);
+        await dbContext.Images.AddTestAsset(assetId1, batch: batchId);
+        await dbContext.Images.AddTestAsset(assetId2, batch: batchId);
+        await dbContext.SaveChangesAsync();
+        
+        var path = $"customers/99/queue/batches/{batchId}/assets";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        images.TotalItems.Should().Be(2);
+        images.Members.Should().HaveCount(2);
+    }
+    
+    [Fact]
+    public async Task Get_BatchAssets_200_IfImagesFound_SupportsPaging()
+    {
+        // Arrange
+        const int batchId = 6006;
+        var assetId1 = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetId2 = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+        var assetId3 = AssetIdGenerator.GetAssetId(assetPostfix: "3");
+        
+        var batch = await dbContext.Batches.AddTestBatch(batchId);
+        batch.Entity.AddBatchAsset(assetId1).AddBatchAsset(assetId2).AddBatchAsset(assetId3);
+        await dbContext.Images.AddTestAsset(assetId1, batch: batchId);
+        await dbContext.Images.AddTestAsset(assetId2, batch: batchId);
+        await dbContext.Images.AddTestAsset(assetId3, batch: batchId);
+        await dbContext.SaveChangesAsync();
+        
+        var path = $"customers/99/queue/batches/{batchId}/assets?pageSize=2&page=2";
+        
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        images.TotalItems.Should().Be(3);
+        images.Members.Should().HaveCount(1);
+    }
+    
+    [Fact]
+    public async Task Get_BatchAssets_200_IfImagesFound_SupportsQuery()
+    {
+        // Arrange
+        const int batchId = 6007;
+        var assetId1 = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetId2 = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+        var assetId3 = AssetIdGenerator.GetAssetId(assetPostfix: "3");
+        var altSpace = AssetIdGenerator.GetAssetId(space: 2);
+        
+        var batch = await dbContext.Batches.AddTestBatch(batchId);
+        batch.Entity
+            .AddBatchAsset(assetId1)
+            .AddBatchAsset(assetId2)
+            .AddBatchAsset(assetId3)
+            .AddBatchAsset(altSpace);
+        await dbContext.Images.AddTestAsset(assetId1, batch: batchId, num1: 10, space: 1);
+        await dbContext.Images.AddTestAsset(assetId2, batch: batchId, num1: 9, space: 1);
+        await dbContext.Images.AddTestAsset(assetId3, batch: batchId, num1: 10, space: 1);
+        await dbContext.Images.AddTestAsset(altSpace, batch: batchId, num1: 10, space: 2);
+        await dbContext.SaveChangesAsync();
+        
+        var q = @"{""number1"":10,""space"":1}";
+        var path = $"customers/99/queue/batches/{batchId}/assets?q=" + q;
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        images.TotalItems.Should().Be(2);
+        images.Members.Should().HaveCount(2);
+    }
+    
+    [Fact]
     public async Task Post_CreateBatch_400_IfValidationFails()
     {
         // Arrange
@@ -526,7 +659,32 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(99).PostAsync(path, content);
 
         // Assert
-        // status code correct
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, "mediaType is missing");
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_400_IfOriginMissing()
+    {
+        // Arrange
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": ""one"",
+          ""space"": 1,
+          ""mediaType"": ""image/jpeg""
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = "/customers/99/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(99).PostAsync(path, content);
+
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
@@ -896,9 +1054,16 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         hydraBatch.Count.Should().Be(3);
         var batchId = hydraBatch.GetLastPathElementAsInt()!.Value;
         
-        // Db batch exists (unnecessary?)
-        var dbBatch = await dbContext.Batches.SingleAsync(i => i.Customer == customerId);
-        dbBatch.Id.Should().Be(batchId);
+        // Db batch exists
+        var dbBatch = await dbContext.Batches
+            .Include(b => b.BatchAssets)
+            .SingleAsync(i => i.Id == batchId);
+        
+        dbBatch.BatchAssets.Should().HaveCount(3);
+        dbBatch.BatchAssets.Should().AllSatisfy(ba =>
+        {
+            ba.Status.Should().Be(BatchAssetStatus.Waiting);
+        });
 
         // Images exist with Batch set + File marked as complete
         var images = dbContext.Images.Where(i => i.Customer == customerId && i.Space == 2).ToList();
@@ -923,6 +1088,71 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             EngineClient.AsynchronousIngestBatch(
                 A<IReadOnlyCollection<Asset>>.That.Matches(i => i.Count == 3), false,
                 A<CancellationToken>._)).MustHaveHappened();
+        A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
+            A<IReadOnlyCollection<AssetModificationRecord>>.That.Matches(i => i.Count == 3),
+            A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Post_CreateBatch_400_DoesNotRaiseAnyNotifications_IfProcessingFailsOnLaterAsset()
+    {
+        // Arrange
+        const int customerId = 1801;
+        
+        // Add a 'not for delivery' asset as these cannot be modified
+        var failingAssetId = AssetIdGenerator.GetAssetId(customerId, 2);
+        await dbContext.Images.AddTestAsset(failingAssetId, customer: customerId, notForDelivery: true);
+        
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, 2);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        
+        await dbContext.SaveChangesAsync();
+
+        // a batch of 3: the last one is NotForDelivery and cannot be updated so will fail processing step
+        var hydraImageBody = @$"{{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {{
+          ""id"": ""one"",
+          ""origin"": ""https://example.org/vid.mp4"",
+          ""space"": 2,
+          ""mediaType"": ""video/mp4""
+        }},
+        {{
+          ""id"": ""two"",
+          ""origin"": ""https://example.org/image.jpg"",
+          ""space"": 2,
+          ""mediaType"": ""image/jpeg""
+        }},
+        {{
+          ""id"": ""{failingAssetId.Asset}"",
+          ""origin"": ""https://example.org/file.pdf"",
+          ""space"": 2,
+          ""mediaType"": ""application/pdf""
+        }}
+    ]
+}}";
+        
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        // Items not queued for processing
+        A.CallTo(() =>
+            EngineClient.AsynchronousIngestBatch(
+                A<IReadOnlyCollection<Asset>>.That.Matches(ca => ca.Any(a => a.Customer == customerId)), false,
+                A<CancellationToken>._)).MustNotHaveHappened();
+        A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
+            A<IReadOnlyCollection<AssetModificationRecord>>.That.Matches(ca =>
+                ca.Any(a => a.After.Customer == customerId)),
+            A<CancellationToken>._)).MustNotHaveHappened();
     }
     
     [Fact]
@@ -1172,6 +1402,12 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == 201);
         dbBatch.Superseded.Should().BeTrue();
+        
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == dbBatch.Id),
+                    A<CancellationToken>._))
+            .MustHaveHappened();
     }
     
     [Fact]
@@ -1202,6 +1438,12 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbBatch.Count.Should().Be(4);
         dbBatch.Errors.Should().Be(1);
         dbBatch.Completed.Should().Be(3);
+        
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == dbBatch.Id),
+                    A<CancellationToken>._))
+            .MustHaveHappened();
     }
 
     [Fact]
@@ -1228,6 +1470,12 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbBatch.Superseded.Should().BeFalse();
         dbBatch.Finished.Should().BeNull();
         dbBatch.Count.Should().Be(100);
+        
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>._,
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
     
     [Fact]
@@ -1255,6 +1503,12 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbBatch.Superseded.Should().BeFalse();
         dbBatch.Finished.Should().BeCloseTo(finished, TimeSpan.FromMinutes((1)));
         dbBatch.Count.Should().Be(3);
+        
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == dbBatch.Id),
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
     
     [Fact]

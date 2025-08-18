@@ -17,7 +17,7 @@ namespace Test.Helpers.Integration;
 /// </summary>
 public class LocalStackFixture : IAsyncLifetime
 {
-    private readonly TestcontainersContainer localStackContainer;
+    private readonly IContainer localStackContainer;
     private const int LocalStackContainerPort = 4566;
     
     // S3 Buckets
@@ -47,8 +47,8 @@ public class LocalStackFixture : IAsyncLifetime
     public LocalStackFixture()
     {
         // Configure container binding to host port 0, which will use a random free port
-        var localStackBuilder = new TestcontainersBuilder<TestcontainersContainer>()
-            .WithImage("localstack/localstack")
+        var localStackBuilder = new ContainerBuilder()
+            .WithImage("localstack/localstack:4.3")
             .WithCleanUp(true)
             .WithLabel("protagonist_test", "True")
             .WithEnvironment("DEFAULT_REGION", "eu-west-1")
@@ -143,6 +143,6 @@ public class LocalStackFixture : IAsyncLifetime
     private async Task CreateTopic(IAmazonSimpleNotificationService amazonSNSClient, string topicArn)
     {
         var topicName = topicArn.Split(":")[^1];
-        var response = await amazonSNSClient.CreateTopicAsync(topicName);
+        _ = await amazonSNSClient.CreateTopicAsync(topicName);
     }
 }

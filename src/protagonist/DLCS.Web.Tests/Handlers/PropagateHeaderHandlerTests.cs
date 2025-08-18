@@ -44,7 +44,7 @@ public class PropagateHeaderHandlerTests
         var testHandler = new TestHandler();
         sut.InnerHandler = testHandler;
 
-        httpContext.Request.Headers.Add("x-correlation-id", "from-request");
+        httpContext.Request.Headers.Append("x-correlation-id", "from-request");
         var invoker = new HttpMessageInvoker(sut);
         await invoker.SendAsync(httpRequestMessage, CancellationToken.None);
 
@@ -59,7 +59,7 @@ public class PropagateHeaderHandlerTests
         var testHandler = new TestHandler();
         sut.InnerHandler = testHandler;
 
-        httpContext.Response.Headers.Add("x-correlation-id", "from-response");
+        httpContext.Response.Headers.Append("x-correlation-id", "from-response");
         var invoker = new HttpMessageInvoker(sut);
         await invoker.SendAsync(httpRequestMessage, CancellationToken.None);
 

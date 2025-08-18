@@ -5,20 +5,22 @@ namespace API.Tests.Converters;
 
 public class ImageCacheTypeConverterTests
 {
-    [Fact]
-    public void ImageCacheTypeConverter_ConvertsString_WithCdnAndInternalCache()
+    [Theory]
+    [InlineData("cdn,internalCache")]
+    [InlineData("internalCache,cdn")]
+    [InlineData("cdn,,internalCache")]
+    [InlineData("cdn, internalCache")]
+    [InlineData("cdn ,internalCache")]
+    public void ImageCacheTypeConverter_ConvertsString_WithCdnAndInternalCache(string imageCacheTypeString)
     {
-        // Arrange
-        var imageCacheTypeString = "cdn,internalCache";
-
         // Act
         var convertedImageCacheFlags = ImageCacheTypeConverter.ConvertToImageCacheType(imageCacheTypeString, ',');
         
         // Assert
-        convertedImageCacheFlags.HasFlag(ImageCacheType.Cdn).Should().BeTrue();
-        convertedImageCacheFlags.HasFlag(ImageCacheType.InternalCache).Should().BeTrue();
-        convertedImageCacheFlags.HasFlag(ImageCacheType.None).Should().BeFalse();
-        convertedImageCacheFlags.HasFlag(ImageCacheType.Unknown).Should().BeFalse();
+        convertedImageCacheFlags.Should().HaveFlag(ImageCacheType.Cdn)
+            .And.HaveFlag(ImageCacheType.InternalCache)
+            .And.NotHaveFlag(ImageCacheType.None)
+            .And.NotHaveFlag(ImageCacheType.Unknown);
     }
     
     [Fact]
@@ -28,9 +30,9 @@ public class ImageCacheTypeConverterTests
         var convertedImageCacheFlags = ImageCacheTypeConverter.ConvertToImageCacheType(null, ',');
         
         // Assert
-        convertedImageCacheFlags.HasFlag(ImageCacheType.Cdn).Should().BeFalse();
-        convertedImageCacheFlags.HasFlag(ImageCacheType.InternalCache).Should().BeFalse();
-        convertedImageCacheFlags.HasFlag(ImageCacheType.None).Should().BeTrue();
-        convertedImageCacheFlags.HasFlag(ImageCacheType.Unknown).Should().BeFalse();
+        convertedImageCacheFlags.Should().NotHaveFlag(ImageCacheType.Cdn)
+            .And.NotHaveFlag(ImageCacheType.InternalCache)
+            .And.HaveFlag(ImageCacheType.None)
+            .And.NotHaveFlag(ImageCacheType.Unknown);
     }
 }

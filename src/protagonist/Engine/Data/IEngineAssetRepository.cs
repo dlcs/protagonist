@@ -21,9 +21,10 @@ public interface IEngineAssetRepository
         bool ingestFinished, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Get Asset with specified Id
+    /// Get Asset with specified Id. This loads asset with all required navigation properties that are required for
+    /// Engine to work on it (DeliveryChannels + policies, specified Batch, AssetApplicationMetadata)
     /// </summary>
-    ValueTask<Asset?> GetAsset(AssetId assetId, CancellationToken cancellationToken = default);
+    ValueTask<Asset?> GetAsset(AssetId assetId, int? batchId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the size of an image from the database, or null if the image is not found

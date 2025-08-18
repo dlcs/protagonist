@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
-using Amazon.S3;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;

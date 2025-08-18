@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using API.Auth;
-using API.Features.DeliveryChannels.Converters;
+using API.Features.Customer;
+using API.Features.Customer.Requests;
 using API.Features.DeliveryChannels.Validation;
 using API.Features.Image.Ingest;
 using API.Features.OriginStrategies.Credentials;
@@ -76,6 +77,7 @@ public class Startup
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
             .AddScoped<AssetProcessor>()
+            .AddScoped<IBulkAssetPatcher, BulkAssetPatcher>()
             .AddScoped<DeliveryChannelProcessor>()
             .AddTransient<TimingHandler>()
             .AddScoped<DeliveryChannelPolicyDataValidator>()
@@ -84,6 +86,7 @@ public class Startup
             .AddNamedQueriesCore()
             .AddAws(configuration, webHostEnvironment)
             .AddCorrelationIdHeaderPropagation()
+            .AddTopicNotifiers()
             .ConfigureSwagger();
 
         services.AddHttpClient<IEngineClient, EngineClient>(client =>
@@ -104,7 +107,7 @@ public class Startup
                 builder => builder
                     .AllowAnyMethod()
                     .AllowAnyHeader()
-                    .SetIsOriginAllowed(host => true)
+                    .SetIsOriginAllowed(_ => true)
                     .AllowCredentials());
         });
 
@@ -120,18 +123,13 @@ public class Startup
         services
             .AddHealthChecks()
             .AddDbContextCheck<DlcsContext>("DLCS-DB");
-        
-        services.Configure<KestrelServerOptions>(options =>
-        {
-            options.Limits.MaxRequestBodySize = 100_000_000; // if don't set default value is: 30 MB
-        });
-        
-        // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
-        services.Configure<ForwardedHeadersOptions>(opts =>
-        {
-            opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
-        });
-        
+
+        services
+            .Configure<KestrelServerOptions>(options =>
+            {
+                options.Limits.MaxRequestBodySize = 100_000_000; // if don't set default value is: 30 MB
+            })
+            .ConfigureForwardedHeaders(configuration);
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)

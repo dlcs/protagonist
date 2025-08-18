@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using API.Features.DeliveryChannels;
 using API.Features.DeliveryChannels.DataAccess;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Caching;

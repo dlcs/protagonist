@@ -16,12 +16,15 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
     {
         RuleFor(c => c.Members)
             .NotEmpty().WithMessage("Members cannot be empty");
-        
+
         RuleFor(c => c.Members)
-            .Must(m => m.IsNullOrEmpty() || m!.Select(a => a.ModelId).Distinct().Count() == m!.Length)
+            .Must(m => m.IsNullOrEmpty() || m.Select(a => $"{a.Space}/{a.ModelId}").Distinct().Count() == m.Length)
             .WithMessage((_, mem) =>
             {
-                var dupes = mem!.Select(a => a.ModelId).GetDuplicates().ToList();
+                var dupes = mem!.Select(a => new { a.Space, a.ModelId })
+                    .GetDuplicates()
+                    .Select(dup => $"Id:{dup.ModelId},Space:{dup.Space}")
+                    .ToList();
                 return $"Members contains {dupes.Count} duplicate Id(s): {string.Join(",", dupes)}";
             });
 
@@ -32,7 +35,7 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
 
         RuleForEach(c => c.Members).SetValidator(new HydraImageValidator(),
             "default", "create");
-
+        
         // In addition to above validation, batched updates must have ModelId + Space as this can't be taken from
         // path
         RuleForEach(c => c.Members).ChildRules(members =>

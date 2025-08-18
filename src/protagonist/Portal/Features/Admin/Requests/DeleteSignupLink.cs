@@ -31,14 +31,13 @@ public class DeleteSignupLinkHandler : IRequestHandler<DeleteSignupLink>
         this.logger = logger;
     }
     
-    public async Task<Unit> Handle(DeleteSignupLink request, CancellationToken cancellationToken)
+    public async Task Handle(DeleteSignupLink request, CancellationToken cancellationToken)
     {
         if (principal.IsAdmin())
         {
             var forDeletion = new SignupLink {Id = request.Id};
             dbContext.Remove(forDeletion);
             await dbContext.SaveChangesAsync(cancellationToken);
-            return Unit.Value;
         }
 
         throw new InvalidCredentialException("Non admin user cannot delete signup links");

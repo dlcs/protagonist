@@ -24,7 +24,6 @@ using Orchestrator.Features.Files;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
-using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Infrastructure.ReverseProxy;
@@ -70,9 +69,6 @@ public class Startup
             .AddSingleton<FileRequestHandler>()
             .AddSingleton<S3ProxyPathGenerator>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
-            .AddScoped<IThumbSizeProvider, MetadataWithFallbackThumbSizeProvider>()
-            .AddScoped<IIIFManifestBuilder>()
-            .AddScoped<IIIFCanvasFactory>()
             .AddSingleton<AssetRequestProcessor>()
             .AddSingleton<DownstreamDestinationSelector>()
             .AddCaching(cachingSection.Get<CacheSettings>())
@@ -87,14 +83,11 @@ public class Startup
             .AddAws(configuration, webHostEnvironment)
             .AddCorrelationIdHeaderPropagation()
             .AddInfoJsonClient()
-            .AddIIIFAuth(orchestratorSettings)
-            .HandlePathTemplates();
+            .AddIIIFBuilding()
+            .AddIIIFAuth(orchestratorSettings);
         
-        // Use x-forwarded-host and x-forwarded-proto to set httpContext.Request.Host and .Scheme respectively
-        services.Configure<ForwardedHeadersOptions>(opts =>
-        {
-            opts.ForwardedHeaders = ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
-        });
+        
+        services.ConfigureForwardedHeaders(configuration);
 
         services
             .AddFeatureFolderViews()
@@ -150,6 +143,7 @@ public class Startup
             })
             .UseCors("CorsPolicy")
             .UseAuthorization()
+            .UseStaticFiles()
             .UseEndpoints(endpoints =>
             {
                 endpoints.MapGet("favicon.ico", context =>

@@ -5,12 +5,12 @@ using DLCS.Model.Assets;
 using DLCS.Repository;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
-using IIIF;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.IIIF;
+using Orchestrator.Infrastructure.IIIF.Manifests;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Models;
 using IIIF2 = IIIF.Presentation.V2;
@@ -63,31 +63,38 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
         var assetId = request.AssetRequest.GetAssetId();
 
         var asset = await dlcsContext.Images
-            .IncludeDataForThumbs()
+            .IncludeRelevantMetadata()
             .FirstOrDefaultAsync(a => a.Id == assetId, cancellationToken);
         
-        if (asset == null || asset.NotForDelivery ||
-            !asset.HasAnyDeliveryChannel(AssetDeliveryChannels.Image, AssetDeliveryChannels.Thumbnails))
+        if (asset == null || asset.NotForDelivery)
         {
-            logger.LogDebug("Attempted to request an iiif-manifest for {AssetId}, but it was not found or is unavailable on any image delivery channel.",
+            logger.LogDebug("Attempted to request an iiif-manifest for {AssetId}, but it was not found or is unavailable",
                 assetId);
             return DescriptionResourceResponse.Empty;
-        }    
+        }
 
-        JsonLdBase manifest = request.IIIFPresentationVersion == Version.V3
-            ? await GenerateV3Manifest(request.AssetRequest, asset, cancellationToken)
-            : await GenerateV2Manifest(request.AssetRequest, asset, cancellationToken);
+        if (request.IIIFPresentationVersion == Version.V3)
+        {
+            var v3Manifest = await GenerateV3Manifest(request.AssetRequest, asset, cancellationToken);
+            return DescriptionResourceResponse.Open(v3Manifest);
+        }
 
-        return DescriptionResourceResponse.Open(manifest);
+        if (!asset.HasAnyDeliveryChannel(AssetDeliveryChannels.Image, AssetDeliveryChannels.Thumbnails))
+        {
+            logger.LogDebug("V2 manifest for {AssetId} unavailable on image or thumbs, won't render", assetId);
+            return DescriptionResourceResponse.Empty;
+        }
+
+        var v2Manifest = await GenerateV2Manifest(request.AssetRequest, asset, cancellationToken);
+        return DescriptionResourceResponse.Open(v2Manifest);
     }
 
     private async Task<IIIF3.Manifest> GenerateV3Manifest(BaseAssetRequest assetRequest, Asset asset,
         CancellationToken cancellationToken)
     {
         var manifestId = GetFullyQualifiedId(assetRequest);
-        var manifest =
-            await manifestBuilder.GenerateV3Manifest(asset.AsList(), assetRequest.Customer, manifestId, ManifestLabel,
-                cancellationToken);
+        var manifest = await manifestBuilder.GenerateV3Manifest(asset.AsList(), assetRequest.Customer, manifestId,
+            ManifestLabel, ManifestType.SingleItem, cancellationToken);
 
         return manifest;
     }
@@ -95,10 +102,10 @@ public class GetManifestForAssetHandler : IRequestHandler<GetManifestForAsset, D
     private async Task<IIIF2.Manifest> GenerateV2Manifest(BaseAssetRequest assetRequest, Asset asset,
         CancellationToken cancellationToken)
     {
-        var manifestIdAndSequenceRoot = GetFullyQualifiedId(assetRequest);
+        var manifestId = GetFullyQualifiedId(assetRequest);
         var manifest =
-            await manifestBuilder.GenerateV2Manifest(asset.AsList(), assetRequest.Customer, manifestIdAndSequenceRoot,
-                ManifestLabel, manifestIdAndSequenceRoot, cancellationToken);
+            await manifestBuilder.GenerateV2Manifest(asset.AsList(), assetRequest.Customer, manifestId,
+                ManifestLabel, ManifestType.SingleItem, cancellationToken);
         return manifest;
     }
 

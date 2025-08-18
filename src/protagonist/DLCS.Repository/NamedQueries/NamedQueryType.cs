@@ -22,7 +22,12 @@ public enum NamedQueryType
     /// <summary>
     /// NamedQuery will be projected to ZIP archive containing images.
     /// </summary>
-    Zip
+    Zip,
+    
+    /// <summary>
+    /// NamedQuery will be projected to an array of matching assets
+    /// </summary>
+    Raw
 }
 
 public static class NamedQueryTypeDeriver
@@ -35,6 +40,7 @@ public static class NamedQueryTypeDeriver
         if (typeof(T) == typeof(IIIFParsedNamedQuery)) return NamedQueryType.IIIF;
         if (typeof(T) == typeof(PdfParsedNamedQuery)) return NamedQueryType.PDF;
         if (typeof(T) == typeof(ZipParsedNamedQuery)) return NamedQueryType.Zip;
+        if (typeof(T) == typeof(ParsedNamedQuery)) return NamedQueryType.Raw;
 
         throw new ArgumentOutOfRangeException(nameof(T), "Unable to determine NamedQueryType from result type");
     }

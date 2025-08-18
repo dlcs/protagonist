@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
@@ -58,6 +57,7 @@ public static class AssetConverter
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
             Roles = dbAsset.RolesList.ToArray(),
+            Manifests = dbAsset.Manifests?.ToArray(),
         };
 
         if (dbAsset.Batch > 0)
@@ -306,6 +306,8 @@ public static class AssetConverter
             asset.ImageOptimisationPolicy = hydraImage.ImageOptimisationPolicy;
         }
         
+        asset.Manifests = hydraImage.Manifests?.ToList();
+        
         return asset;
     }
 
@@ -326,7 +328,8 @@ public static class AssetConverter
             Reference3 = imageQuery.String3,
             NumberReference1 = imageQuery.Number1,
             NumberReference2 = imageQuery.Number2,
-            NumberReference3 = imageQuery.Number3
+            NumberReference3 = imageQuery.Number3,
+            Manifests = imageQuery.Manifests
         };
     }
 
@@ -340,7 +343,8 @@ public static class AssetConverter
             String3 = assetFilter.Reference3,
             Number1 = assetFilter.NumberReference1,
             Number2 = assetFilter.NumberReference2,
-            Number3 = assetFilter.NumberReference3
+            Number3 = assetFilter.NumberReference3,
+            Manifests = assetFilter.Manifests
         };
     }
 
@@ -410,6 +414,12 @@ public static class AssetConverter
         {
             assetFilter ??= new AssetFilter();
             assetFilter.NumberReference3 = number3;
+        }
+        var manifests = request.GetFirstQueryParamValueAsArray("manifests");
+        if (manifests != null)
+        {
+            assetFilter ??= new AssetFilter();
+            assetFilter.Manifests = manifests;
         }
 
         return assetFilter;

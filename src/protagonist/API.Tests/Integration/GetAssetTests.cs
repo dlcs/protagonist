@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Threading.Tasks;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
@@ -203,7 +202,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("/customers/99/spaces/383/images?pageSize=50&q={\"number3\": 2}", 7)]
     [InlineData("/customers/99/spaces/384/images?pageSize=50&q={\"number3\": 2, \"string2\": \"1-10\"}", 3)]
     [InlineData("/customers/99/spaces/385/images?pageSize=50&q={\"number3\": 2}&string2=1-10", 3)]
-    public async void Get_Paged_Assets_Can_Be_Queried(string url, int count)
+    public async Task Get_Paged_Assets_Can_Be_Queried(string url, int count)
     {
         int space = Convert.ToInt32(url.Split('/')[4]);
         await dbContext.Spaces.AddTestSpace(99, space, $"query-tests-{space}");

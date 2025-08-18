@@ -103,11 +103,12 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
             {
                 if (updatedAsset.Family == AssetFamily.Timebased)
                 {
-                    // Timebased asset - create a Batch record in DB and populate Batch property in Asset
-                    await batchRepository.CreateBatch(updatedAsset.Customer, updatedAsset.AsList(), cancellationToken);
+                    var batch = await batchRepository.CreateBatch(updatedAsset.Customer, updatedAsset.AsList(),
+                        cancellationToken: cancellationToken);
+                    batch.AddBatchAsset(updatedAsset.Id);
                 }
             },
-            cancellationToken
+            cancellationToken: cancellationToken
         );
         
         var modifyEntityResult = processAssetResult.Result;

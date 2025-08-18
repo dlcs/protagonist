@@ -30,6 +30,7 @@ public class Startup
             .AddAssetIngestion(configuration.Get<EngineSettings>())
             .AddDataAccess(configuration)
             .AddCaching(cachingSection.Get<CacheSettings>())
+            .AddTopicNotifiers()
             .AddCorrelationIdHeaderPropagation()
             .ConfigureHealthChecks();
 

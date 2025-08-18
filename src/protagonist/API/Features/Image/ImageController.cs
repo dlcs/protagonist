@@ -44,14 +44,16 @@ public class ImageController : HydraController
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(DLCS.HydraModel.Image))]
     [ProducesResponseType(404, Type = typeof(Error))]
-    public async Task<IActionResult> GetImage(int customerId, int spaceId, string imageId)
+    public async Task<IActionResult> GetImage(int customerId, int spaceId, string imageId,
+        [FromQuery] bool noCache = false)
     {
         var assetId = new AssetId(customerId, spaceId, imageId);
-        var dbImage = await Mediator.Send(new GetImage(assetId));
+        var dbImage = await Mediator.Send(new GetImage(assetId, noCache));
         if (dbImage == null)
         {
             return this.HydraNotFound();
         }
+
         return Ok(dbImage.ToHydra(GetUrlRoots()));
     }
 
@@ -250,7 +252,7 @@ public class ImageController : HydraController
     {
 
         logger.LogWarning(
-            "Warning: POST /customers/{CustomerId}/spaces/{SpaceId}/images/{ImageId} was called. This route is deprecated.",
+            "Warning: POST /customers/{CustomerId}/spaces/{SpaceId}/images/{ImageId} was called. This route is deprecated",
             customerId, spaceId, imageId);
         
         return await PutImage(customerId, spaceId, imageId, hydraAsset, validator, cancellationToken);
@@ -288,7 +290,7 @@ public class ImageController : HydraController
         // See https://github.com/dlcs/protagonist/issues/338
         var method = hydraAsset is ImageWithFile ? "PUT" : Request.Method;
 
-        var deliveryChannelsBeforeProcessing = (hydraAsset.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+        var deliveryChannelsBeforeProcessing = hydraAsset.DeliveryChannels?
             .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.Policy)).ToArray();
 
         var assetBeforeProcessing = new AssetBeforeProcessing(asset, deliveryChannelsBeforeProcessing);
@@ -297,7 +299,7 @@ public class ImageController : HydraController
 
         return HandleUpsert(
             createOrUpdateRequest,
-            asset => asset.ToHydra(GetUrlRoots()),
+            a => a.ToHydra(GetUrlRoots()),
             assetId.ToString(),
             "Upsert asset failed", cancellationToken);
     }

@@ -1,4 +1,5 @@
 ﻿using CleanupHandler.Infrastructure;
+using CleanupHandler.Repository;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
@@ -11,7 +12,6 @@ using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Serilog;
 
 namespace CleanupHandler;
 
@@ -26,6 +26,7 @@ public class AssetDeletedHandler : IMessageHandler
     private readonly IFileSystem fileSystem;
     private readonly ILogger<AssetDeletedHandler> logger;
     private readonly ICacheInvalidator cacheInvalidator;
+    private readonly ICleanupHandlerAssetRepository assetRepository;
 
     public AssetDeletedHandler(
         IStorageKeyGenerator storageKeyGenerator,
@@ -33,6 +34,7 @@ public class AssetDeletedHandler : IMessageHandler
         ICacheInvalidator cacheInvalidator,
         IFileSystem fileSystem,
         IOptions<CleanupHandlerSettings> handlerSettings,
+        ICleanupHandlerAssetRepository assetRepository,
         ILogger<AssetDeletedHandler> logger)
     {
         this.storageKeyGenerator = storageKeyGenerator;
@@ -41,6 +43,7 @@ public class AssetDeletedHandler : IMessageHandler
         this.cacheInvalidator = cacheInvalidator;
         this.logger = logger;
         this.handlerSettings = handlerSettings.Value;
+        this.assetRepository = assetRepository;
     }
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
@@ -59,6 +62,13 @@ public class AssetDeletedHandler : IMessageHandler
         if (request?.Asset?.Id == null) return false;
 
         logger.LogDebug("Processing delete notification for {AssetId}", request.Asset.Id);
+        
+        // if the item exists in the db, assume the asset has been reingested after delete
+        if (await assetRepository.CheckExists(request.Asset.Id))
+        {
+            logger.LogInformation("asset {Asset} can be found in the database, so will not be deleted", request.Asset.Id);
+            return true;
+        }
 
         await DeleteThumbnails(request.Asset.Id);
         await DeleteTileOptimised(request.Asset.Id);
@@ -70,7 +80,7 @@ public class AssetDeletedHandler : IMessageHandler
             return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
         }
 
-        Log.Debug("cdn invalidation not specified for {Asset}", request.Asset.Id);
+        logger.LogDebug("cdn invalidation not specified for {Asset}", request.Asset.Id);
         return true;
     }
 
@@ -104,7 +114,7 @@ public class AssetDeletedHandler : IMessageHandler
         
         if (!asset.ImageDeliveryChannels.IsNullOrEmpty())
         {
-            invalidationUriList = SetDeliveryChannelInvalidations(asset.Id!, 
+            invalidationUriList = SetDeliveryChannelInvalidations(asset.Id, 
                 asset.ImageDeliveryChannels, idList);
         }
         else if (asset.Family.HasValue)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core;
 using DLCS.Core.Collections;
@@ -70,13 +71,14 @@ public static class AssetPreparer
     /// be saved as this effectively drops validation.
     /// </param>
     /// <param name="isBatchUpdate">True if this is part of batch creation - allows Batch value to be set.</param>
+    /// <param name="disallowedCharacters">List of characters that are not allowed to be used in AssetId</param>
     /// <returns>A validation result</returns>
     public static AssetPreparationResult PrepareAssetForUpsert(
         Asset? existingAsset,
         Asset updateAsset,
         bool allowNonApiUpdates,
         bool isBatchUpdate,
-        char[]? disallowedCharacters)
+        char[] disallowedCharacters)
     {
         bool requiresReingest = existingAsset == null;
         
@@ -133,7 +135,9 @@ public static class AssetPreparer
         else
         {
             // Update existing asset - the DB record is what was in DB with any submitted changes applied
-            workingAsset.ApplyChanges(updateAsset);
+            workingAsset.ApplyChanges(updateAsset, i => i.Manifests);
+            
+            workingAsset.Manifests = WorkOutManifests(existingAsset, updateAsset);
             
             if (reCalculateFamily)
             {
@@ -149,8 +153,18 @@ public static class AssetPreparer
         return AssetPreparationResult.Succeed(workingAsset, requiresReingest);
     }
 
+    private static List<string>? WorkOutManifests(Asset existingAsset, Asset updateAsset)
+    {
+        if (updateAsset.Manifests == null)
+        {
+            return existingAsset.Manifests;
+        }
+
+        return updateAsset.Manifests.IsEmpty() ? null : updateAsset.Manifests;
+    }
+
     private static AssetPreparationResult? ValidateRequests(Asset? existingAsset, Asset updateAsset,
-        bool allowNonApiUpdates, bool isBatchUpdate, char[]? disallowedCharacters)
+        bool allowNonApiUpdates, bool isBatchUpdate, char[] disallowedCharacters)
     {
         if (existingAsset == null)
         {

@@ -13,7 +13,6 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using FizzWare.NBuilder;
-using IIIF;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure;
@@ -230,7 +229,7 @@ public class FireballPdfCreatorTests
             }
         };
 
-        A.CallTo(() => thumbSizeProvider.GetThumbSizesForImage(A<Asset>._))
+        A.CallTo(() => thumbSizeProvider.GetThumbSizesForImage(A<Asset>._, CancellationToken.None))
             .Returns(new ThumbnailSizes(new List<int[]>{ new[] { 500, 500 } }, new List<int[]>()));
 
         var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);

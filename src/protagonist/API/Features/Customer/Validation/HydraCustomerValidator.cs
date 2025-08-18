@@ -10,6 +10,8 @@ namespace API.Features.Customer.Validation;
 /// </summary>
 public class HydraCustomerValidator : AbstractValidator<DLCS.HydraModel.Customer>
 {
+    private const int NameMaxLength = 60;
+
     public HydraCustomerValidator()
     {
         RuleFor(c => c.ModelId)
@@ -40,17 +42,31 @@ public class HydraCustomerValidator : AbstractValidator<DLCS.HydraModel.Customer
             .Must(name => !StartsWithVersion(name!))
             .When(c => !string.IsNullOrEmpty(c.Name))
             .WithMessage(c=> $"Name field [{c.Name}] cannot start with a version slug.");
+
+        RuleFor(c => c.Name).MaximumLength(NameMaxLength);
+        
+        RuleFor(c => c.Name)
+            .Must(name => ContainsOnlyValidCharacters(name!))
+            .When(c => !string.IsNullOrEmpty(c.Name))
+            .WithMessage(c=> $"Name field [{c.Name}] contains invalid characters. Accepted: [a-z] [A-Z] [0-9] - _ and .");
     }
     
-    private bool IsReservedWord(string customerName)
+    private static bool IsReservedWord(string customerName)
     {
         return Enum.GetNames(typeof(DLCS.HydraModel.Customer.ReservedNames)).Any(n =>
-            String.Equals(n, customerName, StringComparison.CurrentCultureIgnoreCase));
+            string.Equals(n, customerName, StringComparison.CurrentCultureIgnoreCase));
     }
 
-    private bool StartsWithVersion(string customerName)
+    private static bool StartsWithVersion(string customerName)
     {
-        var versionRegex = @"^(?i:v\d+)";
-        return Regex.Matches(customerName, versionRegex).Any();
+        const string versionRegex = @"^v\d+";
+        return Regex.IsMatch(customerName, versionRegex);
+    }
+    
+    private static bool ContainsOnlyValidCharacters(string customerName)
+    {
+        // NOTE - if regex changes, alter the error message
+        const string validCharsRegex = @"^[a-zA-Z0-9_\-\.]+$";
+        return Regex.IsMatch(customerName, validCharsRegex);
     }
 }

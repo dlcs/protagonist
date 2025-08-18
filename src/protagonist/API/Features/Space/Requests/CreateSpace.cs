@@ -1,4 +1,6 @@
 using API.Exceptions;
+using API.Infrastructure.Requests;
+using DLCS.Core;
 using DLCS.Model.Customers;
 using DLCS.Model.Spaces;
 using MediatR;
@@ -8,7 +10,7 @@ namespace API.Features.Space.Requests;
 /// <remark>
 /// See Deliverator: API/Architecture/Request/API/Entities/CustomerSpaces.cs
 /// </remark>
-public class CreateSpace : IRequest<DLCS.Model.Spaces.Space>
+public class CreateSpace : IRequest<ModifyEntityResult<DLCS.Model.Spaces.Space>>
 {
     public string Name { get; }
     public int Customer { get; }
@@ -25,7 +27,7 @@ public class CreateSpace : IRequest<DLCS.Model.Spaces.Space>
 }
 
 
-public class CreateSpaceHandler : IRequestHandler<CreateSpace, DLCS.Model.Spaces.Space>
+public class CreateSpaceHandler : IRequestHandler<CreateSpace, ModifyEntityResult<DLCS.Model.Spaces.Space>>
 {
     private readonly ISpaceRepository spaceRepository;
     private readonly ICustomerRepository customerRepository;
@@ -38,14 +40,15 @@ public class CreateSpaceHandler : IRequestHandler<CreateSpace, DLCS.Model.Spaces
         this.customerRepository = customerRepository;
     }
     
-    public async Task<DLCS.Model.Spaces.Space> Handle(CreateSpace request, CancellationToken cancellationToken)
+    public async Task<ModifyEntityResult<DLCS.Model.Spaces.Space>> Handle(CreateSpace request, CancellationToken cancellationToken)
     {
         await ValidateRequest(request);
        
         var existing = await spaceRepository.GetSpace(request.Customer, request.Name, cancellationToken);
         if (existing != null)
         {
-            throw new BadRequestException("A space with this name already exists.");
+            return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure("A space with this name already exists.",
+                WriteResult.Conflict);
         }
         
         var newSpace = await spaceRepository.CreateSpace(
@@ -53,7 +56,7 @@ public class CreateSpaceHandler : IRequestHandler<CreateSpace, DLCS.Model.Spaces
             request.Tags, request.Roles, request.MaxUnauthorised,
             cancellationToken);
 
-        return newSpace;
+        return ModifyEntityResult<DLCS.Model.Spaces.Space>.Success(newSpace, WriteResult.Created);
     }
     
     private async Task ValidateRequest(CreateSpace request)

@@ -4,7 +4,6 @@ using DLCS.Core.Types;
 using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
 using Engine.Ingest;
-using Engine.Ingest.Models;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 

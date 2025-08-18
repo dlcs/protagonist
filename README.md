@@ -37,7 +37,7 @@ In addition to the above there are a number of `*.Tests` classes for automated t
 * Orchestrator - reverse proxy that serves user requests.
 * Portal - administration UI for managing assets.
 * Thumbs - simplified handling of thumbnail requests.
-* DeleteHandler - monitors queue for notifications + deletes asset derivatives on receipt.
+* CleanupHandler - monitors queue for notifications + deletes asset derivatives on receipt.
 * Migrator - Applies any pending EF migrations.
 
 ## Technology :robot:
@@ -55,7 +55,24 @@ There are a variety of technologies used across the projects, including:
 
 [Github actions](.github/workflows) are used to build and push new Docker images to github container registry.
 
-The main entry point is [`run_build.yml`](.github/workflows/run_build.yml). This runs `dotnet test` then uses the parameterised `build_docker.yml` files to handle Docker image creation.
+The main entry point is [`run_build.yml`](.github/workflows/run_build.yml). This runs `dotnet test` then uses the parameterised `docker-build-and-push` files to handle Docker image creation.
+
+PRs to `main`, `develop`, pushes to `main`, `develop` and `v*` tags will:
+* Build + test dotnet code
+* Build and push docker containers 
+  * This won't happen for draft PRs unless `build-image` label is added
+
+Pushes to `main`, `develop` and `v*` tags will also run sonar analysis.
+
+## Configuration
+
+Multiple services use `ForwardedHeadersMiddleware` to listen for `X-Forwarded-Host` and `X-Forwarded-Proto`.
+
+By default these only allow these headers to be set by requests from a `KnownNetwork` or `KnownHost` (see [`ForwardedHeaderMiddleware`](https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-8.0#forwarded-headers-middleware-options) docs for more options).
+
+To add to the default values, set `"KnownNetwork"` config setting, this should be set to a comma-delimited list of CIDR values.
+
+Applicable for `API`, `Thumbs` and `Orchestrator` services.
 
 ## Getting Started
 

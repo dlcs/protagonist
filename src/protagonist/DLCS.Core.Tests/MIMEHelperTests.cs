@@ -5,9 +5,9 @@ public class MIMEHelperTests
     [Theory]
     [InlineData("application/pdf", "pdf")]
     [InlineData("image/svg+xml", "svg")]
-    [InlineData("image/jpg", "jpg")]
-    [InlineData("IMAGE/JPG", "jpg")]
-    [InlineData("image/jpg;foo=bar", "jpg")]
+    [InlineData("image/jpeg", "jpg")]
+    [InlineData("IMAGE/JPEG", "jpg")]
+    [InlineData("image/jpeg;foo=bar", "jpg")]
     public void GetExtensionForContentType_CorrectForKnownTypes(string contentType, string expected) 
         => MIMEHelper.GetExtensionForContentType(contentType).Should().Be(expected);
 
@@ -86,4 +86,16 @@ public class MIMEHelperTests
     [InlineData(null)]
     public void IsImage_False(string mediaType)
         => MIMEHelper.IsImage(mediaType).Should().BeFalse();
+
+    [Theory]
+    [InlineData("image/png", "Image")]
+    [InlineData("video/mp4", "Video")]
+    [InlineData("audio/mp4", "Sound")]
+    [InlineData("text/plain", "Text")]
+    [InlineData("model/obj", "Model")]
+    [InlineData("application/pdf", "Dataset")]
+    [InlineData(null, "Dataset")]
+    [InlineData("", "Dataset")]
+    public void GetRdfType_Correct(string mediaType, string expectedRdfType)
+        => MIMEHelper.GetRdfType(mediaType).Should().Be(expectedRdfType);
 }

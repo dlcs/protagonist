@@ -1,7 +1,5 @@
 using API.Converters;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using Xunit;
 
 namespace DLCS.Model.Tests.Assets;
 
@@ -11,7 +9,7 @@ public class AssetFilterTests
     public void Obtain_AssetFilter_From_Q_Param_Directly()
     {
         // arrange
-        var q = @"{""string1"":""s1"",""string2"":""s2"",""number3"":3,""space"":99}";
+        var q = @"{""string1"":""s1"",""string2"":""s2"",""number3"":3,""space"":99,""manifests"":[""first""]}";
         var httpRequest = new DefaultHttpContext().Request;
         httpRequest.QueryString = new QueryString("?q=" + q);
         
@@ -26,7 +24,7 @@ public class AssetFilterTests
         filter.NumberReference1.Should().BeNull();
         filter.NumberReference3.Should().Be(3);
         filter.Space.Should().Be(99);
-
+        filter.Manifests.Should().BeEquivalentTo("first");
     }
     
     [Fact]
@@ -53,7 +51,7 @@ public class AssetFilterTests
     public void Construct_AssetFilter_From_Specific_Params()
     {
         var httpRequest = new DefaultHttpContext().Request;
-        httpRequest.QueryString = new QueryString("?string1=s1&string2=s2&string3=s3&number1=1&number2=2&number3=3");
+        httpRequest.QueryString = new QueryString("?string1=s1&string2=s2&string3=s3&number1=1&number2=2&number3=3&manifests=first,second");
         
         // act
         var filter = httpRequest.UpdateAssetFilterFromQueryStringParams(null);
@@ -66,6 +64,7 @@ public class AssetFilterTests
         filter.NumberReference1.Should().Be(1);
         filter.NumberReference2.Should().Be(2);
         filter.NumberReference3.Should().Be(3);
+        filter.Manifests.Should().BeEquivalentTo("first", "second");
         filter.Space.Should().BeNull();
     }
     
@@ -73,9 +72,9 @@ public class AssetFilterTests
     [Fact]
     public void Update_AssetFilter_From_Specific_Params()
     {
-        var q = @"{""string3"":""s3"",""number1"":1}";
+        var q = @"{""string3"":""s3"",""number1"":1,""manifests"":[""first""]}";
         var httpRequest = new DefaultHttpContext().Request;
-        httpRequest.QueryString = new QueryString("?q=" + q + "&string1=s1&string3=s3updated&number3=3");
+        httpRequest.QueryString = new QueryString("?q=" + q + "&string1=s1&string3=s3updated&number3=3&manifests=second");
         
         // act
         var filter = httpRequest.GetAssetFilterFromQParam();
@@ -89,6 +88,7 @@ public class AssetFilterTests
         filter.NumberReference1.Should().Be(1);
         filter.NumberReference2.Should().BeNull();
         filter.NumberReference3.Should().Be(3);
+        filter.Manifests.Should().BeEquivalentTo("second");
         filter.Space.Should().BeNull();
     }
     

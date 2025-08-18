@@ -128,6 +128,25 @@ public class HydraImageValidatorTests
     }
     
     [Fact]
+    public void DeliveryChannel_ValidationError_WhenDefaultAndMoreDeliveryChannels()
+    {
+        var sut = GetSut();
+        var model = new Image { DeliveryChannels = new[]
+        {
+            new DeliveryChannel()
+            {
+                Channel = "default"
+            },
+            new DeliveryChannel()
+            {
+                Channel = "file"
+            }
+        } };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
+    }
+    
+    [Fact]
     public void DeliveryChannel_NoValidationError_WhenDeliveryChannelsWithNoNone()
     {
         var sut = GetSut();

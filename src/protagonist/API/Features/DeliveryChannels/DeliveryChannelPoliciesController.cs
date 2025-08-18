@@ -13,6 +13,7 @@ using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.DeliveryChannels;
@@ -25,13 +26,16 @@ namespace API.Features.DeliveryChannels;
 public class DeliveryChannelPoliciesController : HydraController
 {
     private readonly HydraDeliveryChannelPolicyValidator hydraDeliveryChannelPolicyValidator;
-    
+    private readonly ILogger<DeliveryChannelPoliciesController> logger;
+
     public DeliveryChannelPoliciesController(
         IMediator mediator,
         IOptions<ApiSettings> options,
-        HydraDeliveryChannelPolicyValidator hydraDeliveryChannelPolicyValidator) : base(options.Value, mediator)
+        HydraDeliveryChannelPolicyValidator hydraDeliveryChannelPolicyValidator,
+        ILogger<DeliveryChannelPoliciesController> logger) : base(options.Value, mediator)
     {
         this.hydraDeliveryChannelPolicyValidator = hydraDeliveryChannelPolicyValidator;
+        this.logger = logger;
     }
     
     /// <summary>
@@ -294,8 +298,10 @@ public class DeliveryChannelPoliciesController : HydraController
                 return this.ValidationFailed(hydraDeliveryChannelValidationResult);
             }
         }
-        catch(APIException apiEx)
+        catch (APIException apiEx)
         {
+            // APIException can be thrown from validator as it makes a request to Engine to get valid iiif-av channels
+            logger.LogError(apiEx, "Error validating hydra delivery channel policy");
             return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode, apiErrorMessage);
         }
 

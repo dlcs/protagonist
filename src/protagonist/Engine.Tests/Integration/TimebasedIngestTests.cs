@@ -6,7 +6,6 @@ using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.S3;
 using DLCS.Core.FileSystem;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Model.Policies;
@@ -14,9 +13,11 @@ using DLCS.Repository;
 using DLCS.Repository.Strategy.Utils;
 using Engine.Tests.Integration.Infrastructure;
 using FakeItEasy;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Stubbery;
 using Test.Helpers;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Storage;
 
@@ -34,15 +35,8 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private static readonly IElasticTranscoderWrapper ElasticTranscoderWrapper = A.Fake<IElasticTranscoderWrapper>();
+    private static readonly IElasticTranscoderPresetLookup ElasticTranscoderPreset = A.Fake<IElasticTranscoderPresetLookup>();
     private readonly ApiStub apiStub;
-    private readonly List<ImageDeliveryChannel> timebasedDeliveryChannels = new()
-    {
-        new ImageDeliveryChannel
-        {
-            Channel = AssetDeliveryChannels.Timebased,
-            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.AvDefaultVideo
-        }
-    };
 
     public TimebasedIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
     {
@@ -56,7 +50,8 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                     .AddSingleton<IFileSaver, FakeFileSaver>()
                     .AddSingleton<IFileSystem, FakeFileSystem>()
                     .AddSingleton<IBucketWriter>(BucketWriter)
-                    .AddSingleton<IElasticTranscoderWrapper>(ElasticTranscoderWrapper);
+                    .AddSingleton<IElasticTranscoderWrapper>(ElasticTranscoderWrapper)
+                    .AddSingleton<IElasticTranscoderPresetLookup>(ElasticTranscoderPreset);
             })
             .WithConnectionString(engineFixture.DbFixture.ConnectionString)
             .CreateClient();
@@ -71,7 +66,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         A.CallTo(() => ElasticTranscoderWrapper.GetPipelineId("protagonist-pipeline", A<CancellationToken>._))
             .Returns("pipeline-id-1234");
-        A.CallTo(() => ElasticTranscoderWrapper.GetPresetIdLookup(A<CancellationToken>._))
+        A.CallTo(() => ElasticTranscoderPreset.GetPresetLookupByName(A<CancellationToken>._))
             .Returns(new Dictionary<string, TranscoderPreset>
             {
                 ["System preset: Generic 720p"] = new ("123-123", "System preset: Generic 720p", ""),
@@ -85,23 +80,26 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     public async Task IngestAsset_CreatesTranscoderJob_HttpOrigin(string type, string expectedKey, int policyId)
     {
         // Arrange
-        var assetId = AssetId.FromString($"99/1/{nameof(IngestAsset_CreatesTranscoderJob_HttpOrigin)}-{type}");
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: type);
         const string jobId = "1234567890123-abcdef";
         
         var origin = $"{apiStub.Address}/{type}";
-        var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin, 
+        const int batch = 999;
+        var dbBatch = await dbContext.Batches.AddTestBatch(batch);
+        dbBatch.Entity.AddBatchAsset(assetId);
+        var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             mediaType: $"{type}/mpeg", family: AssetFamily.Timebased,
             imageDeliveryChannels: new List<ImageDeliveryChannel>
             {
-                new ()
+                new()
                 {
                     Channel = AssetDeliveryChannels.Timebased,
                     DeliveryChannelPolicyId = policyId
                 }
-            });
+            }, batch: batch);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, batch);
 
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
                 A<string>._,
@@ -132,13 +130,24 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                 "pipeline-id-1234",
                 A<List<CreateJobOutput>>.That.Matches(o => o.Single().Key.EndsWith(outputKey)),
                 A<Dictionary<string, string>>.That.Matches(d => 
-                    d[UserMetadataKeys.DlcsId] == assetId.ToString() && d[UserMetadataKeys.OriginSize] == "0"
+                    d[UserMetadataKeys.DlcsId] == assetId.ToString() 
+                    && d[UserMetadataKeys.OriginSize] == "0"
+                    && d[UserMetadataKeys.BatchId] == batch.ToString()
                     ),
                 A<CancellationToken>._))
             .MustHaveHappened();
 
         A.CallTo(() => ElasticTranscoderWrapper.PersistJobId(assetId, jobId, A<CancellationToken>._))
             .MustHaveHappened();
+
+        var savedBatch = await dbContext.Batches
+            .Include(b => b.BatchAssets)
+            .SingleAsync(b => b.Id == batch);
+        savedBatch.Finished.Should().BeNull();
+        savedBatch.BatchAssets.Should()
+            .ContainSingle(
+                ba => ba.AssetId == assetId && !ba.Finished.HasValue && ba.Status == BatchAssetStatus.Waiting,
+                "BatchAsset is not marked as complete");
     }
     
     [Theory]
@@ -147,8 +156,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     public async Task IngestAsset_ReturnsNoSuccess_IfCreateTranscoderJobFails(string type, string expectedKey, int policyId)
     {
         // Arrange
-        var assetId =
-            AssetId.FromString($"99/1/{nameof(IngestAsset_ReturnsNoSuccess_IfCreateTranscoderJobFails)}-{type}");
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: type);
         
         var origin = $"{apiStub.Address}/{type}";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
@@ -163,7 +171,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
             });
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
 
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
                 A<string>._,
@@ -192,7 +200,8 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                 A<string>.That.Matches(s => s.StartsWith($"s3://{LocalStackFixture.TimebasedInputBucketName}/{assetId}")),
                 "pipeline-id-1234",
                 A<List<CreateJobOutput>>.That.Matches(o => o.Single().Key.EndsWith(outputKey)),
-                A<Dictionary<string, string>>.That.Matches(d => d[UserMetadataKeys.DlcsId] == assetId.ToString()),
+                A<Dictionary<string, string>>.That.Matches(d => 
+                    d[UserMetadataKeys.DlcsId] == assetId.ToString() && d[UserMetadataKeys.BatchId] == string.Empty),
                 A<CancellationToken>._))
             .MustHaveHappened();
 
@@ -206,7 +215,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     public async Task IngestAsset_SetsFileSizeCorrectly_IfAlsoAvailableForFileChannel(string type, string expectedKey, int deliveryChannelPolicyId)
     {
         // Arrange
-        var assetId = AssetId.FromString($"99/1/{nameof(IngestAsset_SetsFileSizeCorrectly_IfAlsoAvailableForFileChannel)}-{type}");
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: type);
         const string jobId = "1234567890123-abcdef";
 
         var imageDeliveryChannels = new List<ImageDeliveryChannel>()
@@ -229,7 +238,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
             imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();
-        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow);
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
 
         A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
                 A<string>._,
@@ -263,7 +272,9 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                 "pipeline-id-1234",
                 A<List<CreateJobOutput>>.That.Matches(o => o.Single().Key.EndsWith(outputKey)),
                 A<Dictionary<string, string>>.That.Matches(d => 
-                    d[UserMetadataKeys.DlcsId] == assetId.ToString() && d[UserMetadataKeys.OriginSize] == "1000"
+                    d[UserMetadataKeys.DlcsId] == assetId.ToString() 
+                    && d[UserMetadataKeys.OriginSize] == "1000"
+                    && d[UserMetadataKeys.BatchId] == string.Empty
                     ),
                 A<CancellationToken>._))
             .MustHaveHappened();

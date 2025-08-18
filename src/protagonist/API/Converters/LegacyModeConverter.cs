@@ -61,7 +61,7 @@ public static class LegacyModeConverter
         return image;
     }
 
-    private static DeliveryChannel[] GetDeliveryChannelsForLegacyAsset<T>(T image)
+    private static DeliveryChannel[]? GetDeliveryChannelsForLegacyAsset<T>(T image)
         where T : Image
     {
         // Retrieve the name, if it is a path to a DLCS IOP/TP policy resource
@@ -153,7 +153,7 @@ public static class LegacyModeConverter
             };
         }
         
-        return Array.Empty<DeliveryChannel>();
+        return null;
     }
     
     private static string? GetPolicyValue(string? policyValue, string pathSlug)

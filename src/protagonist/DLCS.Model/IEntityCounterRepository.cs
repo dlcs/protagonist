@@ -11,7 +11,8 @@ public interface IEntityCounterRepository
     /// <summary>
     /// Create a new EntityCounter record with specified value.
     /// </summary>
-    Task Create(int customer, string entityType, string scope, long initialValue = 1);
+    /// <returns>True if EntityCounter created, else false</returns>
+    Task<bool> TryCreate(int customer, string entityType, string scope, long initialValue = 1);
     
     /// <summary>
     /// Removes an EntityCounter from the database

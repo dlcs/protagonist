@@ -60,9 +60,15 @@ public class ImageIngestSettings
     public Uri ImageProcessorUrl { get; set; }
     
     /// <summary>
-    /// URI of downstream derivative processor
+    /// URI of downstream thumbnail processor
     /// </summary>
     public Uri ThumbsProcessorUrl { get; set; }
+    
+    /// <summary>
+    /// Optional path prefix for thumbnail processor. Requested url will be
+    /// $"{ThumbsProcessorUrl}/{ThumbsProcessorPathBase}"
+    /// </summary>
+    public string? ThumbsProcessorPathBase { get; set; } = "iiif/3/";
 
     /// <summary>
     /// How long, in ms, to delay calling Image-Processor after copying file to shared disk 

@@ -4,8 +4,6 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Policies;
-using FluentAssertions;
-using Xunit;
 
 namespace DLCS.Model.Tests.Assets;
 

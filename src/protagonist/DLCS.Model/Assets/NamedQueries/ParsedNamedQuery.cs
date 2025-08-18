@@ -10,7 +10,7 @@ namespace DLCS.Model.Assets.NamedQueries;
 public class ParsedNamedQuery
 {
     /// <summary>
-    /// Collection of OrderBy clauses to apply to assets.
+    /// Collection of OrderBy clauses to apply to assets
     /// </summary>
     public List<QueryOrder> AssetOrdering { get; set; } = new() { new QueryOrder(QueryMapping.Unset) };
     
@@ -53,6 +53,16 @@ public class ParsedNamedQuery
     /// Value of "n3" parameter after parsing
     /// </summary>
     public long? Number3 { get; set; }
+    
+    /// <summary>
+    /// Value of "batch" after parsing
+    /// </summary>
+    public int[]? Batches { get; set; } 
+    
+    /// <summary>
+    /// Value of "manifest" after parsing
+    /// </summary>
+    public string[]? Manifests { get; set; }
     
     /// <summary>
     /// The name of the namedQuery this object was parsed from.
@@ -99,7 +109,7 @@ public class ParsedNamedQuery
         String3,
         Number1,
         Number2,
-        Number3
+        Number3,
     }
 
     public enum OrderDirection

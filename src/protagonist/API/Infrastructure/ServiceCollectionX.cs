@@ -2,13 +2,14 @@
 using System.Reflection;
 using API.Features.Assets;
 using API.Features.Customer;
-using API.Features.DeliveryChannels;
 using API.Features.DeliveryChannels.DataAccess;
+using API.Infrastructure.Messaging;
 using API.Infrastructure.Requests.Pipelines;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.AWS.SNS;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.AWS.SQS;
 using DLCS.Core.Caching;
 using DLCS.Mediatr.Behaviours;
@@ -25,6 +26,7 @@ using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Auth;
+using DLCS.Repository.CustomerPath;
 using DLCS.Repository.Customers;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Policies;
@@ -57,7 +59,7 @@ public static class ServiceCollectionX
     /// </summary>
     public static IServiceCollection ConfigureMediatR(this IServiceCollection services)
         => services
-            .AddMediatR(typeof(Startup))
+            .AddMediatR(cfg=>cfg.RegisterServicesFromAssemblyContaining<Startup>())
             .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
             .AddScoped(typeof(IPipelineBehavior<,>), typeof(CacheInvalidationBehaviour<,>));
     
@@ -74,7 +76,7 @@ public static class ServiceCollectionX
             .AddSingleton<IQueueLookup, SqsQueueLookup>()
             .AddSingleton<IQueueSender, SqsQueueSender>()
             .AddScoped<ITopicPublisher, TopicPublisher>()
-            .AddSingleton<IPathCustomerRepository, CustomerPathElementRepository>()
+            .AddSingleton<IPathCustomerRepository, BulkCustomerPathElementRepository>()
             .AddSingleton<SqsQueueUtilities>()
             .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
             .SetupAWS(configuration, webHostEnvironment)
@@ -154,4 +156,16 @@ public static class ServiceCollectionX
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             c.IncludeXmlComments(xmlPath);
         });
+    
+    /// <summary>
+    /// Add topic notifiers
+    /// </summary>
+    public static IServiceCollection AddTopicNotifiers(this IServiceCollection services)
+    {
+        services
+            .AddScoped<ICustomerNotificationSender, CustomerNotificationSender>()
+            .AddScoped<IBatchCompletedNotificationSender, BatchCompletedNotificationSender>();
+        
+        return services;
+    }
 }

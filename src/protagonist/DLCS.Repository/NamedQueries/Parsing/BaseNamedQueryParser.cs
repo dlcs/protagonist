@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
+using DLCS.Core.Strings;
 using DLCS.Model.Assets.NamedQueries;
 using Microsoft.Extensions.Logging;
 using QueryMapping = DLCS.Model.Assets.NamedQueries.ParsedNamedQuery.QueryMapping;
@@ -12,7 +13,14 @@ using QueryOrder = DLCS.Model.Assets.NamedQueries.ParsedNamedQuery.QueryOrder;
 namespace DLCS.Repository.NamedQueries.Parsing;
 
 /// <summary>
-/// Basic NQ parser, supporting the following arguments: s1, s2, s3, n1, n2, n3, space, spacename, canvas, # and p*
+/// Basic NQ parser; supporting the following arguments:
+/// metadata-fields:   s1, s2, s3, n1, n2, n3
+/// space-fields:      space, spacename
+/// ordering-fields:   assetOrder, canvas
+/// batch:             batch
+/// manifest:          manifest
+/// auto-added-values: #
+/// parameter-values:  p*
 /// </summary>
 public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     where T : ParsedNamedQuery
@@ -35,17 +43,19 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     protected const string String3 = "s3";
     protected const string AssetOrdering = "assetOrder";
     protected const string PathReplacement = "%2F";
+    protected const string Batch = "batch";
+    protected const string Manifest = "manifest";
     
     public BaseNamedQueryParser(ILogger logger)
     {
         Logger = logger;
     }
 
-    public T GenerateParsedNamedQueryFromRequest<T>(
+    public T2 GenerateParsedNamedQueryFromRequest<T2>(
         int customerId,
         string? namedQueryArgs,
         string namedQueryTemplate,
-        string namedQueryName) where T : ParsedNamedQuery
+        string namedQueryName) where T2 : ParsedNamedQuery
     {
         namedQueryTemplate.ThrowIfNullOrWhiteSpace(nameof(namedQueryTemplate));
 
@@ -59,7 +69,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         var assetQuery = GenerateParsedNamedQuery(customerId, templatePairing, queryArgs);
         assetQuery.NamedQueryName = namedQueryName;
         PostParsingOperations(assetQuery);
-        return (assetQuery as T)!;
+        return (assetQuery as T2)!;
     }
 
     /// <summary>
@@ -73,9 +83,7 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
     private static List<string> GetQueryArgsList(string? namedQueryArgs, string[] templatePairing)
     {
         // Get any arguments passed to the NQ from URL
-        var queryArgs = namedQueryArgs.IsNullOrEmpty()
-            ? new List<string>()
-            : namedQueryArgs!.Split("/", StringSplitOptions.RemoveEmptyEntries).ToList();
+        var queryArgs = namedQueryArgs.SplitSeparatedString("/").ToList();
 
         // Iterate through any pairs that start with '#', as these are treated as additional args
         foreach (var additionalArg in templatePairing.Where(p => p.StartsWith(AdditionalArgMarker)))
@@ -127,12 +135,20 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
                             ConvertToLongQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case Number2:
-                        assetQuery.Number2 = 
+                        assetQuery.Number2 =
                             ConvertToLongQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                     case Number3:
-                        assetQuery.Number3 = 
+                        assetQuery.Number3 =
                             ConvertToLongQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                        break;
+                    case Batch:
+                        assetQuery.Batches =
+                            ConvertToIntArrayQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
+                        break;
+                    case Manifest:
+                        assetQuery.Manifests =
+                            ConvertToArrayQueryArg(GetQueryArgumentFromTemplateElement(queryArgs, elements[1]));
                         break;
                 }
 
@@ -148,15 +164,14 @@ public abstract class BaseNamedQueryParser<T> : INamedQueryParser
         return assetQuery;
     }
 
-    private long? ConvertToLongQueryArg(string? argToConvert)
-    {
-        if (argToConvert.IsNullOrEmpty())
-        {
-            return null;
-        }
+    private static long? ConvertToLongQueryArg(string? argToConvert) 
+        => argToConvert.IsNullOrEmpty() ? null : long.Parse(argToConvert);
 
-        return long.Parse(argToConvert);
-    }
+    private static int[]? ConvertToIntArrayQueryArg(string? argToConvert)
+        => argToConvert.IsNullOrEmpty() ? null : argToConvert.SplitSeparatedString(",").Select(int.Parse).ToArray();
+    
+    private static string[]? ConvertToArrayQueryArg(string? argToConvert)
+        => argToConvert.IsNullOrEmpty() ? null : argToConvert.SplitSeparatedString(",").ToArray();
 
     /// <summary>
     /// Adds handling for any custom key/value pairs, in addition to the core s1, s2, p1 etc

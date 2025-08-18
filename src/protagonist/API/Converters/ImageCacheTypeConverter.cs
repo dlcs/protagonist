@@ -6,6 +6,10 @@ namespace API.Converters;
 
 public static class ImageCacheTypeConverter
 {
+    /// <summary>
+    /// Convert comma-delimited list of values to <see cref="ImageCacheType"/> flags enum
+    /// e.g. "cdn", "internalCache" or "cdn,internalCache"
+    /// </summary>
     public static ImageCacheType ConvertToImageCacheType(string? imageCache, char separator)
     {
         if (imageCache.IsNullOrEmpty())
@@ -15,7 +19,8 @@ public static class ImageCacheTypeConverter
 
         ImageCacheType? imageCacheType = null;
 
-        foreach (var imageCacheValue in imageCache.Split(separator))
+        foreach (var imageCacheValue in imageCache.Split(separator,
+                     StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             var convertedImageCacheType = imageCacheValue.GetEnumFromString<ImageCacheType>();
 

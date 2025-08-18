@@ -4,7 +4,7 @@ namespace API.Features.Image;
 
 public class AssetBeforeProcessing
 {
-    public AssetBeforeProcessing(Asset asset, DeliveryChannelsBeforeProcessing[] deliveryChannelsBeforeProcessing)
+    public AssetBeforeProcessing(Asset asset, DeliveryChannelsBeforeProcessing[]? deliveryChannelsBeforeProcessing)
     {
         Asset = asset;
         DeliveryChannelsBeforeProcessing = deliveryChannelsBeforeProcessing;
@@ -12,7 +12,7 @@ public class AssetBeforeProcessing
 
     public Asset Asset { get; }
 
-    public DeliveryChannelsBeforeProcessing[] DeliveryChannelsBeforeProcessing { get; }
+    public DeliveryChannelsBeforeProcessing[]? DeliveryChannelsBeforeProcessing { get; }
 }
 
 /// <summary>

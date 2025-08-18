@@ -105,6 +105,16 @@ public class Asset : ICloneable
     /// A list of metadata attached to this asset
     /// </summary>
     public ICollection<AssetApplicationMetadata>? AssetApplicationMetadata { get; set; }
+    
+    /// <summary>
+    /// A list of batch assets attached to this asset
+    /// </summary>
+    public List<BatchAsset>? BatchAssets { get; set; }
+    
+    /// <summary>
+    /// A list of manifest identifiers that this asset is associated with
+    /// </summary>
+    public List<string>? Manifests { get; set; }
 
     public Asset()
     {

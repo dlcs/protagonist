@@ -1,23 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <LangVersion>10.0</LangVersion>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj" />
-    <ProjectReference Include="..\DLCS.Model\DLCS.Model.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\DLCS.Core\DLCS.Core.csproj"/>
+        <ProjectReference Include="..\DLCS.Model\DLCS.Model.csproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="iiif-net" Version="0.2.7" />
-    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
-    <PackageReference Include="Serilog" Version="2.10.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.3.1" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="iiif-net"/>
+        <PackageReference Include="Microsoft.AspNetCore.Http"/>
+        <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
+        <PackageReference Include="Serilog"/>
+        <PackageReference Include="Serilog.Extensions.Logging" />
+        <PackageReference Include="Swashbuckle.AspNetCore"/>
+    </ItemGroup>
 
 </Project>

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using DLCS.Model.Assets;
-using DLCS.Repository;
 using MediatR;
 
 namespace API.Features.DeliveryChannels.Requests.DeliveryChannelPolicies;
@@ -19,7 +18,7 @@ public class GetDeliveryChannelPolicyCollections: IRequest<Dictionary<string,str
 
 public class GetDeliveryChannelPolicyCollectionsHandler : IRequestHandler<GetDeliveryChannelPolicyCollections, Dictionary<string,string>>
 {
-    public async Task<Dictionary<string,string>> Handle(GetDeliveryChannelPolicyCollections request, CancellationToken cancellationToken)
+    public Task<Dictionary<string,string>> Handle(GetDeliveryChannelPolicyCollections request, CancellationToken cancellationToken)
     {
         var policyCollections = new Dictionary<string, string>()
         {
@@ -29,6 +28,6 @@ public class GetDeliveryChannelPolicyCollectionsHandler : IRequestHandler<GetDel
             { AssetDeliveryChannels.File, "Policies for File delivery" }
         };
 
-        return policyCollections;
+        return Task.FromResult(policyCollections);
     }
 }

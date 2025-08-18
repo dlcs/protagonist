@@ -13,7 +13,7 @@ public static class ServiceCollectionX
     /// <returns>Modified IServiceCollection.</returns>
     public static IServiceCollection AddMediatR(this IServiceCollection services)
         => services
-            .AddMediatR(typeof(Startup))
+            .AddMediatR(cfg=>cfg.RegisterServicesFromAssemblyContaining<Startup>())
             .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
             .AddScoped(typeof(IPipelineBehavior<,>), typeof(AssetRequestParsingBehavior<,>));
 }

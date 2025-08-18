@@ -3,13 +3,18 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using API.Client;
+using API.Infrastructure.Messaging;
 using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
 using DLCS.Repository;
+using FakeItEasy;
 using Hydra.Collections;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
@@ -22,11 +27,24 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
+    private static readonly ICustomerNotificationSender NotificationSender = A.Fake<ICustomerNotificationSender>();
 
     public CustomerTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
         dbContext = dbFixture.DbContext;
-        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
+        httpClient = factory
+            .WithConnectionString(dbFixture.ConnectionString)
+            .WithTestServices(services =>
+            {
+                services.AddSingleton(NotificationSender);
+                services.AddAuthentication("API-Test")
+                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+                        "API-Test", _ => { });
+            })
+            .CreateClient(new WebApplicationFactoryClientOptions
+            {
+                AllowAutoRedirect = false
+            });
         dbFixture.CleanUp();
     }
 
@@ -55,7 +73,7 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task GetOtherCustomer_Returns_NotFound()
+    public async Task GetCustomer_Returns404_IfNotFound()
     {
         var response = await httpClient.AsAdmin().GetAsync("/customers/100");
 
@@ -63,7 +81,7 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task Create_Customer_Test()
+    public async Task CreateNewCustomer_CreatesCustomerAndAssociatedrecords()
     {
         var customerCounter = await dbContext.EntityCounters.SingleOrDefaultAsync(ec
             => ec.Customer == 0 && ec.Scope == "0" && ec.Type == "customer");
@@ -146,12 +164,88 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         dbContext.DeliveryChannelPolicies.Count(d => d.Customer == newDbCustomer.Id).Should().Be(3);
         dbContext.DefaultDeliveryChannels.Count(d => d.Customer == newDbCustomer.Id).Should().Be(5);
+
+        A.CallTo(() =>
+                NotificationSender.SendCustomerCreatedMessage(
+                    A<DLCS.Model.Customers.Customer>.That.Matches(c => c.Id == newDbCustomer.Id),
+                    A<CancellationToken>._))
+            .MustHaveHappened();
     }
 
     [Fact]
-    public async Task CreateNewCustomer_Throws_IfNameConflicts()
+    public async Task CreateNewCustomer_HandlesRaceConditionOnName()
     {
-        // Tests CreateCustomer::EnsureCustomerNamesNotTaken
+        var customerName = nameof(CreateNewCustomer_HandlesRaceConditionOnName);
+
+        var customer1 = CreateCustomer(customerName, "1");
+        var customer2 = CreateCustomer(customerName, "2");
+        await Task.WhenAll(customer1, customer2);
+
+        // Assert that we get a 201 and a 409. One should succeed and the other fail. Doesn't matter which
+        var customer1Status = customer1.Result.StatusCode;
+        var customer2Status = customer2.Result.StatusCode;
+
+        if (customer1Status == HttpStatusCode.Created)
+        {
+            customer2Status.Should().Be(HttpStatusCode.Conflict, "Req1 passed so 2 should fail");
+        }
+        else if (customer2Status == HttpStatusCode.Created)
+        {
+            customer1Status.Should().Be(HttpStatusCode.Conflict, "Req2 passed so 1 should fail");
+        }
+        else
+        {
+            throw new ApplicationException("Something went wrong - race condition should result in 1 of the 2 failing");
+        }
+
+        dbContext.Customers.Count(c => c.Name == customerName)
+            .Should().Be(1, "Race condition so one request should succeed");
+    }
+    
+    [Fact]
+    public async Task CreateNewCustomer_HandlesRaceConditionOnDisplayName()
+    {
+        var displayName = nameof(CreateNewCustomer_HandlesRaceConditionOnDisplayName);
+
+        var customer1 = CreateCustomer("customername_1", displayName);
+        var customer2 = CreateCustomer("customername_2", displayName);
+        await Task.WhenAll(customer1, customer2);
+
+        // Assert that we get a 201 and a 409. One should succeed and the other fail. Doesn't matter which
+        var customer1Status = customer1.Result.StatusCode;
+        var customer2Status = customer2.Result.StatusCode;
+
+        if (customer1Status == HttpStatusCode.Created)
+        {
+            customer2Status.Should().Be(HttpStatusCode.Conflict, "Req1 passed so 2 should fail");
+        }
+        else if (customer2Status == HttpStatusCode.Created)
+        {
+            customer1Status.Should().Be(HttpStatusCode.Conflict, "Req2 passed so 1 should fail");
+        }
+        else
+        {
+            throw new ApplicationException("Something went wrong - race condition should result in 1 of the 2 failing");
+        }
+
+        dbContext.Customers.Count(c => c.DisplayName == displayName)
+            .Should().Be(1, "Race condition so one request should succeed");
+    }
+
+    private Task<HttpResponseMessage> CreateCustomer(string name, string displayName)
+    {
+        var customer1Json = $@"{{
+  ""@type"": ""Customer"",
+  ""name"": ""{name}"",
+  ""displayName"": ""{displayName}""
+}}";
+        var content = new StringContent(customer1Json, Encoding.UTF8, "application/json");
+        return httpClient.AsAdmin().PostAsync("/customers", content);
+    }
+
+    [Fact]
+    public async Task CreateNewCustomer_Returns409_IfNameConflicts()
+    {
         // These display names have already been taken by the seed data
         const string newCustomerJson = @"{
   ""@type"": ""Customer"",
@@ -168,7 +262,7 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task NewlyCreatedCustomer_RollsBackSuccessfully_WhenDeliveryChannelsNotCreatedSuccessfully()
+    public async Task CreateNewCustomer_RollsBackSuccessfully_WhenDeliveryChannelsNotCreatedSuccessfully()
     {
         var expectedCustomerId = (int)dbContext.EntityCounters.Single(c => c.Type == "customer" && c.Scope == "0" && c.Customer == 0).Next;
 
@@ -179,8 +273,6 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }";
         var content = new StringContent(customerJson, Encoding.UTF8, "application/json");
 
-        var test = dbContext.EntityCounters.Single(c => c.Type == "customer" && c.Scope == "0" && c.Customer == 0).Next;
-        
         dbContext.DeliveryChannelPolicies.Add(new DLCS.Model.Policies.DeliveryChannelPolicy()
         {
             Id = 250,
@@ -202,47 +294,32 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
-        dbContext.DeliveryChannelPolicies.Count(d => d.Customer == expectedCustomerId).Should().Be(1); //difference of 1 due to delivery channel added above
+        dbContext.DeliveryChannelPolicies.Count(d => d.Customer == expectedCustomerId).Should()
+            .Be(1, "difference of 1 due to delivery channel added above");
         dbContext.DefaultDeliveryChannels.Count(d => d.Customer == expectedCustomerId).Should().Be(0);
         dbContext.Customers.FirstOrDefault(c => c.Id == expectedCustomerId).Should().BeNull();
         dbContext.EntityCounters.Count(e => e.Customer == expectedCustomerId).Should().Be(0);
         dbContext.Roles.Count(r => r.Customer == expectedCustomerId).Should().Be(0);
     }
 
-    [Fact] 
-    public async Task CreateNewCustomer_Returns400_IfNameStartsWithVersion()
+    [Theory]
+    [InlineData("Admin", "Reserved word")]
+    [InlineData("v2", "Starts with version")]
+    [InlineData("v33", "Starts with version")]
+    [InlineData("customer*|", "Invalid characters")]
+    [InlineData("123456789012345678901234567890abcdefghijklmnoprstuvwxyzzzzzwe", "Too long")]
+    public async Task CreateNewCustomer_Returns400_IfNameInvalid(string name, string because)
     {
-        // Tests HydraCustomerValidator:StartsWithVersion
-        const string newCustomerJson = @"{
+        var newCustomerJson = @$"{{
   ""@type"": ""Customer"",
-  ""name"": ""v2"",
+  ""name"": ""{name}"",
   ""displayName"": ""TestUser""
-}";
+}}";
         
-        // act
         var content = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
         var response = await httpClient.AsAdmin().PostAsync("/customers", content);
 
-        // assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-    
-    [Fact] 
-    public async Task CreateNewCustomer_Returns400_IfNameReserved()
-    {
-        // Tests HydraCustomerValidator:IsReservedWord
-        const string newCustomerJson = @"{
-  ""@type"": ""Customer"",
-  ""name"": ""Admin"",
-  ""displayName"": ""TestUser""
-}";
-        
-        // act
-        var content = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsAdmin().PostAsync("/customers", content);
-
-        // assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, because);
     }
 
     [Fact]
@@ -300,10 +377,11 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Patch_Returns200_IfCustomerUpdateSuccesful()
+    public async Task Patch_Returns200_IfCustomerUpdateSuccessful()
     {
         // Arrange
-        await dbContext.Customers.AddTestCustomer(10, "test", "The original Name");
+        const string customerName = nameof(Patch_Returns200_IfCustomerUpdateSuccessful);
+        await dbContext.Customers.AddTestCustomer(10, customerName, customerName);
         await dbContext.SaveChangesAsync();
         
         const string patchJson = @"{

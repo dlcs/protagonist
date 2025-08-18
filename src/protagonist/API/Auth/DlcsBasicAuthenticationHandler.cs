@@ -52,11 +52,10 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         IOptionsMonitor<BasicAuthenticationOptions> options,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        ISystemClock clock,
         ICustomerRepository customerRepository,
         DlcsApiAuth dlcsApiAuth,
         JwtAuthHelper authHelper)
-        : base(options, logger, encoder, clock)
+        : base(options, logger, encoder)
     {
         this.customerRepository = customerRepository;
         this.dlcsApiAuth = dlcsApiAuth;
@@ -276,6 +275,8 @@ public class DlcsBasicAuthenticationHandler : AuthenticationHandler<BasicAuthent
         {
             return new FailedCaller("Invalid customer id format");
         }
+        
+        Logger.LogDebug("Using JWT with customer id {CustomerId}", customerId);
 
         var customer = await customerRepository.GetCustomer(customerId);
         if (customer is null)

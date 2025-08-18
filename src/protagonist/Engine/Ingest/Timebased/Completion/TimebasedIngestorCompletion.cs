@@ -1,8 +1,12 @@
 ﻿using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.S3;
+using DLCS.AWS.S3.Models;
+using DLCS.Core;
+using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Assets.Metadata;
 using Engine.Data;
 
 namespace Engine.Ingest.Timebased.Completion;
@@ -12,24 +16,27 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
     private readonly IEngineAssetRepository assetRepository;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IBucketWriter bucketWriter;
+    private readonly IElasticTranscoderPresetLookup elasticTranscoderPresetLookup;
     private readonly ILogger<TimebasedIngestorCompletion> logger;
 
     public TimebasedIngestorCompletion(
         IEngineAssetRepository assetRepository,
         IStorageKeyGenerator storageKeyGenerator,
         IBucketWriter bucketWriter,
+        IElasticTranscoderPresetLookup elasticTranscoderPresetLookup,
         ILogger<TimebasedIngestorCompletion> logger)
     {
         this.assetRepository = assetRepository;
         this.storageKeyGenerator = storageKeyGenerator;
         this.bucketWriter = bucketWriter;
+        this.elasticTranscoderPresetLookup = elasticTranscoderPresetLookup;
         this.logger = logger;
     }
 
-    public async Task<bool> CompleteSuccessfulIngest(AssetId assetId, TranscodeResult transcodeResult,
+    public async Task<bool> CompleteSuccessfulIngest(AssetId assetId, int? batchId, TranscodeResult transcodeResult,
         CancellationToken cancellationToken = default)
     {
-        var asset = await assetRepository.GetAsset(assetId, cancellationToken);
+        var asset = await assetRepository.GetAsset(assetId, batchId, cancellationToken);
 
         if (asset == null)
         {
@@ -47,47 +54,29 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
             errors.Add($"Transcode failed with status: {transcodeResult.State}. Error: {errorCode}");
         }
 
-        var copyTasks = CopyTranscodeOutputs(transcodeResult, errors, asset, cancellationToken);
-
+        var size = await CopyTranscodeOutputs(transcodeResult, errors, asset, cancellationToken);
         await DeleteInputFile(transcodeResult);
-        
-        var copyResults = await Task.WhenAll(copyTasks);
-        var size = GetAssetStorageSize(transcodeResult, copyResults);
-
-        foreach (var cr in copyResults)
-        {
-            if (!transcodeSuccess) break;
-            
-            /*
-             * A copy result is deemed as okay if:
-             *  The result is 'Success', OR
-             *  The source file was 'NotFound' and the Destination already exists. This likely happened due to the
-             *  message being a retry
-             */ 
-            if (cr.Result == LargeObjectStatus.Success) continue;
-            if (cr is { Result: LargeObjectStatus.SourceNotFound, DestinationExists: true }) continue;
-            
-            errors.Add($"Copying ElasticTranscoder output failed with reason: {cr.Result}");
-            transcodeSuccess = false;
-        }
         
         if (errors.Count > 0)
         {
+            transcodeSuccess = false;
             asset.Error = string.Join("|", errors);
         }
         
         var dbUpdateSuccess = await CompleteAssetInDatabase(asset, size, cancellationToken);
-        
         return transcodeSuccess && dbUpdateSuccess;
     }
 
-    private List<Task<LargeObjectCopyResult>> CopyTranscodeOutputs(TranscodeResult transcodeResult,
+    private async Task<long> CopyTranscodeOutputs(TranscodeResult transcodeResult,
         List<string> errors, Asset asset, CancellationToken cancellationToken)
     {
         bool dimensionsUpdated = false;
         var transcodeOutputs = transcodeResult.Outputs;
-        var copyTasks = new List<Task<LargeObjectCopyResult>>(transcodeOutputs.Count);
+        var applicationMetadata = new List<AVTranscode>(transcodeOutputs.Count);
+        var transcodeSizeRunningTotal = 0L;
 
+        var presetLookup = await elasticTranscoderPresetLookup.GetPresetLookupById(cancellationToken);
+        
         foreach (var transcodeOutput in transcodeOutputs)
         {
             if (!transcodeOutput.IsComplete())
@@ -99,21 +88,78 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
                 continue;
             }
 
+            if (!presetLookup.TryGetValue(transcodeOutput.PresetId, out var preset))
+            {
+                logger.LogError("Unable to find preset for {PresetId}", transcodeOutput.PresetId);
+                continue;
+            }
+
+            // Get the destination where we will store the transcode, from that take the file extension as this will 
+            // inform the mediatype
+            var outputDestination = GetFinalDestinationForOutput(transcodeOutput);
+
             SetAssetDimensions(asset, dimensionsUpdated, transcodeOutput);
             dimensionsUpdated = true;
 
             // Move assets from elastic transcoder-output bucket to main bucket
-            copyTasks.Add(CopyTranscodeOutputToStorage(transcodeOutput, asset.Id, cancellationToken));
+            var copyResult =
+                await CopyTranscodeOutputToStorage(transcodeOutput, outputDestination, asset.Id, cancellationToken);
+            if (IsCopySuccessful(copyResult))
+            {
+                var avTranscode = MakeAvTranscode(transcodeOutput, outputDestination, asset, preset);
+                applicationMetadata.Add(avTranscode);
+
+                transcodeSizeRunningTotal += copyResult.Size ?? 0;
+            }
+            else
+            {
+                errors.Add($"Copying ElasticTranscoder output failed with reason: {copyResult.Result}");
+            }
         }
 
-        return copyTasks;
+        if (!applicationMetadata.IsNullOrEmpty())
+        {
+            asset.UpsertApplicationMetadata(AssetApplicationMetadataTypes.AVTranscodes, applicationMetadata.ToArray());
+        }
+        
+        return transcodeSizeRunningTotal;
+    }
+    
+    private static bool IsCopySuccessful(LargeObjectCopyResult copyResult)
+    {
+        /*
+         * A copy result is deemed as success if:
+         *  The result is 'Success', OR
+         *  The source file was 'NotFound' and the Destination already exists. This likely happened due to the
+         *  message being a retry.
+         */ 
+        return copyResult.Result == LargeObjectStatus.Success || copyResult is
+            { Result: LargeObjectStatus.SourceNotFound, DestinationExists: true };
     }
 
-    private static long GetAssetStorageSize(TranscodeResult transcodeResult, LargeObjectCopyResult[] copyResults)
+    private static AVTranscode MakeAvTranscode(TranscodeOutput transcodeOutput, ObjectInBucket outputDestination,
+        Asset asset, TranscoderPreset preset)
     {
-        var derivativeSizes = copyResults.Sum(result => result.Size ?? 0);
-        var totalSize = derivativeSizes + transcodeResult.GetStoredOriginalAssetSize();
-        return totalSize;
+        var extension = preset.Extension;
+        var assetIsVideo = MIMEHelper.IsVideo(asset.MediaType);
+
+        var avTranscode = new AVTranscode
+        {
+            Duration = transcodeOutput.GetDuration(),
+            Location = outputDestination.GetS3Uri(),
+            Extension = extension,
+            TranscodeName = preset.Name,
+            MediaType = MIMEHelper.GetContentTypeForExtension(extension) ??
+                        (assetIsVideo ? $"video/{extension}" : $"audio/{extension}"),
+        };
+
+        if (assetIsVideo)
+        {
+            avTranscode.Height = transcodeOutput.Height;
+            avTranscode.Width = transcodeOutput.Width;
+        }
+
+        return avTranscode;
     }
 
     private async Task<bool> CompleteAssetInDatabase(Asset asset, long? assetSize = null,
@@ -166,14 +212,14 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         }
     }
 
+    private ObjectInBucket GetFinalDestinationForOutput(TranscodeOutput transcodeOutput)
+        => storageKeyGenerator.GetTimebasedAssetLocation(
+            TranscoderTemplates.GetFinalDestinationKey(transcodeOutput.Key));
+
     private async Task<LargeObjectCopyResult> CopyTranscodeOutputToStorage(TranscodeOutput transcodeOutput,
-        AssetId assetId, CancellationToken cancellationToken)
+        ObjectInBucket destination, AssetId assetId, CancellationToken cancellationToken)
     {
         var source = storageKeyGenerator.GetTimebasedOutputLocation(transcodeOutput.Key);
-        var destination =
-            storageKeyGenerator.GetTimebasedAssetLocation(
-                TranscoderTemplates.GetFinalDestinationKey(transcodeOutput.Key));
-
         var copyResult =
             await bucketWriter.CopyLargeObject(source, destination, token: cancellationToken);
 

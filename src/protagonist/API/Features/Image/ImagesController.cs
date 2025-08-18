@@ -7,7 +7,6 @@ using API.Features.Space.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Strings;
-using DLCS.HydraModel;
 using DLCS.Model.Assets;
 using Hydra.Collections;
 using Hydra.Model;
@@ -125,7 +124,7 @@ public class ImagesController : HydraController
             {
                 var asset = hydraImage.ToDlcsModel(customerId, spaceId);
 
-                var deliveryChannelsBeforeProcessing = (hydraImage.DeliveryChannels ?? Array.Empty<DeliveryChannel>())
+                var deliveryChannelsBeforeProcessing = hydraImage.DeliveryChannels?
                     .Select(d => new DeliveryChannelsBeforeProcessing(d.Channel, d.Policy)).ToArray();
 
                 var assetBeforeProcessing = new AssetBeforeProcessing(asset, deliveryChannelsBeforeProcessing);
