@@ -43,7 +43,7 @@ public class GetQueriedAllImagesHandler(DlcsContext dlcsContext)
                 request,
                 i => i
                     .ApplyAssetFilter(request.AssetFilter)
-                    .AsSplitQuery(),
+                    .AsSingleQuery(),
                 images => images.AsOrderedAssetQuery(request),
                 cancellationToken);
         return  FetchEntityResult<PageOf<Asset>>.Success(result);
