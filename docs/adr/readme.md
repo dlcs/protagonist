@@ -8,3 +8,5 @@
 6. [Optimised Origin](0005-optimised-origin.md)
 7. [Engine ImageServer](0006-engine-imageserver.md)
 8. [In-house Image Server](0007-inhouse-image-server.md)
+9. [ElasticTranscoder Replacement](0008-et-replacement.md)
+10. [Engine Use Appetiser for Thumbs](0009-engine-appetiser-thumbs.md)
