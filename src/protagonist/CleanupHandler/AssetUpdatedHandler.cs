@@ -66,7 +66,7 @@ public class AssetUpdatedHandler  : IMessageHandler
 
         if (request?.AssetBeforeUpdate?.Id == null) return false;
 
-        var assetBefore = request.AssetBeforeUpdate;
+        var assetBefore = request.AssetBeforeUpdate!;
 
         var assetAfter = await cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(assetBefore.Id);
 
@@ -89,10 +89,10 @@ public class AssetUpdatedHandler  : IMessageHandler
         }
 
         (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects;
-        s3Objects.objectsToRemove = new HashSet<ObjectInBucket>();
-        s3Objects.foldersToRemove = new HashSet<ObjectInBucket>();
+        s3Objects.objectsToRemove = [];
+        s3Objects.foldersToRemove = [];
         
-        if (removedChannels.Any())
+        if (removedChannels.Count != 0)
         {
             foreach (var deliveryChannel in removedChannels)
             {
@@ -100,7 +100,7 @@ public class AssetUpdatedHandler  : IMessageHandler
             }
         }
         
-        if (modifiedOrAddedChannels.Any())
+        if (modifiedOrAddedChannels.Count != 0)
         {
             try
             {
@@ -150,9 +150,9 @@ public class AssetUpdatedHandler  : IMessageHandler
         return assetAfter.Ingesting == true && assetBefore.Finished > assetAfter.Finished;
     }
     
-    private static bool NoCleanupRequired(QueueMessage message, Asset? assetAfter, Asset assetBefore)
+    private static bool NoCleanupRequired(QueueMessage message, Asset assetAfter, Asset assetBefore)
     {
-        return !message.MessageAttributes.Keys.Contains("engineNotified") &&
+        return !message.MessageAttributes.ContainsKey("engineNotified") &&
             (assetBefore.Roles ?? string.Empty) == (assetAfter.Roles ?? string.Empty);
     }
 
@@ -223,7 +223,6 @@ public class AssetUpdatedHandler  : IMessageHandler
         Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
         var presetList = imageDeliveryChannel.DeliveryChannelPolicy.AsTimebasedPresets(); 
-        var keys = new List<string>();
         var extensions = new List<string>();
         var mediaPath = RetrieveMediaPath(assetAfter);
         
@@ -236,22 +235,20 @@ public class AssetUpdatedHandler  : IMessageHandler
                 assetAfter.Id);
             throw new ArgumentNullException(nameof(presetDictionary), "Failed to retrieve any preset values");
         }
+        
+        var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetAfter.Id);
+        var keys = await bucketReader.GetMatchingKeys(timebasedFolder);
 
         foreach (var presetIdentifier in presetList)
         {
             if (presetDictionary.TryGetValue(presetIdentifier, out var transcoderPreset))
             {
-                var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetAfter.Id);
-
-                var keysFromAws = await bucketReader.GetMatchingKeys(timebasedFolder);
-                
-                keys.AddRange(keysFromAws);
                 extensions.Add(transcoderPreset.Extension);
             }
         }
         
         List<ObjectInBucket> assetsToDelete = keys.Where(k =>
-                !extensions.Contains(k.Split('.').Last())  && k.Contains(mediaPath))
+                !extensions.Contains(k.Split('.').Last()) && k.Contains(mediaPath))
             .Select(k => new ObjectInBucket(handlerSettings.AWS.S3.StorageBucket, k)).ToList();
                     
        objectsToRemove.AddRange(assetsToDelete);
@@ -286,20 +283,17 @@ public class AssetUpdatedHandler  : IMessageHandler
     private void CleanupFileDeliveryChannel(Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
         if (assetAfter.ImageDeliveryChannels.Any(i => i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageUseOriginal)) return;
-        List<ObjectInBucket> bucketObjectsTobeRemoved = new()
-        {
-            storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id)
-        };
+        List<ObjectInBucket> bucketObjectsTobeRemoved = [storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id)];
 
         objectsToRemove.AddRange(bucketObjectsTobeRemoved);
     }
 
     private async Task CleanupRemovedTimebasedDeliveryChannel(Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
-        List<ObjectInBucket> bucketObjectsTobeRemoved = new()
-        {
-            storageKeyGenerator.GetTimebasedMetadataLocation(assetAfter.Id),
-        };
+        List<ObjectInBucket> bucketObjectsTobeRemoved =
+        [
+            storageKeyGenerator.GetTimebasedMetadataLocation(assetAfter.Id)
+        ];
         
         var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetAfter.Id);
         var keys = await bucketReader.GetMatchingKeys(timebasedFolder);
@@ -367,10 +361,7 @@ public class AssetUpdatedHandler  : IMessageHandler
 
     private void CleanupRemovedImageDeliveryChannel(Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
-        List<ObjectInBucket> bucketObjectsTobeRemoved = new()
-        {
-            storageKeyGenerator.GetStorageLocation(assetAfter.Id)
-        };
+        List<ObjectInBucket> bucketObjectsTobeRemoved = [storageKeyGenerator.GetStorageLocation(assetAfter.Id)];
         
         if (assetAfter.DoesNotHaveDeliveryChannel(AssetDeliveryChannels.File))
         {
