@@ -28,19 +28,6 @@ public class S3StorageKeyGeneratorTests
     }
     
     [Fact]
-    public void GetStorageKey_ReturnsExpected()
-    {
-        // Arrange
-        const string expected = "10/20/foo-bar";
-
-        // Act
-        var actual = S3StorageKeyGenerator.GetStorageKey(10, 20, "foo-bar");
-        
-        // Assert
-        actual.Should().Be(expected);
-    }
-    
-    [Fact]
     public void GetStorageKey_AssetId_ReturnsExpected()
     {
         // Arrange
