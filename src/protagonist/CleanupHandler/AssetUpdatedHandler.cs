@@ -236,16 +236,21 @@ public class AssetUpdatedHandler  : IMessageHandler
             throw new ArgumentNullException(nameof(presetDictionary), "Failed to retrieve any preset values");
         }
         
-        var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetAfter.Id);
-        var keys = await bucketReader.GetMatchingKeys(timebasedFolder);
-
         foreach (var presetIdentifier in presetList)
         {
             if (presetDictionary.TryGetValue(presetIdentifier, out var transcoderPreset))
             {
                 extensions.Add(transcoderPreset.Extension);
             }
+            else
+            {
+                throw new ArgumentNullException(nameof(presetIdentifier),
+                    $"Failed to retrieve preset {presetIdentifier}");
+            }
         }
+        
+        var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetAfter.Id);
+        var keys = await bucketReader.GetMatchingKeys(timebasedFolder);
         
         List<ObjectInBucket> assetsToDelete = keys.Where(k =>
                 !extensions.Contains(k.Split('.').Last()) && k.Contains(mediaPath))

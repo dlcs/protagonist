@@ -601,7 +601,7 @@ public class AssetUpdatedHandlerTests
         var response = await sut.HandleMessage(requestDetails.queueMessage);
         
         // Assert
-        response.Should().BeTrue();
+        response.Should().BeFalse("Unable to fetch Preset details so fail handling");
         A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
@@ -952,7 +952,7 @@ public class AssetUpdatedHandlerTests
         var response = await sut.HandleMessage(requestDetails.queueMessage);
         
         // Assert
-        response.Should().BeTrue();
+        response.Should().BeFalse("Unable to fetch Preset details so fail handling");
         A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
