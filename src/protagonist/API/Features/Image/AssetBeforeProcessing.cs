@@ -2,17 +2,15 @@ using DLCS.Model.Assets;
 
 namespace API.Features.Image;
 
-public class AssetBeforeProcessing
+/// <summary>
+/// Represents an Asset and DeliveryChannels as provided in to API request, mapped from Hydra model to internal
+/// representation.
+/// </summary>
+public class AssetBeforeProcessing(Asset asset, DeliveryChannelsBeforeProcessing[]? deliveryChannelsBeforeProcessing)
 {
-    public AssetBeforeProcessing(Asset asset, DeliveryChannelsBeforeProcessing[]? deliveryChannelsBeforeProcessing)
-    {
-        Asset = asset;
-        DeliveryChannelsBeforeProcessing = deliveryChannelsBeforeProcessing;
-    }
+    public Asset Asset { get; } = asset;
 
-    public Asset Asset { get; }
-
-    public DeliveryChannelsBeforeProcessing[]? DeliveryChannelsBeforeProcessing { get; }
+    public DeliveryChannelsBeforeProcessing[]? DeliveryChannelsBeforeProcessing { get; } = deliveryChannelsBeforeProcessing;
 }
 
 /// <summary>

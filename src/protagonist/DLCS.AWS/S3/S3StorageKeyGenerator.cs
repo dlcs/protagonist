@@ -13,18 +13,12 @@ namespace DLCS.AWS.S3;
 /// This should be the only class that knows/cares about buckets - calling code should only deal with
 /// the ObjectInBucket objects for accessing s3 objects
 /// </remarks>
-public class S3StorageKeyGenerator : IStorageKeyGenerator
+public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageKeyGenerator
 {
-    private readonly S3Settings s3Options;
-    private readonly AWSSettings awsSettings;
+    private readonly S3Settings s3Options = awsOptions.Value.S3;
+    private readonly AWSSettings awsSettings = awsOptions.Value;
     private static readonly Random Random = new();
 
-    public S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions)
-    {
-        awsSettings = awsOptions.Value;
-        s3Options = awsOptions.Value.S3;
-    }
-    
     /// <summary>
     /// Key of the json file that contains available sizes
     /// </summary>
@@ -46,22 +40,11 @@ public class S3StorageKeyGenerator : IStorageKeyGenerator
     public const string AuthorisedSlug = "auth";
 
     /// <summary>
-    /// Get the storage key for specified space/customer/key
-    /// </summary>
-    /// <param name="customer">Customer Id.</param>
-    /// <param name="space">Space id.</param>
-    /// <param name="assetKey">Unique Id of the asset.</param>
-    /// <returns>/customer/space/imageKey string.</returns>
-    public static string GetStorageKey(int customer, int space, string assetKey)
-        => $"{customer}/{space}/{assetKey}";
-
-    /// <summary>
     /// Get the storage key for specified asset
     /// </summary>
     /// <param name="assetId">Unique identifier for Asset.</param>
     /// <returns>/customer/space/imageKey string.</returns>
-    public static string GetStorageKey(AssetId assetId)
-        => GetStorageKey(assetId.Customer, assetId.Space, assetId.Asset);
+    public static string GetStorageKey(AssetId assetId) => assetId.ToString();
 
     public RegionalisedObjectInBucket GetStorageLocation(AssetId assetId)
     {
