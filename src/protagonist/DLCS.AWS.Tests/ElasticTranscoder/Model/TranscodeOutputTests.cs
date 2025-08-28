@@ -1,4 +1,5 @@
-using DLCS.AWS.ElasticTranscoder.Models;
+using DLCS.AWS.Transcoding;
+using DLCS.AWS.Transcoding.Models;
 
 namespace DLCS.AWS.Tests.ElasticTranscoder.Model;
 

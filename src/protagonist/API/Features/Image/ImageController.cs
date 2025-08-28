@@ -5,7 +5,7 @@ using API.Features.Image.Requests;
 using API.Features.Image.Validation;
 using API.Infrastructure;
 using API.Settings;
-using DLCS.AWS.ElasticTranscoder.Models.Job;
+using DLCS.AWS.Transcoding.Models.Job;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;

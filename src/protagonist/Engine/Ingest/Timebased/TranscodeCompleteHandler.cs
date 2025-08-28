@@ -1,8 +1,9 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.SQS;
 using DLCS.AWS.SQS.Models;
+using DLCS.AWS.Transcoding;
+using DLCS.AWS.Transcoding.Models;
 using Engine.Ingest.Timebased.Completion;
 
 namespace Engine.Ingest.Timebased;

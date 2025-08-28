@@ -1,5 +1,5 @@
 ﻿using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.ElasticTranscoder.Models;
+using DLCS.AWS.Transcoding.Models;
 using Engine.Settings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;

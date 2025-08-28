@@ -2,7 +2,7 @@
 using DLCS.Core.Exceptions;
 using DLCS.Core.Types;
 
-namespace DLCS.AWS.ElasticTranscoder.Models;
+namespace DLCS.AWS.Transcoding.Models;
 
 /// <summary>
 /// The body of a notification sent out from ElasticTranscoder.
@@ -59,7 +59,7 @@ public class TranscodedNotification
     {
         try
         {
-            return UserMetadata.TryGetValue(UserMetadataKeys.DlcsId, out var rawAssetId)
+            return UserMetadata.TryGetValue(TranscodeMetadataKeys.DlcsId, out var rawAssetId)
                 ? AssetId.FromString(rawAssetId)
                 : null;
         }
@@ -74,7 +74,7 @@ public class TranscodedNotification
     /// </summary>
     public int? GetBatchId()
     {
-        if (!UserMetadata.TryGetValue(UserMetadataKeys.BatchId, out var rawBatchId)) return null;
+        if (!UserMetadata.TryGetValue(TranscodeMetadataKeys.BatchId, out var rawBatchId)) return null;
 
         return int.TryParse(rawBatchId, out var batchId) ? batchId : null;
     }

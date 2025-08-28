@@ -1,7 +1,8 @@
 ﻿using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.AWS.Transcoding;
+using DLCS.AWS.Transcoding.Models;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;

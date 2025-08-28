@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Nodes;
-using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.SQS;
+using DLCS.AWS.Transcoding;
+using DLCS.AWS.Transcoding.Models;
 using DLCS.Core.Types;
 using Engine.Ingest.Timebased;
 using Engine.Ingest.Timebased.Completion;

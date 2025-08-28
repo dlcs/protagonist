@@ -1,7 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using Amazon.ElasticTranscoder.Model;
 
-namespace DLCS.AWS.ElasticTranscoder.Models.Job;
+namespace DLCS.AWS.Transcoding.Models.Job;
 
 /// <summary>
 /// Classes that represent a elastictranscoder:ReadJob request
@@ -29,7 +29,7 @@ public class TranscoderJob
 
     public static TranscoderJob Create(Amazon.ElasticTranscoder.Model.Job job)
     {
-        job.UserMetadata.TryGetValue(UserMetadataKeys.JobId, out var dlcsJobId);
+        job.UserMetadata.TryGetValue(TranscodeMetadataKeys.JobId, out var dlcsJobId);
         dlcsJobId ??= "-not-found-";
 
         var etJob = new TranscoderJob

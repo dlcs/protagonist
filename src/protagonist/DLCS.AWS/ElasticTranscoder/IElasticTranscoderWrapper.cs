@@ -1,5 +1,5 @@
 ﻿using Amazon.ElasticTranscoder.Model;
-using DLCS.AWS.ElasticTranscoder.Models.Job;
+using DLCS.AWS.Transcoding.Models.Job;
 using DLCS.Core.Types;
 
 namespace DLCS.AWS.ElasticTranscoder;
