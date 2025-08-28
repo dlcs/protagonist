@@ -1,4 +1,4 @@
-namespace DLCS.AWS.ElasticTranscoder.Models;
+namespace DLCS.AWS.Transcoding.Models;
 
 /// <summary>
 /// Represents 'Output' element of job transcode message

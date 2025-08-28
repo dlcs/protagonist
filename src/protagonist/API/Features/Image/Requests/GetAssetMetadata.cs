@@ -2,7 +2,7 @@
 using API.Features.Assets;
 using API.Infrastructure.Requests;
 using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.ElasticTranscoder.Models.Job;
+using DLCS.AWS.Transcoding.Models.Job;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using MediatR;

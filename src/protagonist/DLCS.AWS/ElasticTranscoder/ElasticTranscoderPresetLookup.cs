@@ -1,6 +1,6 @@
 ﻿using Amazon.ElasticTranscoder;
 using Amazon.ElasticTranscoder.Model;
-using DLCS.AWS.ElasticTranscoder.Models;
+using DLCS.AWS.Transcoding.Models;
 using DLCS.Core.Caching;
 using LazyCache;
 using Microsoft.Extensions.Caching.Memory;

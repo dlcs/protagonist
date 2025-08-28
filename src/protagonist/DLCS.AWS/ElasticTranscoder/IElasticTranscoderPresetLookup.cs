@@ -1,4 +1,4 @@
-using DLCS.AWS.ElasticTranscoder.Models;
+using DLCS.AWS.Transcoding.Models;
 
 namespace DLCS.AWS.ElasticTranscoder;
 

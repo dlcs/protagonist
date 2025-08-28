@@ -1,5 +1,5 @@
 ﻿using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.ElasticTranscoder.Models;
+using DLCS.AWS.Transcoding.Models;
 using Engine.DeliveryChannels;
 using Engine.Settings;
 using FakeItEasy;

@@ -1,9 +1,9 @@
 ﻿using System.Xml.Linq;
 using Amazon.ElasticTranscoder;
 using Amazon.ElasticTranscoder.Model;
-using DLCS.AWS.ElasticTranscoder.Models.Job;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.AWS.Transcoding.Models.Job;
 using DLCS.Core.Caching;
 using DLCS.Core.Streams;
 using DLCS.Core.Types;

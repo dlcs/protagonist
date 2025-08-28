@@ -1,9 +1,9 @@
-﻿namespace DLCS.AWS.ElasticTranscoder;
+﻿namespace DLCS.AWS.Transcoding;
 
 /// <summary>
-/// Constant values used for ElasticTranscoder UserMetadata values
+/// Constant values used for transcoding job metadata
 /// </summary>
-public static class UserMetadataKeys
+public static class TranscodeMetadataKeys
 {
     /// <summary>
     /// Key for unique Id in the DLCS of the asset being transcoded.

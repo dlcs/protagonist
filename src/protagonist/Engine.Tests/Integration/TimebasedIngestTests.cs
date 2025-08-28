@@ -3,8 +3,9 @@ using System.Text;
 using System.Text.Json;
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.ElasticTranscoder.Models;
 using DLCS.AWS.S3;
+using DLCS.AWS.Transcoding;
+using DLCS.AWS.Transcoding.Models;
 using DLCS.Core.FileSystem;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
@@ -130,9 +131,9 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                 "pipeline-id-1234",
                 A<List<CreateJobOutput>>.That.Matches(o => o.Single().Key.EndsWith(outputKey)),
                 A<Dictionary<string, string>>.That.Matches(d => 
-                    d[UserMetadataKeys.DlcsId] == assetId.ToString() 
-                    && d[UserMetadataKeys.OriginSize] == "0"
-                    && d[UserMetadataKeys.BatchId] == batch.ToString()
+                    d[TranscodeMetadataKeys.DlcsId] == assetId.ToString() 
+                    && d[TranscodeMetadataKeys.OriginSize] == "0"
+                    && d[TranscodeMetadataKeys.BatchId] == batch.ToString()
                     ),
                 A<CancellationToken>._))
             .MustHaveHappened();
@@ -201,7 +202,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                 "pipeline-id-1234",
                 A<List<CreateJobOutput>>.That.Matches(o => o.Single().Key.EndsWith(outputKey)),
                 A<Dictionary<string, string>>.That.Matches(d => 
-                    d[UserMetadataKeys.DlcsId] == assetId.ToString() && d[UserMetadataKeys.BatchId] == string.Empty),
+                    d[TranscodeMetadataKeys.DlcsId] == assetId.ToString() && d[TranscodeMetadataKeys.BatchId] == string.Empty),
                 A<CancellationToken>._))
             .MustHaveHappened();
 
@@ -272,9 +273,9 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                 "pipeline-id-1234",
                 A<List<CreateJobOutput>>.That.Matches(o => o.Single().Key.EndsWith(outputKey)),
                 A<Dictionary<string, string>>.That.Matches(d => 
-                    d[UserMetadataKeys.DlcsId] == assetId.ToString() 
-                    && d[UserMetadataKeys.OriginSize] == "1000"
-                    && d[UserMetadataKeys.BatchId] == string.Empty
+                    d[TranscodeMetadataKeys.DlcsId] == assetId.ToString() 
+                    && d[TranscodeMetadataKeys.OriginSize] == "1000"
+                    && d[TranscodeMetadataKeys.BatchId] == string.Empty
                     ),
                 A<CancellationToken>._))
             .MustHaveHappened();

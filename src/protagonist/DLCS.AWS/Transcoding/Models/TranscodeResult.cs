@@ -1,6 +1,6 @@
 ﻿using DLCS.Core.Collections;
 
-namespace DLCS.AWS.ElasticTranscoder.Models;
+namespace DLCS.AWS.Transcoding.Models;
 
 /// <summary>
 /// Represents the overall result of a transcode operation.
@@ -60,7 +60,7 @@ public class TranscodeResult
         {
             if (UserMetadata.IsNullOrEmpty()) return 0;
             
-            return UserMetadata.TryGetValue(UserMetadataKeys.OriginSize, out var originSize)
+            return UserMetadata.TryGetValue(TranscodeMetadataKeys.OriginSize, out var originSize)
                 ? long.Parse(originSize)
                 : 0;
         }

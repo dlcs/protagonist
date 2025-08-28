@@ -2,7 +2,7 @@
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.AWS.ElasticTranscoder.Models;
+using DLCS.AWS.Transcoding.Models;
 using DLCS.Model.Assets;
 
 namespace DLCS.Repository.Messaging;

@@ -1,6 +1,7 @@
 ﻿using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.ElasticTranscoder.Models;
+using DLCS.AWS.Transcoding;
+using DLCS.AWS.Transcoding.Models;
 
 namespace DLCS.AWS.Tests.ElasticTranscoder.Model;
 
@@ -56,7 +57,7 @@ public class TranscodeResultTests
             Input = new JobInput(),
             UserMetadata = new Dictionary<string, string>
             {
-                [UserMetadataKeys.OriginSize] = input
+                [TranscodeMetadataKeys.OriginSize] = input
             }
         };
 

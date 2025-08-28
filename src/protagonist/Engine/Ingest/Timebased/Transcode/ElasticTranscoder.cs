@@ -1,7 +1,8 @@
 using System.Text.Json;
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.ElasticTranscoder.Models;
+using DLCS.AWS.Transcoding;
+using DLCS.AWS.Transcoding.Models;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using Engine.Ingest.Timebased.Models;
@@ -57,8 +58,8 @@ public class ElasticTranscoder : IMediaTranscoder
             return false;
         }
 
-        jobMetadata[UserMetadataKeys.JobId] = jobId;
-        jobMetadata[UserMetadataKeys.StartTime] = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+        jobMetadata[TranscodeMetadataKeys.JobId] = jobId;
+        jobMetadata[TranscodeMetadataKeys.StartTime] = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
         
         var elasticTranscoderJob = await elasticTranscoderWrapper.CreateJob(context.AssetFromOrigin.Location,
             pipelineId, outputs, jobMetadata, token);
