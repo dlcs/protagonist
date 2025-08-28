@@ -43,9 +43,9 @@ public interface IEngineClient
     Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieves av presets
+    /// Retrieves av preset names and details of preset
     /// </summary>
-    /// <param name="cancellationToken">a cancellation token</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>A dictionary of identifiers and presets</returns>
-    Task<IReadOnlyDictionary<string, TranscoderPreset>?> GetAvPresets(CancellationToken cancellationToken = default);
+    Task<IReadOnlyDictionary<string, TranscoderPreset>> GetAvPresets(CancellationToken cancellationToken = default);
 }
