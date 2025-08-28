@@ -131,7 +131,7 @@ public class EngineClientTests
         var returnedAvPolicyOptions = await sut.GetAllowedAvPolicyOptions();
         
         // Assert
-        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/allowed-av");
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/av/allowed");
         message.Method.Should().Be(HttpMethod.Get);
         returnedAvPolicyOptions!.Count.Should().Be(3);
         returnedAvPolicyOptions!.Should().BeEquivalentTo("video-mp4-480p", "video-webm-720p", "audio-mp3-128k");
@@ -149,7 +149,7 @@ public class EngineClientTests
         var returnedAvPolicyOptions = await sut.GetAllowedAvPolicyOptions();
         
         // Assert
-        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/allowed-av");
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/av/allowed");
         message.Method.Should().Be(HttpMethod.Get);
         returnedAvPolicyOptions.Should().BeNull();
     }
@@ -173,7 +173,7 @@ public class EngineClientTests
         var returnedAvPresets = await sut.GetAvPresets();
         
         // Assert
-        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/av-presets");
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/av/presets");
         message.Method.Should().Be(HttpMethod.Get);
         returnedAvPresets!.Count.Should().Be(2);
         returnedAvPresets!.Keys.Should().BeEquivalentTo("webm-policy", "oga-policy");
@@ -191,7 +191,7 @@ public class EngineClientTests
         var returnedAvPresets = await sut.GetAvPresets();
         
         // Assert
-        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/av-presets");
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://engine.dlcs/av/presets");
         returnedAvPresets.Should().BeEmpty();
     }
 }

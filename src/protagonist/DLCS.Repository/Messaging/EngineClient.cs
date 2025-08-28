@@ -147,10 +147,9 @@ public class EngineClient : IEngineClient
     {
         try
         {
-            var response = await httpClient.GetAsync("allowed-av", cancellationToken);
+            var response = await httpClient.GetAsync("av/allowed", cancellationToken);
             return await response.Content.ReadFromJsonAsync<IReadOnlyCollection<string>>(
                 cancellationToken: cancellationToken);
-            
         }
         catch(Exception ex)
         {
@@ -159,14 +158,14 @@ public class EngineClient : IEngineClient
         }
     }
     
-    public async Task<IReadOnlyDictionary<string, TranscoderPreset>?> GetAvPresets(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyDictionary<string, TranscoderPreset>> GetAvPresets(CancellationToken cancellationToken = default)
     {
         const string key = "avPresetList";
         return await appCache.GetOrAddAsync(key, async entry =>
         {
             try
             {
-                var response = await httpClient.GetAsync("av-presets", cancellationToken);
+                var response = await httpClient.GetAsync("av/presets", cancellationToken);
                 return await response.Content.ReadFromJsonAsync<IReadOnlyDictionary<string, TranscoderPreset>>(
                     cancellationToken: cancellationToken) ?? new Dictionary<string, TranscoderPreset>();
             }
