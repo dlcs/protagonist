@@ -2,7 +2,7 @@
 using DLCS.AWS.Transcoding.Models.Job;
 using DLCS.Core.Types;
 
-namespace DLCS.AWS.ElasticTranscoder;
+namespace DLCS.AWS.Transcoding;
 
 /// <summary>
 /// Basic interface for working with AWS ElasticTranscoder
@@ -29,6 +29,7 @@ public interface IElasticTranscoderWrapper
     /// </param>
     /// <param name="token">CancellationToken</param>
     /// <returns><see cref="CreateJobResponse"/> object</returns>
+    // TODO - this takes and returns AWS specific - can we normalise?
     Task<CreateJobResponse> CreateJob(string inputKey, string pipelineId, List<CreateJobOutput> outputs,
         Dictionary<string, string> jobMetadata, CancellationToken token = default);
 

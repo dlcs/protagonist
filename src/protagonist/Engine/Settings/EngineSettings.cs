@@ -152,10 +152,29 @@ public class TimebasedIngestSettings
     /// <summary>
     /// The name of the ElasticTranscoder pipeline to use for transcoding AV files
     /// </summary>
+    [Obsolete("ElasticTranscode is being replaced by MediaConvert")]
     public string PipelineName { get; set; }
-
+    
+    /// <summary>
+    /// Name of the MediaConvert queue to use
+    /// </summary>
+    public MediaConvertSettings MediaConvert { get; set; }
+    
     /// <summary>
     /// Mapping of 'friendly' to 'real' transcoder names
     /// </summary>
     public Dictionary<string, string> DeliveryChannelMappings { get; set; } = new();
+}
+
+public class MediaConvertSettings
+{
+    /// <summary>
+    /// Name of the MediaConvert queue to use
+    /// </summary>
+    public required string QueueName { get; set; }
+
+    /// <summary>
+    /// Arn of role to use for MediaConvert queue to use
+    /// </summary>
+    public required string RoleArn { get; set; }
 }
