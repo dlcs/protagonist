@@ -4,6 +4,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.SNS;
 using DLCS.AWS.SNS.Messaging;
 using DLCS.AWS.SQS;
+using DLCS.AWS.Transcoding;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
 using DLCS.Model.Auth;
@@ -48,7 +49,7 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketReader, S3BucketReader>()
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
-            .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
+            .AddSingleton<ITranscoderWrapper, ElasticTranscoderWrapper>()
             .AddSingleton<IElasticTranscoderPresetLookup, ElasticTranscoderPresetLookup>()
             .AddScoped<ITopicPublisher, TopicPublisher>()
             .SetupAWS(configuration, webHostEnvironment)

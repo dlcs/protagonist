@@ -1,7 +1,7 @@
 ﻿using API.Exceptions;
 using API.Features.Assets;
 using API.Infrastructure.Requests;
-using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.Transcoding;
 using DLCS.AWS.Transcoding.Models.Job;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -28,14 +28,14 @@ public class GetAssetMetadata : IRequest<FetchEntityResult<TranscoderJob>>
 public class GetAssetMetadataHandler : IRequestHandler<GetAssetMetadata, FetchEntityResult<TranscoderJob>>
 {
     private readonly IApiAssetRepository assetRepository;
-    private readonly IElasticTranscoderWrapper elasticTranscoderWrapper;
+    private readonly ITranscoderWrapper transcoderWrapper;
 
     public GetAssetMetadataHandler(
         IApiAssetRepository assetRepository, 
-        IElasticTranscoderWrapper elasticTranscoderWrapper)
+        ITranscoderWrapper transcoderWrapper)
     {
         this.assetRepository = assetRepository;
-        this.elasticTranscoderWrapper = elasticTranscoderWrapper;
+        this.transcoderWrapper = transcoderWrapper;
     }
     
     public async Task<FetchEntityResult<TranscoderJob>> Handle(GetAssetMetadata request, CancellationToken cancellationToken)
@@ -49,7 +49,7 @@ public class GetAssetMetadataHandler : IRequestHandler<GetAssetMetadata, FetchEn
             throw new BadRequestException("Can only get metadata for Timebased asset");
         }
 
-        var transcoderJob = await elasticTranscoderWrapper.GetTranscoderJob(request.AssetId, cancellationToken);
+        var transcoderJob = await transcoderWrapper.GetTranscoderJob(request.AssetId, cancellationToken);
         return transcoderJob == null
             ? FetchEntityResult<TranscoderJob>.NotFound()
             : FetchEntityResult<TranscoderJob>.Success(transcoderJob);

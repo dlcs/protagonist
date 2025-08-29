@@ -3,6 +3,7 @@ using Amazon.ElasticTranscoder;
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.AWS.Transcoding;
 using DLCS.AWS.Transcoding.Models.Job;
 using DLCS.Core.Caching;
 using DLCS.Core.Streams;
@@ -18,7 +19,8 @@ namespace DLCS.AWS.ElasticTranscoder;
 /// <summary>
 /// Thin wrapper around <see cref="IAmazonElasticTranscoder"/>, handles paging/caching etc
 /// </summary>
-public class ElasticTranscoderWrapper : IElasticTranscoderWrapper
+[Obsolete("ElasticTranscoder is being replaced by MediaConvert")]
+public class ElasticTranscoderWrapper : ITranscoderWrapper
 {
     private readonly IAmazonElasticTranscoder elasticTranscoder;
     private readonly IAppCache cache;
@@ -98,12 +100,12 @@ public class ElasticTranscoderWrapper : IElasticTranscoderWrapper
         return elasticTranscoder.CreateJobAsync(createJobRequest, token);
     }
 
-    public async Task PersistJobId(AssetId assetId, string elasticTranscoderJobId, CancellationToken cancellationToken)
+    public async Task PersistJobId(AssetId assetId, string transcoderJobId, CancellationToken cancellationToken)
     {
         // NOTE - this is XML to copy Deliverator implementation
         var metadataKey = storageKeyGenerator.GetTimebasedMetadataLocation(assetId);
         var metadataContent =
-            $"<JobInProgress><ElasticTranscoderJob>{elasticTranscoderJobId}</ElasticTranscoderJob></JobInProgress>";
+            $"<JobInProgress><ElasticTranscoderJob>{transcoderJobId}</ElasticTranscoderJob></JobInProgress>";
         
         logger.LogDebug("Writing timebased metadata for {Asset} to {MetadataKey}", assetId, metadataKey);
 

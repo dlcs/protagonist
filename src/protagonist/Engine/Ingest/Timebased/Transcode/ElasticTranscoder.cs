@@ -1,30 +1,33 @@
-using System.Text.Json;
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.Transcoding;
 using DLCS.AWS.Transcoding.Models;
 using DLCS.Core.Guard;
 using DLCS.Model.Assets;
+using DLCS.Model.Policies;
 using Engine.Ingest.Timebased.Models;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.Timebased.Transcode;
 
+/// <summary>
+/// Implementation of <see cref="IMediaTranscoder"/> using AWS ElasticTranscoder for transcoding
+/// </summary>
 public class ElasticTranscoder : IMediaTranscoder
 {
     private readonly IOptionsMonitor<EngineSettings> engineSettings;
-    private readonly IElasticTranscoderWrapper elasticTranscoderWrapper;
+    private readonly ITranscoderWrapper transcoderWrapper;
     private readonly IElasticTranscoderPresetLookup elasticTranscoderPresetLookup;
     private readonly ILogger<ElasticTranscoder> logger;
 
     public ElasticTranscoder(
-        IElasticTranscoderWrapper elasticTranscoderWrapper,
+        ITranscoderWrapper transcoderWrapper,
         IElasticTranscoderPresetLookup elasticTranscoderPresetLookup,
         IOptionsMonitor<EngineSettings> engineSettings,
         ILogger<ElasticTranscoder> logger)
     {
-        this.elasticTranscoderWrapper = elasticTranscoderWrapper;
+        this.transcoderWrapper = transcoderWrapper;
         this.elasticTranscoderPresetLookup = elasticTranscoderPresetLookup;
         this.engineSettings = engineSettings;
         engineSettings.CurrentValue.TimebasedIngest.ThrowIfNull(nameof(engineSettings.CurrentValue.TimebasedIngest));
@@ -35,7 +38,7 @@ public class ElasticTranscoder : IMediaTranscoder
         CancellationToken token = default)
     {
         var settings = engineSettings.CurrentValue.TimebasedIngest!;
-        var pipelineId = await elasticTranscoderWrapper.GetPipelineId(settings.PipelineName, token);
+        var pipelineId = await transcoderWrapper.GetPipelineId(settings.PipelineName, token);
 
         if (string.IsNullOrEmpty(pipelineId))
         {
@@ -61,7 +64,7 @@ public class ElasticTranscoder : IMediaTranscoder
         jobMetadata[TranscodeMetadataKeys.JobId] = jobId;
         jobMetadata[TranscodeMetadataKeys.StartTime] = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
         
-        var elasticTranscoderJob = await elasticTranscoderWrapper.CreateJob(context.AssetFromOrigin.Location,
+        var elasticTranscoderJob = await transcoderWrapper.CreateJob(context.AssetFromOrigin.Location,
             pipelineId, outputs, jobMetadata, token);
 
         var statusCode = (int)elasticTranscoderJob.HttpStatusCode;
@@ -75,18 +78,17 @@ public class ElasticTranscoder : IMediaTranscoder
             return false;
         }
 
-        await elasticTranscoderWrapper.PersistJobId(context.AssetId, elasticTranscoderJob.Job.Id, token);
+        await transcoderWrapper.PersistJobId(context.AssetId, elasticTranscoderJob.Job.Id, token);
         return true;
     }
 
     private List<CreateJobOutput> GetJobOutputs(IngestionContext context, string jobId,
         TimebasedIngestSettings settings, Dictionary<string, TranscoderPreset> presets)
     {
-        var asset = context.Asset;
         var assetId = context.AssetId;
-        var timeBasedPolicies = asset.ImageDeliveryChannels.Where(i => i.Channel == AssetDeliveryChannels.Timebased)
-            .Select(x => JsonSerializer.Deserialize<List<string>>(x.DeliveryChannelPolicy.PolicyData))
-            .First()!.ToList();
+        var timeBasedPolicies = context.Asset.ImageDeliveryChannels
+            .GetTimebasedChannel(true)!.DeliveryChannelPolicy.AsTimebasedPresets();
+        
         var outputs = new List<CreateJobOutput>();
 
         foreach (var timeBasedPolicy in timeBasedPolicies)

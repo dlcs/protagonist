@@ -35,7 +35,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
-    private static readonly IElasticTranscoderWrapper ElasticTranscoderWrapper = A.Fake<IElasticTranscoderWrapper>();
+    private static readonly ITranscoderWrapper ElasticTranscoderWrapper = A.Fake<ITranscoderWrapper>();
     private static readonly IElasticTranscoderPresetLookup ElasticTranscoderPreset = A.Fake<IElasticTranscoderPresetLookup>();
     private readonly ApiStub apiStub;
 
@@ -51,7 +51,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                     .AddSingleton<IFileSaver, FakeFileSaver>()
                     .AddSingleton<IFileSystem, FakeFileSystem>()
                     .AddSingleton<IBucketWriter>(BucketWriter)
-                    .AddSingleton<IElasticTranscoderWrapper>(ElasticTranscoderWrapper)
+                    .AddSingleton<ITranscoderWrapper>(ElasticTranscoderWrapper)
                     .AddSingleton<IElasticTranscoderPresetLookup>(ElasticTranscoderPreset);
             })
             .WithConnectionString(engineFixture.DbFixture.ConnectionString)

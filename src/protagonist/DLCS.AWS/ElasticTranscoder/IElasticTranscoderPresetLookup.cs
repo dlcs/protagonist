@@ -5,6 +5,7 @@ namespace DLCS.AWS.ElasticTranscoder;
 /// <summary>
 /// Interface for working with AWS ElasticTranscoder presets
 /// </summary>
+[Obsolete("ElasticTranscode is being replaced by MediaConvert")]
 public interface IElasticTranscoderPresetLookup
 {
     /// <summary>

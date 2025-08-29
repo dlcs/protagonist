@@ -58,7 +58,6 @@ public class IngestionContext
     public IngestionContext WithPreIngestionAssetSize(long? assetSize = null)
     {
         PreIngestionAssetSize = assetSize ?? 0;
-        
         return this;
     }
     
@@ -81,7 +80,6 @@ public class IngestionContext
     /// <summary>
     /// Updates the media type if it's been set as something the caller didn't understand
     /// </summary>
-    /// <returns></returns>
     public IngestionContext UpdateMediaTypeIfRequired()
     {
         if (AssetFromOrigin == null) return this;

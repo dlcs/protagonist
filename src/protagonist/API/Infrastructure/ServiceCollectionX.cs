@@ -11,6 +11,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.SNS;
 using DLCS.AWS.SNS.Messaging;
 using DLCS.AWS.SQS;
+using DLCS.AWS.Transcoding;
 using DLCS.Core.Caching;
 using DLCS.Mediatr.Behaviours;
 using DLCS.Model;
@@ -78,7 +79,7 @@ public static class ServiceCollectionX
             .AddScoped<ITopicPublisher, TopicPublisher>()
             .AddSingleton<IPathCustomerRepository, BulkCustomerPathElementRepository>()
             .AddSingleton<SqsQueueUtilities>()
-            .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
+            .AddSingleton<ITranscoderWrapper, ElasticTranscoderWrapper>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS()

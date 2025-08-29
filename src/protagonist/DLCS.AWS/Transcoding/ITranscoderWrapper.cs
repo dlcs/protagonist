@@ -5,20 +5,20 @@ using DLCS.Core.Types;
 namespace DLCS.AWS.Transcoding;
 
 /// <summary>
-/// Basic interface for working with AWS ElasticTranscoder
+/// Basic interface for working with transcoding service
 /// </summary>
-public interface IElasticTranscoderWrapper
+public interface ITranscoderWrapper
 {
     /// <summary>
-    /// Get ElasticTranscoder Pipeline Id from name. 
+    /// Get internal pipeline/queue id from it's name. 
     /// </summary>
-    /// <param name="pipelineName">Preconfigured pipeline Id</param>
+    /// <param name="pipelineName">Preconfigured pipeline friendly name</param>
     /// <param name="token">CancellationToken</param>
-    /// <returns>ElasticTranscoder Pipeline Id, if found</returns>
+    /// <returns>Internal pipeline Id, if found</returns>
     Task<string?> GetPipelineId(string pipelineName, CancellationToken token = default);
 
     /// <summary>
-    /// Create an ElasticTranscoder job using specified details. Uses "auto" for framerate, aspectRatio etc.
+    /// Create an transcode job using specified details. Uses "auto" for framerate, aspectRatio etc.
     /// Adds "dlcsId", "startTime" and "jobId" to user metadata
     /// </summary>
     /// <param name="inputKey">The s3:// URI for item in input bucket</param>
@@ -29,21 +29,19 @@ public interface IElasticTranscoderWrapper
     /// </param>
     /// <param name="token">CancellationToken</param>
     /// <returns><see cref="CreateJobResponse"/> object</returns>
-    // TODO - this takes and returns AWS specific - can we normalise?
     Task<CreateJobResponse> CreateJob(string inputKey, string pipelineId, List<CreateJobOutput> outputs,
         Dictionary<string, string> jobMetadata, CancellationToken token = default);
 
     /// <summary>
-    /// Persist ElasticTranscoder metadata to storage for later retrieval 
+    /// Persist transcode metadata to storage for later retrieval 
     /// </summary>
     /// <param name="assetId">Asset job is for</param>
-    /// <param name="elasticTranscoderJobId">Unique identifier for latest elastic transcoder job</param>
+    /// <param name="transcoderJobId">Unique identifier for transcoder job</param>
     /// <param name="cancellationToken">Current cancellation token</param>
-    /// <returns></returns>
-    Task PersistJobId(AssetId assetId, string elasticTranscoderJobId, CancellationToken cancellationToken);
+    Task PersistJobId(AssetId assetId, string transcoderJobId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Get ElasticTranscoder job for AssetId.
+    /// Get latest transcode job details for AssetId.
     /// </summary>
     /// <param name="assetId">AssetId to get latest job data for</param>
     /// <param name="cancellationToken">Current cancellation token</param>
