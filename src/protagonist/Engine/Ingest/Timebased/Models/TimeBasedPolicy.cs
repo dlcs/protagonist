@@ -1,5 +1,6 @@
 ﻿namespace Engine.Ingest.Timebased.Models;
 
+[Obsolete("Redundant after MediaConvert")]
 public class TimeBasedPolicy
 {
     public TimeBasedPolicy(string policy)

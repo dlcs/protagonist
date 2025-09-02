@@ -1,6 +1,8 @@
 ﻿using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.Transcoding.Models.Job;
+using DLCS.AWS.Transcoding.Models.Request;
 using DLCS.Core.Types;
+using CreateJobResponse = DLCS.AWS.Transcoding.Models.Request.CreateJobResponse;
 
 namespace DLCS.AWS.Transcoding;
 
@@ -23,13 +25,16 @@ public interface ITranscoderWrapper
     /// </summary>
     /// <param name="inputKey">The s3:// URI for item in input bucket</param>
     /// <param name="pipelineId">Id of pipeline to use for transcoding media</param>
-    /// <param name="outputs">A list of outputs for job</param>
+    /// <param name="output">Output details for job</param>
     /// <param name="jobMetadata">
     /// Collection of metadata key value pairs to add to job, echoed back on completion
     /// </param>
     /// <param name="token">CancellationToken</param>
-    /// <returns><see cref="CreateJobResponse"/> object</returns>
-    Task<CreateJobResponse> CreateJob(string inputKey, string pipelineId, List<CreateJobOutput> outputs,
+    /// <returns><see cref="Models.Request.CreateJobResponse"/> object, contains job Id and overall status code</returns>
+    Task<CreateJobResponse> CreateJob(string inputKey, string pipelineId, IJobOutput output,
+        Dictionary<string, string> jobMetadata, CancellationToken token = default);
+    
+    Task<Amazon.ElasticTranscoder.Model.CreateJobResponse> CreateJob(string inputKey, string pipelineId, List<CreateJobOutput> outputs,
         Dictionary<string, string> jobMetadata, CancellationToken token = default);
 
     /// <summary>
@@ -40,6 +45,7 @@ public interface ITranscoderWrapper
     /// <param name="cancellationToken">Current cancellation token</param>
     Task PersistJobId(AssetId assetId, string transcoderJobId, CancellationToken cancellationToken);
 
+    // TODO - make this return an object instead?
     /// <summary>
     /// Get latest transcode job details for AssetId.
     /// </summary>

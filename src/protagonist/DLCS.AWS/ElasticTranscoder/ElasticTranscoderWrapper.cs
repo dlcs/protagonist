@@ -5,6 +5,7 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Transcoding;
 using DLCS.AWS.Transcoding.Models.Job;
+using DLCS.AWS.Transcoding.Models.Request;
 using DLCS.Core.Caching;
 using DLCS.Core.Streams;
 using DLCS.Core.Types;
@@ -12,6 +13,7 @@ using LazyCache;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using CreateJobResponse = Amazon.ElasticTranscoder.Model.CreateJobResponse;
 using TimeSpan = System.TimeSpan;
 
 namespace DLCS.AWS.ElasticTranscoder;
@@ -75,6 +77,12 @@ public class ElasticTranscoderWrapper : ITranscoderWrapper
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.Low));
 
         return pipelineId == nullObject ? null : pipelineId;
+    }
+
+    public Task<Transcoding.Models.Request.CreateJobResponse> CreateJob(string inputKey, string pipelineId, IJobOutput output, Dictionary<string, string> jobMetadata,
+        CancellationToken token = default)
+    {
+        throw new NotImplementedException();
     }
 
     public Task<CreateJobResponse> CreateJob(string inputKey, string pipelineId, List<CreateJobOutput> outputs,

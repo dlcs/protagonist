@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Amazon.ElasticTranscoder.Model;
 using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.Transcoding;
@@ -85,10 +86,11 @@ public class ElasticTranscoder : IMediaTranscoder
     private List<CreateJobOutput> GetJobOutputs(IngestionContext context, string jobId,
         TimebasedIngestSettings settings, Dictionary<string, TranscoderPreset> presets)
     {
+        var asset = context.Asset;
         var assetId = context.AssetId;
-        var timeBasedPolicies = context.Asset.ImageDeliveryChannels
-            .GetTimebasedChannel(true)!.DeliveryChannelPolicy.AsTimebasedPresets();
-        
+        var timeBasedPolicies = asset.ImageDeliveryChannels.Where(i => i.Channel == AssetDeliveryChannels.Timebased)
+            .Select(x => JsonSerializer.Deserialize<List<string>>(x.DeliveryChannelPolicy.PolicyData))
+            .First()!.ToList();
         var outputs = new List<CreateJobOutput>();
 
         foreach (var timeBasedPolicy in timeBasedPolicies)
