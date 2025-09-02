@@ -19,13 +19,13 @@ namespace Engine.Tests.Ingest.Timebased.Transcode;
 public class ElasticTranscoderTests
 {
     private readonly ITranscoderWrapper transcoderWrapper;
-    private readonly IElasticTranscoderPresetLookup elasticTranscoderPresetLookup;
+    private readonly ITranscoderPresetLookup transcoderPresetLookup;
     private readonly ElasticTranscoder sut;
 
     public ElasticTranscoderTests()
     {
         transcoderWrapper = A.Fake<ITranscoderWrapper>();
-        elasticTranscoderPresetLookup = A.Fake<IElasticTranscoderPresetLookup>();
+        transcoderPresetLookup = A.Fake<ITranscoderPresetLookup>();
         var es = new EngineSettings
         {
             TimebasedIngest = new TimebasedIngestSettings
@@ -41,7 +41,7 @@ public class ElasticTranscoderTests
         };
         var engineSettings = OptionsHelpers.GetOptionsMonitor(es);
 
-        sut = new ElasticTranscoder(transcoderWrapper, elasticTranscoderPresetLookup, engineSettings,
+        sut = new ElasticTranscoder(transcoderWrapper, transcoderPresetLookup, engineSettings,
             NullLogger<ElasticTranscoder>.Instance);
     }
 
@@ -161,7 +161,7 @@ public class ElasticTranscoderTests
         A.CallTo(() => transcoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
             .Returns("1234567890123-abcdef");
 
-        A.CallTo(() => elasticTranscoderPresetLookup.GetPresetLookupByName(A<CancellationToken>._))
+        A.CallTo(() => transcoderPresetLookup.GetPresetLookupByPolicyName())
             .Returns(new Dictionary<string, TranscoderPreset>()
             {
                 ["Standard WebM"] = new ("1111111111111-aaaaaa", "Standard WebM", ""),
@@ -228,7 +228,7 @@ public class ElasticTranscoderTests
         A.CallTo(() => transcoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
             .Returns("1234567890123-abcdef");
 
-        A.CallTo(() => elasticTranscoderPresetLookup.GetPresetLookupByName(A<CancellationToken>._))
+        A.CallTo(() => transcoderPresetLookup.GetPresetLookupByPolicyName())
             .Returns(new Dictionary<string, TranscoderPreset>()
             {
                 ["Standard mp4"] = new ("1111111111111-aaaaab", "Standard mp4", ""),
@@ -281,7 +281,7 @@ public class ElasticTranscoderTests
         A.CallTo(() => transcoderWrapper.GetPipelineId("foo-pipeline", A<CancellationToken>._))
             .Returns(elasticTranscoderJobId);
 
-        A.CallTo(() => elasticTranscoderPresetLookup.GetPresetLookupByName(A<CancellationToken>._))
+        A.CallTo(() => transcoderPresetLookup.GetPresetLookupByPolicyName())
             .Returns(new Dictionary<string, TranscoderPreset>
             {
                 ["Standard mp4"] = new ("1111111111111-aaaaab", "Standard mp4", ""),

@@ -17,20 +17,20 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
     private readonly IEngineAssetRepository assetRepository;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IBucketWriter bucketWriter;
-    private readonly IElasticTranscoderPresetLookup elasticTranscoderPresetLookup;
+    private readonly ITranscoderPresetLookup transcoderPresetLookup;
     private readonly ILogger<TimebasedIngestorCompletion> logger;
 
     public TimebasedIngestorCompletion(
         IEngineAssetRepository assetRepository,
         IStorageKeyGenerator storageKeyGenerator,
         IBucketWriter bucketWriter,
-        IElasticTranscoderPresetLookup elasticTranscoderPresetLookup,
+        ITranscoderPresetLookup transcoderPresetLookup,
         ILogger<TimebasedIngestorCompletion> logger)
     {
         this.assetRepository = assetRepository;
         this.storageKeyGenerator = storageKeyGenerator;
         this.bucketWriter = bucketWriter;
-        this.elasticTranscoderPresetLookup = elasticTranscoderPresetLookup;
+        this.transcoderPresetLookup = transcoderPresetLookup;
         this.logger = logger;
     }
 
@@ -76,7 +76,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
         var applicationMetadata = new List<AVTranscode>(transcodeOutputs.Count);
         var transcodeSizeRunningTotal = 0L;
 
-        var presetLookup = await elasticTranscoderPresetLookup.GetPresetLookupById(cancellationToken);
+        var presetLookup = transcoderPresetLookup.GetPresetLookupById();
         
         foreach (var transcodeOutput in transcodeOutputs)
         {
@@ -149,7 +149,7 @@ public class TimebasedIngestorCompletion : ITimebasedIngestorCompletion
             Duration = transcodeOutput.GetDuration(),
             Location = outputDestination.GetS3Uri(),
             Extension = extension,
-            TranscodeName = preset.Name,
+            TranscodeName = preset.PolicyName,
             MediaType = MIMEHelper.GetContentTypeForExtension(extension) ??
                         (assetIsVideo ? $"video/{extension}" : $"audio/{extension}"),
         };

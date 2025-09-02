@@ -50,7 +50,7 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
             .AddSingleton<ITranscoderWrapper, ElasticTranscoderWrapper>()
-            .AddSingleton<IElasticTranscoderPresetLookup, ElasticTranscoderPresetLookup>()
+            .AddSingleton<ITranscoderPresetLookup, ElasticTranscoderPresetLookup>()
             .AddScoped<ITopicPublisher, TopicPublisher>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()

@@ -1,5 +1,6 @@
 ﻿using Amazon.ElasticTranscoder;
 using Amazon.ElasticTranscoder.Model;
+using DLCS.AWS.Transcoding;
 using DLCS.AWS.Transcoding.Models;
 using DLCS.Core.Caching;
 using LazyCache;
@@ -10,7 +11,8 @@ using TimeSpan = System.TimeSpan;
 
 namespace DLCS.AWS.ElasticTranscoder;
 
-public class ElasticTranscoderPresetLookup : IElasticTranscoderPresetLookup
+[Obsolete("ElasticTranscode is being replaced by MediaConvert")]
+public class ElasticTranscoderPresetLookup : ITranscoderPresetLookup
 {
     private readonly IAmazonElasticTranscoder elasticTranscoder;
     private readonly IAppCache cache;
@@ -28,23 +30,22 @@ public class ElasticTranscoderPresetLookup : IElasticTranscoderPresetLookup
         this.logger = logger;
     }
 
-    public Task<Dictionary<string, TranscoderPreset>> GetPresetLookupByName(CancellationToken token = default)
-        => GetPresetLookup(preset => preset.Name, token);
+    public Dictionary<string, TranscoderPreset> GetPresetLookupByPolicyName()
+        => GetPresetLookup(preset => preset.PolicyName).Result;
 
-    public Task<Dictionary<string, TranscoderPreset>> GetPresetLookupById(CancellationToken token = default)
-        => GetPresetLookup(preset => preset.Id, token);
+    public Dictionary<string, TranscoderPreset> GetPresetLookupById()
+        => GetPresetLookup(preset => preset.Id).Result;
 
-    private async Task<Dictionary<string, TranscoderPreset>> GetPresetLookup(Func<TranscoderPreset, string> getKey,
-        CancellationToken token)
+    private async Task<Dictionary<string, TranscoderPreset>> GetPresetLookup(Func<TranscoderPreset, string> getKey)
     {
-        var presets = await RetrievePresets(token);
+        var presets = await RetrievePresets();
 
         var presetsDictionary = presets.ToDictionary(getKey, pair => pair);
 
         return presetsDictionary;
     }
 
-    private Task<List<TranscoderPreset>> RetrievePresets(CancellationToken token)
+    private Task<List<TranscoderPreset>> RetrievePresets()
     {
         const string presetLookupKey = "MediaTranscode:Presets";
         
@@ -56,7 +57,7 @@ public class ElasticTranscoderPresetLookup : IElasticTranscoderPresetLookup
             do
             {
                 var request = new ListPresetsRequest { PageToken = response.NextPageToken };
-                response = await elasticTranscoder.ListPresetsAsync(request, token);
+                response = await elasticTranscoder.ListPresetsAsync(request);
 
                 presets.AddRange(response.Presets.Select(r => new TranscoderPreset(r.Id, r.Name, r.Container))
                     .ToList());

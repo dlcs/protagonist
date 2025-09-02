@@ -1,4 +1,6 @@
-﻿namespace Engine.Settings;
+﻿using DLCS.AWS.Settings;
+
+namespace Engine.Settings;
 
 public class EngineSettings
 {
@@ -156,25 +158,14 @@ public class TimebasedIngestSettings
     public string PipelineName { get; set; }
     
     /// <summary>
-    /// Name of the MediaConvert queue to use
+    /// Details for MediaConvert transcode operations
     /// </summary>
-    public MediaConvertSettings MediaConvert { get; set; }
+    public TranscodeSettings MediaConvert { get; set; } // TODO - required
     
     /// <summary>
     /// Mapping of 'friendly' to 'real' transcoder names
     /// </summary>
+    [Obsolete("Use MediaConvert.DeliveryChannelMappings instead")]
+    // TODO - this is being used for looking up presets but that should all new come from the Preset lookup svc
     public Dictionary<string, string> DeliveryChannelMappings { get; set; } = new();
-}
-
-public class MediaConvertSettings
-{
-    /// <summary>
-    /// Name of the MediaConvert queue to use
-    /// </summary>
-    public required string QueueName { get; set; }
-
-    /// <summary>
-    /// Arn of role to use for MediaConvert queue to use
-    /// </summary>
-    public required string RoleArn { get; set; }
 }

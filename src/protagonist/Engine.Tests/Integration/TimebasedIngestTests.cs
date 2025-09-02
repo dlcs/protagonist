@@ -36,7 +36,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private static readonly ITranscoderWrapper ElasticTranscoderWrapper = A.Fake<ITranscoderWrapper>();
-    private static readonly IElasticTranscoderPresetLookup ElasticTranscoderPreset = A.Fake<IElasticTranscoderPresetLookup>();
+    private static readonly ITranscoderPresetLookup TranscoderPreset = A.Fake<ITranscoderPresetLookup>();
     private readonly ApiStub apiStub;
 
     public TimebasedIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
@@ -52,7 +52,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                     .AddSingleton<IFileSystem, FakeFileSystem>()
                     .AddSingleton<IBucketWriter>(BucketWriter)
                     .AddSingleton<ITranscoderWrapper>(ElasticTranscoderWrapper)
-                    .AddSingleton<IElasticTranscoderPresetLookup>(ElasticTranscoderPreset);
+                    .AddSingleton<ITranscoderPresetLookup>(TranscoderPreset);
             })
             .WithConnectionString(engineFixture.DbFixture.ConnectionString)
             .CreateClient();
@@ -67,7 +67,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         A.CallTo(() => ElasticTranscoderWrapper.GetPipelineId("protagonist-pipeline", A<CancellationToken>._))
             .Returns("pipeline-id-1234");
-        A.CallTo(() => ElasticTranscoderPreset.GetPresetLookupByName(A<CancellationToken>._))
+        A.CallTo(() => TranscoderPreset.GetPresetLookupByPolicyName())
             .Returns(new Dictionary<string, TranscoderPreset>
             {
                 ["System preset: Generic 720p"] = new ("123-123", "System preset: Generic 720p", ""),

@@ -19,20 +19,20 @@ public class TimebasedIngesterCompletionTests
     private readonly IEngineAssetRepository engineAssetRepository;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IBucketWriter bucketWriter;
-    private readonly IElasticTranscoderPresetLookup elasticTranscoderPresetLookup;
+    private readonly ITranscoderPresetLookup transcoderPresetLookup;
 
     public TimebasedIngesterCompletionTests()
     {
         engineAssetRepository = A.Fake<IEngineAssetRepository>();
         storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         bucketWriter = A.Fake<IBucketWriter>();
-        elasticTranscoderPresetLookup = A.Fake<IElasticTranscoderPresetLookup>();
+        transcoderPresetLookup = A.Fake<ITranscoderPresetLookup>();
     }
 
     private TimebasedIngestorCompletion GetSut()
     {
         return new TimebasedIngestorCompletion(engineAssetRepository, storageKeyGenerator, bucketWriter,
-            elasticTranscoderPresetLookup, NullLogger<TimebasedIngestorCompletion>.Instance);
+            transcoderPresetLookup, NullLogger<TimebasedIngestorCompletion>.Instance);
     }
     
     [Fact]
@@ -113,7 +113,7 @@ public class TimebasedIngesterCompletionTests
         A.CallTo(() => engineAssetRepository.GetAsset(assetId, 1234, A<CancellationToken>._)).Returns(asset);
 
         const string presetId = "i-am-preset";
-        A.CallTo(() => elasticTranscoderPresetLookup.GetPresetLookupById(A<CancellationToken>._))
+        A.CallTo(() => transcoderPresetLookup.GetPresetLookupById())
             .Returns(new Dictionary<string, TranscoderPreset>
             {
                 [presetId] = new TranscoderPreset(presetId, "This-is-name", "mp4")
@@ -168,7 +168,7 @@ public class TimebasedIngesterCompletionTests
         A.CallTo(() => engineAssetRepository.GetAsset(assetId, 1234, A<CancellationToken>._)).Returns(asset);
 
         const string presetId = "i-am-preset";
-        A.CallTo(() => elasticTranscoderPresetLookup.GetPresetLookupById(A<CancellationToken>._))
+        A.CallTo(() => transcoderPresetLookup.GetPresetLookupById())
             .Returns(new Dictionary<string, TranscoderPreset>
             {
                 [presetId] = new TranscoderPreset(presetId, "This-is-name", "mp4")

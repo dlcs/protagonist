@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.AWS.Tests.ElasticTranscoder;
 
+[Obsolete("Replaced by MediaConvert")]
 public class ElasticTranscoderPresetLookupTests
 {
     private readonly ElasticTranscoderPresetLookup sut;
@@ -43,7 +44,7 @@ public class ElasticTranscoderPresetLookupTests
     public async Task GetPresetLookupById_ReturnsPresets_WhenCalled()
     {
         // Act
-        var presets = await sut.GetPresetLookupById(CancellationToken.None);
+        var presets = sut.GetPresetLookupById();
 
         // Assert
         presets.Should().HaveCount(2);
@@ -54,7 +55,7 @@ public class ElasticTranscoderPresetLookupTests
     public async Task GetPresetLookupByName_ReturnsPresets_WhenCalled()
     {
         // Act
-        var presets = await sut.GetPresetLookupByName(CancellationToken.None);
+        var presets = sut.GetPresetLookupByPolicyName();
 
         // Assert
         presets.Should().HaveCount(2);
