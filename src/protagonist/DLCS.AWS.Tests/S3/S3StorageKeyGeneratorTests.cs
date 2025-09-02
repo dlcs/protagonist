@@ -20,6 +20,7 @@ public class S3StorageKeyGeneratorTests
                 OutputBucket = "test-output",
                 ThumbsBucket = "test-thumbs",
                 StorageBucket = "test-storage",
+                OriginBucket = "test-origin",
                 SecurityObjectsBucket = "test-security",
                 TimebasedInputBucket = "timebased-in",
                 TimebasedOutputBucket = "timebased-out"
@@ -332,5 +333,48 @@ public class S3StorageKeyGeneratorTests
         // Assert
         result.Bucket.Should().Be("test-security");
         result.Key.Should().Be($"{customerId}/origin-strategy/{strategyId}/credentials.json");
+    }
+    
+    [Fact]
+    public void GetOriginRoot_Correct()
+    {
+        // Arrange
+        var assetId = new AssetId(10, 20, "foo-bar");
+        
+        // Act
+        var result = sut.GetOriginRoot(assetId);
+        
+        // Assert
+        result.Bucket.Should().Be("test-origin");
+        result.Key.Should().Be("10/20/foo-bar/");
+    }
+    
+    [Fact]
+    public void GetTransientImageLocation_Correct()
+    {
+        // Arrange
+        var assetId = new AssetId(10, 20, "foo-bar");
+        
+        // Act
+        var result = sut.GetTransientImageLocation(assetId);
+        
+        // Assert
+        result.Bucket.Should().Be("test-storage");
+        result.Key.Should().Be("transient/10/20/foo-bar");
+    }
+    
+    [Fact]
+    public void GetTranscodeDestinationRoot_Correct()
+    {
+        // Arrange
+        var assetId = new AssetId(10, 20, "foo-bar");
+        var jobId = Guid.NewGuid().ToString();
+        
+        // Act
+        var result = sut.GetTranscodeDestinationRoot(assetId, jobId);
+        
+        // Assert
+        result.Bucket.Should().Be("timebased-out");
+        result.Key.Should().Be($"{jobId}/10/20/foo-bar/");
     }
 }

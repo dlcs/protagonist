@@ -160,10 +160,18 @@ public interface IStorageKeyGenerator
     ObjectInBucket GetOriginStrategyCredentialsLocation(int customerId, string originStrategyId);
     
     /// <summary>
-    /// Get <see cref="RegionalisedObjectInBucket"/> root location for a transient image in the origin bucket
+    /// Get <see cref="RegionalisedObjectInBucket"/> item for transient image in the origin bucket
     /// </summary>
     /// <param name="assetId">asset id the request is for</param>
     /// <returns><see cref="RegionalisedObjectInBucket"/> for specified transient asset's that will be cleared up after
     /// a period of time</returns>
     RegionalisedObjectInBucket GetTransientImageLocation(AssetId assetId);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> for timebased transcode operation.
+    /// This is the root location where transcodes will be located
+    /// </summary>
+    /// <param name="assetId">Id of Asset being transcoded</param>
+    /// <param name="jobId">Unique job identifier</param>
+    ObjectInBucket GetTranscodeDestinationRoot(AssetId assetId, string jobId);
 }
