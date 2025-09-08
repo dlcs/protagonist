@@ -32,7 +32,6 @@ public class MediaConvertWrapper(
     IStorageKeyGenerator storageKeyGenerator,
     IOptionsMonitor<CacheSettings> cacheSettings,
     IOptionsMonitor<AWSSettings> awsSettings,
-    MediaConvertResponseConverter  responseConverter,
     ILogger<MediaConvertWrapper> logger)
     : ITranscoderWrapper
 {
@@ -168,7 +167,7 @@ public class MediaConvertWrapper(
     private async Task<TranscoderJob> GetTranscoderJobInternal(AssetId assetId, string jobId, CancellationToken cancellationToken)
     {
         var jobInfo = await mediaConvert.GetJobAsync(new GetJobRequest { Id = jobId }, cancellationToken);
-        var transcoderJob = responseConverter.Create(jobInfo.Job, assetId);
+        var transcoderJob = MediaConvertResponseConverter.Create(jobInfo.Job, assetId);
         return transcoderJob;
     }
 

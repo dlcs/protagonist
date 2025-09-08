@@ -179,8 +179,8 @@ public class TimebasedIngestorCompletion(
         var transcodeDuration = transcodeOutput.DurationMillis;
         if (!dimensionsUpdated)
         {
-            asset.Width = transcodeOutput.Width;
-            asset.Height = transcodeOutput.Height;
+            asset.Width = transcodeOutput.Width ?? 0;
+            asset.Height = transcodeOutput.Height ?? 0;
             asset.Duration = transcodeDuration;
         }
         else if (transcodeDuration != asset.Duration)

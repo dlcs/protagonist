@@ -2,7 +2,6 @@
 using System.Text.Json.Serialization;
 using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.SQS;
-using DLCS.AWS.SQS.Models;
 using Engine.Ingest.Timebased.Completion;
 
 namespace Engine.Ingest.Timebased;
@@ -53,9 +52,7 @@ public class TranscodeCompleteHandler(
     {
         try
         {
-            var notification = message.Body.Deserialize<SNSToSQSEnvelope>(Settings);
-            var mediaConvertNotification =
-                JsonSerializer.Deserialize<TranscodedNotification>(notification.Message, Settings);
+            var mediaConvertNotification = message.Body.Deserialize<TranscodedNotification>(Settings);
             return mediaConvertNotification;
         }
         catch (Exception ex)

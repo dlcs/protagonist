@@ -9,9 +9,9 @@ using Microsoft.Extensions.Logging;
 
 namespace DLCS.AWS.MediaConvert;
 
-public class MediaConvertResponseConverter(ILogger<MediaConvertResponseConverter> logger)
+public class MediaConvertResponseConverter
 {
-    public TranscoderJob Create(Job job, AssetId assetId)
+    public static TranscoderJob Create(Job job, AssetId assetId)
     {
         // Note that output details are split between OutputGroupDetails and job.Settings.OutputGroups but these always
         // have the same number of items in the same order
@@ -20,6 +20,7 @@ public class MediaConvertResponseConverter(ILogger<MediaConvertResponseConverter
         var transcoderJob = new TranscoderJob
         {
             Id = job.Id,
+            CreatedAt = job.CreatedAt,
             Status = job.Status.ToString(),
             PipelineId = job.Queue.EverythingAfterLast('/'),
             Outputs = CreateOutputs(job, assetId),
@@ -41,7 +42,7 @@ public class MediaConvertResponseConverter(ILogger<MediaConvertResponseConverter
             SubmitTimeMillis = ((DateTimeOffset)timing.SubmitTime).ToUnixTimeMilliseconds(),
         };
 
-    private List<TranscoderJob.TranscoderOutput> CreateOutputs(Job job, AssetId assetId)
+    private static List<TranscoderJob.TranscoderOutput> CreateOutputs(Job job, AssetId assetId)
     {
         var jobIsComplete = job.Status == JobStatus.COMPLETE;
         var mediaType = job.UserMetadata[TranscodeMetadataKeys.MediaType]!;
@@ -82,7 +83,7 @@ public class MediaConvertResponseConverter(ILogger<MediaConvertResponseConverter
         return transcodeOutputs;
     }
 
-    private (string TranscodeKey, string? DlcsKey) GetFinalStorageKeys(string destination, Output output,
+    private static (string TranscodeKey, string? DlcsKey) GetFinalStorageKeys(string destination, Output output,
         bool isComplete, AssetId assetId, string mediaType)
     {
         // Get "Key" part of the destination (s3://timebased-output/1234/2/1/foo/trancode => 1234/2/1/foo/trancode)
@@ -90,9 +91,6 @@ public class MediaConvertResponseConverter(ILogger<MediaConvertResponseConverter
 
         // Get key of output (1234/2/1/foo/trancode => 1234/2/1/foo/trancode_1.mp4)
         var outputKey = $"{destinationKey}{output.NameModifier}.{output.Extension}";
-
-        logger.LogTrace("Parsed {Destination} for output for preset {Preset}. Got output key {OutputKey}", destination,
-            output.Preset, outputKey);
 
         if (!isComplete) return (outputKey, null);
 

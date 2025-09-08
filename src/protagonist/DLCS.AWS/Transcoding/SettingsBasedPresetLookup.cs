@@ -14,7 +14,7 @@ namespace DLCS.AWS.Transcoding;
 /// </summary>
 public class SettingsBasedPresetLookup(
     IAppCache cache,
-    IOptionsMonitor<TranscodeSettings> transcodeOptions,
+    IOptionsMonitor<AWSSettings> awsOptions,
     IOptionsMonitor<CacheSettings> cacheSettings,
     ILogger<SettingsBasedPresetLookup> logger)
     : ITranscoderPresetLookup
@@ -40,7 +40,7 @@ public class SettingsBasedPresetLookup(
 
         return cache.GetOrAdd(presetLookupKey, entry =>
         {
-            var mappings = transcodeOptions.CurrentValue.DeliveryChannelMappings;
+            var mappings = awsOptions.CurrentValue.Transcode.DeliveryChannelMappings;
             var presets = mappings.Select(kvp =>
             {
                 var valueParts = kvp.Value.Split("|");

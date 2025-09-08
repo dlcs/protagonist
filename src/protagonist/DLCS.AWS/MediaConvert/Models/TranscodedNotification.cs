@@ -63,11 +63,6 @@ public class TranscodedNotification
     public class TranscodeNotificationDetail
     {
         /// <summary>
-        /// Message timestamp
-        /// </summary>
-        public string Timestamp { get; set; }
-        
-        /// <summary>
         /// MediaConvert JobId
         /// </summary>
         public string JobId { get; set; }
