@@ -6,7 +6,6 @@ using DLCS.Core.Types;
 
 namespace DLCS.AWS.Transcoding;
 
-// TODO - move this to .Transcoding namespace?
 public static class TranscoderTemplates
 {
     /// <summary>
@@ -28,15 +27,6 @@ public static class TranscoderTemplates
             .Replace("{extension}", presetExtension);
         return path;
     }
-    
-    /// <summary>
-    /// Extract the final destination S3 storage key from the transcoder output key 
-    /// </summary>
-    /// <param name="outputKey">S3 key where transcoded output is stored</param>
-    /// <returns>Final key</returns>
-    [Obsolete("ElasticTranscoder")]
-    public static string GetFinalDestinationKey(string outputKey) =>
-        outputKey.Substring(outputKey.IndexOf("/", StringComparison.Ordinal) + 1);
 
     /// <summary>
     /// Get destination template for transcoded assets. Contains {asset} and {extension} placeholder values

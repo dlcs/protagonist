@@ -92,7 +92,7 @@ public class TimebasedIngestorCompletion(
             }
             else
             {
-                errors.Add($"Copying ElasticTranscoder output failed with reason: {copyResult.Result}");
+                errors.Add($"Copying transcode output failed with reason: {copyResult.Result}");
             }
         }
 
