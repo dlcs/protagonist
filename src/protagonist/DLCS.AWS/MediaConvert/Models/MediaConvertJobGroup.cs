@@ -23,4 +23,7 @@ public class MediaConvertJobGroup(ObjectInBucket destination, IReadOnlyCollectio
 /// <param name="Preset">The MediaConvert preset to use for this output</param>
 /// <param name="Extension">The extension to use for this output</param>
 /// <param name="NameModifier">Optional name modifier for this output</param>
+/// <remarks>See https://docs.aws.amazon.com/mediaconvert/latest/ug/using-variables-in-your-job-settings.html for
+/// details on built in name modifiers that we could use
+/// </remarks>
 public record MediaConvertOutput(string Preset, string Extension, string? NameModifier = null);

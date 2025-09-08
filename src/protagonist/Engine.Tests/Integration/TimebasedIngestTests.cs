@@ -1,8 +1,6 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using Amazon.ElasticTranscoder.Model;
-using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.AWS.Transcoding;
 using DLCS.AWS.Transcoding.Models;

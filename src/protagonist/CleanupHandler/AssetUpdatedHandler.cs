@@ -1,10 +1,10 @@
 ﻿using System.IO.Enumeration;
 using CleanupHandler.Infrastructure;
 using CleanupHandler.Repository;
-using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.SQS;
+using DLCS.AWS.Transcoding;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
@@ -401,9 +401,8 @@ public class AssetUpdatedHandler  : IMessageHandler
     {
         var template = TranscoderTemplates.GetDestinationTemplate(asset.MediaType!);
         var path = template
-            .Replace("{jobId}/", "")
             .Replace("{asset}", S3StorageKeyGenerator.GetStorageKey(asset.Id))
-            .Replace(".{extension}", "");
+            .Replace(".{extension}", string.Empty);
         return path;
     }
 }

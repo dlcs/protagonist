@@ -1,5 +1,5 @@
 ﻿using Amazon.ElasticTranscoder.Model;
-using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Transcoding;

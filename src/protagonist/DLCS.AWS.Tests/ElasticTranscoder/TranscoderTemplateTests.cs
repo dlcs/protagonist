@@ -1,4 +1,4 @@
-﻿using DLCS.AWS.ElasticTranscoder;
+﻿using DLCS.AWS.Transcoding;
 using DLCS.Core.Types;
 
 namespace DLCS.AWS.Tests.ElasticTranscoder;
@@ -6,51 +6,49 @@ namespace DLCS.AWS.Tests.ElasticTranscoder;
 public class TranscoderTemplatesTests
 {
     [Fact]
-    public void GetDestinationPath_Null_IfPresetNoInExpectedFormat()
+    public void GetTranscodeKey_Null_IfPresetNotInExpectedFormat()
     {
         // Act
-        var template = TranscoderTemplates.ProcessPreset("video/mpg", new AssetId(1, 2, "foo"), "foo", null);
-            
+        var template = TranscoderTemplates.GetTranscodeKey("video/mpg", new AssetId(1, 2, "foo"), null);
+
         // Assert
         template.Should().BeNull();
     }
-        
+
     [Fact]
-    public void GetDestinationPath_ReturnsExpected_IfAudio()
+    public void GetTranscodeKey_ReturnsExpected_IfAudio()
     {
         // Arrange
         var asset = new AssetId(1, 5, "foo");
-        const string expected = "_jobid_/1/5/foo/full/max/default.mp3";
-            
+        const string expected = "1/5/foo/full/max/default.mp3";
+
         // Act
-        var template = TranscoderTemplates.ProcessPreset("audio/wav", asset,  "_jobid_", "mp3");
-            
+        var template = TranscoderTemplates.GetTranscodeKey("audio/wav", asset, "mp3");
+
         // Assert
         template.Should().Be(expected);
     }
-        
+
     [Fact]
-    public void GetDestinationPath_ReturnsExpected_IfVideo()
+    public void GetTranscodeKey_ReturnsExpected_IfVideo()
     {
         // Arrange
         var asset = new AssetId(1, 5, "foo");
-        const string expected = "_jobid_/1/5/foo/full/full/max/max/0/default.webm";
-            
+        const string expected = "1/5/foo/full/full/max/max/0/default.webm";
+
         // Act
-        var template = TranscoderTemplates.ProcessPreset("video/mpeg", asset, "_jobid_", "webm");
-            
+        var template = TranscoderTemplates.GetTranscodeKey("video/mpeg", asset, "webm");
+
         // Assert
         template.Should().Be(expected);
     }
-        
+
     [Fact]
-    public void GetDestinationPath_Throws_IfNonAudioOrVideoContentType()
+    public void GetTranscodeKey_Throws_IfNonAudioOrVideoContentType()
     {
         // Act
         Action action = () =>
-            TranscoderTemplates.ProcessPreset("binary/octet-stream", new AssetId(1, 5, "foo"),
-                "_jobid_",
-                "webm");
+            TranscoderTemplates.GetTranscodeKey("binary/octet-stream", new AssetId(1, 5, "foo"), "webm");
 
         // Assert
         action.Should().Throw<InvalidOperationException>()
@@ -58,32 +56,40 @@ public class TranscoderTemplatesTests
     }
 
     [Fact]
-    public void GetFinalDestinationKey_Correct_IfAudio()
+    public void GetDestinationTemplate_ReturnsExpected_IfAudio()
     {
         // Arrange
-        var asset = new AssetId(1, 5, "foo");
-        const string expected = "1/5/foo/full/max/default.mp3";
-        var template = TranscoderTemplates.ProcessPreset("audio/wav", asset, Guid.NewGuid().ToString(), "mp3");
-            
+        const string expected = "{asset}/full/max/default.{extension}";
+
         // Act
-        var result = TranscoderTemplates.GetFinalDestinationKey(template);
-        
+        var template = TranscoderTemplates.GetDestinationTemplate("audio/wav");
+
         // Assert
-        result.Should().Be(expected);
+        template.Should().Be(expected);
     }
-    
+
     [Fact]
-    public void GetFinalDestinationKey_Correct_IfVideo()
+    public void GetDestinationTemplate_ReturnsExpected_IfVideo()
     {
         // Arrange
-        var asset = new AssetId(1, 5, "foo");
-        const string expected = "1/5/foo/full/full/max/max/0/default.webm";
-        var template = TranscoderTemplates.ProcessPreset("video/mpeg", asset, Guid.NewGuid().ToString(), "webm");
-            
+        const string expected = "{asset}/full/full/max/max/0/default.{extension}";
+
         // Act
-        var result = TranscoderTemplates.GetFinalDestinationKey(template);
-        
+        var template = TranscoderTemplates.GetDestinationTemplate("video/mpeg");
+
         // Assert
-        result.Should().Be(expected);
+        template.Should().Be(expected);
+    }
+
+    [Fact]
+    public void GetDestinationTemplate_Throws_IfNonAudioOrVideoContentType()
+    {
+        // Act
+        Action action = () =>
+            TranscoderTemplates.GetDestinationTemplate("binary/octet-stream");
+
+        // Assert
+        action.Should().Throw<InvalidOperationException>()
+            .WithMessage("Unable to determine target location for mediaType 'binary/octet-stream'");
     }
 }

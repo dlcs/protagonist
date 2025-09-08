@@ -1,8 +1,9 @@
-namespace DLCS.AWS.Transcoding.Models;
+namespace DLCS.AWS.MediaConvert.Models;
 
 /// <summary>
 /// Represents 'Output' element of job transcode message
 /// </summary>
+[Obsolete("ElasticTranscoder related")]
 public class TranscodeOutput
 {
     public string Id { get; set; }

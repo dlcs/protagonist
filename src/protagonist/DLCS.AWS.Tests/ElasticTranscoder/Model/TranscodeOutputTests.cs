@@ -1,3 +1,4 @@
+using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.Transcoding;
 using DLCS.AWS.Transcoding.Models;
 

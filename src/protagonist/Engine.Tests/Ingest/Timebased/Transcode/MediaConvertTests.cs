@@ -12,7 +12,6 @@ using DLCS.Model.Policies;
 using Engine.Ingest;
 using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased.Transcode;
-using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Settings;
@@ -41,15 +40,12 @@ public class MediaConvertTests
             });
         
         storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
-        var es = new EngineSettings
+        var es = new AWSSettings()
         {
-            TimebasedIngest = new TimebasedIngestSettings
+            Transcode = new TranscodeSettings
             {
-                MediaConvert = new TranscodeSettings
-                {
-                    QueueName = PipelineName,
-                    RoleArn = "arn:12345"
-                }
+                QueueName = PipelineName,
+                RoleArn = "arn:12345"
             }
         };
         var engineSettings = OptionsHelpers.GetOptionsMonitor(es);

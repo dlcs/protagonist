@@ -1,4 +1,5 @@
-﻿using DLCS.Core.Collections;
+﻿using DLCS.AWS.MediaConvert.Models;
+using DLCS.Core.Collections;
 
 namespace DLCS.AWS.Transcoding.Models;
 
@@ -41,16 +42,16 @@ public class TranscodeResult
     {
     }
     
-    public TranscodeResult(TranscodedNotification transcodedNotification)
+    /*public TranscodeResult(TranscodedNotification transcodedNotification)
     {
         Outputs = transcodedNotification.Outputs;
         InputKey = transcodedNotification.Input.Key;
         State = transcodedNotification.State;
         ErrorCode = transcodedNotification.ErrorCode;
         UserMetadata = transcodedNotification.UserMetadata;
-    }
+    }*/
     
-    /// <summary>
+    /*/// <summary>
     /// Get the AssetId for this job from user metadata
     /// </summary>
     /// <returns>Size if found in metadata, else 0</returns>
@@ -68,5 +69,5 @@ public class TranscodeResult
         {
             return 0;
         }
-    }
+    }*/
 }

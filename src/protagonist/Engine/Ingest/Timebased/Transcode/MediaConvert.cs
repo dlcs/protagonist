@@ -1,10 +1,9 @@
 ﻿using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.S3;
+using DLCS.AWS.Settings;
 using DLCS.AWS.Transcoding;
-using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
-using Engine.Settings;
 using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.Timebased.Transcode;
@@ -16,7 +15,7 @@ public class MediaConvert(
     ITranscoderWrapper transcoderWrapper,
     ITranscoderPresetLookup transcoderPresetLookup,
     IStorageKeyGenerator storageKeyGenerator,
-    IOptionsMonitor<EngineSettings> engineSettings,
+    IOptionsMonitor<AWSSettings> awsSettings,
     ILogger<MediaConvert> logger)
     : IMediaTranscoder
 {
@@ -68,7 +67,7 @@ public class MediaConvert(
         
         var assetId = context.AssetId;
         
-        // Policy-data gives us the 'friendly' name to use (e.g. "audio-mp3-128")
+        // Policy-data gives us the 'friendly' name to use (e.g. "audio-mp3-128" or "exhibition-quality")
         var timeBasedPolicies = context.Asset.ImageDeliveryChannels
             .GetTimebasedChannel(true)!.DeliveryChannelPolicy.AsTimebasedPresets();
 
@@ -93,9 +92,6 @@ public class MediaConvert(
         logger.LogDebug("Asset {AssetId} will be transcoded to '{TranscodeDestination}'", assetId, destination);
         return new MediaConvertJobGroup(destination, outputs); 
     }
-    
-    private string GetQueueName() =>
-        engineSettings.CurrentValue.TimebasedIngest
-            .ThrowIfNull(nameof(engineSettings.CurrentValue.TimebasedIngest))
-            .MediaConvert.QueueName;
+
+    private string GetQueueName() => awsSettings.CurrentValue.Transcode.QueueName;
 }

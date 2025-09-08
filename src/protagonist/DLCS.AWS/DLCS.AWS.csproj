@@ -15,7 +15,6 @@
         <PackageReference Include="Amazon.Extensions.Configuration.SystemsManager"/>
         <PackageReference Include="AWSSDK.CloudFront"/>
         <PackageReference Include="AWSSDK.Core"/>
-        <PackageReference Include="AWSSDK.ElasticTranscoder"/>
         <PackageReference Include="AWSSDK.Extensions.NETCore.Setup"/>
         <PackageReference Include="AWSSDK.MediaConvert" />
         <PackageReference Include="AWSSDK.S3"/>

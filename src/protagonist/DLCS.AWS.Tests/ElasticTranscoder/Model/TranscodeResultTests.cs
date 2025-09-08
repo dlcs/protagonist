@@ -1,13 +1,9 @@
-﻿using Amazon.ElasticTranscoder.Model;
-using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.Transcoding;
-using DLCS.AWS.Transcoding.Models;
-
+﻿
 namespace DLCS.AWS.Tests.ElasticTranscoder.Model;
 
 public class TranscodeResultTests
 {
-    [Theory]
+    /*[Theory]
     [InlineData("PROGRESSING", false)]
     [InlineData("COMPLETED", true)]
     [InlineData("completed", true)]
@@ -65,5 +61,5 @@ public class TranscodeResultTests
         
         // Assert
         transcodeResult.GetStoredOriginalAssetSize().Should().Be(expected);
-    }
+    }*/
 }

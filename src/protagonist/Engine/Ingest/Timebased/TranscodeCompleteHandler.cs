@@ -1,9 +1,8 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.SQS;
 using DLCS.AWS.SQS.Models;
-using DLCS.AWS.Transcoding;
-using DLCS.AWS.Transcoding.Models;
 using Engine.Ingest.Timebased.Completion;
 
 namespace Engine.Ingest.Timebased;
@@ -11,53 +10,42 @@ namespace Engine.Ingest.Timebased;
 /// <summary>
 /// Handler for Transcode Completion messages.
 /// </summary>
-public class TranscodeCompleteHandler : IMessageHandler
+public class TranscodeCompleteHandler(
+    ITimebasedIngestorCompletion timebasedIngestorCompletion,
+    ILogger<TranscodeCompleteHandler> logger)
+    : IMessageHandler
 {
-    private readonly ITimebasedIngestorCompletion timebasedIngestorCompletion;
-    private readonly ILogger<TranscodeCompleteHandler> logger;
     private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web)
     {
        NumberHandling = JsonNumberHandling.AllowReadingFromString
     };
 
-    public TranscodeCompleteHandler(
-        ITimebasedIngestorCompletion timebasedIngestorCompletion,
-        ILogger<TranscodeCompleteHandler> logger)
-    {
-        this.timebasedIngestorCompletion = timebasedIngestorCompletion;
-        this.logger = logger;
-    }
-    
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken)
     {
-        var elasticTranscoderMessage = DeserializeBody(message);
+        var mediaConvertNotification = DeserializeBody(message);
         
-        if (elasticTranscoderMessage == null) return false;
+        if (mediaConvertNotification == null) return false;
+        
+        var jobId = mediaConvertNotification.Detail.JobId;
+        var assetId = mediaConvertNotification.GetAssetId();
 
-        var assetId = elasticTranscoderMessage.GetAssetId();
-        
         if (assetId == null)
         {
-            logger.LogWarning("Unable to find DlcsId in message for ET job {JobId}", elasticTranscoderMessage.JobId);
+            logger.LogWarning("Unable to find DlcsId in message for MC job {JobId}", jobId);
             return false;
         }
         
-        var batchId = elasticTranscoderMessage.GetBatchId();
+        var batchId = mediaConvertNotification.GetBatchId();
 
         logger.LogTrace("Received Message {MessageId} for {AssetId}, batch {BatchId}", message.MessageId, assetId,
             batchId ?? 0);
 
-        var transcodeResult = new TranscodeResult(elasticTranscoderMessage);
-
         var success =
-            await timebasedIngestorCompletion.CompleteSuccessfulIngest(assetId, batchId, transcodeResult, cancellationToken);
+            await timebasedIngestorCompletion.CompleteSuccessfulIngest(assetId, batchId, jobId, cancellationToken);
 
         logger.LogInformation("Message {MessageId} handled for {AssetId} with result {IngestResult}", message.MessageId,
             assetId, success);
-        
-        // TODO - return false so that the message is deleted from the queue in all instances.
-        // This shouldn't be the case and can be revisited at a later date as it will need logic of how Batch.Errors is
-        // calculated
+
         return true;
     }
     
@@ -66,13 +54,13 @@ public class TranscodeCompleteHandler : IMessageHandler
         try
         {
             var notification = message.Body.Deserialize<SNSToSQSEnvelope>(Settings);
-            var elasticTranscoderMessage =
+            var mediaConvertNotification =
                 JsonSerializer.Deserialize<TranscodedNotification>(notification.Message, Settings);
-            return elasticTranscoderMessage;
+            return mediaConvertNotification;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error deserializing transcode complete message {Message}", message.Body);
+            logger.LogError(ex, "Error deserializing transcode notification {Message}", message.Body);
             return null;
         }
     }

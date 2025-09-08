@@ -1,12 +1,9 @@
-﻿using DLCS.AWS.Settings;
-
+﻿
 namespace Engine.Settings;
 
 public class EngineSettings
 {
     public ImageIngestSettings? ImageIngest { get; set; }
-
-    public TimebasedIngestSettings? TimebasedIngest { get; set; }
 
     /// <summary>
     /// A collection of customer-specific overrides, keyed by customerId.
@@ -143,29 +140,4 @@ public class ImageIngestSettings
             ? ScratchRoot
             : ImageProcessorRoot;
     }
-}
-
-/// <summary>
-/// Settings directly related to A/V ingestion.
-/// </summary>
-/// <remarks>These will be for ElasticTranscoder</remarks>
-public class TimebasedIngestSettings
-{
-    /// <summary>
-    /// The name of the ElasticTranscoder pipeline to use for transcoding AV files
-    /// </summary>
-    [Obsolete("ElasticTranscode is being replaced by MediaConvert")]
-    public string PipelineName { get; set; }
-    
-    /// <summary>
-    /// Details for MediaConvert transcode operations
-    /// </summary>
-    public TranscodeSettings MediaConvert { get; set; } // TODO - required
-    
-    /// <summary>
-    /// Mapping of 'friendly' to 'real' transcoder names
-    /// </summary>
-    [Obsolete("Use MediaConvert.DeliveryChannelMappings instead")]
-    // TODO - this is being used for looking up presets but that should all new come from the Preset lookup svc
-    public Dictionary<string, string> DeliveryChannelMappings { get; set; } = new();
 }

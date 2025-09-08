@@ -1,160 +1,148 @@
-﻿using System.Text.RegularExpressions;
-using Amazon.ElasticTranscoder.Model;
+﻿using DLCS.Core.Collections;
+using DLCS.Core.Exceptions;
+using DLCS.Core.Types;
 
 namespace DLCS.AWS.Transcoding.Models.Job;
 
 /// <summary>
-/// Classes that represent a elastictranscoder:ReadJob request
+/// Classes that represent a transcoding job request
 /// </summary>
-/// <remarks>
-/// The output classes here match those from Deliverator. They also very closely match the output from the ET request
-/// but maintaining the separate classes so that we have control over what is returned.
-/// </remarks>
 public class TranscoderJob
 {
-    public string Id { get; private init; }
-    public string OutputKeyPrefix { get; private init; }
-    public TranscoderInput Input { get; private init; }
-    public IEnumerable<TranscoderInput> Inputs { get; private init; }
+    public string Id { get; init; }
 
-    public TranscoderOutput Output { get; private init; }
-    public IEnumerable<TranscoderOutput> Outputs { get; private init; }
+    /// <summary>
+    /// DateTime when job was created
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
 
-    public string PipelineId { get; private init; }
-    public string Status { get; private init; }
-    public TranscoderTiming Timing { get; private init; }
-    public Dictionary<string, string> UserMetadata { get; private init; }
+    /// <summary>
+    /// The code of any error that occurred
+    /// </summary>
+    public int? ErrorCode { get; set; }
+        
+    /// <summary>
+    /// Details of any errors that occurred during transcoding
+    /// </summary>
+    public string? ErrorMessage { get; set; }
     
-    public IEnumerable<TranscoderPlaylist> Playlists { get; private init; }
+    /// <summary>
+    /// Input for transcoder job
+    /// </summary>
+    public TranscoderInput Input { get; init; }
+    
+    /// <summary>
+    /// List of transcoder outputs
+    /// </summary>
+    public IList<TranscoderOutput> Outputs { get; init; }
 
-    public static TranscoderJob Create(Amazon.ElasticTranscoder.Model.Job job)
+    /// <summary>
+    /// Identifier for queue/pipeline processing the job 
+    /// </summary>
+    public string PipelineId { get; init; }
+    
+    /// <summary>
+    /// Status of Job - ERROR, COMPLETE, CANCELED, PROGRESSING etc
+    /// </summary>
+    public string Status { get; init; }
+    public TranscoderTiming Timing { get; init; }
+    public Dictionary<string, string> UserMetadata { get; init; }
+    
+    // TODO - should this be shared, off an interface for use with TranscodedNotification too?
+    /// <summary>
+    /// Get the AssetId for this job from user metadata
+    /// </summary>
+    public AssetId? GetAssetId()
     {
-        job.UserMetadata.TryGetValue(TranscodeMetadataKeys.JobId, out var dlcsJobId);
-        dlcsJobId ??= "-not-found-";
-
-        var etJob = new TranscoderJob
+        try
         {
-            Id = job.Id,
-            OutputKeyPrefix = job.OutputKeyPrefix,
-            Status = job.Status,
-            PipelineId = job.PipelineId,
-            Output = TranscoderOutput.Create(job.Output, dlcsJobId),
-            Outputs = job.Outputs.Select(o => TranscoderOutput.Create(o, dlcsJobId)),
-            Input = TranscoderInput.Create(job.Input),
-            Inputs = job.Inputs.Select(i => TranscoderInput.Create(i)),
-            Timing = TranscoderTiming.Create(job.Timing),
-            UserMetadata = job.UserMetadata,
-            Playlists = job.Playlists.Select(p => TranscoderPlaylist.Create(p)),
-        };
-
-        return etJob;
+            return UserMetadata.TryGetValue(TranscodeMetadataKeys.DlcsId, out var rawAssetId)
+                ? AssetId.FromString(rawAssetId)
+                : null;
+        }
+        catch (InvalidAssetIdException)
+        {
+            return null;
+        }
+    }
+    
+    /// <summary>
+    /// Try get the file size of file of we are storing the origin
+    /// </summary>
+    /// <returns>Size if found in metadata, else 0</returns>
+    public long GetStoredOriginalAssetSize()
+    {
+        try
+        {
+            if (UserMetadata.IsNullOrEmpty()) return 0;
+            
+            return UserMetadata.TryGetValue(TranscodeMetadataKeys.OriginSize, out var originSize)
+                ? long.Parse(originSize)
+                : 0;
+        }
+        catch (FormatException)
+        {
+            return 0;
+        }
     }
 
     public class TranscoderInput
     {
-        public string AspectRatio { get; private init; }
-        public string Container { get; private init; }
-        public string FrameRate { get; private init; }
-        public string Interlaced { get; private init; }
-        public string Key { get; private init; }
-        public string Resolution { get; private init; }
-
-        public static TranscoderInput Create(JobInput jobInput)
-            => new()
-            {
-                AspectRatio = jobInput.AspectRatio,
-                Container = jobInput.Container,
-                FrameRate = jobInput.FrameRate,
-                Interlaced = jobInput.Interlaced,
-                Key = jobInput.Key,
-                Resolution = jobInput.Resolution,
-            };
+        public string Input { get; init; }
     }
 
     public class TranscoderOutput
     {
-        public string Id { get; private init; }
-        public long Duration { get; private init; }
-        public long DurationMillis { get; private init; }
-        public long FileSize { get; private init; }
-        public int Height { get; private init; }
-        public int Width { get; private init; }
-        public string Key { get; private init; }
-        public string Status { get; private init; }
-        public string StatusDetail { get; private init; }
+        public string Id { get; init; }
 
-        public static TranscoderOutput Create(JobOutput jobOutput, string dlcsJobId)
-            => new()
-            {
-                Id = jobOutput.Id,
-                Duration = jobOutput.Duration,
-                DurationMillis = jobOutput.DurationMillis,
-                FileSize = jobOutput.FileSize,
-                Height = jobOutput.Height,
-                Width = jobOutput.Width,
-                Status = jobOutput.Status,
-                Key = GetOutputKey(jobOutput, dlcsJobId),
-                StatusDetail = jobOutput.StatusDetail,
-            };
+        /// <summary>
+        /// Output duration in seconds
+        /// </summary>
+        public long Duration { get; init; }
 
-        private static string GetOutputKey(JobOutput jobOutput, string dlcsJobId)
-        {
-            // fixup output key for completed jobs as ET output doesn't match final location (Engine moves it)
-            if (string.Equals(jobOutput.Status, "Complete", StringComparison.OrdinalIgnoreCase))
-            {
-                // Current, prefix is JobId metadata value
-                // e.g. ac232ab4-c123-4a68-8562-2d9f1a7908fa/2/1/asset-id/full/full/max/max/0/default.mp4
-                //   ->                                      2/1/asset-id/full/full/max/max/0/default.mp4
-                if (jobOutput.Key.StartsWith(dlcsJobId))
-                {
-                    return jobOutput.Key[(dlcsJobId.Length + 1)..];
-                }
+        /// <summary>
+        /// Output duration in ms
+        /// </summary>
+        public long DurationMillis { get; init; }
 
-                // Legacy (Deliverator via Spacebunny)
-                // e.g. x/0127/2/1/asset-id/full/full/max/max/0/default.mp4
-                //   ->        2/1/asset-id/full/full/max/max/0/default.mp4
-                var deliveratorRegex = new Regex(@"^x\/\d+\/(.*)$");
-                if (deliveratorRegex.IsMatch(jobOutput.Key))
-                {
-                    return deliveratorRegex.Match(jobOutput.Key).Groups[1].Value;
-                }
-            }
+        /// <summary>
+        /// Height of transcode in px
+        /// </summary>
+        public int? Height { get; init; }
 
-            return jobOutput.Key;
-        }
+        /// <summary>
+        /// Width of transcode in px
+        /// </summary>
+        public int? Width { get; init; }
+
+        /// <summary>
+        /// The interim output key where this output was transcoded to. This is the interim location where the tool
+        /// transcoded the job to and may not be the final location.
+        /// </summary>
+        public string TranscodeKey { get; init; }
+
+        /// <summary>
+        /// The key where the DLCS will store the transcode for this output. Only populated if the job is Complete.
+        /// </summary>
+        public string? Key { get; init; }
+        
+        /// <summary>
+        /// The extension used for this output
+        /// </summary>
+        public string Extension { get; init; }
+        
+        /// <summary>
+        /// Preset name used for this output
+        /// </summary>
+        public string PresetId { get; init; }
     }
 
     public class TranscoderTiming
     {
-        public long FinishTimeMillis { get; private init; }
-        public long StartTimeMillis { get; private init; }
-        public long SubmitTimeMillis { get; private init; }
-
-        public static TranscoderTiming Create(Timing timing)
-            => new()
-            {
-                FinishTimeMillis = timing.FinishTimeMillis,
-                StartTimeMillis = timing.StartTimeMillis,
-                SubmitTimeMillis = timing.SubmitTimeMillis
-            };
+        public long FinishTimeMillis { get; init; }
+        public long StartTimeMillis { get; init; }
+        public long SubmitTimeMillis { get; init; }
     }
 
-    public class TranscoderPlaylist
-    {
-        public string Format { get; set; }
-        public string Name { get; set; }
-        public IEnumerable<string> OutputKeys { get; set; }
-        public string Status { get; set; }
-        public string StatusDetail { get; set; }
-
-        public static TranscoderPlaylist Create(Playlist playlist)
-            => new()
-            {
-                Format = playlist.Format,
-                Name = playlist.Name,
-                Status = playlist.Status,
-                OutputKeys = playlist.OutputKeys,
-                StatusDetail = playlist.StatusDetail
-            };
-    }
+    public bool IsComplete() => string.Equals(Status, "COMPLETE", StringComparison.OrdinalIgnoreCase);
 }

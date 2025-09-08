@@ -29,4 +29,9 @@ public static class TranscodeMetadataKeys
     /// Key for the BatchId this asset is part of
     /// </summary>
     public const string BatchId = "batchId";
+    
+    /// <summary>
+    /// MediaType of the asset transcode job is for
+    /// </summary>
+    public const string MediaType = "mediaType";
 }

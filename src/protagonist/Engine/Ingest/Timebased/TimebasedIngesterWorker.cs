@@ -1,5 +1,4 @@
-﻿using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.S3;
+﻿using DLCS.AWS.S3;
 using DLCS.AWS.Transcoding;
 using DLCS.Core.Collections;
 using DLCS.Model.Customers;
@@ -73,6 +72,7 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
         var jobMetadata = new Dictionary<string, string>
         {
             [TranscodeMetadataKeys.DlcsId] = ingestionContext.AssetId.ToString(),
+            [TranscodeMetadataKeys.MediaType] = ingestionContext.Asset.MediaType!,
             [TranscodeMetadataKeys.OriginSize] = (TryGetStoredOriginFileSize(ingestionContext) ?? 0).ToString(),
             [TranscodeMetadataKeys.BatchId] = ingestionContext.Asset.BatchAssets.IsNullOrEmpty()
                 ? string.Empty

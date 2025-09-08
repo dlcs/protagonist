@@ -271,6 +271,7 @@ public class ImageServerClient : IImageProcessor
 
             var hasImageDeliveryChannel = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image);
             
+            // TODO - use ImageDeliveryChannelX helper?
             var imagePolicy = hasImageDeliveryChannel ? ingestionContext.Asset.ImageDeliveryChannels.SingleOrDefault(
                     x=> x.Channel == AssetDeliveryChannels.Image)
                 ?.DeliveryChannelPolicy.Name : null;

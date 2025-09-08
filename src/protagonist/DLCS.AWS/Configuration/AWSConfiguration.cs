@@ -1,6 +1,6 @@
 using Amazon;
 using Amazon.CloudFront;
-using Amazon.ElasticTranscoder;
+using Amazon.MediaConvert;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.SimpleNotificationService;
@@ -153,39 +153,35 @@ public class AwsBuilder
 
     public AwsBuilder WithAmazonCloudfront(ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
+        // TODO - if using localStack this should register a dummy client or we may make requests to CF
         services.AddAWSService<IAmazonCloudFront>(lifetime);
         
         return this;
     }
-
-    /// <summary>
-    /// Add <see cref="IAmazonElasticTranscoder"/> to service collection with specified lifetime.
-    /// If using localStack this will be a no-op as ET is not available in localStack
-    /// </summary>
-    /// <param name="lifetime">ServiceLifetime for dependency</param>
-    /// <returns>Current <see cref="AwsBuilder"/> instance</returns>
-    public AwsBuilder WithAmazonElasticTranscoder(ServiceLifetime lifetime = ServiceLifetime.Singleton)
+    
+    public AwsBuilder WithMediaConvert(ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
         if (useLocalStack)
         {
-            // LocalStack doesn't support ET https://github.com/localstack/localstack/issues/973 but register a dummy
-            // client to allow service to run. Use S3.ServiceUrl as this is for localstack and serves as a placeholder
-            var serviceDescriptor = ServiceDescriptor.Describe(typeof(IAmazonElasticTranscoder), _ =>
+            // LocalStack MediaConvert support is in preview and requires PRO image. Register a dummy client to allow
+            // service to run without risk of accessing 'real' client. Use S3.ServiceUrl as this is for localstack
+            // and serves as a placeholder
+            var serviceDescriptor = ServiceDescriptor.Describe(typeof(IAmazonMediaConvert), _ =>
             {
-                var elasticTranscoderConfig = new AmazonElasticTranscoderConfig
+                var elasticTranscoderConfig = new AmazonMediaConvertConfig
                 {
                     UseHttp = true,
                     RegionEndpoint = RegionEndpoint.USEast1,
                     ServiceURL =
                         awsSettings.S3.ServiceUrl.ThrowIfNullOrWhiteSpace(nameof(awsSettings.S3.ServiceUrl)),
                 };
-                return new AmazonElasticTranscoderClient(new BasicAWSCredentials("foo", "bar"), elasticTranscoderConfig);
+                return new AmazonMediaConvertClient(new BasicAWSCredentials("foo", "bar"), elasticTranscoderConfig);
             }, lifetime);
             services.Add(serviceDescriptor);
         }
         else
         {
-             services.AddAWSService<IAmazonElasticTranscoder>(lifetime);
+            services.AddAWSService<IAmazonMediaConvert>(lifetime);
         }
 
         return this;
