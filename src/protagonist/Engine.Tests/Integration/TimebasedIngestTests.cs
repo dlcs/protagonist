@@ -1,9 +1,12 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Amazon.MediaConvert.Model;
+using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.S3;
 using DLCS.AWS.Transcoding;
 using DLCS.AWS.Transcoding.Models;
+using DLCS.AWS.Transcoding.Models.Request;
 using DLCS.Core.FileSystem;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
@@ -19,6 +22,7 @@ using Test.Helpers;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Storage;
+using CreateJobResponse = DLCS.AWS.Transcoding.Models.Request.CreateJobResponse;
 
 namespace Engine.Tests.Integration;
 
@@ -33,8 +37,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
-    private static readonly ITranscoderWrapper ElasticTranscoderWrapper = A.Fake<ITranscoderWrapper>();
-    private static readonly ITranscoderPresetLookup TranscoderPreset = A.Fake<ITranscoderPresetLookup>();
+    private static readonly ITranscoderWrapper TranscoderWrapper = A.Fake<ITranscoderWrapper>();
     private readonly ApiStub apiStub;
 
     public TimebasedIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
@@ -49,8 +52,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                     .AddSingleton<IFileSaver, FakeFileSaver>()
                     .AddSingleton<IFileSystem, FakeFileSystem>()
                     .AddSingleton<IBucketWriter>(BucketWriter)
-                    .AddSingleton<ITranscoderWrapper>(ElasticTranscoderWrapper)
-                    .AddSingleton<ITranscoderPresetLookup>(TranscoderPreset);
+                    .AddSingleton<ITranscoderWrapper>(TranscoderWrapper);
             })
             .WithConnectionString(engineFixture.DbFixture.ConnectionString)
             .CreateClient();
@@ -63,20 +65,17 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         engineFixture.DbFixture.CleanUp();
 
-        A.CallTo(() => ElasticTranscoderWrapper.GetPipelineId("protagonist-pipeline", A<CancellationToken>._))
+        A.CallTo(() => TranscoderWrapper.GetPipelineId("protagonist-pipeline", A<CancellationToken>._))
             .Returns("pipeline-id-1234");
-        A.CallTo(() => TranscoderPreset.GetPresetLookupByPolicyName())
-            .Returns(new Dictionary<string, TranscoderPreset>
-            {
-                ["System preset: Generic 720p"] = new ("123-123", "System preset: Generic 720p", ""),
-                ["System preset: Audio MP3 - 128k"] = new ("456-456", "System preset: Audio MP3 - 128k", "")
-            });
     }
+    
+    // This relise on settings in appSettings.Testing.json
+    private static string GetPresetName(string type) => type == "audio" ? "Custom-audio_mp3_128k" : "System-Generic_Hd";
 
     [Theory]
-    [InlineData("video", "/full/full/max/max/0/default.mp4", 6)]
-    [InlineData("audio", "/full/max/default.mp3", 5)]
-    public async Task IngestAsset_CreatesTranscoderJob_HttpOrigin(string type, string expectedKey, int policyId)
+    [InlineData("video", 6)]
+    [InlineData("audio", 5)]
+    public async Task IngestAsset_CreatesTranscoderJob_HttpOrigin(string type, int policyId)
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId(assetPostfix: type);
@@ -100,13 +99,13 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         await dbContext.SaveChangesAsync();
         var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, batch);
 
-        A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
+        A.CallTo(() => TranscoderWrapper.CreateJob(
                 A<string>._,
                 A<string>._,
-                A<List<CreateJobOutput>>._,
+                A<MediaConvertJobGroup>._,
                 A<Dictionary<string, string>>._,
                 A<CancellationToken>._))
-            .Returns(new CreateJobResponse { HttpStatusCode = HttpStatusCode.Accepted, Job = new Job { Id = jobId } });
+            .Returns(new CreateJobResponse(jobId, HttpStatusCode.Accepted));
         
         // Act
         var jsonContent =
@@ -116,27 +115,29 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         // Assert
         result.Should().BeSuccessful();
         
-        // S3 assets created for transcoding + a metadata file
-        var outputKey = $"{assetId}{expectedKey}";
+        // S3 assets created for transcoding
         BucketWriter
             .ShouldHaveKeyThatStartsWith(assetId.ToString())
+            .WithContentType($"{type}/mpeg")
             .ForBucket(LocalStackFixture.TimebasedInputBucketName);
         
-        // ET job created
-        A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
-                A<string>.That.Matches(
-                    s => s.StartsWith($"s3://{LocalStackFixture.TimebasedInputBucketName}/{assetId}")),
+        // MC job created
+        A.CallTo(() => TranscoderWrapper.CreateJob(
+                A<string>.That.Matches(s =>
+                    s.StartsWith($"s3://{LocalStackFixture.TimebasedInputBucketName}/{assetId}")),
                 "pipeline-id-1234",
-                A<List<CreateJobOutput>>.That.Matches(o => o.Single().Key.EndsWith(outputKey)),
-                A<Dictionary<string, string>>.That.Matches(d => 
-                    d[TranscodeMetadataKeys.DlcsId] == assetId.ToString() 
+                A<MediaConvertJobGroup>.That.Matches(o => o.Outputs.Single().Preset == GetPresetName(type)),
+                A<Dictionary<string, string>>.That.Matches(d =>
+                    d[TranscodeMetadataKeys.DlcsId] == assetId.ToString()
                     && d[TranscodeMetadataKeys.OriginSize] == "0"
                     && d[TranscodeMetadataKeys.BatchId] == batch.ToString()
-                    ),
+                    && d[TranscodeMetadataKeys.MediaType] == $"{type}/mpeg"
+                ),
                 A<CancellationToken>._))
             .MustHaveHappened();
 
-        A.CallTo(() => ElasticTranscoderWrapper.PersistJobId(assetId, jobId, A<CancellationToken>._))
+        // Metadata persisted
+        A.CallTo(() => TranscoderWrapper.PersistJobId(assetId, jobId, A<CancellationToken>._))
             .MustHaveHappened();
 
         var savedBatch = await dbContext.Batches
@@ -150,13 +151,14 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
     
     [Theory]
-    [InlineData("video", "/full/full/max/max/0/default.mp4", 6)]
-    [InlineData("audio", "/full/max/default.mp3", 5)]
-    public async Task IngestAsset_ReturnsNoSuccess_IfCreateTranscoderJobFails(string type, string expectedKey, int policyId)
+    [InlineData("video", 6)]
+    [InlineData("audio", 5)]
+    public async Task IngestAsset_ReturnsNoSuccess_IfCreateTranscoderJobFails(string type, int policyId)
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId(assetPostfix: type);
-        
+        const string jobId = "1234567890123-abcdef";
+
         var origin = $"{apiStub.Address}/{type}";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             mediaType: $"{type}/mpeg", family: AssetFamily.Timebased,
@@ -172,14 +174,14 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         await dbContext.SaveChangesAsync();
         var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
 
-        A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
+        A.CallTo(() => TranscoderWrapper.CreateJob(
                 A<string>._,
                 A<string>._,
-                A<List<CreateJobOutput>>._,
+                A<MediaConvertJobGroup>._,
                 A<Dictionary<string, string>>._,
                 A<CancellationToken>._))
-            .Returns(new CreateJobResponse { HttpStatusCode = HttpStatusCode.BadRequest, Job = new Job() });
-        
+            .Returns(new CreateJobResponse(jobId, HttpStatusCode.BadRequest));
+
         // Act
         var jsonContent =
             new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
@@ -187,24 +189,24 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
-        
+
         // S3 assets created for transcoding + a metadata file
-        var outputKey = $"{assetId}{expectedKey}";
         BucketWriter
             .ShouldHaveKeyThatStartsWith(assetId.ToString())
+            .WithContentType($"{type}/mpeg")
             .ForBucket(LocalStackFixture.TimebasedInputBucketName);
-        
-        // ET job created
-        A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
+
+        // MC job created
+        A.CallTo(() => TranscoderWrapper.CreateJob(
                 A<string>.That.Matches(s => s.StartsWith($"s3://{LocalStackFixture.TimebasedInputBucketName}/{assetId}")),
                 "pipeline-id-1234",
-                A<List<CreateJobOutput>>.That.Matches(o => o.Single().Key.EndsWith(outputKey)),
-                A<Dictionary<string, string>>.That.Matches(d => 
+                A<MediaConvertJobGroup>.That.Matches(o => o.Outputs.Single().Preset == GetPresetName(type)),
+                A<Dictionary<string, string>>.That.Matches(d =>
                     d[TranscodeMetadataKeys.DlcsId] == assetId.ToString() && d[TranscodeMetadataKeys.BatchId] == string.Empty),
                 A<CancellationToken>._))
             .MustHaveHappened();
 
-        A.CallTo(() => ElasticTranscoderWrapper.PersistJobId(assetId, A<string>._, A<CancellationToken>._))
+        A.CallTo(() => TranscoderWrapper.PersistJobId(assetId, A<string>._, A<CancellationToken>._))
             .MustNotHaveHappened();
     }
 
@@ -217,7 +219,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         var assetId = AssetIdGenerator.GetAssetId(assetPostfix: type);
         const string jobId = "1234567890123-abcdef";
 
-        var imageDeliveryChannels = new List<ImageDeliveryChannel>()
+        var imageDeliveryChannels = new List<ImageDeliveryChannel>
         {
             new()
             {
@@ -230,7 +232,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
                 DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
             }
         };
-        
+
         var origin = $"{apiStub.Address}/{type}";
         var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
             mediaType: $"{type}/mpeg", family: AssetFamily.Timebased,
@@ -239,14 +241,14 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         await dbContext.SaveChangesAsync();
         var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
 
-        A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
+        A.CallTo(() => TranscoderWrapper.CreateJob(
                 A<string>._,
                 A<string>._,
-                A<List<CreateJobOutput>>._,
+                A<MediaConvertJobGroup>._,
                 A<Dictionary<string, string>>._,
                 A<CancellationToken>._))
-            .Returns(new CreateJobResponse { HttpStatusCode = HttpStatusCode.Accepted, Job = new Job { Id = jobId } });
-        
+            .Returns(new CreateJobResponse(jobId, HttpStatusCode.Accepted));
+
         // Act
         var jsonContent =
             new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
@@ -254,31 +256,34 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         // Assert
         result.Should().BeSuccessful();
-        
+
         // S3 assets created for transcoding + origin uploaded due to "file" channel
         var outputKey = $"{assetId}{expectedKey}";
         BucketWriter
             .ShouldHaveKey($"{assetId}/original")
+            .WithContentType($"{type}/mpeg")
             .ForBucket(LocalStackFixture.StorageBucketName);
         BucketWriter
             .ShouldHaveKeyThatStartsWith(assetId.ToString(), true)
+            .WithContentType($"{type}/mpeg")
             .ForBucket(LocalStackFixture.TimebasedInputBucketName);
-        
-        // ET job created
-        A.CallTo(() => ElasticTranscoderWrapper.CreateJob(
+
+        // MC job created
+        A.CallTo(() => TranscoderWrapper.CreateJob(
                 A<string>.That.Matches(
                     s => s.StartsWith($"s3://{LocalStackFixture.TimebasedInputBucketName}/{assetId}")),
                 "pipeline-id-1234",
-                A<List<CreateJobOutput>>.That.Matches(o => o.Single().Key.EndsWith(outputKey)),
-                A<Dictionary<string, string>>.That.Matches(d => 
-                    d[TranscodeMetadataKeys.DlcsId] == assetId.ToString() 
+                A<MediaConvertJobGroup>.That.Matches(o => o.Outputs.Single().Preset == GetPresetName(type)),
+                A<Dictionary<string, string>>.That.Matches(d =>
+                    d[TranscodeMetadataKeys.DlcsId] == assetId.ToString()
                     && d[TranscodeMetadataKeys.OriginSize] == "1000"
                     && d[TranscodeMetadataKeys.BatchId] == string.Empty
+                    && d[TranscodeMetadataKeys.MediaType] == $"{type}/mpeg"
                     ),
                 A<CancellationToken>._))
             .MustHaveHappened();
 
-        A.CallTo(() => ElasticTranscoderWrapper.PersistJobId(assetId, jobId, A<CancellationToken>._))
+        A.CallTo(() => TranscoderWrapper.PersistJobId(assetId, jobId, A<CancellationToken>._))
             .MustHaveHappened();
     }
 }
