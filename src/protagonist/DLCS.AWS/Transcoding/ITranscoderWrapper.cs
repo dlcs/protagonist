@@ -19,10 +19,10 @@ public interface ITranscoderWrapper
     Task<string?> GetPipelineId(string pipelineName, CancellationToken token = default);
 
     /// <summary>
-    /// Create an transcode job using specified details. Uses "auto" for framerate, aspectRatio etc.
-    /// Adds "dlcsId", "startTime" and "jobId" to user metadata
+    /// Create a transcode job. Transcodes binary at input key into derivatices as specified by <see cref="IJobOutput"/>
+    /// output object
     /// </summary>
-    /// <param name="inputKey">The s3:// URI for item in input bucket</param>
+    /// <param name="inputKey">The location for item to be transcoded</param>
     /// <param name="pipelineId">Id of pipeline to use for transcoding media</param>
     /// <param name="output">Output details for job</param>
     /// <param name="jobMetadata">
@@ -50,11 +50,11 @@ public interface ITranscoderWrapper
     Task<TranscoderJob?> GetTranscoderJob(AssetId assetId, CancellationToken cancellationToken);
     
     /// <summary>
-    /// Get details of specified transcode job.
+    /// Get details of specified transcode job for AssetId
     /// </summary>
     /// <param name="assetId">AssetId job is for</param>
     /// <param name="jobId">Id of job to fetch</param>
     /// <param name="cancellationToken">Current cancellation token</param>
-    /// <returns>Job details, if found. Else null</returns>
+    /// <returns>Job details, if found and for specified Asset. Else null</returns>
     Task<TranscoderJob?> GetTranscoderJob(AssetId assetId, string jobId, CancellationToken cancellationToken);
 }

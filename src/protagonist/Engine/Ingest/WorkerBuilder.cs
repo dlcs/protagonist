@@ -42,7 +42,7 @@ public class WorkerBuilder : IWorkerBuilder
          * - "file" may upload origin to DLCS. If that's the case then further handlers may not need to, or can use
          * that info in their processing
          * - "images" can need to store origin file, but this may have been done by File so results in no-op
-         * - "timebased" will source file size in ET user-metadata if known, this will ahve been set by "file"
+         * - "timebased" will source file size in transcode user-metadata if known, this will have been set by "file"
          */
         if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
         {

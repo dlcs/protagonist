@@ -67,7 +67,8 @@ public static class TranscodeMetadataKeys
     }
     
     /// <summary>
-    /// Try get the file size of file of we are storing the origin
+    /// If we are storing the origin asset for delivery (e.g. on "file" channel) this will contain the size of the
+    /// original file.
     /// </summary>
     /// <returns>Size if found in metadata, else 0</returns>
     public static long GetStoredOriginalAssetSize(this ITranscoderJobMetadata job)

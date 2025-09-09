@@ -44,11 +44,22 @@ public class TranscoderJob : ITranscoderJobMetadata
     /// Status of Job - ERROR, COMPLETE, CANCELED, PROGRESSING etc
     /// </summary>
     public string Status { get; init; }
+    
+    /// <summary>
+    /// Details of job timing
+    /// </summary>
     public TranscoderTiming Timing { get; init; }
+    
+    /// <summary>
+    /// Collection of custom metadata added to job and echoed back 
+    /// </summary>
     public Dictionary<string, string> UserMetadata { get; init; } = new();
     
     public class TranscoderInput
     {
+        /// <summary>
+        /// Location of input file
+        /// </summary>
         public string Input { get; init; }
     }
 

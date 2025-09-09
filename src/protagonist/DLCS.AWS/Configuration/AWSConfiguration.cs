@@ -168,14 +168,14 @@ public class AwsBuilder
             // and serves as a placeholder
             var serviceDescriptor = ServiceDescriptor.Describe(typeof(IAmazonMediaConvert), _ =>
             {
-                var elasticTranscoderConfig = new AmazonMediaConvertConfig
+                var mediaConvertConfig = new AmazonMediaConvertConfig
                 {
                     UseHttp = true,
                     RegionEndpoint = RegionEndpoint.USEast1,
                     ServiceURL =
                         awsSettings.S3.ServiceUrl.ThrowIfNullOrWhiteSpace(nameof(awsSettings.S3.ServiceUrl)),
                 };
-                return new AmazonMediaConvertClient(new BasicAWSCredentials("foo", "bar"), elasticTranscoderConfig);
+                return new AmazonMediaConvertClient(new BasicAWSCredentials("foo", "bar"), mediaConvertConfig);
             }, lifetime);
             services.Add(serviceDescriptor);
         }

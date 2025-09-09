@@ -60,7 +60,6 @@ public class MediaConvertWrapper(
                 return queue.Arn;
             }
 
-
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(currentCacheSettings.GetTtl(CacheDuration.Short));
             entry.Priority = CacheItemPriority.Low;
             return nullObject;

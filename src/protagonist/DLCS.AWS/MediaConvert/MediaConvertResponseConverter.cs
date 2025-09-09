@@ -11,30 +11,22 @@ namespace DLCS.AWS.MediaConvert;
 public static class MediaConvertResponseConverter
 {
     /// <summary>
-    /// Convert provided MediaConver <see cref="Job"/> to <see cref="TranscoderJob"/>
+    /// Convert provided MediaConvert <see cref="Job"/> to internal <see cref="TranscoderJob"/> representation
     /// </summary>
-    public static TranscoderJob CreateTranscoderJob(Job job, AssetId assetId)
-    {
-        // Note that output details are split between OutputGroupDetails and job.Settings.OutputGroups but these always
-        // have the same number of items in the same order
-        var jobSettings = job.Settings;
-
-        var transcoderJob = new TranscoderJob
+    public static TranscoderJob CreateTranscoderJob(Job job, AssetId assetId) =>
+        new()
         {
             Id = job.Id,
             CreatedAt = job.CreatedAt,
             Status = job.Status.ToString(),
             PipelineId = job.Queue.EverythingAfterLast('/'),
             Outputs = CreateOutputs(job, assetId),
-            Input = CreateInput(jobSettings.Inputs.Single()),
+            Input = CreateInput(job.Settings.Inputs.Single()),
             Timing = CreateTiming(job.Timing),
             UserMetadata = job.UserMetadata,
             ErrorCode = job.ErrorCode == 0 ? null : job.ErrorCode,
             ErrorMessage = job.ErrorMessage,
         };
-
-        return transcoderJob;
-    }
 
     private static TranscoderJob.TranscoderInput CreateInput(Input jobInput) => new() { Input = jobInput.FileInput, };
 
@@ -48,19 +40,21 @@ public static class MediaConvertResponseConverter
 
     private static List<TranscoderJob.TranscoderOutput> CreateOutputs(Job job, AssetId assetId)
     {
+        /*
+         There are 2 related properties: OutputGroupDetails and Settings.OutputGroups.
+         The former contains values calculated during encoding: Duration, Width and Height.
+         The latter contains values provided when creating job: preset, extension, name-modifier
+         Both OutputGroupDetails and Settings.OutputGroups are collections but there'll only ever be 1 of each */
+        
         var jobIsComplete = job.Status == JobStatus.COMPLETE;
         var outputGroupDetails = job.OutputGroupDetails.SingleOrDefault();
+        
+        // If there are not OutputGroupDetails then nothing was transcoded so abort
         if (outputGroupDetails == null) return []; 
         
         var mediaType = job.UserMetadata[TranscodeMetadataKeys.MediaType]!;
-
-        /* There are 2 related properties: OutputGroupDetails and Settings.OutputGroups.
-         The former contains values calculated during encoding: Duration, Width and Height
-         The latter contains values provided when creating job: Prefix etc
-         Both OutputGroupDetails and Settings.OutputGroups are collections but we only ever have 1 outputGroup to take
-         single */
         var outputGroup = job.Settings.OutputGroups.Single();
-        var destination = outputGroup.OutputGroupSettings.FileGroupSettings.Destination;
+        var destinationKey = GetDestinationKey(outputGroup.OutputGroupSettings.FileGroupSettings.Destination);
 
         var transcodeOutputs = new List<TranscoderJob.TranscoderOutput>(outputGroupDetails.OutputDetails.Count);
 
@@ -69,7 +63,7 @@ public static class MediaConvertResponseConverter
             var output = outputGroup.Outputs[x]!;
             var outputDetail = outputGroupDetails.OutputDetails[x]!;
 
-            var storageKeys = GetFinalStorageKeys(destination, output, jobIsComplete, assetId, mediaType);
+            var storageKeys = GetFinalStorageKeys(destinationKey, output, jobIsComplete, assetId, mediaType);
 
             var transcodeOutput = new TranscoderJob.TranscoderOutput
             {
@@ -88,14 +82,21 @@ public static class MediaConvertResponseConverter
 
         return transcodeOutputs;
     }
+    
+    /// <summary>
+    /// Get "Key" part of the destination (s3://timebased-output/1234/2/1/foo/trancode => 1234/2/1/foo/trancode)
+    /// This serves as the prefix that will be used for all outputs 
+    /// </summary>
+    private static string GetDestinationKey(string destination)
+    {
+        var destinationKey = RegionalisedObjectInBucket.Parse(destination, true)!.Key!;
+        return destinationKey;
+    }
 
-    private static (string TranscodeKey, string? DlcsKey) GetFinalStorageKeys(string destination, Output output,
+    private static (string TranscodeKey, string? DlcsKey) GetFinalStorageKeys(string destinationKey, Output output,
         bool isComplete, AssetId assetId, string mediaType)
     {
-        // Get "Key" part of the destination (s3://timebased-output/1234/2/1/foo/trancode => 1234/2/1/foo/trancode)
-        var destinationKey = RegionalisedObjectInBucket.Parse(destination, true)!.Key!;
-
-        // Get key of output (1234/2/1/foo/trancode => 1234/2/1/foo/trancode_1.mp4)
+        // And calculate the key of output (1234/2/1/foo/trancode => 1234/2/1/foo/trancode_1.mp4)
         var outputKey = $"{destinationKey}{output.NameModifier}.{output.Extension}";
 
         if (!isComplete) return (outputKey, null);

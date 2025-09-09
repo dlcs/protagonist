@@ -69,7 +69,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
             .Returns("pipeline-id-1234");
     }
     
-    // This relise on settings in appSettings.Testing.json
+    // This relies on settings in appSettings.Testing.json
     private static string GetPresetName(string type) => type == "audio" ? "Custom-audio_mp3_128k" : "System-Generic_Hd";
 
     [Theory]

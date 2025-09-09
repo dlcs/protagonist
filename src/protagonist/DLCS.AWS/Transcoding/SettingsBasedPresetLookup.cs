@@ -19,9 +19,11 @@ public class SettingsBasedPresetLookup(
     ILogger<SettingsBasedPresetLookup> logger)
     : ITranscoderPresetLookup
 {
+    /// <inheritdoc />
     public Dictionary<string, TranscoderPreset> GetPresetLookupByPolicyName()
         => GetPresetLookup(preset => preset.PolicyName);
 
+    /// <inheritdoc />
     public Dictionary<string, TranscoderPreset> GetPresetLookupById()
         => GetPresetLookup(preset => preset.Id);
 

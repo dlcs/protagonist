@@ -61,7 +61,7 @@ public class MediaConvert(
 
     private MediaConvertJobGroup GetJobOutput(IngestionContext context, Dictionary<string, string> jobMetadata)
     {
-        // Guid to uniquely identify this job - this is added to ET output path to avoid overwriting by separate jobs 
+        // Guid to uniquely identify this job - this is added to transcode output path to avoid overwriting by separate jobs 
         var jobId = Guid.NewGuid().ToString();
         jobMetadata[TranscodeMetadataKeys.JobId] = jobId;
         

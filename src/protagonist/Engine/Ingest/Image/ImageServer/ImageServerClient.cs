@@ -267,17 +267,16 @@ public class ImageServerClient : IImageProcessor
         public ImageProcessorFlags(IngestionContext ingestionContext, string jp2OutputPath)
         {
             var assetFromOrigin =
-                ingestionContext.AssetFromOrigin.ThrowIfNull(nameof(ingestionContext.AssetFromOrigin))!;
+                ingestionContext.AssetFromOrigin.ThrowIfNull(nameof(ingestionContext.AssetFromOrigin));
 
             var hasImageDeliveryChannel = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image);
             
-            // TODO - use ImageDeliveryChannelX helper?
             var imagePolicy = hasImageDeliveryChannel ? ingestionContext.Asset.ImageDeliveryChannels.SingleOrDefault(
                     x=> x.Channel == AssetDeliveryChannels.Image)
                 ?.DeliveryChannelPolicy.Name : null;
 
             OriginIsImageServerReady = imagePolicy != null && derivativesOnlyPolicies.Contains(imagePolicy); // only set image server ready if an image server ready policy is set explicitly
-            ImageServerFilePath = OriginIsImageServerReady ? ingestionContext.AssetFromOrigin.Location : jp2OutputPath;
+            ImageServerFilePath = OriginIsImageServerReady ? assetFromOrigin.Location : jp2OutputPath;
 
             IsTransient = !hasImageDeliveryChannel;
 

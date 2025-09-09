@@ -13,31 +13,18 @@ namespace API.Features.Image.Requests;
 /// Get metadata associated with external processing of asset 
 /// </summary>
 /// <remarks>
-/// This is NOT string1, number2 etc but metadata associated with external processing of asset, e.g. elastictranscoder
+/// This is NOT string1, number2 etc but metadata associated with external processing of timebased asset (MediaConvert)
 /// </remarks>
-public class GetAssetMetadata : IRequest<FetchEntityResult<TranscoderJob>>
+public class GetAssetMetadata(int customerId, int spaceId, string assetId) : IRequest<FetchEntityResult<TranscoderJob>>
 {
-    public AssetId AssetId { get; }
-
-    public GetAssetMetadata(int customerId, int spaceId, string assetId)
-    {
-        AssetId = new AssetId(customerId, spaceId, assetId);
-    }
+    public AssetId AssetId { get; } = new(customerId, spaceId, assetId);
 }
 
-public class GetAssetMetadataHandler : IRequestHandler<GetAssetMetadata, FetchEntityResult<TranscoderJob>>
+public class GetAssetMetadataHandler(
+    IApiAssetRepository assetRepository,
+    ITranscoderWrapper transcoderWrapper)
+    : IRequestHandler<GetAssetMetadata, FetchEntityResult<TranscoderJob>>
 {
-    private readonly IApiAssetRepository assetRepository;
-    private readonly ITranscoderWrapper transcoderWrapper;
-
-    public GetAssetMetadataHandler(
-        IApiAssetRepository assetRepository, 
-        ITranscoderWrapper transcoderWrapper)
-    {
-        this.assetRepository = assetRepository;
-        this.transcoderWrapper = transcoderWrapper;
-    }
-    
     public async Task<FetchEntityResult<TranscoderJob>> Handle(GetAssetMetadata request, CancellationToken cancellationToken)
     {
         var asset = await assetRepository.GetAsset(request.AssetId);

@@ -3,7 +3,7 @@ using DLCS.AWS.Transcoding.Models;
 namespace DLCS.AWS.Transcoding;
 
 /// <summary>
-/// Interface for working with AWS ElasticTranscoder presets
+/// Interface for working with transcoder presets
 /// </summary>
 public interface ITranscoderPresetLookup
 {
