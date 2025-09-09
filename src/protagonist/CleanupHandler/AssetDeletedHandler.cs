@@ -4,7 +4,6 @@ using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
 using DLCS.AWS.SQS;
 using DLCS.Core.Collections;
-using DLCS.Core.Exceptions;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -219,32 +218,5 @@ public class AssetDeletedHandler : IMessageHandler
         var imagePath = TemplatedFolders.GenerateFolderTemplate(handlerSettings.ImageFolderTemplate, assetId);
         logger.LogInformation("Deleting file: {StorageKey} for {AssetId}", imagePath, assetId);
         fileSystem.DeleteFile(imagePath);
-    }
-
-    private AssetId? TryGetAssetId(QueueMessage message)
-    {
-        var messageBody = message.GetMessageContents();
-        if (messageBody == null)
-        {
-            logger.LogWarning("Received message but unable to parse contents. {Body}", message.Body.ToJsonString());
-            return null;
-        }
-        
-        if (!messageBody.TryGetPropertyValue("id", out var idProperty))
-        {
-            logger.LogWarning("Received message body with no 'id' property. {Body}", message.Body.ToJsonString());
-            return null;
-        }
-
-        try
-        {
-            return AssetId.FromString(idProperty!.GetValue<string>());
-        }
-        catch (InvalidAssetIdException assetIdEx)
-        {
-            logger.LogError(assetIdEx, "Unable to process delete notification as assetId is not valid");
-        }
-        
-        return null;
     }
 }
