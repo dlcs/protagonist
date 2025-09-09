@@ -172,6 +172,22 @@ The only other resource we need to create is the audio preset. Given there are n
 
 All MC related TF can be managed by a module.
 
+### Output keys
+
+The above states
+
+> cannot programmatically determine which extension will be used/was used
+
+This isn't strictly true. When a `"MediaConvert Job State Change"` notification is raised it _does_ contain the full path for generated transcodes - including the chosen extension and any name modifiers. This forms the "transcode complete" notification that the Engine receives so at this point we do know what the output is. However, this is the only time that we receive this information we cannot subsequently fetch this from the MC API. 
+
+We could use this information as part of the complete handling but that would mean we have different paths to determine the same information. It is cleaner to use 1 single method for both Engine, for completion, and API, for `/customers/{customerId}/spaces/{spaceId}/images/{imageId}/metadata`.
+
+By specifying the extension and name-modifier we can safely predict the output keys. We receive enough information from the `get-job` request to work out what the final keys will be. This can be used when the job is still progressing, for `/metadata` handling, or for job-completion.
+
+We may revisit this in the future for 2 reasons:
+* HLS output - unsure how easy it will be to predict every output name. Whether we need to will need to be determined, we may opt for multiple output groups instead.
+* The `"MediaConvert Job State Change"` notification contains some additional information about the output, e.g. `averageBitrate`, `qvbrAvgQuality`, that we currently don't use but may leverage in the future.
+
 ## Future Improvements
 
 Noting down some possible future enhancements based on MC functionality:
