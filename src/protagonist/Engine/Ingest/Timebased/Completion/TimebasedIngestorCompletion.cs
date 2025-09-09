@@ -80,7 +80,7 @@ public class TimebasedIngestorCompletion(
             SetAssetDimensions(asset, dimensionsUpdated, transcodeOutput);
             dimensionsUpdated = true;
 
-            // Move assets from elastic transcoder-output bucket to main bucket
+            // Move assets from transcoder output bucket to storage bucket
             var copyResult =
                 await CopyTranscodeOutputToStorage(transcodeOutput, outputDestination, asset.Id, cancellationToken);
             if (IsCopySuccessful(copyResult))

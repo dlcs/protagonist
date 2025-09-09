@@ -45,7 +45,7 @@ public class TranscoderJob : ITranscoderJobMetadata
     /// </summary>
     public string Status { get; init; }
     public TranscoderTiming Timing { get; init; }
-    public Dictionary<string, string> UserMetadata { get; init; }
+    public Dictionary<string, string> UserMetadata { get; init; } = new();
     
     public class TranscoderInput
     {
