@@ -1,4 +1,8 @@
-﻿namespace DLCS.AWS.Transcoding;
+﻿using DLCS.Core.Collections;
+using DLCS.Core.Exceptions;
+using DLCS.Core.Types;
+
+namespace DLCS.AWS.Transcoding;
 
 /// <summary>
 /// Constant values used for transcoding job metadata
@@ -34,4 +38,57 @@ public static class TranscodeMetadataKeys
     /// MediaType of the asset transcode job is for
     /// </summary>
     public const string MediaType = "mediaType";
+    
+    /// <summary>
+    /// Get the AssetId for this job from user metadata
+    /// </summary>
+    public static AssetId? GetAssetId(this ITranscoderJobMetadata job)
+    {
+        try
+        {
+            return job.UserMetadata.TryGetValue(DlcsId, out var rawAssetId)
+                ? AssetId.FromString(rawAssetId)
+                : null;
+        }
+        catch (InvalidAssetIdException)
+        {
+            return null;
+        }
+    }
+    
+    /// <summary>
+    /// Get the BatchId, if found, for this job from user metadata
+    /// </summary>
+    public static int? GetBatchId(this ITranscoderJobMetadata job)
+    {
+        if (!job.UserMetadata.TryGetValue(BatchId, out var rawBatchId)) return null;
+
+        return int.TryParse(rawBatchId, out var batchId) ? batchId : null;
+    }
+    
+    /// <summary>
+    /// Try get the file size of file of we are storing the origin
+    /// </summary>
+    /// <returns>Size if found in metadata, else 0</returns>
+    public static long GetStoredOriginalAssetSize(this ITranscoderJobMetadata job)
+    {
+        try
+        {
+            return job.UserMetadata.TryGetValue(OriginSize, out var originSize)
+                ? long.Parse(originSize)
+                : 0;
+        }
+        catch (FormatException)
+        {
+            return 0;
+        }
+    }
+}
+
+/// <summary>
+/// Marker interface for classes that have transcoder job metadata
+/// </summary>
+public interface ITranscoderJobMetadata
+{
+    Dictionary<string, string> UserMetadata { get; }
 }

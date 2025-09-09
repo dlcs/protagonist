@@ -121,14 +121,6 @@ public class MediaConvertWrapper(
         return new CreateJobResponse(response.Job.Id, response.HttpStatusCode);
     }
     
-    private static Output CreateOutput(MediaConvertOutput mediaConvertOutput, int index) =>
-        new()
-        {
-            Preset = mediaConvertOutput.Preset,
-            Extension = mediaConvertOutput.Extension,
-            NameModifier = mediaConvertOutput.NameModifier ?? $"_{index}",
-        };
-
     public Task PersistJobId(AssetId assetId, string transcoderJobId, CancellationToken cancellationToken)
     {
         var metadataKey = storageKeyGenerator.GetTimebasedMetadataLocation(assetId);
@@ -153,7 +145,7 @@ public class MediaConvertWrapper(
     public async Task<TranscoderJob?> GetTranscoderJob(AssetId assetId, string jobId, CancellationToken cancellationToken)
     {
         var transcoderJob = await GetTranscoderJobInternal(assetId, jobId, cancellationToken);
-        var assetIdForJob = transcoderJob.GetAssetId();
+        var assetIdForJob = transcoderJob?.GetAssetId();
         if (assetIdForJob == null || assetIdForJob != assetId)
         {
             logger.LogWarning("Fetched jobId {JobId} for Asset {AssetId} but UserMetadata has Asset {JobAssetId}",
@@ -163,11 +155,20 @@ public class MediaConvertWrapper(
         
         return transcoderJob;
     }
+    
+    private static Output CreateOutput(MediaConvertOutput mediaConvertOutput, int index) =>
+        new()
+        {
+            Preset = mediaConvertOutput.Preset,
+            Extension = mediaConvertOutput.Extension,
+            NameModifier = mediaConvertOutput.NameModifier ?? $"_{index}",
+        };
 
-    private async Task<TranscoderJob> GetTranscoderJobInternal(AssetId assetId, string jobId, CancellationToken cancellationToken)
+    private async Task<TranscoderJob?> GetTranscoderJobInternal(AssetId assetId, string jobId, CancellationToken cancellationToken)
     {
         var jobInfo = await mediaConvert.GetJobAsync(new GetJobRequest { Id = jobId }, cancellationToken);
-        var transcoderJob = MediaConvertResponseConverter.Create(jobInfo.Job, assetId);
+        if (jobInfo == null) return null;
+        var transcoderJob = MediaConvertResponseConverter.CreateTranscoderJob(jobInfo.Job, assetId);
         return transcoderJob;
     }
 

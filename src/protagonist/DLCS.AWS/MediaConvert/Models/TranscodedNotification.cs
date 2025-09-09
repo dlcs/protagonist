@@ -33,34 +33,7 @@ public class TranscodedNotification
     /// </summary>
     public TranscodeNotificationDetail Detail { get; set; }
     
-    /// <summary>
-    /// Get the AssetId for this job from user metadata
-    /// </summary>
-    public AssetId? GetAssetId()
-    {
-        try
-        {
-            return Detail.UserMetadata.TryGetValue(TranscodeMetadataKeys.DlcsId, out var rawAssetId)
-                ? AssetId.FromString(rawAssetId)
-                : null;
-        }
-        catch (InvalidAssetIdException)
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Get the BatchId, if found, for this job from user metadata
-    /// </summary>
-    public int? GetBatchId()
-    {
-        if (!Detail.UserMetadata.TryGetValue(TranscodeMetadataKeys.BatchId, out var rawBatchId)) return null;
-
-        return int.TryParse(rawBatchId, out var batchId) ? batchId : null;
-    }
-    
-    public class TranscodeNotificationDetail
+    public class TranscodeNotificationDetail : ITranscoderJobMetadata
     {
         /// <summary>
         /// MediaConvert JobId

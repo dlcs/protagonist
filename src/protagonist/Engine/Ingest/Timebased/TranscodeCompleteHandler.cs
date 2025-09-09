@@ -2,6 +2,7 @@
 using System.Text.Json.Serialization;
 using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.SQS;
+using DLCS.AWS.Transcoding;
 using Engine.Ingest.Timebased.Completion;
 
 namespace Engine.Ingest.Timebased;
@@ -26,7 +27,7 @@ public class TranscodeCompleteHandler(
         if (mediaConvertNotification == null) return false;
         
         var jobId = mediaConvertNotification.Detail.JobId;
-        var assetId = mediaConvertNotification.GetAssetId();
+        var assetId = mediaConvertNotification.Detail.GetAssetId();
 
         if (assetId == null)
         {
@@ -34,7 +35,7 @@ public class TranscodeCompleteHandler(
             return false;
         }
         
-        var batchId = mediaConvertNotification.GetBatchId();
+        var batchId = mediaConvertNotification.Detail.GetBatchId();
 
         logger.LogTrace("Received Message {MessageId} for {AssetId}, batch {BatchId}", message.MessageId, assetId,
             batchId ?? 0);

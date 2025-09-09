@@ -1,13 +1,12 @@
-﻿using DLCS.Core.Collections;
-using DLCS.Core.Exceptions;
-using DLCS.Core.Types;
-
-namespace DLCS.AWS.Transcoding.Models.Job;
+﻿namespace DLCS.AWS.Transcoding.Models.Job;
 
 /// <summary>
-/// Classes that represent a transcoding job request
+/// Classes that represent a transcoding job request. This has been normalised from payload in transcoding service
 /// </summary>
-public class TranscoderJob
+/// <remarks>
+/// The specific fields here will be dependant on the downstream system but is an internal normalised form of job.
+/// </remarks>
+public class TranscoderJob : ITranscoderJobMetadata
 {
     public string Id { get; init; }
 
@@ -48,44 +47,6 @@ public class TranscoderJob
     public TranscoderTiming Timing { get; init; }
     public Dictionary<string, string> UserMetadata { get; init; }
     
-    // TODO - should this be shared, off an interface for use with TranscodedNotification too?
-    /// <summary>
-    /// Get the AssetId for this job from user metadata
-    /// </summary>
-    public AssetId? GetAssetId()
-    {
-        try
-        {
-            return UserMetadata.TryGetValue(TranscodeMetadataKeys.DlcsId, out var rawAssetId)
-                ? AssetId.FromString(rawAssetId)
-                : null;
-        }
-        catch (InvalidAssetIdException)
-        {
-            return null;
-        }
-    }
-    
-    /// <summary>
-    /// Try get the file size of file of we are storing the origin
-    /// </summary>
-    /// <returns>Size if found in metadata, else 0</returns>
-    public long GetStoredOriginalAssetSize()
-    {
-        try
-        {
-            if (UserMetadata.IsNullOrEmpty()) return 0;
-            
-            return UserMetadata.TryGetValue(TranscodeMetadataKeys.OriginSize, out var originSize)
-                ? long.Parse(originSize)
-                : 0;
-        }
-        catch (FormatException)
-        {
-            return 0;
-        }
-    }
-
     public class TranscoderInput
     {
         public string Input { get; init; }

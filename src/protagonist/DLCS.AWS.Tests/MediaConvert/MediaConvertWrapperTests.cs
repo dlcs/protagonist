@@ -7,9 +7,11 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.Core.Caching;
+using DLCS.Core.Types;
 using FakeItEasy;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
+using Test.Helpers;
 using Test.Helpers.Data;
 using Test.Helpers.Settings;
 using Test.Helpers.Storage;
@@ -42,7 +44,6 @@ public class MediaConvertWrapperTests
         sut = new MediaConvertWrapper(mediaConvert, new MockCachingService(), bucketWriter, bucketReader,
             storageKeyGenerator, OptionsHelpers.GetOptionsMonitor(new CacheSettings()),
             OptionsHelpers.GetOptionsMonitor(awsSettings),
-            new MediaConvertResponseConverter(NullLogger<MediaConvertResponseConverter>.Instance),
             NullLogger<MediaConvertWrapper>.Instance);
     }
     
@@ -179,4 +180,221 @@ public class MediaConvertWrapperTests
             .WithContents(expectedPayload)
             .WithContentType("application/json");
     }
+
+    [Fact]
+    public async Task GetTranscoderJob_ForAssetOnly_Null_IfKeyNotFound()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        var objectInBucket = new ObjectInBucket("storage", "mocked-metadata");
+        A.CallTo(() => storageKeyGenerator.GetTimebasedMetadataLocation(assetId))
+            .Returns(objectInBucket);
+        A.CallTo(() => bucketReader.GetObjectFromBucket(objectInBucket, A<CancellationToken>._))
+            .Returns(new ObjectFromBucket(objectInBucket, Stream.Null, null));
+        
+        // Act
+        var result = await sut.GetTranscoderJob(assetId, CancellationToken.None);
+        
+        // Assert
+        result.Should().BeNull("No metadata found");
+    }
+    
+    [Fact]
+    public async Task GetTranscoderJob_ForAssetOnly_Null_IfKeyFoundAndXML()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        var objectInBucket = new ObjectInBucket("storage", "mocked-metadata");
+        A.CallTo(() => storageKeyGenerator.GetTimebasedMetadataLocation(assetId))
+            .Returns(objectInBucket);
+        A.CallTo(() => bucketReader.GetObjectFromBucket(objectInBucket, A<CancellationToken>._))
+            .Returns(new ObjectFromBucket(objectInBucket, Stream.Null, new ObjectInBucketHeaders
+            {
+                ContentType = "application/xml"
+            }));
+        
+        // Act
+        var result = await sut.GetTranscoderJob(assetId, CancellationToken.None);
+        
+        // Assert
+        result.Should().BeNull("Metadata found but XML so older format (ElasticTranscoder)");
+    }
+    
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{ \"transcodingService\": \"MediaConvert\", \"jobId\": \"\" }")]
+    public async Task GetTranscoderJob_ForAssetOnly_Null_IfKeyFoundButInvalidJson(string storedJson)
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        var objectInBucket = new ObjectInBucket("storage", "mocked-metadata");
+        A.CallTo(() => storageKeyGenerator.GetTimebasedMetadataLocation(assetId))
+            .Returns(objectInBucket);
+        A.CallTo(() => bucketReader.GetObjectFromBucket(objectInBucket, A<CancellationToken>._))
+            .Returns(new ObjectFromBucket(objectInBucket, storedJson.ToMemoryStream(), new ObjectInBucketHeaders
+            {
+                ContentType = "application/json"
+            }));
+        
+        // Act
+        var result = await sut.GetTranscoderJob(assetId, CancellationToken.None);
+        
+        // Assert
+        result.Should().BeNull("Metadata found but unknown JSON");
+    }
+    
+    [Fact]
+    public async Task GetTranscoderJob_ForAssetOnly_ReturnsNull_IfJobNotFound()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        var objectInBucket = new ObjectInBucket("storage", "mocked-metadata");
+        const string jobId = "clown";
+        A.CallTo(() => storageKeyGenerator.GetTimebasedMetadataLocation(assetId))
+            .Returns(objectInBucket);
+        A.CallTo(() => bucketReader.GetObjectFromBucket(objectInBucket, A<CancellationToken>._))
+            .Returns(new ObjectFromBucket(objectInBucket, $"{{\"jobId\":\"{jobId}\"}}".ToMemoryStream(), new ObjectInBucketHeaders
+            {
+                ContentType = "application/json"
+            }));
+        A.CallTo(() =>
+                mediaConvert.GetJobAsync(A<GetJobRequest>.That.Matches(r => r.Id == jobId), A<CancellationToken>._))
+            .Returns<GetJobResponse?>(null);
+        
+        // Act
+        var result = await sut.GetTranscoderJob(assetId, CancellationToken.None);
+        
+        // Assert
+        result.Should().BeNull();
+    }
+    
+    [Fact]
+    public async Task GetTranscoderJob_ForAssetOnly_ReturnsTranscoderJob()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        var objectInBucket = new ObjectInBucket("storage", "mocked-metadata");
+        const string jobId = "clown";
+        A.CallTo(() => storageKeyGenerator.GetTimebasedMetadataLocation(assetId))
+            .Returns(objectInBucket);
+        A.CallTo(() => bucketReader.GetObjectFromBucket(objectInBucket, A<CancellationToken>._))
+            .Returns(new ObjectFromBucket(objectInBucket, $"{{\"jobId\":\"{jobId}\"}}".ToMemoryStream(), new ObjectInBucketHeaders
+            {
+                ContentType = "application/json"
+            }));
+        A.CallTo(() =>
+                mediaConvert.GetJobAsync(A<GetJobRequest>.That.Matches(r => r.Id == jobId), A<CancellationToken>._))
+            .Returns(MinMediaConvertJob);
+        
+        // Act
+        var result = await sut.GetTranscoderJob(assetId, CancellationToken.None);
+        
+        // Assert
+        result.Id.Should().Be("fake-for-test");
+    }
+    
+    [Fact]
+    public async Task GetTranscoderJob_ReturnsNull_IfJobNotFound()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string jobId = "clown";
+        A.CallTo(() =>
+                mediaConvert.GetJobAsync(A<GetJobRequest>.That.Matches(r => r.Id == jobId), A<CancellationToken>._))
+            .Returns<GetJobResponse?>(null);
+        
+        // Act
+        var result = await sut.GetTranscoderJob(assetId, jobId, CancellationToken.None);
+        
+        // Assert
+        result.Should().BeNull();
+    }
+    
+    [Fact]
+    public async Task GetTranscoderJob_ReturnsNull_IfTranscoderJobForDifferentAsset()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string jobId = "clown";
+        A.CallTo(() =>
+                mediaConvert.GetJobAsync(A<GetJobRequest>.That.Matches(r => r.Id == jobId), A<CancellationToken>._))
+            .Returns(MinMediaConvertJob);
+        
+        // Act
+        var result = await sut.GetTranscoderJob(assetId, jobId, CancellationToken.None);
+        
+        // Assert
+        result.Should().BeNull("AssetId in MediaConvert Job does not match the AssetId provided");
+    }
+    
+    [Fact]
+    public async Task GetTranscoderJob_ReturnsTranscoderJob_IfFound()
+    {
+        var assetId = new AssetId(1, 2, "foo"); // This matches the assetId in fake payload
+        const string jobId = "clown";
+        A.CallTo(() =>
+                mediaConvert.GetJobAsync(A<GetJobRequest>.That.Matches(r => r.Id == jobId), A<CancellationToken>._))
+            .Returns(MinMediaConvertJob);
+        
+        // Act
+        var result = await sut.GetTranscoderJob(assetId, jobId, CancellationToken.None);
+        
+        // Assert
+        result.Id.Should().Be("fake-for-test");
+    }
+
+    // This is a MediaConvert GetJob response that has all required props to avoid breaking conversion
+    private static readonly GetJobResponse MinMediaConvertJob = new()
+    {
+        Job = new Job
+        {
+            Id = "fake-for-test",
+            CreatedAt = DateTime.UtcNow,
+            Status = JobStatus.COMPLETE,
+            Queue = "arn:aws:mediaconvert:eu-west-1:123456789012:queues/the-queue",
+            OutputGroupDetails =
+            [
+                new OutputGroupDetail
+                {
+                    OutputDetails =
+                    [
+                        new OutputDetail
+                        {
+                            DurationInMs = 1234,
+                        }
+                    ]
+                }
+            ],
+            Settings = new JobSettings
+            {
+                Inputs =
+                [
+                    new Input { FileInput = "s3://input/file" }
+                ],
+                OutputGroups =
+                [
+                    new OutputGroup
+                    {
+                        OutputGroupSettings = new OutputGroupSettings()
+                        {
+                            FileGroupSettings = new FileGroupSettings { Destination = "s3://somewhere/here" }
+                        },
+                        Outputs =
+                        [
+                            new Output
+                            {
+                                Extension = "mp3",
+                                Preset = "preset",
+
+                            }
+                        ]
+                    },
+                ]
+            },
+            Timing = new Timing
+            {
+                FinishTime = DateTime.UtcNow,
+                StartTime = DateTime.UtcNow,
+                SubmitTime = DateTime.UtcNow
+            },
+            UserMetadata = new Dictionary<string, string>
+            {
+                ["mediaType"] = "audio/mp3",
+                ["dlcsId"] = "1/2/foo"
+            }
+        }
+    };
 }

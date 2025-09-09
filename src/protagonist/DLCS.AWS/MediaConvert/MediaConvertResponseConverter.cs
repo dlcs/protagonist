@@ -5,13 +5,15 @@ using DLCS.AWS.Transcoding;
 using DLCS.AWS.Transcoding.Models.Job;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
-using Microsoft.Extensions.Logging;
 
 namespace DLCS.AWS.MediaConvert;
 
-public class MediaConvertResponseConverter
+public static class MediaConvertResponseConverter
 {
-    public static TranscoderJob Create(Job job, AssetId assetId)
+    /// <summary>
+    /// Convert provided MediaConver <see cref="Job"/> to <see cref="TranscoderJob"/>
+    /// </summary>
+    public static TranscoderJob CreateTranscoderJob(Job job, AssetId assetId)
     {
         // Note that output details are split between OutputGroupDetails and job.Settings.OutputGroups but these always
         // have the same number of items in the same order
@@ -27,6 +29,8 @@ public class MediaConvertResponseConverter
             Input = CreateInput(jobSettings.Inputs.Single()),
             Timing = CreateTiming(job.Timing),
             UserMetadata = job.UserMetadata,
+            ErrorCode = job.ErrorCode == 0 ? null : job.ErrorCode,
+            ErrorMessage = job.ErrorMessage,
         };
 
         return transcoderJob;
@@ -45,6 +49,9 @@ public class MediaConvertResponseConverter
     private static List<TranscoderJob.TranscoderOutput> CreateOutputs(Job job, AssetId assetId)
     {
         var jobIsComplete = job.Status == JobStatus.COMPLETE;
+        var outputGroupDetails = job.OutputGroupDetails.SingleOrDefault();
+        if (outputGroupDetails == null) return []; 
+        
         var mediaType = job.UserMetadata[TranscodeMetadataKeys.MediaType]!;
 
         /* There are 2 related properties: OutputGroupDetails and Settings.OutputGroups.
@@ -53,7 +60,6 @@ public class MediaConvertResponseConverter
          Both OutputGroupDetails and Settings.OutputGroups are collections but we only ever have 1 outputGroup to take
          single */
         var outputGroup = job.Settings.OutputGroups.Single();
-        var outputGroupDetails = job.OutputGroupDetails.Single();
         var destination = outputGroup.OutputGroupSettings.FileGroupSettings.Destination;
 
         var transcodeOutputs = new List<TranscoderJob.TranscoderOutput>(outputGroupDetails.OutputDetails.Count);
@@ -70,8 +76,8 @@ public class MediaConvertResponseConverter
                 Id = x.ToString(),
                 Duration = outputDetail.DurationInMs > 0 ? outputDetail.DurationInMs / 1000 : 0,
                 DurationMillis = outputDetail.DurationInMs,
-                Height = outputDetail.VideoDetails?.WidthInPx,
-                Width = outputDetail.VideoDetails?.HeightInPx,
+                Height = outputDetail.VideoDetails?.HeightInPx,
+                Width = outputDetail.VideoDetails?.WidthInPx,
                 TranscodeKey = storageKeys.TranscodeKey,
                 Key = storageKeys.DlcsKey,
                 Extension = output.Extension,

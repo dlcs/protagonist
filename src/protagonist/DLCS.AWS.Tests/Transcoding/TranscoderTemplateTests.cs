@@ -1,7 +1,7 @@
 ﻿using DLCS.AWS.Transcoding;
 using DLCS.Core.Types;
 
-namespace DLCS.AWS.Tests.ElasticTranscoder;
+namespace DLCS.AWS.Tests.Transcoding;
 
 public class TranscoderTemplatesTests
 {

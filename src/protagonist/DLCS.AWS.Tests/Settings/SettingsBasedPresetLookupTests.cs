@@ -23,7 +23,10 @@ public class SettingsBasedPresetLookupTests
             }
         };
         return new SettingsBasedPresetLookup(new MockCachingService(),
-            OptionsHelpers.GetOptionsMonitor(transcodeSettings),
+            OptionsHelpers.GetOptionsMonitor(new AWSSettings
+            {
+                Transcode = transcodeSettings,
+            }),
             OptionsHelpers.GetOptionsMonitor(new CacheSettings()),
             new NullLogger<SettingsBasedPresetLookup>());
     }
