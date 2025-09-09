@@ -1,6 +1,7 @@
 ﻿using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.SQS;
 using DLCS.AWS.Transcoding;
+using Engine.Infrastructure.Logging;
 using Engine.Ingest.Timebased.Completion;
 
 namespace Engine.Ingest.Timebased;
@@ -18,26 +19,27 @@ public class TranscodeCompleteHandler(
         var mediaConvertNotification = DeserializeBody(message);
         
         if (mediaConvertNotification == null) return false;
-        
-        var jobId = mediaConvertNotification.JobId;
-        var assetId = mediaConvertNotification.GetAssetId();
 
-        if (assetId == null)
+        using (LogContextHelpers.SetCorrelationId(message.MessageId))
         {
-            logger.LogWarning("Unable to find DlcsId in message for MC job {JobId}", jobId);
-            return false;
+            var jobId = mediaConvertNotification.JobId;
+            var assetId = mediaConvertNotification.GetAssetId();
+
+            if (assetId == null)
+            {
+                logger.LogWarning("Unable to find DlcsId in message for MC job {JobId}", jobId);
+                return false;
+            }
+
+            var batchId = mediaConvertNotification.GetBatchId();
+
+            logger.LogTrace("Received message for {AssetId}, batch {BatchId}", assetId, batchId ?? 0);
+
+            var success =
+                await timebasedIngestorCompletion.CompleteSuccessfulIngest(assetId, batchId, jobId, cancellationToken);
+
+            logger.LogInformation("Message handled for {AssetId} with result {IngestResult}", assetId, success);
         }
-
-        var batchId = mediaConvertNotification.GetBatchId();
-
-        logger.LogTrace("Received Message {MessageId} for {AssetId}, batch {BatchId}", message.MessageId, assetId,
-            batchId ?? 0);
-
-        var success =
-            await timebasedIngestorCompletion.CompleteSuccessfulIngest(assetId, batchId, jobId, cancellationToken);
-
-        logger.LogInformation("Message {MessageId} handled for {AssetId} with result {IngestResult}", message.MessageId,
-            assetId, success);
 
         return true;
     }
