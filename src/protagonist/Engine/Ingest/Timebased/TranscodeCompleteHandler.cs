@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
-using DLCS.AWS.MediaConvert.Models;
+﻿using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.SQS;
 using DLCS.AWS.Transcoding;
 using Engine.Ingest.Timebased.Completion;
@@ -15,27 +13,22 @@ public class TranscodeCompleteHandler(
     ILogger<TranscodeCompleteHandler> logger)
     : IMessageHandler
 {
-    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web)
-    {
-       NumberHandling = JsonNumberHandling.AllowReadingFromString
-    };
-
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken)
     {
         var mediaConvertNotification = DeserializeBody(message);
         
         if (mediaConvertNotification == null) return false;
         
-        var jobId = mediaConvertNotification.Detail.JobId;
-        var assetId = mediaConvertNotification.Detail.GetAssetId();
+        var jobId = mediaConvertNotification.JobId;
+        var assetId = mediaConvertNotification.GetAssetId();
 
         if (assetId == null)
         {
             logger.LogWarning("Unable to find DlcsId in message for MC job {JobId}", jobId);
             return false;
         }
-        
-        var batchId = mediaConvertNotification.Detail.GetBatchId();
+
+        var batchId = mediaConvertNotification.GetBatchId();
 
         logger.LogTrace("Received Message {MessageId} for {AssetId}, batch {BatchId}", message.MessageId, assetId,
             batchId ?? 0);
@@ -49,12 +42,12 @@ public class TranscodeCompleteHandler(
         return true;
     }
     
-    private TranscodedNotification? DeserializeBody(QueueMessage message)
+    private TranscodedNotification.TranscodeNotificationDetail? DeserializeBody(QueueMessage message)
     {
         try
         {
-            var mediaConvertNotification = message.Body.Deserialize<TranscodedNotification>(Settings);
-            return mediaConvertNotification;
+            var transcodedNotification = message.GetMessageContents<TranscodedNotification>();
+            return transcodedNotification.Detail;
         }
         catch (Exception ex)
         {

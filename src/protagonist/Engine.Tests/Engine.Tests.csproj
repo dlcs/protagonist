@@ -35,16 +35,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Content Include="Samples\ElasticTranscoderNotificationBatch.json"/>
-        <None Remove="Samples\ElasticTranscoderNotification.json"/>
-        <Content Include="Samples\ElasticTranscoderNotification.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-        <None Remove="Samples\ElasticTranscoderErrorNotification.json"/>
-        <Content Include="Samples\ElasticTranscoderErrorNotification.json">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
-        <Content Update="Samples\ElasticTranscoderNotificationBatch.json">
+        <Content Include="Samples\MediaConvertNotification.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
