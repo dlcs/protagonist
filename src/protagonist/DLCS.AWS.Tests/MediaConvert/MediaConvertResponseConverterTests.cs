@@ -61,9 +61,9 @@ public class MediaConvertResponseConverterTests
             },
             Timing = new Timing
             {
-                FinishTime = new DateTime(2025, 9, 9, 10, 0, 0),
-                StartTime = new DateTime(2025, 9, 9, 9, 0, 0),
-                SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0),
+                FinishTime = new DateTime(2025, 9, 9, 10, 0, 0, DateTimeKind.Utc),
+                StartTime = new DateTime(2025, 9, 9, 9, 0, 0, DateTimeKind.Utc),
+                SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0, DateTimeKind.Utc),
             },
             UserMetadata = new Dictionary<string, string>
             {
@@ -80,9 +80,9 @@ public class MediaConvertResponseConverterTests
             PipelineId = "the-queue",
             Timing = new TranscoderJob.TranscoderTiming
             {
-                FinishTimeMillis = 1757408400000,
-                StartTimeMillis = 1757404800000,
-                SubmitTimeMillis = 1757401200000,
+                FinishTimeMillis = 1757412000000,
+                StartTimeMillis = 1757408400000,
+                SubmitTimeMillis = 1757404800000,
             },
             Input = new TranscoderJob.TranscoderInput { Input = "s3://input/file.wav" },
             Outputs =
@@ -182,9 +182,9 @@ public class MediaConvertResponseConverterTests
             },
             Timing = new Timing
             {
-                FinishTime = new DateTime(2025, 9, 9, 10, 0, 0),
-                StartTime = new DateTime(2025, 9, 9, 9, 0, 0),
-                SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0),
+                FinishTime = new DateTime(2025, 9, 9, 10, 0, 0, DateTimeKind.Utc),
+                StartTime = new DateTime(2025, 9, 9, 9, 0, 0, DateTimeKind.Utc),
+                SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0, DateTimeKind.Utc),
             },
             UserMetadata = new Dictionary<string, string>
             {
@@ -201,9 +201,9 @@ public class MediaConvertResponseConverterTests
             PipelineId = "the-queue",
             Timing = new TranscoderJob.TranscoderTiming
             {
-                FinishTimeMillis = 1757408400000,
-                StartTimeMillis = 1757404800000,
-                SubmitTimeMillis = 1757401200000,
+                FinishTimeMillis = 1757412000000,
+                StartTimeMillis = 1757408400000,
+                SubmitTimeMillis = 1757404800000,
             },
             Input = new TranscoderJob.TranscoderInput { Input = "s3://input/file.raw" },
             Outputs =
@@ -286,9 +286,9 @@ public class MediaConvertResponseConverterTests
             },
             Timing = new Timing
             {
-                FinishTime = new DateTime(2025, 9, 9, 10, 0, 0),
-                StartTime = new DateTime(2025, 9, 9, 9, 0, 0),
-                SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0),
+                FinishTime = new DateTime(2025, 9, 9, 10, 0, 0, DateTimeKind.Utc),
+                StartTime = new DateTime(2025, 9, 9, 9, 0, 0, DateTimeKind.Utc),
+                SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0, DateTimeKind.Utc),
             },
             UserMetadata = new Dictionary<string, string>
             {
@@ -305,9 +305,9 @@ public class MediaConvertResponseConverterTests
             PipelineId = "the-queue",
             Timing = new TranscoderJob.TranscoderTiming
             {
-                FinishTimeMillis = 1757408400000,
-                StartTimeMillis = 1757404800000,
-                SubmitTimeMillis = 1757401200000,
+                FinishTimeMillis = 1757412000000,
+                StartTimeMillis = 1757408400000,
+                SubmitTimeMillis = 1757404800000,
             },
             Input = new TranscoderJob.TranscoderInput { Input = "s3://input/file.wav" },
             Outputs = [],
@@ -380,9 +380,9 @@ public class MediaConvertResponseConverterTests
             },
             Timing = new Timing
             {
-                FinishTime = new DateTime(2025, 9, 9, 10, 0, 0),
-                StartTime = new DateTime(2025, 9, 9, 9, 0, 0),
-                SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0),
+                FinishTime = new DateTime(2025, 9, 9, 10, 0, 0, DateTimeKind.Utc),
+                StartTime = new DateTime(2025, 9, 9, 9, 0, 0, DateTimeKind.Utc),
+                SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0, DateTimeKind.Utc),
             },
             UserMetadata = new Dictionary<string, string>
             {
@@ -399,9 +399,9 @@ public class MediaConvertResponseConverterTests
             PipelineId = "the-queue",
             Timing = new TranscoderJob.TranscoderTiming
             {
-                FinishTimeMillis = 1757408400000,
-                StartTimeMillis = 1757404800000,
-                SubmitTimeMillis = 1757401200000,
+                FinishTimeMillis = 1757412000000,
+                StartTimeMillis = 1757408400000,
+                SubmitTimeMillis = 1757404800000,
             },
             Input = new TranscoderJob.TranscoderInput { Input = "s3://input/file.wav" },
             Outputs =
@@ -472,7 +472,7 @@ public class MediaConvertResponseConverterTests
             {
                 FinishTime = DateTime.MinValue,
                 StartTime = DateTime.MinValue,
-                SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0),
+                SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0, DateTimeKind.Utc),
             },
             UserMetadata = new Dictionary<string, string>
             {
@@ -491,7 +491,7 @@ public class MediaConvertResponseConverterTests
             {
                 FinishTimeMillis = null,
                 StartTimeMillis = null,
-                SubmitTimeMillis = 1757401200000,
+                SubmitTimeMillis = 1757404800000,
             },
             Input = new TranscoderJob.TranscoderInput { Input = "s3://input/file.wav" },
             Outputs = [],
