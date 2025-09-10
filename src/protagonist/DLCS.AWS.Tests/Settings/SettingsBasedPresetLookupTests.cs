@@ -32,28 +32,6 @@ public class SettingsBasedPresetLookupTests
     }
     
     [Fact]
-    public void GetPresetLookupById_Throws_IfInvalidFormatPreset()
-    {
-        var sut = GetSut(new Dictionary<string, string>
-        {
-            ["audio"] = "invalid-as-no-extension",
-        });
-        Action action = () => sut.GetPresetLookupById();
-        action.Should().Throw<InvalidOperationException>();
-    }
-
-    [Fact]
-    public void GetPresetLookupById_ReturnsExpected()
-    {
-        var expected = new Dictionary<string, TranscoderPreset>
-        {
-            ["System-Preset"] = new("System-Preset", "audio", "mp3"),
-            ["Custom-Preset"] = new("Custom-Preset", "video", "mp4"),
-        };
-        GetSut().GetPresetLookupById().Should().BeEquivalentTo(expected);
-    }
-    
-    [Fact]
     public void GetPresetLookupByName_Throws_IfInvalidFormatPreset()
     {
         var sut = GetSut(new Dictionary<string, string>

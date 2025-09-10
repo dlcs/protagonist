@@ -26,5 +26,6 @@ public class TimebasedController(
     /// </summary>
     [HttpGet]
     [Route("presets")]
-    public Dictionary<string, TranscoderPreset> GetKnownPresets() => transcoderPresetLookup.GetPresetLookupById();
+    public Dictionary<string, TranscoderPreset> GetKnownPresets() =>
+        transcoderPresetLookup.GetPresetLookupByPolicyName();
 }

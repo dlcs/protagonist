@@ -21,22 +21,9 @@ public class SettingsBasedPresetLookup(
 {
     /// <inheritdoc />
     public Dictionary<string, TranscoderPreset> GetPresetLookupByPolicyName()
-        => GetPresetLookup(preset => preset.PolicyName);
+        => GetPresetLookup();
 
-    /// <inheritdoc />
-    public Dictionary<string, TranscoderPreset> GetPresetLookupById()
-        => GetPresetLookup(preset => preset.Id);
-
-    private Dictionary<string, TranscoderPreset> GetPresetLookup(Func<TranscoderPreset, string> getKey)
-    {
-        var presets = RetrievePresets();
-
-        var presetsDictionary = presets.ToDictionary(getKey, pair => pair);
-
-        return presetsDictionary;
-    }
-
-    private List<TranscoderPreset> RetrievePresets()
+    private Dictionary<string, TranscoderPreset> GetPresetLookup()
     {
         const string presetLookupKey = "MediaTranscode:Presets";
 
@@ -61,7 +48,7 @@ public class SettingsBasedPresetLookup(
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.CurrentValue.GetTtl(CacheDuration.Short));
             }
             
-            return presets;
+            return presets.ToDictionary(preset => preset.PolicyName, pair => pair);
         }, cacheSettings.CurrentValue.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.Low));
     }
 }

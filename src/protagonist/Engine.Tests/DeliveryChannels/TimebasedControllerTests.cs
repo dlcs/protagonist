@@ -38,16 +38,16 @@ public class TimebasedControllerTests
     }
     
     [Fact]
-    public void GetKnownAvPresetOptions_ReturnsPolicyDataById_WhenCalled()
+    public void GetKnownAvPresetOptions_ReturnsPolicyDataByName_WhenCalled()
     {
         // Arrange 
         var presetsById = new Dictionary<string, TranscoderPreset>
         {
-            { "some-id", new TranscoderPreset("some-id", "An amazon policy", ".ext") },
-            { "some-id-2", new TranscoderPreset("some-id-2", "An amazon policy 2", ".ext2") }
+            { "An amazon policy", new TranscoderPreset("some-id", "An amazon policy", ".ext") },
+            { "An amazon policy 2", new TranscoderPreset("some-id-2", "An amazon policy 2", ".ext2") }
         };
         
-        A.CallTo(() => transcoderPreset.GetPresetLookupById()).Returns(
+        A.CallTo(() => transcoderPreset.GetPresetLookupByPolicyName()).Returns(
             presetsById);
         
         // Act

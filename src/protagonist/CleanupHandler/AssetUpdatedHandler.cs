@@ -235,7 +235,7 @@ public class AssetUpdatedHandler  : IMessageHandler
                 assetAfter.Id);
             throw new ArgumentNullException(nameof(presetDictionary), "Failed to retrieve any preset values");
         }
-        
+
         foreach (var presetIdentifier in presetList)
         {
             if (presetDictionary.TryGetValue(presetIdentifier, out var transcoderPreset))
@@ -248,7 +248,7 @@ public class AssetUpdatedHandler  : IMessageHandler
                     $"Failed to retrieve preset {presetIdentifier}");
             }
         }
-        
+
         var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetAfter.Id);
         var keys = await bucketReader.GetMatchingKeys(timebasedFolder);
         
