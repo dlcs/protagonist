@@ -31,12 +31,18 @@ public static class MediaConvertResponseConverter
     private static TranscoderJob.TranscoderInput CreateInput(Input jobInput) => new() { Input = jobInput.FileInput, };
 
     private static TranscoderJob.TranscoderTiming CreateTiming(Timing timing)
-        => new()
+    {
+        return new()
         {
-            FinishTimeMillis = ((DateTimeOffset)timing.FinishTime).ToUnixTimeMilliseconds(),
-            StartTimeMillis = ((DateTimeOffset)timing.StartTime).ToUnixTimeMilliseconds(),
-            SubmitTimeMillis = ((DateTimeOffset)timing.SubmitTime).ToUnixTimeMilliseconds(),
+            FinishTimeMillis = ToUnixTimeMilliseconds(timing.FinishTime),
+            StartTimeMillis = ToUnixTimeMilliseconds(timing.StartTime),
+            SubmitTimeMillis = ToUnixTimeMilliseconds(timing.SubmitTime) ?? 0,
         };
+
+        // Timing has DateTime properties backed by DateTime?, the getters for these call .GetValueOrDefault()
+        long? ToUnixTimeMilliseconds(DateTime time) =>
+            time == DateTime.MinValue ? null : ((DateTimeOffset)time).ToUnixTimeMilliseconds();
+    }
 
     private static List<TranscoderJob.TranscoderOutput> CreateOutputs(Job job, AssetId assetId)
     {

@@ -329,7 +329,7 @@ public class MediaConvertResponseConverterTests
     [InlineData("CANCELED")]
     [InlineData("PROGRESSING")]
     [InlineData("SUBMITTED")]
-    public void CreateTranscoderJob_DoesNotSetOutputKey_IfNoComplete(string status)
+    public void CreateTranscoderJob_DoesNotSetOutputKey_IfNotComplete(string status)
     {
         var assetId = new AssetId(1, 2, "foo");
         var singleAudio = new Job
@@ -421,6 +421,85 @@ public class MediaConvertResponseConverterTests
                 ["mediaType"] = "audio/mp3",
                 ["dlcsId"] = "1/2/foo"
             }
+        };
+        
+        var result = MediaConvertResponseConverter.CreateTranscoderJob(singleAudio, assetId);
+        
+        result.Should().BeEquivalentTo(expected);
+    }
+    
+    [Fact]
+    public void CreateTranscoderJob_HandlesMinDateTimeTimings()
+    {
+        // MC model Timings are DateTime properties backed by DateTime?, the getters for these call .GetValueOrDefault()
+        // in the event if the backing store being null (e.g. if job hasn't finished) we'll get DateTime.Min, which
+        // would result in a negative timestamp
+        var assetId = new AssetId(1, 2, "foo");
+        var singleAudio = new Job
+        {
+            Id = "fake-for-test",
+            CreatedAt = DateTime.UtcNow,
+            Status = JobStatus.ERROR,
+            Queue = "arn:aws:mediaconvert:eu-west-1:123456789012:queues/the-queue",
+            Settings = new JobSettings
+            {
+                Inputs =
+                [
+                    new Input { FileInput = "s3://input/file.wav" }
+                ],
+                OutputGroups =
+                [
+                    new OutputGroup
+                    {
+                        OutputGroupSettings = new OutputGroupSettings
+                        {
+                            FileGroupSettings = new FileGroupSettings
+                                { Destination = "s3://output/1/2/foo/transcode" }
+                        },
+                        Outputs =
+                        [
+                            new Output
+                            {
+                                Extension = "mp3",
+                                Preset = "128k_mp3-preset",
+                                NameModifier = "_1",
+                            }
+                        ]
+                    },
+                ]
+            },
+            Timing = new Timing
+            {
+                FinishTime = DateTime.MinValue,
+                StartTime = DateTime.MinValue,
+                SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0),
+            },
+            UserMetadata = new Dictionary<string, string>
+            {
+                ["mediaType"] = "audio/mp3",
+                ["dlcsId"] = "1/2/foo"
+            }
+        };
+
+        var expected = new TranscoderJob
+        {
+            Id = "fake-for-test",
+            CreatedAt = singleAudio.CreatedAt,
+            Status = "ERROR",
+            PipelineId = "the-queue",
+            Timing = new TranscoderJob.TranscoderTiming
+            {
+                FinishTimeMillis = null,
+                StartTimeMillis = null,
+                SubmitTimeMillis = 1757401200000,
+            },
+            Input = new TranscoderJob.TranscoderInput { Input = "s3://input/file.wav" },
+            Outputs = [],
+            UserMetadata = new Dictionary<string, string>
+            {
+                ["mediaType"] = "audio/mp3",
+                ["dlcsId"] = "1/2/foo"
+            },
         };
         
         var result = MediaConvertResponseConverter.CreateTranscoderJob(singleAudio, assetId);

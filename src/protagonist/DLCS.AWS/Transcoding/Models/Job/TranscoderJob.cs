@@ -111,8 +111,19 @@ public class TranscoderJob : ITranscoderJobMetadata
 
     public class TranscoderTiming
     {
-        public long FinishTimeMillis { get; init; }
-        public long StartTimeMillis { get; init; }
+        /// <summary>
+        /// Unix timestamp when job finished
+        /// </summary>
+        public long? FinishTimeMillis { get; init; }
+        
+        /// <summary>
+        /// Unix timestamp when job started
+        /// </summary>
+        public long? StartTimeMillis { get; init; }
+        
+        /// <summary>
+        /// Unix timestamp when job was submitted
+        /// </summary>
         public long SubmitTimeMillis { get; init; }
     }
 
