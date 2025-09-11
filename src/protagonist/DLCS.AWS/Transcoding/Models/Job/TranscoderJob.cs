@@ -1,4 +1,6 @@
-﻿namespace DLCS.AWS.Transcoding.Models.Job;
+﻿using Amazon.MediaConvert.Model;
+
+namespace DLCS.AWS.Transcoding.Models.Job;
 
 /// <summary>
 /// Classes that represent a transcoding job request. This has been normalised from payload in transcoding service
@@ -54,6 +56,16 @@ public class TranscoderJob : ITranscoderJobMetadata
     /// Collection of custom metadata added to job and echoed back 
     /// </summary>
     public Dictionary<string, string> UserMetadata { get; init; } = new();
+
+    /// <summary>
+    /// Checks if at least one of the outputs has a duration 
+    /// </summary>
+    /// <remarks>
+    /// If MediaConvert is given an input file that can't be transcoded (e.g. an Image) then it won't report an ERROR
+    /// state, it will look the same as a successful job. One way to identify this is that all the outputs will have a
+    /// Duration=0 
+    /// </remarks>
+    public bool HasTranscodedOutputs() => Outputs.Any(o => o.DurationMillis > 0);
     
     public class TranscoderInput
     {

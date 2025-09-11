@@ -106,7 +106,7 @@ public class MediaConvertResponseConverterTests
         };
         
         var result = MediaConvertResponseConverter.CreateTranscoderJob(singleAudio, assetId);
-        
+        result.HasTranscodedOutputs().Should().BeTrue();
         result.Should().BeEquivalentTo(expected);
     }
     
@@ -241,7 +241,7 @@ public class MediaConvertResponseConverterTests
         };
         
         var result = MediaConvertResponseConverter.CreateTranscoderJob(singleAudio, assetId);
-        
+        result.HasTranscodedOutputs().Should().BeTrue();
         result.Should().BeEquivalentTo(expected);
     }
     
@@ -321,7 +321,7 @@ public class MediaConvertResponseConverterTests
         };
         
         var result = MediaConvertResponseConverter.CreateTranscoderJob(singleAudio, assetId);
-        
+        result.HasTranscodedOutputs().Should().BeFalse();
         result.Should().BeEquivalentTo(expected);
     }
     
@@ -424,7 +424,7 @@ public class MediaConvertResponseConverterTests
         };
         
         var result = MediaConvertResponseConverter.CreateTranscoderJob(singleAudio, assetId);
-        
+        result.HasTranscodedOutputs().Should().BeTrue();
         result.Should().BeEquivalentTo(expected);
     }
     
@@ -503,7 +503,73 @@ public class MediaConvertResponseConverterTests
         };
         
         var result = MediaConvertResponseConverter.CreateTranscoderJob(singleAudio, assetId);
-        
         result.Should().BeEquivalentTo(expected);
+    }
+    
+    [Fact]
+    public void CreateTranscoderJob_HasTranscodedOutputsFalse_IfInputInvalid()
+    {
+        // If a job contains invalid input (e.g an Image) MC will respond with a job that looks successful but the
+        // output timing will be 0  
+        var assetId = new AssetId(1, 2, "foo");
+        var singleAudio = new Job
+        {
+            Id = "fake-for-test",
+            CreatedAt = DateTime.UtcNow,
+            Status = JobStatus.COMPLETE,
+            Queue = "arn:aws:mediaconvert:eu-west-1:123456789012:queues/the-queue",
+            OutputGroupDetails =
+            [
+                new OutputGroupDetail
+                {
+                    OutputDetails =
+                    [
+                        new OutputDetail
+                        {
+                            DurationInMs = 0,
+                        }
+                    ]
+                }
+            ],
+            Settings = new JobSettings
+            {
+                Inputs =
+                [
+                    new Input { FileInput = "s3://input/file.wav" }
+                ],
+                OutputGroups =
+                [
+                    new OutputGroup
+                    {
+                        OutputGroupSettings = new OutputGroupSettings
+                        {
+                            FileGroupSettings = new FileGroupSettings
+                                { Destination = "s3://output/1/2/foo/transcode" }
+                        },
+                        Outputs =
+                        [
+                            new Output
+                            {
+                                Extension = "mp3",
+                                Preset = "128k_mp3-preset",
+                                NameModifier = "_1",
+                            }
+                        ]
+                    },
+                ]
+            },
+            Timing = new Timing
+            {
+                FinishTime = new DateTime(2025, 9, 9, 10, 0, 0, DateTimeKind.Utc),
+            },
+            UserMetadata = new Dictionary<string, string>
+            {
+                ["mediaType"] = "audio/mp3",
+                ["dlcsId"] = "1/2/foo"
+            }
+        };
+
+        var result = MediaConvertResponseConverter.CreateTranscoderJob(singleAudio, assetId);
+        result.HasTranscodedOutputs().Should().BeFalse();
     }
 }

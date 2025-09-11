@@ -92,7 +92,11 @@ public class TimebasedIngestorCompletion(
             }
             else
             {
-                errors.Add($"Copying transcode output failed with reason: {copyResult.Result}");
+                // A 'quirk' of MediaConvert is that it doesn't report an error if there are incompatible input formats
+                var additionalInfo = !transcodeJob.HasTranscodedOutputs()
+                    ? " - input format incorrect?"
+                    : string.Empty;
+                errors.Add($"Copying transcode output failed with reason: {copyResult.Result}{additionalInfo}");
             }
         }
 
@@ -217,11 +221,16 @@ public class TimebasedIngestorCompletion(
         return copyResult;
     }
 
-    private async Task DeleteInputFile(TranscoderJob transcodeOutput)
+    private async Task DeleteInputFile(TranscoderJob transcoderJob)
     {
-        if (string.IsNullOrEmpty(transcodeOutput.Input.Input)) return;
-
-        var inputKey = storageKeyGenerator.GetTimebasedInputLocation(transcodeOutput.Input.Input);
-        await bucketWriter.DeleteFromBucket(inputKey);
+        var transcodeInput = transcoderJob.Input.Input;
+        var timebasedInput = storageKeyGenerator.TryParseTimebasedInputLocation(transcodeInput);
+        if (timebasedInput == null)
+        {
+            logger.LogDebug("Input {TranscodeInput} not in timebased-input bucket, skipping deletion", transcodeInput);
+            return;
+        }
+        
+        await bucketWriter.DeleteFromBucket(timebasedInput);
     }
 }

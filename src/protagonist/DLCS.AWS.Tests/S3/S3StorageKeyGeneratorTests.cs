@@ -278,18 +278,25 @@ public class S3StorageKeyGeneratorTests
         randomBit.Should().NotBe(randomBit2);
     }
 
+    [Theory]
+    [InlineData("1/2/foo")]
+    [InlineData("s3://other-bucket/1/2/foo")]
+    [InlineData("https://example.org/file")]
+    public void TryParseTimebasedInputLocation_ReturnsNull_IfNotS3KeyOrInDifferentBucket(string key) =>
+        sut.TryParseTimebasedInputLocation(key).Should().BeNull();
+    
     [Fact]
-    public void GetTimebasedInputLocation_WithKey_Correct()
+    public void TryParseTimebasedInputLocation_ReturnsObject_IfInTimebasedInputBucket()
     {
         // Arrange
-        const string key = "1/2/hello/file.mp4";
+        const string key = "s3://timebased-in/2/hello/file.mp4";
         
         // Act
-        var result = sut.GetTimebasedInputLocation(key);
+        var result = sut.TryParseTimebasedInputLocation(key);
         
         // Assert
         result.Bucket.Should().Be("timebased-in");
-        result.Key.Should().Be(key);
+        result.Key.Should().Be("2/hello/file.mp4");
     }
     
     [Fact]

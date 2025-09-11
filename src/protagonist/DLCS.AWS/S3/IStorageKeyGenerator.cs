@@ -129,10 +129,16 @@ public interface IStorageKeyGenerator
     ObjectInBucket GetTimebasedInputLocation(AssetId assetId);
     
     /// <summary>
-    /// Get <see cref="ObjectInBucket"/> item for timebased asset that has to been transcoded
+    /// Attempt to parse provided input location to a key in the timebased input bucket.
     /// </summary>
-    /// <returns><see cref="ObjectInBucket"/> for specified key in timebased input bucket</returns>
-    ObjectInBucket GetTimebasedInputLocation(string key);
+    /// <returns>
+    /// <see cref="ObjectInBucket"/> if the location is for timebased input bucket, else null
+    /// </returns>
+    /// <remarks>
+    /// MediaConvert supports reading files from different locations - method is to validate that the key is in expected
+    /// bucket
+    /// </remarks>
+    ObjectInBucket? TryParseTimebasedInputLocation(string inputLocation);
     
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> item for timebased asset that has to been transcoded

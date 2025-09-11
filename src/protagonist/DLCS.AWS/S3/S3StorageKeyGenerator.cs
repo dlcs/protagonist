@@ -139,8 +139,11 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
         return new ObjectInBucket(s3Options.TimebasedInputBucket, fullPath);
     }
 
-    public ObjectInBucket GetTimebasedInputLocation(string key)
-        => new(s3Options.TimebasedInputBucket, key);
+    public ObjectInBucket? TryParseTimebasedInputLocation(string inputLocation)
+    {
+        var parsed = RegionalisedObjectInBucket.Parse(inputLocation);
+        return parsed != null && parsed.Bucket == s3Options.TimebasedInputBucket ? parsed : null;
+    }
 
     public ObjectInBucket GetTimebasedOutputLocation(string key)
         => new(s3Options.TimebasedOutputBucket, key);

@@ -1,8 +1,6 @@
-﻿using DLCS.AWS.MediaConvert.Models;
-using DLCS.AWS.S3;
+﻿using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Transcoding;
-using DLCS.AWS.Transcoding.Models;
 using DLCS.AWS.Transcoding.Models.Job;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
