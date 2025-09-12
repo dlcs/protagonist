@@ -215,12 +215,21 @@ public class ImageRequestHandlerTests
             AuthMechanism.Cookie, CancellationToken.None)).MustNotHaveHappened();
     }
     
-    [Fact]
-    public async Task HandleRequest_ProxiesToSpecialServer_IfAssetRequiresAuth_AndUserNotAuthorised_ButFullRequestSmallerThanMaxUnauthorised_MaxSize()
+    [Theory]
+    [InlineData("/full/900,/")]
+    [InlineData("/full/,900/")]
+    [InlineData("/full/!900,900/")]
+    [InlineData("/0,0,900,900/900,/")]
+    [InlineData("/0,0,900,900/,900/")]
+    [InlineData("/0,0,900,900/!900,900/")]
+    [InlineData("/square/900,/")]
+    [InlineData("/square/,900/")]
+    [InlineData("/square/!900,900/")]
+    public async Task HandleRequest_ProxiesToSpecialServer_IfAssetRequiresAuth_AndUserNotAuthorised_ButFullOrEquivalentRequestSmallerThanMaxUnauthorised(string iiifRequest)
     {
         // Arrange
         var context = new DefaultHttpContext();
-        context.Request.Path = "/iiif-img/2/2/test-image/full/max/0/default.jpg";
+        context.Request.Path = $"/iiif-img/2/2/test-image{iiifRequest}0/default.jpg";
 
         var roles = new List<string> { "role" };
         var assetId = new AssetId(2, 2, "test-image");
@@ -249,7 +258,7 @@ public class ImageRequestHandlerTests
     [InlineData("/full/max/", "Max size")]
     [InlineData("/0,0,512,512/900,/", "Tiled region")]
     [InlineData("/pct:0,0,512,512/!10,10/", "Percent region")]
-    [InlineData("/square/!90,90/", "Square region")]
+    [InlineData("/square/!901,901/", "Square region too large")]
     public async Task HandleRequest_Returns401_IfAssetRequiresAuth_AndUserNotAuthorised_AndRequestNotForMaxUnauthorised(
         string iiifRequest, string reason)
     {
@@ -452,6 +461,7 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/2/2/test-image/full/!100,150/!0/default.jpg")] // rotation / mirrored
     [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/bitonal.jpg")] // bitonal
     [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/gray.jpg")] // gray
+    [InlineData("/iiif-img/2/2/test-image/square/!100,150/0/default.jpg")] // square
     public async Task HandleRequest_ProxiesToSpecialServer_ForAllFull(string path)
     {
         // Arrange
@@ -485,6 +495,7 @@ public class ImageRequestHandlerTests
     [Theory]
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/90,/0/default.jpg", false)] // UV without ?t=
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/full/0/default.jpg", true)] // /full/full
+    [InlineData("/iiif-img/2/2/test-image/pct:0,0,512,512/full/0/default.jpg", true)] // pct:
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/max/0/default.jpg", true)] // /full/max
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.png", false)] // png
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.tif", false)] // tif
