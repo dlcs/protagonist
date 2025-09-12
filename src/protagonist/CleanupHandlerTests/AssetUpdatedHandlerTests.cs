@@ -155,7 +155,7 @@ public class AssetUpdatedHandlerTests
         => new(storageKeyGenerator, bucketWriter, bucketReader, assetMetadataRepository, thumbRepository,
             Options.Create(handlerSettings), engineClient, cleanupHandlerAssetRepository,
             new NullLogger<AssetUpdatedHandler>());
-    
+
     [Fact]
     public async Task Handle_ReturnsFalse_IfInvalidFormat()
     {
@@ -856,14 +856,14 @@ public class AssetUpdatedHandlerTests
     }
     
     [Fact]
-    public async Task Handle_DeletesUnneededTimebasedAssets_WhenTimebasedChannelUpdated()
+    public async Task Handle_DeletesUnneededTimebasedAssets_WhenTimebasedChannelUpdated_SincePreviousIngest()
     {
         // Arrange
-        var imageDeliveryChannelAfter = new ImageDeliveryChannel()
+        var imageDeliveryChannelAfter = new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Timebased,
             Id = 356367,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
             {
                 Id = KnownDeliveryChannelPolicies.AvDefaultVideo,
                 Channel = AssetDeliveryChannels.Timebased,
@@ -874,10 +874,12 @@ public class AssetUpdatedHandlerTests
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.AvDefaultVideo
         };
 
+        // Get request and simulate 'before' asset having been ingested prior to DCP updating
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty, "video/*");
+            [imageDeliveryChannelTimebased],
+            [imageDeliveryChannelAfter],
+            string.Empty, string.Empty, "video/*",
+            before => before.Finished = DateTime.UtcNow);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -919,11 +921,11 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DoesNothing_WhenTimebasedPolicyUpdatedWithInvalidPreset()
     {
         // Arrange
-        var imageDeliveryChannelAfter = new ImageDeliveryChannel()
+        var imageDeliveryChannelAfter = new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Timebased,
             Id = 356367,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
             {
                 Id = KnownDeliveryChannelPolicies.AvDefaultVideo,
                 Channel = AssetDeliveryChannels.Timebased,
@@ -934,10 +936,11 @@ public class AssetUpdatedHandlerTests
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.AvDefaultVideo
         };
 
+        // Get request and simulate 'before' asset having been ingested prior to DCP updating
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty, "video/*");
+            [imageDeliveryChannelTimebased],
+            [imageDeliveryChannelAfter],
+            string.Empty, string.Empty, "video/*", before => before.Finished = DateTime.UtcNow);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -1066,11 +1069,11 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DeletesValidPaths_WhenImageChannelIsUpdatedDefaultImagePolicy()
     {
         // Arrange
-        var imageDeliveryChannelDefaultUpdated = new ImageDeliveryChannel()
+        var imageDeliveryChannelDefaultUpdated = new ImageDeliveryChannel
         {
             Id = 58465678,
             Channel = AssetDeliveryChannels.Image,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
             {
                 Id = KnownDeliveryChannelPolicies.ImageDefault,
                 Channel = AssetDeliveryChannels.Image,
@@ -1080,9 +1083,12 @@ public class AssetUpdatedHandlerTests
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
         };
         
+        // Get request and simulate 'before' asset having been ingested prior to DCP updating
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel> { imageDeliveryChannelDefaultImage }, new List<ImageDeliveryChannel> { imageDeliveryChannelDefaultUpdated },
-            string.Empty, string.Empty);
+            [imageDeliveryChannelDefaultImage],
+            [imageDeliveryChannelDefaultUpdated],
+            string.Empty, string.Empty,
+            customiseAssetBefore: before => before.Finished = DateTime.UtcNow);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -1103,11 +1109,11 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DeletesValidPaths_WhenImageChannelHasUpdatedUseOrginalPolicy()
     {
         // Arrange
-        var imageDeliveryChannelUseOriginalUpdated = new ImageDeliveryChannel()
+        var imageDeliveryChannelUseOriginalUpdated = new ImageDeliveryChannel
         {
             Id = 567587,
             Channel = AssetDeliveryChannels.Image,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
             {
                 Id = KnownDeliveryChannelPolicies.ImageUseOriginal,
                 Channel = AssetDeliveryChannels.Image,
@@ -1117,9 +1123,12 @@ public class AssetUpdatedHandlerTests
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageUseOriginal
         };
         
+        // Get request and simulate 'before' asset having been ingested prior to DCP updating
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel> { imageDeliveryChannelUseOriginalImage }, new List<ImageDeliveryChannel> { imageDeliveryChannelUseOriginalUpdated },
-            string.Empty, string.Empty);
+            [imageDeliveryChannelUseOriginalImage], 
+            [imageDeliveryChannelUseOriginalUpdated],
+            string.Empty, string.Empty,
+            customiseAssetBefore: before => before.Finished = DateTime.UtcNow);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -1188,28 +1197,29 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(o => o.Key == "1/99/foo/info/"), A<bool>._)).MustNotHaveHappened();
     }
 
-    // helper functions
-    
-    private (QueueMessage queueMessage, Asset assetAfter) CreateMinimalRequestDetails(List<ImageDeliveryChannel> imageDeliveryChannelsBefore, 
-        List<ImageDeliveryChannel> imageDeliveryChannelsAfter, string? rolesBefore, string? rolesAfter, string mediaType = "image/jpg")
+    private (QueueMessage queueMessage, Asset assetAfter) CreateMinimalRequestDetails(
+        List<ImageDeliveryChannel> imageDeliveryChannelsBefore,
+        List<ImageDeliveryChannel> imageDeliveryChannelsAfter, string? rolesBefore, string? rolesAfter,
+        string mediaType = "image/jpg", Action<Asset>? customiseAssetBefore = null)
     {
-        var assetBefore = new Asset()
+        var assetBefore = new Asset
         {
             Id = new AssetId(1, 99, "foo"),
             ImageDeliveryChannels = imageDeliveryChannelsBefore,
             Roles = rolesBefore,
             MediaType = mediaType
         };
+        customiseAssetBefore?.Invoke(assetBefore);
 
-        var assetAfter = new Asset()
+        var assetAfter = new Asset
         {
             Id = new AssetId(1, 99, "foo"),
             ImageDeliveryChannels = imageDeliveryChannelsAfter,
             Roles = rolesAfter,
             MediaType = mediaType
         };
-        
-        var cleanupRequest = new AssetUpdatedNotificationRequest()
+
+        var cleanupRequest = new AssetUpdatedNotificationRequest
         {
             AssetBeforeUpdate = assetBefore,
             CustomerPathElement = new CustomerPathElement(99, "stuff"),
@@ -1221,7 +1231,7 @@ public class AssetUpdatedHandlerTests
         var queueMessage = new QueueMessage
         {
             Body = JsonNode.Parse(serialized)!.AsObject(),
-            MessageAttributes = new Dictionary<string, string>()
+            MessageAttributes = new Dictionary<string, string>
             {
                 { "engineNotified", "True" }
             }
