@@ -10,18 +10,12 @@ namespace DLCS.Repository.Assets;
 /// <summary>
 /// Implementation of <see cref="IAssetRepository"/> using Dapper for data access.
 /// </summary>
-public class DapperAssetRepository : IAssetRepository, IDapperConfigRepository
+public class DapperAssetRepository(
+    IConfiguration configuration,
+    AssetCachingHelper assetCachingHelper)
+    : IAssetRepository, IDapperConfigRepository
 {
-    public IConfiguration Configuration { get; }
-    private readonly AssetCachingHelper assetCachingHelper;
-    
-    public DapperAssetRepository(
-        IConfiguration configuration, 
-        AssetCachingHelper assetCachingHelper)
-    {
-        Configuration = configuration;
-        this.assetCachingHelper = assetCachingHelper;
-    }
+    public IConfiguration Configuration { get; } = configuration;
 
     public async Task<ImageLocation?> GetImageLocation(AssetId assetId)
         => await this.QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql, new {Id = assetId.ToString()});
@@ -74,7 +68,8 @@ public class DapperAssetRepository : IAssetRepository, IDapperConfigRepository
             ImageOptimisationPolicy = firstAsset.ImageOptimisationPolicy,
             NotForDelivery = firstAsset.NotForDelivery,
             DeliveryChannels = firstAsset.DeliveryChannels.ToString().Split(","),
-            ImageDeliveryChannels = GenerateImageDeliveryChannels(convertedRawAsset)
+            ImageDeliveryChannels = GenerateImageDeliveryChannels(convertedRawAsset),
+            Manifests = (firstAsset.Manifests as string[])?.ToList()
         };
     }
 
@@ -101,7 +96,7 @@ SELECT ""Images"".""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Ta
 ""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", 
 ""NumberReference1"", ""NumberReference2"", ""NumberReference3"", ""Width"", 
 ""Height"", ""Error"", ""Batch"", ""Finished"", ""Ingesting"", ""ImageOptimisationPolicy"", 
-""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels"", 
+""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels"", ""Manifests"",
 IDC.""Channel"", IDC.""DeliveryChannelPolicyId""
   FROM ""Images""
   LEFT OUTER JOIN ""ImageDeliveryChannels"" IDC on ""Images"".""Id"" = IDC.""ImageId""
