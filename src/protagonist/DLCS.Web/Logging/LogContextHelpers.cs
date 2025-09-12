@@ -1,8 +1,9 @@
+using System;
 using Serilog.Context;
 
-namespace Engine.Infrastructure.Logging;
+namespace DLCS.Web.Logging;
 
-internal static class LogContextHelpers
+public static class LogContextHelpers
 {
     /// <summary>
     /// Manually add a "CorrelationId" property to log context to track requests.
