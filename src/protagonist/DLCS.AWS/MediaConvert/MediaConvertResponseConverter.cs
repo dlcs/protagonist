@@ -90,8 +90,8 @@ public static class MediaConvertResponseConverter
     }
     
     /// <summary>
-    /// Get "Key" part of the destination (s3://timebased-output/1234/2/1/foo/trancode => 1234/2/1/foo/trancode)
-    /// This serves as the prefix that will be used for all outputs 
+    /// Get "Key" part of the destination (s3://timebased-output/1234/2/1/foo/transcode => 1234/2/1/foo/transcode)
+    /// This serves as the prefix that will be used for all outputs
     /// </summary>
     private static string GetDestinationKey(string destination)
     {
@@ -102,7 +102,7 @@ public static class MediaConvertResponseConverter
     private static (string TranscodeKey, string? DlcsKey) GetFinalStorageKeys(string destinationKey, Output output,
         bool isComplete, AssetId assetId, string mediaType)
     {
-        // And calculate the key of output (1234/2/1/foo/trancode => 1234/2/1/foo/trancode_1.mp4)
+        // And calculate the key of output (1234/2/1/foo/transcode => 1234/2/1/foo/transcode_1.mp4)
         var outputKey = $"{destinationKey}{output.NameModifier}.{output.Extension}";
 
         if (!isComplete) return (outputKey, null);

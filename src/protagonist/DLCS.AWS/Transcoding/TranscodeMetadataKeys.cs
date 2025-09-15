@@ -1,5 +1,4 @@
-﻿using DLCS.Core.Collections;
-using DLCS.Core.Exceptions;
+﻿using DLCS.Core.Exceptions;
 using DLCS.Core.Types;
 
 namespace DLCS.AWS.Transcoding;

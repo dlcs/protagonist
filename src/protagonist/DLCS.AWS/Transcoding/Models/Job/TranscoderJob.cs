@@ -1,6 +1,4 @@
-﻿using Amazon.MediaConvert.Model;
-
-namespace DLCS.AWS.Transcoding.Models.Job;
+﻿namespace DLCS.AWS.Transcoding.Models.Job;
 
 /// <summary>
 /// Classes that represent a transcoding job request. This has been normalised from payload in transcoding service

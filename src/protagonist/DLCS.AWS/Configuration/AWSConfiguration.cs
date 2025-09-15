@@ -153,7 +153,6 @@ public class AwsBuilder
 
     public AwsBuilder WithAmazonCloudfront(ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        // TODO - if using localStack this should register a dummy client or we may make requests to CF
         services.AddAWSService<IAmazonCloudFront>(lifetime);
         
         return this;
