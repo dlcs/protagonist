@@ -11,138 +11,133 @@ using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Messaging;
 using DLCS.Model.Policies;
 using DLCS.Repository.Messaging;
+using DLCS.Web.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NuGet.Packaging;
 
 namespace CleanupHandler;
 
-public class AssetUpdatedHandler  : IMessageHandler
+/// <summary>
+/// Handle 'asset modified' notifications - running various derivative cleanup operations depending on what has changed
+/// </summary>
+public class AssetUpdatedHandler(
+    IStorageKeyGenerator storageKeyGenerator,
+    IBucketWriter bucketWriter,
+    IBucketReader bucketReader,
+    IAssetApplicationMetadataRepository assetMetadataRepository,
+    IThumbRepository thumbRepository,
+    IOptions<CleanupHandlerSettings> handlerSettings,
+    IEngineClient engineClient,
+    ICleanupHandlerAssetRepository cleanupHandlerAssetRepository,
+    ILogger<AssetUpdatedHandler> logger)
+    : IMessageHandler
 {
-    private readonly CleanupHandlerSettings handlerSettings;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly IBucketWriter bucketWriter;
-    private readonly IBucketReader bucketReader;
-    private readonly IAssetApplicationMetadataRepository assetMetadataRepository;
-    private readonly IThumbRepository thumbRepository;
-    private readonly ILogger<AssetUpdatedHandler> logger;
-    private readonly IEngineClient engineClient;
-    private readonly ICleanupHandlerAssetRepository cleanupHandlerAssetRepository;
-    
-    public AssetUpdatedHandler(
-        IStorageKeyGenerator storageKeyGenerator,
-        IBucketWriter bucketWriter,
-        IBucketReader bucketReader,
-        IAssetApplicationMetadataRepository assetMetadataRepository,
-        IThumbRepository thumbRepository,
-        IOptions<CleanupHandlerSettings> handlerSettings,
-        IEngineClient engineClient,
-        ICleanupHandlerAssetRepository cleanupHandlerAssetRepository,
-        ILogger<AssetUpdatedHandler> logger)
-    {
-        this.storageKeyGenerator = storageKeyGenerator;
-        this.bucketWriter = bucketWriter;
-        this.bucketReader = bucketReader;
-        this.handlerSettings = handlerSettings.Value;
-        this.assetMetadataRepository = assetMetadataRepository;
-        this.thumbRepository = thumbRepository;
-        this.engineClient = engineClient;
-        this.cleanupHandlerAssetRepository = cleanupHandlerAssetRepository;
-        this.logger = logger;
-    }
+    private readonly CleanupHandlerSettings handlerSettings = handlerSettings.Value;
 
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        AssetUpdatedNotificationRequest? request;
+        var request = TryParseMessage(message);
+        if (request == null) return false;
+
+        using (LogContextHelpers.SetCorrelationId(message.MessageId))
+        {
+            var assetBefore = request.AssetBeforeUpdate!;
+
+            var assetAfter = await cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(assetBefore.Id);
+
+            if (assetAfter == null)
+            {
+                logger.LogInformation("Asset {AssetId} was not found in the database for use in after calculation",
+                    assetBefore.Id);
+                return false;
+            }
+            
+            logger.LogDebug("Processing update notification for {AssetId}", assetBefore.Id);
+
+            if (NoCleanupRequired(message, assetAfter, assetBefore))
+            {
+                logger.LogDebug("No cleanup required, aborting");
+                return true;
+            }
+
+            if (AssetStillIngesting(assetAfter, assetBefore))
+            {
+                logger.LogDebug("Asset {AssetId} still ingesting - aborting", assetBefore.Id);
+                return false;
+            } 
+
+            var (modifiedOrAddedChannels, removedChannels) =
+                ChangeCalculator.GetChannelChangeSets(assetAfter, assetBefore);
+
+            if (handlerSettings.AssetModifiedSettings.DryRun)
+            {
+                logger.LogInformation("Dry run enabled. Asset {AssetId} will log deletions, but not remove them",
+                    assetBefore.Id);
+            }
+
+            (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects;
+            s3Objects.objectsToRemove = [];
+            s3Objects.foldersToRemove = [];
+
+            if (removedChannels.Count != 0)
+            {
+                foreach (var deliveryChannel in removedChannels)
+                {
+                    await CleanupRemoved(deliveryChannel, assetAfter, s3Objects);
+                }
+            }
+
+            if (modifiedOrAddedChannels.Count != 0)
+            {
+                try
+                {
+                    await CleanupModified(modifiedOrAddedChannels, assetBefore, assetAfter, s3Objects);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error cleaning modified delivery channels");
+                    return false;
+                }
+            }
+
+            if (!Equals(assetAfter.Roles ?? string.Empty, assetBefore.Roles ?? string.Empty))
+            {
+                CleanupRolesChanged(assetAfter, s3Objects.foldersToRemove);
+            }
+
+            if (s3Objects.objectsToRemove.Count > 0)
+            {
+                await RemoveObjectsFromBucket(s3Objects.objectsToRemove);
+            }
+
+            if (s3Objects.foldersToRemove.Count > 0)
+            {
+                await RemoveFolderInBucket(s3Objects.foldersToRemove);
+            }
+
+            return true;
+        }
+    }
+
+    private AssetUpdatedNotificationRequest? TryParseMessage(QueueMessage message)
+    {
         try
         {
-            request = message.GetMessageContents<AssetUpdatedNotificationRequest>();
+            var request = message.GetMessageContents<AssetUpdatedNotificationRequest>();
+
+            if (request?.AssetBeforeUpdate?.Id == null)
+            {
+                logger.LogInformation("Deserialised message but no 'before' asset id found");
+                return null;
+            }
+            return request;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to deserialize asset {@Message}", message);
-            return false;
+            logger.LogError(ex, "Failed to deserialize notification {@Message}", message);
+            return null;
         }
-
-        if (request?.AssetBeforeUpdate?.Id == null) return false;
-
-        var assetBefore = request.AssetBeforeUpdate!;
-
-        var assetAfter = await cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(assetBefore.Id);
-
-        if (assetAfter == null)
-        {
-            logger.LogInformation("Asset {AssetId} was not found in the database for use in after calculation",
-                assetBefore.Id);
-            return false;
-        }
-        
-        if (NoCleanupRequired(message, assetAfter, assetBefore)) return true;
-        if (AssetStillIngesting(assetAfter, assetBefore)) return false;
-
-        var (modifiedOrAddedChannels, removedChannels) = GetChangeSets(assetAfter, assetBefore);
-
-        if (handlerSettings.AssetModifiedSettings.DryRun)
-        {
-            logger.LogInformation("Dry run enabled. Asset {AssetId} will log deletions, but not remove them",
-                assetBefore.Id);
-        }
-
-        (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects;
-        s3Objects.objectsToRemove = [];
-        s3Objects.foldersToRemove = [];
-        
-        if (removedChannels.Count != 0)
-        {
-            foreach (var deliveryChannel in removedChannels)
-            {
-                await CleanupRemoved(deliveryChannel, assetAfter, s3Objects);
-            }
-        }
-        
-        if (modifiedOrAddedChannels.Count != 0)
-        {
-            try
-            {
-                await CleanupModified(modifiedOrAddedChannels, assetBefore, assetAfter, s3Objects);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error cleaning modified delivery channels");
-                return false;
-            }
-        }
-        
-        if (!Equals(assetAfter.Roles ?? string.Empty, assetBefore.Roles ?? string.Empty))
-        {
-            CleanupRolesChanged(assetAfter, s3Objects.foldersToRemove);
-        }
-
-        if (s3Objects.objectsToRemove.Count > 0)
-        {
-            await RemoveObjectsFromBucket(s3Objects.objectsToRemove);
-        }
-
-        if (s3Objects.foldersToRemove.Count > 0)
-        {
-            await RemoveFolderInBucket(s3Objects.foldersToRemove);
-        }
-
-        return true;
-    }
-
-    private static (List<ImageDeliveryChannel> modifiedOrAdded, List<ImageDeliveryChannel> removed) GetChangeSets(
-        Asset? assetAfter, Asset assetBefore)
-    {
-        // Get a list of deliveryChannel changes - split by modifiedOrAdded + removed
-        var modifiedOrAdded =
-            assetAfter!.ImageDeliveryChannels.Where(after =>
-                assetBefore.ImageDeliveryChannels.All(before =>
-                    before.DeliveryChannelPolicyId != after.DeliveryChannelPolicyId ||
-                    before.DeliveryChannelPolicy.Modified != after.DeliveryChannelPolicy.Modified)).ToList();
-        var removed = assetBefore.ImageDeliveryChannels.Where(before =>
-            assetAfter.ImageDeliveryChannels.All(after => after.Channel != before.Channel)).ToList();
-        return (modifiedOrAdded, removed);
     }
 
     private static bool AssetStillIngesting(Asset assetAfter, Asset assetBefore)
@@ -158,6 +153,7 @@ public class AssetUpdatedHandler  : IMessageHandler
 
     private void CleanupRolesChanged(Asset assetAfter, HashSet<ObjectInBucket> foldersToRemove)
     {
+        logger.LogDebug("{AssetId} changed role", assetAfter.Id);
         var infoJsonRoot = storageKeyGenerator.GetInfoJsonRoot(assetAfter.Id);
         foldersToRemove.Add(infoJsonRoot);
     }
@@ -222,6 +218,7 @@ public class AssetUpdatedHandler  : IMessageHandler
     private async Task CleanupChangedTimebasedDeliveryChannel(ImageDeliveryChannel imageDeliveryChannel,
         Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
+        logger.LogDebug("Processing timebased delivery-channel change");
         var presetList = imageDeliveryChannel.DeliveryChannelPolicy.AsTimebasedPresets(); 
         var extensions = new List<string>();
         var mediaPath = RetrieveMediaPath(assetAfter);
@@ -317,7 +314,7 @@ public class AssetUpdatedHandler  : IMessageHandler
                 bucketObjectsTobeRemoved.Add(new ObjectInBucket(handlerSettings.AWS.S3.StorageBucket, key));
             }
         }
-        
+
         objectsToRemove.AddRange(bucketObjectsTobeRemoved);
     }
 
@@ -404,5 +401,26 @@ public class AssetUpdatedHandler  : IMessageHandler
             .Replace("{asset}", S3StorageKeyGenerator.GetStorageKey(asset.Id))
             .Replace(".{extension}", string.Empty);
         return path;
+    }
+}
+
+public static class ChangeCalculator
+{
+    /// <summary>
+    /// Compare the 'before' and 'after' assets to derive a list of changes in <see cref="ImageDeliveryChannel"/>s
+    /// between then 
+    /// </summary>
+    public static (List<ImageDeliveryChannel> modifiedOrAdded, List<ImageDeliveryChannel> removed) GetChannelChangeSets(
+        Asset assetAfter, Asset assetBefore)
+    {
+        // Get a list of deliveryChannel changes - split by modifiedOrAdded + removed
+        var modifiedOrAdded =
+            assetAfter.ImageDeliveryChannels.Where(after =>
+                assetBefore.ImageDeliveryChannels.All(before =>
+                    before.DeliveryChannelPolicyId != after.DeliveryChannelPolicyId ||
+                    assetBefore.Finished < after.DeliveryChannelPolicy.Modified)).ToList();
+        var removed = assetBefore.ImageDeliveryChannels.Where(before =>
+            assetAfter.ImageDeliveryChannels.All(after => after.Channel != before.Channel)).ToList();
+        return (modifiedOrAdded, removed);
     }
 }

@@ -9,6 +9,7 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
+using DLCS.Web.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -47,40 +48,55 @@ public class AssetDeletedHandler : IMessageHandler
     
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        AssetDeletedNotificationRequest? request;
+        var request = TryParseMessage(message);
+        if (request == null) return false;
+
+        using (LogContextHelpers.SetCorrelationId(message.MessageId))
+        {
+            var assetId = request.Asset!.Id;
+            logger.LogDebug("Processing delete notification for {AssetId}", assetId);
+
+            // if the item exists in the db, assume the asset has been reingested after delete
+            if (await assetRepository.CheckExists(assetId))
+            {
+                logger.LogInformation("Asset {Asset} can be found in the database, so will not be deleted",
+                    assetId);
+                return true;
+            }
+
+            await DeleteThumbnails(assetId);
+            await DeleteTileOptimised(assetId);
+            DeleteFromNas(assetId);
+            await DeleteFromOriginBucket(assetId);
+
+            if (request.DeleteFrom.HasFlag(ImageCacheType.Cdn))
+            {
+                return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
+            }
+
+            logger.LogDebug("CDN invalidation not specified for {Asset}", assetId);
+            return true;
+        }
+    }
+    
+    private AssetDeletedNotificationRequest? TryParseMessage(QueueMessage message)
+    {
         try
         {
-            request = message.GetMessageContents<AssetDeletedNotificationRequest>();
+            var request = message.GetMessageContents<AssetDeletedNotificationRequest>();
+
+            if (request?.Asset?.Id == null)
+            {
+                logger.LogInformation("Deserialised message but no asset id found");
+                return null;
+            }
+            return request;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to deserialize asset {@Message}", message);
-            return false;
+            logger.LogError(ex, "Failed to deserialize notification {@Message}", message);
+            return null;
         }
-
-        if (request?.Asset?.Id == null) return false;
-
-        logger.LogDebug("Processing delete notification for {AssetId}", request.Asset.Id);
-        
-        // if the item exists in the db, assume the asset has been reingested after delete
-        if (await assetRepository.CheckExists(request.Asset.Id))
-        {
-            logger.LogInformation("asset {Asset} can be found in the database, so will not be deleted", request.Asset.Id);
-            return true;
-        }
-
-        await DeleteThumbnails(request.Asset.Id);
-        await DeleteTileOptimised(request.Asset.Id);
-        DeleteFromNas(request.Asset.Id);
-        await DeleteFromOriginBucket(request.Asset.Id);
-
-        if (request.DeleteFrom.HasFlag(ImageCacheType.Cdn))
-        {
-            return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
-        }
-
-        logger.LogDebug("cdn invalidation not specified for {Asset}", request.Asset.Id);
-        return true;
     }
 
     private async Task DeleteFromOriginBucket(AssetId assetId)

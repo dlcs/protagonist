@@ -1,7 +1,7 @@
 ﻿using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.SQS;
 using DLCS.AWS.Transcoding;
-using Engine.Infrastructure.Logging;
+using DLCS.Web.Logging;
 using Engine.Ingest.Timebased.Completion;
 
 namespace Engine.Ingest.Timebased;

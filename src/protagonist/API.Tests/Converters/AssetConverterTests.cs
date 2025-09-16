@@ -235,4 +235,20 @@ public class AssetConverterTests
         hydraImage.ThumbnailPolicy.Should().Be($"https://dlcs.io/thumbnailPolicies/{thumbnailPolicy}");
         hydraImage.Manifests.Should().BeEquivalentTo(manifests);
     }
+    
+    [Fact]
+    public void ToHydraModel_ManifestsEmpty_IfEntityHasNullManifests()
+    {
+        var asset = new Asset
+        {
+            Id = AssetId.FromString($"{Customer}/99/asset"),
+            Customer = 1,
+            Space = 99,
+            Family = DLCS.Model.Assets.AssetFamily.Image,
+            Manifests = null,
+        };
+
+        var hydraImage = asset.ToHydra(new UrlRoots { BaseUrl = "https://dlcs.io" });
+        hydraImage.Manifests.Should().BeEmpty("Null manifests defaulted to empty list in hydra");
+    }
 }

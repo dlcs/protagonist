@@ -149,4 +149,51 @@ public class IIIFXTests
 
         dict.ToV3Metadata(language).Should().BeEquivalentTo(expected);
     }
+
+    [Fact]
+    public void IsRegionFullOrEquivalent_True_IfFull()
+    {
+        var region = new RegionParameter { Full = true };
+        region.IsFullOrEquivalent(1, 1).Should().BeTrue("Explicitly requesting full image");
+    }
+
+    [Fact]
+    public void IsRegionFullOrEquivalent_True_IfSquareRegion_AndImageSquare()
+    {
+        var region = new RegionParameter { Square = true };
+        region.IsFullOrEquivalent(100, 100).Should().BeTrue("Requesting square region for square image");
+    }
+    
+    [Theory]
+    [InlineData(100, 100)]
+    [InlineData(200, 100)]
+    [InlineData(100, 200)]
+    public void IsRegionFullOrEquivalent_True_IfRequesting0XY_AndWHMatchImage(int w, int h)
+    {
+        var region = new RegionParameter { X = 0, Y = 0, W = w, H = h };
+        region.IsFullOrEquivalent(w, h).Should().BeTrue("Region is for full image");
+    }
+    
+    [Theory]
+    [InlineData(100, 100)]
+    [InlineData(200, 100)]
+    [InlineData(100, 200)]
+    public void IsRegionFullOrEquivalent_False_IfRequesting0XY_AndWHMatchImage_ButPercent(int w, int h)
+    {
+        var region = new RegionParameter { X = 0, Y = 0, W = w, H = h, Percent = true };
+        region.IsFullOrEquivalent(w, h).Should().BeFalse("Percent region");
+    }
+    
+    [Theory]
+    [InlineData(0, 1, 100, 100)]
+    [InlineData(1, 0, 100, 100)]
+    [InlineData(1, 1, 100, 100)]
+    [InlineData(0, 0, 101, 100)]
+    [InlineData(0, 0, 100, 101)]
+    [InlineData(0, 0, 101, 101)]
+    public void IsRegionFullOrEquivalent_False_IfRequesting0XY_AndWHMatchImage(int x, int y, int w, int h)
+    {
+        var region = new RegionParameter { X = x, Y = y, W = w, H = h };
+        region.IsFullOrEquivalent(100, 100).Should().BeFalse();
+    }
 }

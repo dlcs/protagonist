@@ -2,7 +2,7 @@ using System.Text.Json;
 using DLCS.AWS.SQS;
 using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
-using Engine.Infrastructure.Logging;
+using DLCS.Web.Logging;
 
 namespace Engine.Ingest;
 

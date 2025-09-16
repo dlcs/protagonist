@@ -82,4 +82,25 @@ public static class IIIFX
                 new LabelValuePair(new LanguageMap(language, m.Key),
                     new LanguageMap(language, m.Value)))
             .ToList();
+    
+    /// <summary>
+    /// Checks if region parameter is /full/ or represents the full region.
+    /// E.g. if image is 200w 300h then /0,0,200,300/ represents the full region.
+    /// </summary>
+    public static bool IsFullOrEquivalent(this RegionParameter requestedRegion, int width, int height)
+    {
+        if (requestedRegion.Full) return true;
+        if (requestedRegion.Square && width == height) return true;
+
+        if (requestedRegion.Percent ||
+            requestedRegion.X + requestedRegion.Y != 0 ||
+            width != (int)requestedRegion.W ||
+            height != (int)requestedRegion.H)
+        {
+            return false;
+        }
+
+        return true;
+
+    }
 }

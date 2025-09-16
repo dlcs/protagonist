@@ -320,7 +320,7 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
         collection.Members.Should().HaveCount(1);
-        collection.Members[0].Manifests.Should().BeNull();
+        collection.Members[0].Manifests.Should().BeEmpty();
         
         await asset.ReloadAsync();
         asset.Entity.Manifests.Should().BeNull();

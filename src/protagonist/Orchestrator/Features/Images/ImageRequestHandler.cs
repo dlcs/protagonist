@@ -7,6 +7,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
+using DLCS.Model.IIIF;
 using DLCS.Repository.Assets;
 using DLCS.Web.IIIF;
 using DLCS.Web.Requests.AssetDelivery;
@@ -116,17 +117,20 @@ public class ImageRequestHandler
     private async Task<IProxyActionResult> HandleRequestInternal(HttpContext httpContext,
         OrchestrationImage orchestrationImage, ImageAssetDeliveryRequest assetRequest)
     {
+        var requestedFullRegion =
+            assetRequest.IIIFImageRequest.Region.IsFullOrEquivalent(orchestrationImage.Width,
+                orchestrationImage.Height);
         if (orchestrationImage.RequiresAuth)
         {
-            if (await IsRequestUnauthorised(assetRequest, orchestrationImage))
+            if (await IsRequestUnauthorised(assetRequest, orchestrationImage, requestedFullRegion))
             {
                 return new StatusCodeResult(HttpStatusCode.Unauthorized);
             }
         }
         
-        if (IsRequestedRegionFullOrEquivalent(assetRequest.IIIFImageRequest.Region, orchestrationImage))
+        if (requestedFullRegion)
         {
-            // /full/ request but not /full/max/ - can it be handled by thumbnail service?
+            // /full/ or equiv region but not /max/ size - can it be handled by thumbnail service?
             if (!assetRequest.IIIFImageRequest.Size.Max)
             {
                 var canHandleByThumbResponse = CanRequestBeHandledByThumb(assetRequest, orchestrationImage);
@@ -164,38 +168,13 @@ public class ImageRequestHandler
         return GenerateImageServerProxyResult(orchestrationImage, assetRequest, specialServer: false);
     }
     
-    private static bool IsRequestedRegionFullOrEquivalent(RegionParameter requestedRegion,
-        OrchestrationImage orchestrationImage)
-    {
-        if (requestedRegion.Full)
-        {
-            return true;
-        }
-
-        if (requestedRegion.Square &&
-            orchestrationImage.Width == orchestrationImage.Height)
-        {
-            return true;
-        }
-
-        if (!requestedRegion.Percent &&
-            requestedRegion.X + requestedRegion.Y == 0 &&
-            orchestrationImage.Width == (int)requestedRegion.W &&
-            orchestrationImage.Height == (int)requestedRegion.H)
-        {
-            return true;
-        }
-
-        return false;
-    }
-    
     private async Task<bool> IsRequestUnauthorised(ImageAssetDeliveryRequest assetRequest,
-        OrchestrationImage orchestrationImage)
+        OrchestrationImage orchestrationImage, bool requestedFullRegion)
     {
         // If the image has a maxUnauthorised, and the region is /full/ then user may be able to see requested
         // size without doing auth check
         var imageRequest = assetRequest.IIIFImageRequest;
-        if (imageRequest.Region.Full && orchestrationImage.MaxUnauthorised > 0)
+        if (requestedFullRegion && orchestrationImage.MaxUnauthorised > 0)
         {
             var imageSize = new Size(orchestrationImage.Width, orchestrationImage.Height);
             var proposedSize = imageRequest.Size.GetResultingSize(imageSize);
