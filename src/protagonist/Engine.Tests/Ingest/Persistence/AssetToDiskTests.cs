@@ -31,14 +31,7 @@ public class AssetToDiskTests
         customerOriginStrategy = A.Fake<IOriginStrategy>();
         OriginStrategyResolver resolver = _ => customerOriginStrategy;
 
-        var engineSettings = new EngineSettings()
-        {
-            ImageIngest = new ImageIngestSettings()
-            {
-                OpenBracketReplacement = "_",
-                CloseBracketReplacement = "_"
-            }
-        };
+        var engineSettings = new EngineSettings { ImageIngest = new ImageIngestSettings() };
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
         
         

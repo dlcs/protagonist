@@ -1,5 +1,6 @@
 ﻿using DLCS.Core.Types;
 using DLCS.Model.Templates;
+using Engine.Ingest.Persistence;
 using Engine.Settings;
 
 namespace Engine.Ingest.Image;
@@ -24,8 +25,7 @@ internal static class ImageIngestionHelpers
         
         // source is the main folder for storing downloaded image
         var assetId = new AssetId(ingestionContext.AssetId.Customer, ingestionContext.AssetId.Space,
-            ingestionContext.AssetId.Asset.Replace("(", imageIngest.OpenBracketReplacement)
-                .Replace(")", imageIngest.CloseBracketReplacement));
+            ingestionContext.AssetId.GetDiskSafeAssetId(imageIngest));
         var source = TemplatedFolders.GenerateFolderTemplate(imageIngest.SourceTemplate, assetId, root: workingFolder);
         return source;
     }

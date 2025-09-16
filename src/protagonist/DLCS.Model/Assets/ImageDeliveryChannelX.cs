@@ -18,16 +18,37 @@ public static class ImageDeliveryChannelX
     public static ImageDeliveryChannel? GetThumbsChannel(
         this ICollection<ImageDeliveryChannel> imageDeliveryChannels,
         bool throwIfNotFound = false)
+        => GetChannel(imageDeliveryChannels, AssetDeliveryChannels.Thumbnails, "Thumbs policy not found",
+            throwIfNotFound);
+
+    /// <summary>
+    /// Get ImageDeliveryChannel record for Timebased channel, optionally throwing if not found.
+    /// </summary>
+    /// <param name="imageDeliveryChannels">Collection of <see cref="DeliveryChannelPolicy"/></param>
+    /// <param name="throwIfNotFound">If true, and timebased not found, then exception will the thrown</param>
+    /// <returns><see cref="DeliveryChannelPolicy"/>, if found.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if thumbs policy not found and throwIfNotFound = true</exception>
+    public static ImageDeliveryChannel? GetTimebasedChannel(
+        this ICollection<ImageDeliveryChannel> imageDeliveryChannels,
+        bool throwIfNotFound = false)
+        => GetChannel(imageDeliveryChannels, AssetDeliveryChannels.Timebased, "Timebased policy not found",
+            throwIfNotFound);
+    
+    private static ImageDeliveryChannel? GetChannel(
+        this ICollection<ImageDeliveryChannel> imageDeliveryChannels,
+        string channelName,
+        string notFoundMessage,
+        bool throwIfNotFound = false)
     {
         if (imageDeliveryChannels.IsNullOrEmpty())
         {
             return throwIfNotFound
-                ? throw new InvalidOperationException("Thumbs policy not found")
+                ? throw new InvalidOperationException(notFoundMessage)
                 : null;
         }
 
         return throwIfNotFound
-            ? imageDeliveryChannels.Single(dcp => dcp.Channel == AssetDeliveryChannels.Thumbnails)
-            : imageDeliveryChannels.SingleOrDefault(dcp => dcp.Channel == AssetDeliveryChannels.Thumbnails);
+            ? imageDeliveryChannels.Single(dcp => dcp.Channel == channelName)
+            : imageDeliveryChannels.SingleOrDefault(dcp => dcp.Channel == channelName);
     }
 }

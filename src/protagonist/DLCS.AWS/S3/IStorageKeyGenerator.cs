@@ -129,10 +129,16 @@ public interface IStorageKeyGenerator
     ObjectInBucket GetTimebasedInputLocation(AssetId assetId);
     
     /// <summary>
-    /// Get <see cref="ObjectInBucket"/> item for timebased asset that has to been transcoded
+    /// Attempt to parse provided input location to a key in the timebased input bucket.
     /// </summary>
-    /// <returns><see cref="ObjectInBucket"/> for specified key in timebased input bucket</returns>
-    ObjectInBucket GetTimebasedInputLocation(string key);
+    /// <returns>
+    /// <see cref="ObjectInBucket"/> if the location is for timebased input bucket, else null
+    /// </returns>
+    /// <remarks>
+    /// MediaConvert supports reading files from different locations - method is to validate that the key is in expected
+    /// bucket
+    /// </remarks>
+    ObjectInBucket? TryParseTimebasedInputLocation(string inputLocation);
     
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> item for timebased asset that has to been transcoded
@@ -160,10 +166,18 @@ public interface IStorageKeyGenerator
     ObjectInBucket GetOriginStrategyCredentialsLocation(int customerId, string originStrategyId);
     
     /// <summary>
-    /// Get <see cref="RegionalisedObjectInBucket"/> root location for a transient image in the origin bucket
+    /// Get <see cref="RegionalisedObjectInBucket"/> item for transient image in the origin bucket
     /// </summary>
     /// <param name="assetId">asset id the request is for</param>
     /// <returns><see cref="RegionalisedObjectInBucket"/> for specified transient asset's that will be cleared up after
     /// a period of time</returns>
     RegionalisedObjectInBucket GetTransientImageLocation(AssetId assetId);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> for timebased transcode operation.
+    /// This is the root location where transcodes will be located
+    /// </summary>
+    /// <param name="assetId">Id of Asset being transcoded</param>
+    /// <param name="jobId">Unique job identifier</param>
+    ObjectInBucket GetTranscodeDestinationRoot(AssetId assetId, string jobId);
 }

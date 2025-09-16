@@ -68,7 +68,7 @@ public class S3BucketWriter : IBucketWriter
         try
         {
             var sourceMetadata = await GetObjectMetadata(source, token);
-            if (sourceMetadata == null)
+            if (sourceMetadata == null || sourceMetadata.ContentLength == 0)
             {
                 var notFoundResponse = new LargeObjectCopyResult(LargeObjectStatus.SourceNotFound);
                 var destinationMetadata = await GetObjectMetadata(destination, token);

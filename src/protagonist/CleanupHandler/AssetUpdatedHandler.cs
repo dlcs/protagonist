@@ -1,10 +1,10 @@
 ﻿using System.IO.Enumeration;
 using CleanupHandler.Infrastructure;
 using CleanupHandler.Repository;
-using DLCS.AWS.ElasticTranscoder;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.SQS;
+using DLCS.AWS.Transcoding;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
@@ -235,7 +235,7 @@ public class AssetUpdatedHandler  : IMessageHandler
                 assetAfter.Id);
             throw new ArgumentNullException(nameof(presetDictionary), "Failed to retrieve any preset values");
         }
-        
+
         foreach (var presetIdentifier in presetList)
         {
             if (presetDictionary.TryGetValue(presetIdentifier, out var transcoderPreset))
@@ -248,7 +248,7 @@ public class AssetUpdatedHandler  : IMessageHandler
                     $"Failed to retrieve preset {presetIdentifier}");
             }
         }
-        
+
         var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetAfter.Id);
         var keys = await bucketReader.GetMatchingKeys(timebasedFolder);
         
@@ -401,9 +401,8 @@ public class AssetUpdatedHandler  : IMessageHandler
     {
         var template = TranscoderTemplates.GetDestinationTemplate(asset.MediaType!);
         var path = template
-            .Replace("{jobId}/", "")
             .Replace("{asset}", S3StorageKeyGenerator.GetStorageKey(asset.Id))
-            .Replace(".{extension}", "");
+            .Replace(".{extension}", string.Empty);
         return path;
     }
 }

@@ -132,7 +132,6 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
             ? objectInBucket.GetLegacyS3Uri(awsSettings.Region)
             : objectInBucket.GetS3Uri();
 
-
     public ObjectInBucket GetTimebasedInputLocation(AssetId assetId)
     {
         var postfix = Random.Next(0, 9999).ToString("D4");
@@ -140,8 +139,11 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
         return new ObjectInBucket(s3Options.TimebasedInputBucket, fullPath);
     }
 
-    public ObjectInBucket GetTimebasedInputLocation(string key)
-        => new(s3Options.TimebasedInputBucket, key);
+    public ObjectInBucket? TryParseTimebasedInputLocation(string inputLocation)
+    {
+        var parsed = RegionalisedObjectInBucket.Parse(inputLocation);
+        return parsed != null && parsed.Bucket == s3Options.TimebasedInputBucket ? parsed : null;
+    }
 
     public ObjectInBucket GetTimebasedOutputLocation(string key)
         => new(s3Options.TimebasedOutputBucket, key);
@@ -168,5 +170,11 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
     {
         var key = GetStorageKey(assetId);
         return new RegionalisedObjectInBucket(s3Options.StorageBucket, $"transient/{key}", awsSettings.Region);
+    }
+
+    public ObjectInBucket GetTranscodeDestinationRoot(AssetId assetId, string jobId)
+    {
+        var key = $"{jobId}/{GetStorageKey(assetId)}/transcode";
+        return new ObjectInBucket(s3Options.TimebasedOutputBucket, key);
     }
 }

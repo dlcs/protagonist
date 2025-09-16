@@ -1,10 +1,9 @@
-﻿namespace Engine.Settings;
+﻿
+namespace Engine.Settings;
 
 public class EngineSettings
 {
     public ImageIngestSettings? ImageIngest { get; set; }
-
-    public TimebasedIngestSettings? TimebasedIngest { get; set; }
 
     /// <summary>
     /// A collection of customer-specific overrides, keyed by customerId.
@@ -106,12 +105,12 @@ public class ImageIngestSettings
     public bool OrchestrateImageAfterIngest { get; set; }
 
     /// <summary>
-    /// The character to use when replacing an open bracket character
+    /// The character to use when replacing an open bracket character when saving to disk
     /// </summary>
     public string OpenBracketReplacement { get; set; } = "_";
 
     /// <summary>
-    /// The character to use when replacing a closing bracket character
+    /// The character to use when replacing a closing bracket character when saving to disk
     /// </summary>
     public string CloseBracketReplacement { get; set; } = "_";
 
@@ -141,21 +140,4 @@ public class ImageIngestSettings
             ? ScratchRoot
             : ImageProcessorRoot;
     }
-}
-
-/// <summary>
-/// Settings directly related to A/V ingestion.
-/// </summary>
-/// <remarks>These will be for ElasticTranscoder</remarks>
-public class TimebasedIngestSettings
-{
-    /// <summary>
-    /// The name of the ElasticTranscoder pipeline to use for transcoding AV files
-    /// </summary>
-    public string PipelineName { get; set; }
-
-    /// <summary>
-    /// Mapping of 'friendly' to 'real' transcoder names
-    /// </summary>
-    public Dictionary<string, string> DeliveryChannelMappings { get; set; } = new();
 }

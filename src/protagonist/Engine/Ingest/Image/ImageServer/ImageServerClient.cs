@@ -9,6 +9,7 @@ using DLCS.Model.Policies;
 using DLCS.Model.Templates;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Models;
+using Engine.Ingest.Persistence;
 using Engine.Settings;
 using Microsoft.Extensions.Options;
 
@@ -51,8 +52,7 @@ public class ImageServerClient : IImageProcessor
     public async Task<bool> ProcessImage(IngestionContext context)
     {
         var modifiedAssetId = new AssetId(context.AssetId.Customer, context.AssetId.Space,
-            context.AssetId.Asset.Replace("(", engineSettings.ImageIngest.OpenBracketReplacement)
-                .Replace(")", engineSettings.ImageIngest.CloseBracketReplacement));
+            context.AssetId.GetDiskSafeAssetId(engineSettings.ImageIngest));
         var (dest, thumb) = CreateRequiredFolders(modifiedAssetId, context.IngestId);
 
         try
@@ -267,7 +267,7 @@ public class ImageServerClient : IImageProcessor
         public ImageProcessorFlags(IngestionContext ingestionContext, string jp2OutputPath)
         {
             var assetFromOrigin =
-                ingestionContext.AssetFromOrigin.ThrowIfNull(nameof(ingestionContext.AssetFromOrigin))!;
+                ingestionContext.AssetFromOrigin.ThrowIfNull(nameof(ingestionContext.AssetFromOrigin));
 
             var hasImageDeliveryChannel = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image);
             
@@ -276,7 +276,7 @@ public class ImageServerClient : IImageProcessor
                 ?.DeliveryChannelPolicy.Name : null;
 
             OriginIsImageServerReady = imagePolicy != null && derivativesOnlyPolicies.Contains(imagePolicy); // only set image server ready if an image server ready policy is set explicitly
-            ImageServerFilePath = OriginIsImageServerReady ? ingestionContext.AssetFromOrigin.Location : jp2OutputPath;
+            ImageServerFilePath = OriginIsImageServerReady ? assetFromOrigin.Location : jp2OutputPath;
 
             IsTransient = !hasImageDeliveryChannel;
 

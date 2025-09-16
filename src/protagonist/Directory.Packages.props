@@ -10,8 +10,8 @@
     <PackageVersion Include="AspNetCore.HealthChecks.Uris" Version="9.0.0" />
     <PackageVersion Include="AWSSDK.CloudFront" Version="3.7.404.56" />
     <PackageVersion Include="AWSSDK.Core" Version="3.7.402.27" />
-    <PackageVersion Include="AWSSDK.ElasticTranscoder" Version="3.7.400.121" />
     <PackageVersion Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.400" />
+    <PackageVersion Include="AWSSDK.MediaConvert" Version="3.7.411" />
     <PackageVersion Include="AWSSDK.S3" Version="3.7.415.26" />
     <PackageVersion Include="AWSSDK.SecurityToken" Version="3.7.401.70" />
     <PackageVersion Include="AWSSDK.SimpleNotificationService" Version="3.7.400.121" />

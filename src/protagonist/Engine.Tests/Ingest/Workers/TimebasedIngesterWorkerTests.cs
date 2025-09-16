@@ -1,6 +1,6 @@
-﻿using DLCS.AWS.ElasticTranscoder;
-using DLCS.AWS.S3;
+﻿using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.AWS.Transcoding;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
@@ -101,7 +101,7 @@ public class TimebasedIngesterWorkerTests
         A.CallTo(() =>
             mediaTranscoder.InitiateTranscodeOperation(
                 ingestionContext,
-                A<Dictionary<string, string>>.That.Matches(d => d[UserMetadataKeys.OriginSize] == "1234"),
+                A<Dictionary<string, string>>.That.Matches(d => d[TranscodeMetadataKeys.OriginSize] == "1234"),
                 A<CancellationToken>._))
             .MustHaveHappened();
     }

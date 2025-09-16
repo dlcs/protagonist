@@ -1,9 +1,10 @@
 using DLCS.AWS.Configuration;
-using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.MediaConvert;
 using DLCS.AWS.S3;
 using DLCS.AWS.SNS;
 using DLCS.AWS.SNS.Messaging;
 using DLCS.AWS.SQS;
+using DLCS.AWS.Transcoding;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
 using DLCS.Model.Auth;
@@ -48,14 +49,14 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketReader, S3BucketReader>()
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
-            .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
-            .AddSingleton<IElasticTranscoderPresetLookup, ElasticTranscoderPresetLookup>()
+            .AddSingleton<ITranscoderWrapper, MediaConvertWrapper>()
+            .AddSingleton<ITranscoderPresetLookup, SettingsBasedPresetLookup>()
             .AddScoped<ITopicPublisher, TopicPublisher>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS()
             .WithAmazonSNS()
-            .WithAmazonElasticTranscoder();
+            .WithMediaConvert();
 
         return services;
     }
@@ -94,7 +95,7 @@ public static class ServiceCollectionX
             .AddScoped<IThumbCreator, ThumbCreator>()
             .AddScoped<IWorkerBuilder, WorkerBuilder>()
             .AddSingleton<IFileSystem, FileSystem>()
-            .AddSingleton<IMediaTranscoder, ElasticTranscoder>()
+            .AddSingleton<IMediaTranscoder, MediaConvert>()
             .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<IAssetToS3, AssetToS3>()

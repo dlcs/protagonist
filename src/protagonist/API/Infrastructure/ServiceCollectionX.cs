@@ -6,11 +6,12 @@ using API.Features.DeliveryChannels.DataAccess;
 using API.Infrastructure.Messaging;
 using API.Infrastructure.Requests.Pipelines;
 using DLCS.AWS.Configuration;
-using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.MediaConvert;
 using DLCS.AWS.S3;
 using DLCS.AWS.SNS;
 using DLCS.AWS.SNS.Messaging;
 using DLCS.AWS.SQS;
+using DLCS.AWS.Transcoding;
 using DLCS.Core.Caching;
 using DLCS.Mediatr.Behaviours;
 using DLCS.Model;
@@ -78,12 +79,12 @@ public static class ServiceCollectionX
             .AddScoped<ITopicPublisher, TopicPublisher>()
             .AddSingleton<IPathCustomerRepository, BulkCustomerPathElementRepository>()
             .AddSingleton<SqsQueueUtilities>()
-            .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
+            .AddSingleton<ITranscoderWrapper, MediaConvertWrapper>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS()
             .WithAmazonSNS()
-            .WithAmazonElasticTranscoder();
+            .WithMediaConvert();
 
         return services;
     }
