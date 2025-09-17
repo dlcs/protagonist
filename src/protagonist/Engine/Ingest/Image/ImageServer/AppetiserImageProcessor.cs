@@ -3,10 +3,12 @@ using DLCS.AWS.S3.Models;
 using DLCS.Core;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Guard;
+using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using DLCS.Model.Templates;
+using DLCS.Web.Requests;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Models;
 using Engine.Ingest.Persistence;
@@ -16,28 +18,28 @@ using Microsoft.Extensions.Options;
 namespace Engine.Ingest.Image.ImageServer;
 
 /// <summary>
-/// Derivative generator using Appetiser for generating JP2 and Cantaloupe for Thumbs
+/// Derivative generator using Appetiser for generating JP2 and Thumbs
 /// </summary>
-public class ImageServerClient : IImageProcessor
+public class AppetiserImageProcessor : IImageProcessor
 {
-    private readonly IAppetiserClient appetiserClient;
+    private readonly IImageProcessorClient appetiserClient;
     private readonly IThumbsClient thumbsClient;
     private readonly EngineSettings engineSettings;
-    private readonly ILogger<ImageServerClient> logger;
+    private readonly ILogger<AppetiserImageProcessor> logger;
     private readonly IBucketWriter bucketWriter;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IThumbCreator thumbCreator;
     private readonly IFileSystem fileSystem;
 
-    public ImageServerClient(
-        IAppetiserClient appetiserClient,
+    public AppetiserImageProcessor(
+        IImageProcessorClient appetiserClient,
         IThumbsClient thumbsClient,
         IBucketWriter bucketWriter,
         IStorageKeyGenerator storageKeyGenerator,
         IThumbCreator thumbCreator,
         IFileSystem fileSystem,
         IOptionsMonitor<EngineSettings> engineOptionsMonitor,
-        ILogger<ImageServerClient> logger)
+        ILogger<AppetiserImageProcessor> logger)
     {
         this.appetiserClient = appetiserClient;
         this.thumbsClient = thumbsClient;
@@ -48,7 +50,7 @@ public class ImageServerClient : IImageProcessor
         engineSettings = engineOptionsMonitor.CurrentValue;
         this.logger = logger;
     }
-
+    
     public async Task<bool> ProcessImage(IngestionContext context)
     {
         var modifiedAssetId = new AssetId(context.AssetId.Customer, context.AssetId.Space,
@@ -229,17 +231,25 @@ public class ImageServerClient : IImageProcessor
     
     public class ImageProcessorFlags
     {
-        private readonly List<string> derivativesOnlyPolicies = new()
-        {
-            "use-original"
-        };
+        private readonly List<string> derivativesOnlyPolicies = ["use-original"];
+        
+        /// <summary>
+        /// Flag for whether we have to generate derivatives (ie thumbs) only.
+        /// Requires a tile-optimised source image.
+        /// </summary>
+        /// <remarks>
+        /// This differs from OriginIsImageServerReady because the image must be image-server ready AND also be a
+        /// JPEG2000 or appetiser will reject
+        /// </remarks>
+        public bool GenerateDerivativesOnly { get; }
 
         /// <summary>
-        /// Whether the origin is transient
+        /// Whether the file for thumbnail generation is stored at a transient location
         /// </summary>
         /// <remarks>
         /// This differs from OriginIsImageServerReady because the image explicitly only has a thumbs channel set.
         /// </remarks>
+        [Obsolete("Was required for EngineThumbs")]
         public bool IsTransient { get; }
 
         /// <summary>
@@ -255,6 +265,7 @@ public class ImageServerClient : IImageProcessor
         /// <summary>
         /// Indicates that the origin has already been uploaded to S3
         /// </summary>
+        [Obsolete("Was required for EngineThumbs")]
         public bool AlreadyUploaded { get; set; }
         
         /// <summary>
@@ -270,13 +281,18 @@ public class ImageServerClient : IImageProcessor
                 ingestionContext.AssetFromOrigin.ThrowIfNull(nameof(ingestionContext.AssetFromOrigin));
 
             var hasImageDeliveryChannel = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image);
-            
-            var imagePolicy = hasImageDeliveryChannel ? ingestionContext.Asset.ImageDeliveryChannels.SingleOrDefault(
-                    x=> x.Channel == AssetDeliveryChannels.Image)
-                ?.DeliveryChannelPolicy.Name : null;
 
-            OriginIsImageServerReady = imagePolicy != null && derivativesOnlyPolicies.Contains(imagePolicy); // only set image server ready if an image server ready policy is set explicitly
+            var imagePolicy = hasImageDeliveryChannel
+                ? ingestionContext.Asset.ImageDeliveryChannels.GetImageChannel()?.DeliveryChannelPolicy.Name
+                : null;
+            
+            // only set image server ready if an image server ready policy is set explicitly
+            OriginIsImageServerReady = imagePolicy != null && derivativesOnlyPolicies.Contains(imagePolicy);
             ImageServerFilePath = OriginIsImageServerReady ? assetFromOrigin.Location : jp2OutputPath;
+            
+            // If image iop 'use-original' and we have a JPEG2000 then only thumbnails are required
+            var isJp2 = assetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
+            GenerateDerivativesOnly = OriginIsImageServerReady && isJp2;
 
             IsTransient = !hasImageDeliveryChannel;
 

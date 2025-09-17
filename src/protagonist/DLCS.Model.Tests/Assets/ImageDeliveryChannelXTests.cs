@@ -136,4 +136,65 @@ public class ImageDeliveryChannelXTests
 
         action.Should().ThrowExactly<InvalidOperationException>();
     }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundFalse_ReturnsNull_IfListNull()
+    {
+        List<ImageDeliveryChannel> idcs = null;
+        idcs.GetImageChannel(false).Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundFalse_ReturnsNull_IfListEmpty()
+    {
+        var idcs = new List<ImageDeliveryChannel>();
+        idcs.GetImageChannel(false).Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundFalse_ReturnsNull_IfImageNotFound()
+    {
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-av" } };
+        idcs.GetImageChannel(false).Should().BeNull();
+    }
+    
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void GetImageChannel_ReturnsImage_IfFound(bool throwIfNotFound)
+    {
+        var imageChannel = new ImageDeliveryChannel
+        {
+            Channel = "iiif-img", DeliveryChannelPolicyId = 12354
+        };
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-av" }, imageChannel };
+        idcs.GetImageChannel(throwIfNotFound).Should().Be(imageChannel);
+    }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundTrue_Throws_IfListNull()
+    {
+        List<ImageDeliveryChannel> idcs = null;
+        Action action = () => idcs.GetImageChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundTrue_Throws_IfListEmpty()
+    {
+        var idcs = new List<ImageDeliveryChannel>();
+        Action action = () => idcs.GetImageChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundTrue_Throws_IfImageNotFound()
+    {
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-av" } };
+        Action action = () => idcs.GetImageChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
 }

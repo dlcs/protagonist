@@ -104,10 +104,10 @@ public static class ServiceCollectionX
         if (engineSettings.ImageIngest != null)
         {
             services.AddTransient<TimingHandler>();
-            services.AddScoped<IImageProcessor, ImageServerClient>()
+            services.AddScoped<IImageProcessor, AppetiserImageProcessor>()
                 .AddScoped<IImageMeasurer, ImageSharpMeasurer>();
 
-            services.AddHttpClient<IAppetiserClient, AppetiserClient>(client =>
+            services.AddHttpClient<IImageProcessorClient, AppetiserClient>(client =>
                 {
                     client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
                     client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);

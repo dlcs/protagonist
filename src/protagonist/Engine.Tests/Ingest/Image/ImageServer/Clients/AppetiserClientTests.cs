@@ -13,7 +13,7 @@ namespace Engine.Tests.Ingest.Image.ImageServer.Clients;
 public class AppetiserClientTests
 {
     private readonly ControllableHttpMessageHandler httpHandler;
-    private readonly IAppetiserClient sut;
+    private readonly IImageProcessorClient sut;
     private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
     
     public AppetiserClientTests()

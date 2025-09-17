@@ -18,22 +18,22 @@ using Test.Helpers.Storage;
 
 namespace Engine.Tests.Ingest.Image.ImageServer;
 
-public class ImageServerClientTests
+public class AppetiserImageProcessorTests
 {
     private readonly TestBucketWriter bucketWriter;
     private readonly IThumbCreator thumbnailCreator;
-    private readonly IAppetiserClient appetiserClient;
+    private readonly IImageProcessorClient appetiserClient;
     private readonly IThumbsClient thumbsClient;
     private readonly EngineSettings engineSettings;
     private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly ImageServerClient sut;
+    private readonly AppetiserImageProcessor sut;
     private readonly IFileSystem fileSystem;
 
-    public ImageServerClientTests()
+    public AppetiserImageProcessorTests()
     {
         fileSystem = A.Fake<IFileSystem>();
         bucketWriter = new TestBucketWriter("appetiser-test");
-        appetiserClient = A.Fake<IAppetiserClient>();
+        appetiserClient = A.Fake<IImageProcessorClient>();
         thumbsClient = A.Fake<IThumbsClient>();
         engineSettings = new EngineSettings
         {
@@ -63,8 +63,8 @@ public class ImageServerClientTests
 
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
         
-        sut = new ImageServerClient(appetiserClient, thumbsClient, bucketWriter, storageKeyGenerator, thumbnailCreator, fileSystem,
-            optionsMonitor, new NullLogger<ImageServerClient>());
+        sut = new AppetiserImageProcessor(appetiserClient, thumbsClient, bucketWriter, storageKeyGenerator, thumbnailCreator, fileSystem,
+            optionsMonitor, new NullLogger<AppetiserImageProcessor>());
     }
     
     [Fact]

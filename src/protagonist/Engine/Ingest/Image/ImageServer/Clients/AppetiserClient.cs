@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.Image.ImageServer.Clients;
 
-public class AppetiserClient : IAppetiserClient
+public class AppetiserClient : IImageProcessorClient
 {
     private readonly HttpClient appetiserClient;
     private readonly EngineSettings engineSettings;
@@ -20,7 +20,7 @@ public class AppetiserClient : IAppetiserClient
         this.appetiserClient = appetiserClient;
         engineSettings = engineOptionsMonitor.CurrentValue;
     }
-
+    
     public async Task<IAppetiserResponse> GenerateJP2(
         IngestionContext context, 
         AssetId modifiedAssetId,
