@@ -32,7 +32,7 @@ public class ThumbCreator(
         // Images processed Largest->Smallest. This is how they are stored in S3 + DB as it saves reordering on read 
         var orderedThumbs = thumbsToProcess.OrderByDescending(i => Math.Max(i.Height, i.Width)).ToList();
 
-        var maxAvailableThumb = GetMaxAvailableThumbnailSize(asset, orderedThumbs);
+        var maxAvailableThumb = GetMaxOpenThumbnailSize(asset, orderedThumbs);
         var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
         var processedWidths = new List<int>(thumbsToProcess.Count);
         
@@ -71,17 +71,14 @@ public class ThumbCreator(
         return thumbnailSizes.Count;
     }
     
-    private static Size GetMaxAvailableThumbnailSize(Asset asset, List<ImageOnDisk> orderedThumbsToProcess)
+    private static Size GetMaxOpenThumbnailSize(Asset asset, List<ImageOnDisk> orderedThumbsToProcess)
     {
         if (asset.MaxUnauthorised == 0) return new Size(0, 0);
         if ((asset.MaxUnauthorised ?? -1) == -1) return new Size(orderedThumbsToProcess[0].Width, orderedThumbsToProcess[0].Height);
 
-        foreach (var thumb in orderedThumbsToProcess)
-        {
-            if (asset.MaxUnauthorised >= Math.Max(thumb.Width, thumb.Height)) return new Size(thumb.Width, thumb.Height);
-        }
-
-        return new Size(0, 0);
+        var thumb = orderedThumbsToProcess.FirstOrDefault(thumb =>
+            asset.MaxUnauthorised >= Math.Max(thumb.Width, thumb.Height));
+        return thumb == null ? new Size(0, 0) : new Size(thumb.Width, thumb.Height);
     }
 
     private async Task UploadThumbs(AssetId assetId, ImageOnDisk thumbCandidate, Size thumb, bool isOpen)
