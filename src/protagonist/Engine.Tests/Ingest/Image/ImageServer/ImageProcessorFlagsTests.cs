@@ -4,6 +4,7 @@ using DLCS.Model.Customers;
 using DLCS.Model.Policies;
 using Engine.Ingest;
 using Engine.Ingest.Image.ImageServer;
+using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Persistence;
 
 namespace Engine.Tests.Ingest.Image.ImageServer;
@@ -23,157 +24,212 @@ public class ImageProcessorFlagsTests
         action.Should().Throw<ArgumentNullException>();
     }
 
-    [Theory]
-    [InlineData("image/jpeg")]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    public void Ctor_DoNotUseOriginal_NotOptimised(string mediaType)
+    [Fact]
+    public void Ctor_DoNotUseOriginal_NotOptimised()
     {
         // Arrange
-        var context = GetContext(false, false, mediaType);
+        var context = GetContext(false, false, "image/tiff");
         
         // Act
         var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
-        flags.IsTransient.Should().BeFalse();
-        flags.AlreadyUploaded.Should().BeFalse();
-        flags.GenerateDerivativesOnly.Should().BeFalse();
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.HaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
         flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
 
-    [Theory]
-    [InlineData("image/jpeg")]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    public void Ctor_DoNotUseOriginal_Optimised(string mediaType)
+    [Fact]
+    public void Ctor_DoNotUseOriginal_Optimised()
     {
         // Arrange
-        var context = GetContext(false, true, mediaType);
+        var context = GetContext(false, true, "image/tiff");
         
         // Act
         var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
-        flags.IsTransient.Should().BeFalse();
-        flags.AlreadyUploaded.Should().BeFalse();
-        flags.GenerateDerivativesOnly.Should().BeFalse();
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.HaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
         flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
-
-    [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    public void Ctor_UseOriginalJP2_NotOptimised(string mediaType)
+    
+    [Fact]
+    public void Ctor_DoNotUseOriginal_Optimised_NoImageChannel()
     {
         // Arrange
-        var context = GetContext(true, false, mediaType);
+        var context = GetContext(false, true, "image/tiff", false);
         
         // Act
         var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
-        flags.IsTransient.Should().BeFalse();
-        flags.AlreadyUploaded.Should().BeFalse();
-        flags.GenerateDerivativesOnly.Should().BeTrue();
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.NotHaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeFalse();
+        flags.OriginIsImageServerReady.Should().BeFalse();
+        flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
+    }
+    
+    [Fact]
+    public void Ctor_DoNotUseOriginal_NotOptimised_NoImageChannel()
+    {
+        // Arrange
+        var context = GetContext(false, false, "image/jp2", false);
+        
+        // Act
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        
+        // Asset
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.NotHaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeFalse();
+        flags.OriginIsImageServerReady.Should().BeFalse();
+        flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
+    }
+    
+    [Fact]
+    public void Ctor_DoNotUseOriginal_Optimised_NoImageChannelWithFileChannel()
+    {
+        // Arrange
+        var context = GetContext(false, true, "image/tiff", false);
+        
+        // Act
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        context.Asset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
+        {
+            Channel = AssetDeliveryChannels.File,
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
+        });
+        
+        // Asset
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.NotHaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeFalse();
+        flags.OriginIsImageServerReady.Should().BeFalse();
+        flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
+    }
+    
+    [Fact]
+    public void Ctor_DoNotUseOriginal_NotOptimised_NoImageChannelWithFileChannel()
+    {
+        // Arrange
+        var context = GetContext(false, false, "image/jp2", false);
+        
+        // Act
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        context.Asset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
+        {
+            Channel = AssetDeliveryChannels.File,
+            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
+        });
+        
+        // Asset
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.NotHaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeFalse();
+        flags.OriginIsImageServerReady.Should().BeFalse();
+        flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
+    }
+
+    [Fact]
+    public void Ctor_UseOriginal_NotOptimised()
+    {
+        // Arrange
+        var context = GetContext(true, false, "image/jp2");
+        
+        // Act
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        
+        // Asset
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.NotHaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeTrue();
         flags.ImageServerFilePath.Should().Be("/path/to/original");
     }
 
-    [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    public void Ctor_UseOriginalJP2_Optimised(string mediaType)
+   
+    [Fact]
+    public void Ctor_UseOriginal_Optimised()
     {
         // Arrange
-        var context = GetContext(true, true, mediaType);
+        var context = GetContext(true, true, "image/tiff");
         
         // Act
         var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
-        flags.IsTransient.Should().BeFalse();
-        flags.AlreadyUploaded.Should().BeFalse();
-        flags.GenerateDerivativesOnly.Should().BeTrue();
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.NotHaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeFalse();
         flags.ImageServerFilePath.Should().Be("/path/to/original");
     }
     
-    [Theory]
-    [InlineData("image/tiff")]
-    [InlineData("image/jpeg")]
-    public void Ctor_UseOriginalNotJP2_Optimised(string mediaType)
+    [Fact]
+    public void Ctor_UseOriginal_Optimised_NoImageChannel()
     {
         // Arrange
-        var context = GetContext(true, true, mediaType);
+        var context = GetContext(true, true, "image/tiff", false);
         
         // Act
         var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
-        flags.IsTransient.Should().BeFalse();
-        flags.AlreadyUploaded.Should().BeFalse();
-        flags.GenerateDerivativesOnly.Should().BeFalse();
-        flags.OriginIsImageServerReady.Should().BeTrue();
-        flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be("/path/to/original");
-    }
-    
-    [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    public void Ctor_UseOriginalJP2_Optimised_NoImageChannel(string mediaType)
-    {
-        // Arrange
-        var context = GetContext(true, true, mediaType, false);
-        
-        // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
-        
-        // Asset
-        flags.IsTransient.Should().BeTrue();
-        flags.AlreadyUploaded.Should().BeFalse();
-        flags.GenerateDerivativesOnly.Should().BeFalse();
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.NotHaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be($"/path/to/generated.jp2");
+        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
     
-    [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    [InlineData("image/jpeg")]
-    public void Ctor_NotOptimised_NoImageChannel(string mediaType)
+    [Fact]
+    public void Ctor_UseOriginal_NotOptimised_NoImageChannel()
     {
         // Arrange
-        var context = GetContext(true, false, mediaType, false);
+        var context = GetContext(true, false, "image/jp2", false);
         
         // Act
         var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
-        flags.IsTransient.Should().BeTrue();
-        flags.AlreadyUploaded.Should().BeFalse();
-        flags.GenerateDerivativesOnly.Should().BeFalse();
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.NotHaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
-        flags.SaveInDlcsStorage.Should().BeTrue();
-        flags.ImageServerFilePath.Should().Be($"/path/to/generated.jp2");
+        flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
     
-    [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    [InlineData("image/jpeg")]
-    public void Ctor_Optimised_NoImageChannelWithFileChannel(string mediaType)
+    [Fact]
+    public void Ctor_Optimised_NoImageChannelWithFileChannel()
     {
         // Arrange
-        var context = GetContext(true, true, mediaType, false);
+        var context = GetContext(true, true, "image/jp2", false);
         
         context.Asset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
         {
@@ -185,22 +241,20 @@ public class ImageProcessorFlagsTests
         var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
-        flags.IsTransient.Should().BeTrue();
-        flags.AlreadyUploaded.Should().BeTrue();
-        flags.GenerateDerivativesOnly.Should().BeFalse();
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.NotHaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeTrue();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be($"/path/to/generated.jp2");
+        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
 
-    [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    [InlineData("image/jpeg")]
-    public void Ctor_NotOptimised_NoImageChannelWithFileChannel(string mediaType)
+    [Fact]
+    public void Ctor_NotOptimised_NoImageChannelWithFileChannel()
     {
         // Arrange
-        var context = GetContext(true, false, mediaType, false);
+        var context = GetContext(true, false, "image/jp2", false);
         
         context.Asset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
         {
@@ -212,11 +266,12 @@ public class ImageProcessorFlagsTests
         var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
         
         // Asset
-        flags.IsTransient.Should().BeTrue();
-        flags.AlreadyUploaded.Should().BeTrue();
-        flags.GenerateDerivativesOnly.Should().BeFalse();
+        flags.Operations.Should()
+            .HaveFlag(ImageProcessorOperations.Thumbnails)
+            .And.NotHaveFlag(ImageProcessorOperations.Derivative);
+        flags.AlreadyUploadedNoImage.Should().BeTrue();
         flags.OriginIsImageServerReady.Should().BeFalse();
-        flags.SaveInDlcsStorage.Should().BeTrue();
+        flags.SaveInDlcsStorage.Should().BeFalse();
         flags.ImageServerFilePath.Should().Be($"/path/to/generated.jp2");
     }
     

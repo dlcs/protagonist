@@ -8,11 +8,11 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using DLCS.Model.Templates;
-using DLCS.Web.Requests;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Models;
 using Engine.Ingest.Persistence;
 using Engine.Settings;
+using IIIF.ImageApi;
 using Microsoft.Extensions.Options;
 
 namespace Engine.Ingest.Image.ImageServer;
@@ -20,54 +20,35 @@ namespace Engine.Ingest.Image.ImageServer;
 /// <summary>
 /// Derivative generator using Appetiser for generating JP2 and Thumbs
 /// </summary>
-public class AppetiserImageProcessor : IImageProcessor
+public class AppetiserImageProcessor(
+    IImageProcessorClient appetiserClient,
+    IBucketWriter bucketWriter,
+    IStorageKeyGenerator storageKeyGenerator,
+    IThumbCreator thumbCreator,
+    IFileSystem fileSystem,
+    IOptionsMonitor<EngineSettings> engineOptionsMonitor,
+    ILogger<AppetiserImageProcessor> logger)
+    : IImageProcessor
 {
-    private readonly IImageProcessorClient appetiserClient;
-    private readonly IThumbsClient thumbsClient;
-    private readonly EngineSettings engineSettings;
-    private readonly ILogger<AppetiserImageProcessor> logger;
-    private readonly IBucketWriter bucketWriter;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly IThumbCreator thumbCreator;
-    private readonly IFileSystem fileSystem;
+    private readonly ImageIngestSettings imageIngestSettings = engineOptionsMonitor.CurrentValue.ImageIngest!;
 
-    public AppetiserImageProcessor(
-        IImageProcessorClient appetiserClient,
-        IThumbsClient thumbsClient,
-        IBucketWriter bucketWriter,
-        IStorageKeyGenerator storageKeyGenerator,
-        IThumbCreator thumbCreator,
-        IFileSystem fileSystem,
-        IOptionsMonitor<EngineSettings> engineOptionsMonitor,
-        ILogger<AppetiserImageProcessor> logger)
-    {
-        this.appetiserClient = appetiserClient;
-        this.thumbsClient = thumbsClient;
-        this.bucketWriter = bucketWriter;
-        this.storageKeyGenerator = storageKeyGenerator;
-        this.thumbCreator = thumbCreator;
-        this.fileSystem = fileSystem;
-        engineSettings = engineOptionsMonitor.CurrentValue;
-        this.logger = logger;
-    }
-    
     public async Task<bool> ProcessImage(IngestionContext context)
     {
         var modifiedAssetId = new AssetId(context.AssetId.Customer, context.AssetId.Space,
-            context.AssetId.GetDiskSafeAssetId(engineSettings.ImageIngest));
+            context.AssetId.GetDiskSafeAssetId(imageIngestSettings));
         var (dest, thumb) = CreateRequiredFolders(modifiedAssetId, context.IngestId);
 
         try
         {
             var flags = new ImageProcessorFlags(context, appetiserClient.GetJP2FilePath(modifiedAssetId, context.IngestId, false));
             logger.LogDebug("Got flags '{@Flags}' for {AssetId}", flags, context.AssetId);
-            var responseModel = await appetiserClient.GenerateJP2(context, modifiedAssetId);
+            var sizes = GetThumbSizes(context);
+            var responseModel =
+                await appetiserClient.GenerateDerivatives(context, modifiedAssetId, sizes, flags.Operations);
 
             if (responseModel is AppetiserResponseModel successResponse)
             {
-                await ProcessResponse(context, successResponse, flags);
-                await CallThumbsProcessor(context, thumb);
-                
+                await ProcessResponse(context, successResponse, flags, modifiedAssetId);
                 return true;
             }
             else if (responseModel is AppetiserResponseErrorModel failResponse)
@@ -93,14 +74,15 @@ public class AppetiserImageProcessor : IImageProcessor
 
     private (string dest, string thumb) CreateRequiredFolders(AssetId assetId, string ingestId)
     {
-        var imageIngest = engineSettings.ImageIngest;
-        var workingFolder = ImageIngestionHelpers.GetWorkingFolder(ingestId, imageIngest);
+        var workingFolder = ImageIngestionHelpers.GetWorkingFolder(ingestId, imageIngestSettings);
 
         // dest is the folder where appetiser will copy output to
-        var dest = TemplatedFolders.GenerateFolderTemplate(imageIngest.DestinationTemplate, assetId, root: workingFolder);
+        var dest = TemplatedFolders.GenerateFolderTemplate(imageIngestSettings.DestinationTemplate, assetId,
+            root: workingFolder);
 
         // thumb is the folder where generated thumbnails will be output to
-        var thumb = TemplatedFolders.GenerateFolderTemplate(imageIngest.ThumbsTemplate, assetId, root: workingFolder);
+        var thumb = TemplatedFolders.GenerateFolderTemplate(imageIngestSettings.ThumbsTemplate, assetId,
+            root: workingFolder);
 
         fileSystem.CreateDirectory(dest);
         fileSystem.CreateDirectory(thumb);
@@ -108,33 +90,33 @@ public class AppetiserImageProcessor : IImageProcessor
         return (dest, thumb);
     }
     
-    private async Task CallThumbsProcessor(IngestionContext context, string thumbFolder)
+    private List<SizeParameter> GetThumbSizes(IngestionContext context)
     {
         var thumbPolicy = context.Asset.ImageDeliveryChannels
             .GetThumbsChannel()?.DeliveryChannelPolicy
             .PolicyDataAs<List<string>>();
         
-        var sizes = engineSettings.ImageIngest!.DefaultThumbs;
+        var sizes = imageIngestSettings.DefaultThumbs;
 
         if (thumbPolicy != null)
         {
             sizes = sizes.Union(thumbPolicy).ToList();
         }
-
-        var thumbsResponse = await thumbsClient.GenerateThumbnails(context, sizes, thumbFolder);
-
-        // Create new thumbnails + update Storage on context
-        await CreateNewThumbs(context, thumbsResponse);
+        
+        return sizes.Select(SizeParameter.Parse).ToList();
     }
 
     private async Task ProcessResponse(IngestionContext context, AppetiserResponseModel responseModel, 
-        ImageProcessorFlags processorFlags)
+        ImageProcessorFlags processorFlags, AssetId modifiedAssetId)
     {
         // Update dimensions on Asset
         UpdateImageDimensions(context.Asset, responseModel);
 
         // Process output: upload derivative/original to DLCS storage if required and set Location + Storage on context 
         await ProcessOriginImage(context, processorFlags);
+        
+        // Create new thumbnails + update Storage on context
+        await CreateNewThumbs(context, responseModel, modifiedAssetId);
     }
 
     private static void UpdateImageDimensions(Asset asset, AppetiserResponseModel responseModel)
@@ -146,30 +128,21 @@ public class AppetiserImageProcessor : IImageProcessor
     private async Task ProcessOriginImage(IngestionContext context, ImageProcessorFlags processorFlags)
     {
         var asset = context.Asset;
-        var imageIngestSettings = engineSettings.ImageIngest!;
-        
-        void SetAssetLocation(ObjectInBucket objectInBucket)
-        {
-            var s3Location = storageKeyGenerator
-                .GetS3Uri(objectInBucket, imageIngestSettings.IncludeRegionInS3Uri)
-                .ToString();
-            context.WithLocation(new ImageLocation { Id = asset.Id, Nas = string.Empty, S3 = s3Location });
-        }
 
         if (!processorFlags.SaveInDlcsStorage)
         {
-            // Optimised + image-server ready. No need to store - set imageLocation to origin and stop
+            // Optimised + either image-server ready OR no image channel. No need to store - set imageLocation to origin
             logger.LogDebug("Asset {AssetId} can be served from origin. No file to save", context.AssetId);
-            var originObject = RegionalisedObjectInBucket.Parse(asset.Origin, true)!;
+            var originObject = RegionalisedObjectInBucket.Parse(asset.Origin!, true)!;
             SetAssetLocation(originObject);
             return;
         }
 
-        if (processorFlags.AlreadyUploaded)
+        if (processorFlags.AlreadyUploadedNoImage)
         {
-            // file has been uploaded already, and no image is required
-            logger.LogDebug("Asset {AssetId} has been uploaded already from the file channel, and no image delivery channel has been specified", context.AssetId);
-            SetAssetLocation(context.StoredObjects.Keys.First());
+            // Origin has been uploaded already, and no image-channel so no need to upload derivative
+            logger.LogDebug("Asset {AssetId} uploaded for file channel and no image delivery channel", context.AssetId);
+            SetAssetLocation(storageKeyGenerator.GetStoredOriginalLocation(context.AssetId));
             return;
         }
 
@@ -186,12 +159,6 @@ public class AppetiserImageProcessor : IImageProcessor
                 SetAssetLocation(targetStorageLocation);
                 return;
             }
-        }
-        else if (processorFlags.IsTransient)
-        {
-            // transient asset, means it can be cleaned up after a set period of time
-            logger.LogDebug("Asset {AssetId} is transient. S3 marker will be added", context.AssetId);
-            targetStorageLocation = storageKeyGenerator.GetTransientImageLocation(context.AssetId);
         }
         else
         {
@@ -210,67 +177,76 @@ public class AppetiserImageProcessor : IImageProcessor
             throw new ApplicationException(
                 $"Failed to write image-server file {imageServerFile} to storage bucket with content-type {contentType}");
         }
-
-        if (!processorFlags.IsTransient) // transient images get deleted, so no need to store asset sizes
-        {
-            var storedImageSize = fileSystem.GetFileSize(processorFlags.ImageServerFilePath);
-            context.StoredObjects[targetStorageLocation] = storedImageSize;
-            context.WithStorage(assetSize: storedImageSize);
-        }
         
+        var storedImageSize = fileSystem.GetFileSize(processorFlags.ImageServerFilePath);
+        context.StoredObjects[targetStorageLocation] = storedImageSize;
+        context.WithStorage(assetSize: storedImageSize);
+
         SetAssetLocation(targetStorageLocation);
+
+        void SetAssetLocation(ObjectInBucket objectInBucket)
+        {
+            var s3Location = storageKeyGenerator
+                .GetS3Uri(objectInBucket, imageIngestSettings.IncludeRegionInS3Uri)
+                .ToString();
+            context.WithLocation(new ImageLocation { Id = asset.Id, Nas = string.Empty, S3 = s3Location });
+        }
     }
 
-    private async Task CreateNewThumbs(IngestionContext context, List<ImageOnDisk> thumbs)
+    private async Task CreateNewThumbs(IngestionContext context, AppetiserResponseModel responseModel,
+        AssetId modifiedAssetId)
     {
-        await thumbCreator.CreateNewThumbs(context.Asset, thumbs.ToList());
+        SetThumbsOnDiskLocation(responseModel, modifiedAssetId);
 
-        var thumbSize = thumbs.Sum(t => fileSystem.GetFileSize(t.Path));
+        await thumbCreator.CreateNewThumbs(context.Asset, responseModel.Thumbs.ToList());
+
+        var thumbSize = responseModel.Thumbs.Sum(t => fileSystem.GetFileSize(t.Path));
         context.WithStorage(thumbnailSize: thumbSize);
     }
     
+    private void SetThumbsOnDiskLocation(AppetiserResponseModel responseModel, AssetId modifiedAssetId)
+    {
+        // Update the location of all thumbs to be full path on disk, relative to orchestrator
+        var partialTemplate = TemplatedFolders.GenerateFolderTemplate(imageIngestSettings.ThumbsTemplate,
+            modifiedAssetId, root: imageIngestSettings.GetRoot());
+        foreach (var thumb in responseModel.Thumbs)
+        {
+            var key = thumb.Path.EverythingAfterLast('/');
+            thumb.Path = string.Concat(partialTemplate, key);
+        }
+    }
+
     public class ImageProcessorFlags
     {
         private readonly List<string> derivativesOnlyPolicies = ["use-original"];
-        
+
         /// <summary>
-        /// Flag for whether we have to generate derivatives (ie thumbs) only.
-        /// Requires a tile-optimised source image.
+        /// Flags for what operations are required when processing image
         /// </summary>
         /// <remarks>
         /// This differs from OriginIsImageServerReady because the image must be image-server ready AND also be a
         /// JPEG2000 or appetiser will reject
         /// </remarks>
-        public bool GenerateDerivativesOnly { get; }
-
-        /// <summary>
-        /// Whether the file for thumbnail generation is stored at a transient location
-        /// </summary>
-        /// <remarks>
-        /// This differs from OriginIsImageServerReady because the image explicitly only has a thumbs channel set.
-        /// </remarks>
-        [Obsolete("Was required for EngineThumbs")]
-        public bool IsTransient { get; }
+        public ImageProcessorOperations Operations { get; }
 
         /// <summary>
         /// Indicates that either the original, or a derivative, is to be saved in DLCS storage
         /// </summary>
         public bool SaveInDlcsStorage { get; }
-        
+
         /// <summary>
         /// Indicates that the Origin file is suitable for use as image-server source
         /// </summary>
         public bool OriginIsImageServerReady { get; }
-        
+
         /// <summary>
-        /// Indicates that the origin has already been uploaded to S3
+        /// Indicates that the origin has already been uploaded to S3 and there is no image delivery channel
         /// </summary>
-        [Obsolete("Was required for EngineThumbs")]
-        public bool AlreadyUploaded { get; set; }
-        
+        public bool AlreadyUploadedNoImage { get; set; }
+
         /// <summary>
         /// Path on disk where image-server ready file will be located.
-        /// This can be the Origin file, or the generated JP2. 
+        /// This can be the Origin file as-is, or the generated JP2. 
         /// </summary>
         /// <remarks>Used for calculating size and uploading (if required)</remarks>
         public string ImageServerFilePath { get; }
@@ -285,22 +261,32 @@ public class AppetiserImageProcessor : IImageProcessor
             var imagePolicy = hasImageDeliveryChannel
                 ? ingestionContext.Asset.ImageDeliveryChannels.GetImageChannel()?.DeliveryChannelPolicy.Name
                 : null;
-            
+
             // only set image server ready if an image server ready policy is set explicitly
             OriginIsImageServerReady = imagePolicy != null && derivativesOnlyPolicies.Contains(imagePolicy);
             ImageServerFilePath = OriginIsImageServerReady ? assetFromOrigin.Location : jp2OutputPath;
-            
-            // If image iop 'use-original' and we have a JPEG2000 then only thumbnails are required
-            var isJp2 = assetFromOrigin.ContentType is MIMEHelper.JP2 or MIMEHelper.JPX;
-            GenerateDerivativesOnly = OriginIsImageServerReady && isJp2;
 
-            IsTransient = !hasImageDeliveryChannel;
+            // We will always be generating thumbs
+            Operations = ImageProcessorOperations.Thumbnails;
 
-            AlreadyUploaded = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.File) && 
-                              !hasImageDeliveryChannel;
+            // We will want to generate a JP2 derivative unless it's use-original
+            if (hasImageDeliveryChannel && !OriginIsImageServerReady)
+            {
+                Operations |= ImageProcessorOperations.Derivative;
+            }
 
-            // Save in DLCS unless the image is image-server ready AND the strategy is optimised 
-            SaveInDlcsStorage = !((OriginIsImageServerReady || IsTransient) && assetFromOrigin.CustomerOriginStrategy.Optimised);
+            AlreadyUploadedNoImage = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.File) &&
+                                     !hasImageDeliveryChannel;
+
+            // Save in DLCS unless the image is image-server ready AND the strategy is optimised
+            if (!hasImageDeliveryChannel)
+            {
+                SaveInDlcsStorage = false;
+            }
+            else
+            {
+                SaveInDlcsStorage = !(OriginIsImageServerReady && assetFromOrigin.CustomerOriginStrategy.Optimised);
+            }
         }
     }
 }

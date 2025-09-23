@@ -108,10 +108,10 @@ public static class ServiceCollectionX
                 .AddScoped<IImageMeasurer, ImageSharpMeasurer>();
 
             services.AddHttpClient<IImageProcessorClient, AppetiserClient>(client =>
-                {
-                    client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
-                    client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
-                }).AddHttpMessageHandler<TimingHandler>();
+            {
+                client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
+                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+            }).AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<IThumbsClient, ImageServerThumbsClient>(client =>
                 {

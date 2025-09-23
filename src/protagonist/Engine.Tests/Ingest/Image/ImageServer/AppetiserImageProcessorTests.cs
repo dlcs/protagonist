@@ -12,7 +12,9 @@ using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Models;
 using Engine.Settings;
 using FakeItEasy;
+using IIIF.ImageApi;
 using Microsoft.Extensions.Logging.Abstractions;
+using Test.Helpers.Data;
 using Test.Helpers.Settings;
 using Test.Helpers.Storage;
 
@@ -23,8 +25,6 @@ public class AppetiserImageProcessorTests
     private readonly TestBucketWriter bucketWriter;
     private readonly IThumbCreator thumbnailCreator;
     private readonly IImageProcessorClient appetiserClient;
-    private readonly IThumbsClient thumbsClient;
-    private readonly EngineSettings engineSettings;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly AppetiserImageProcessor sut;
     private readonly IFileSystem fileSystem;
@@ -34,8 +34,7 @@ public class AppetiserImageProcessorTests
         fileSystem = A.Fake<IFileSystem>();
         bucketWriter = new TestBucketWriter("appetiser-test");
         appetiserClient = A.Fake<IImageProcessorClient>();
-        thumbsClient = A.Fake<IThumbsClient>();
-        engineSettings = new EngineSettings
+        var engineSettings = new EngineSettings
         {
             ImageIngest = new ImageIngestSettings
             {
@@ -43,10 +42,7 @@ public class AppetiserImageProcessorTests
                 DestinationTemplate ="{root}{customer}/{space}/{image}/output",
                 SourceTemplate = "source/",
                 ThumbsTemplate = "thumb/",
-                DefaultThumbs = new List<string>()
-                {
-                    "!100,100", "!200,200", "!400,400", "!1024,1024"
-                }
+                DefaultThumbs = ["!100,100", "!200,200", "!400,400", "!1024,1024"]
             }
         };
         thumbnailCreator = A.Fake<IThumbCreator>();
@@ -59,19 +55,19 @@ public class AppetiserImageProcessorTests
                 new RegionalisedObjectInBucket("appetiser-test", $"{assetId}/original", "Fake-Region"));
         A.CallTo(() => storageKeyGenerator.GetTransientImageLocation(A<AssetId>._))
             .ReturnsLazily((AssetId assetId) =>
-                new RegionalisedObjectInBucket("appetiser-test", $"transient/{assetId.ToString()}", "Fake-Region"));
+                new RegionalisedObjectInBucket("appetiser-test", $"transient/{assetId}", "Fake-Region"));
 
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
-        
-        sut = new AppetiserImageProcessor(appetiserClient, thumbsClient, bucketWriter, storageKeyGenerator, thumbnailCreator, fileSystem,
-            optionsMonitor, new NullLogger<AppetiserImageProcessor>());
+
+        sut = new AppetiserImageProcessor(appetiserClient, bucketWriter, storageKeyGenerator, thumbnailCreator,
+            fileSystem, optionsMonitor, new NullLogger<AppetiserImageProcessor>());
     }
     
     [Fact]
     public async Task ProcessImage_CreatesAndRemovesRequiredDirectories()
     {
         // Arrange
-        var context = IngestionContextFactory.GetIngestionContext();
+        var context = IngestionContextFactory.GetIngestionContext(AssetIdGenerator.GetAssetId());
 
         // Act
         await sut.ProcessImage(context);
@@ -85,16 +81,15 @@ public class AppetiserImageProcessorTests
     public async Task ProcessImage_ChangesFileSavedLocationBasedOnImageIdWithBrackets()
     {
         // Arrange
-        var context = IngestionContextFactory.GetIngestionContext(assetId: "1/2/some(id)");
-
+        var context = IngestionContextFactory.GetIngestionContext(AssetIdGenerator.GetAssetId(asset: "some(id)"));
+        var expectedDirectory = $"scratch/{context.IngestId}/99/1/some_id_/output";
+        
         // Act
         await sut.ProcessImage(context);
 
         // Assert
-        var expectedDirectory = $"scratch/{context.IngestId}/1/2/some_id_/output";
-        A.CallTo(() => fileSystem.CreateDirectory( 
-            // Account for backslashes being used to separate directories when running on Windows
-            A<string>.That.Matches(x => x.Replace("\\", "/") == expectedDirectory ))).MustHaveHappenedOnceExactly();
+        A.CallTo(() => fileSystem.CreateDirectory(
+            A<string>.That.Matches(dir => dir.Replace("\\", "/") == expectedDirectory))).MustHaveHappenedOnceExactly();
         A.CallTo(() => fileSystem.DeleteDirectory(A<string>._, true, true)).MustHaveHappenedTwiceExactly();
     }
     
@@ -102,49 +97,89 @@ public class AppetiserImageProcessorTests
     public async Task ProcessImage_False_IfImageProcessorCallFails()
     {
         // Arrange
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new AppetiserResponseErrorModel()
-            {
-                Message = "error",
-                Status = "some status"
-            } as IAppetiserResponse));
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId);
         
-        var context = IngestionContextFactory.GetIngestionContext();
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId,
+                A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._,
+                A<CancellationToken>._))
+            .Returns(new AppetiserResponseErrorModel
+            {
+                Message = "error message",
+                Status = "some status"
+            });
+
 
         // Act
         var result = await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .MustHaveHappened();
         result.Should().BeFalse();
         context.Asset.Should().NotBeNull();
-        context.Asset.Error.Should().Be("Appetiser Error: error");
+        context.Asset.Error.Should().Be("Appetiser Error: error message");
     }
 
-    [Theory]
-    [InlineData("image/jp2", "default")]
-    [InlineData("image/jpx", "default")]
-    [InlineData("image/jpeg", "use-original")]
-    public async Task ProcessImage_SetsOperation_Ingest_IfNotJp2AndUseOriginal(string contentType, string policy)
+    [Fact]
+    public async Task ProcessImage_SetsOperation_ThumbsOnly_IfUseOriginal()
     {
         // Arrange
-        var context = IngestionContextFactory.GetIngestionContext(contentType: contentType, imageDeliveryChannelPolicy: policy);
-        
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new AppetiserResponseModel()
-            {
-                Height = 100,
-                Width = 100
-            } as IAppetiserResponse));
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId, imageDeliveryChannelPolicy: "use-original");
+
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context,
+                assetId,
+                A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._,
+                A<CancellationToken>._))
+            .Returns(new AppetiserResponseModel { Height = 100, Width = 100 });
 
         // Act
         await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                ImageProcessorOperations.Thumbnails, A<CancellationToken>._))
             .MustHaveHappened();
-        A.CallTo(() => thumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<string>._, A<CancellationToken>._))
+    }
+    
+    [Fact]
+    public async Task ProcessImage_SetsOperation_ThumbsOnly_IfNoImageChannel()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId, imageDeliveryChannelPolicy: "");
+
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._, A<CancellationToken>._))
+            .Returns(new AppetiserResponseModel { Height = 100, Width = 100 });
+
+        // Act
+        await sut.ProcessImage(context);
+
+        // Assert
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                ImageProcessorOperations.Thumbnails, A<CancellationToken>._))
+            .MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task ProcessImage_SetsOperation_ImageAndThumbsOnly_IfDefaultImageChannel()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId, imageDeliveryChannelPolicy: "default");
+
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._, A<CancellationToken>._))
+            .Returns(new AppetiserResponseModel { Height = 100, Width = 100 });
+
+        // Act
+        await sut.ProcessImage(context);
+
+        // Assert
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                ImageProcessorOperations.Thumbnails | ImageProcessorOperations.Derivative, A<CancellationToken>._))
             .MustHaveHappened();
     }
 
@@ -152,16 +187,17 @@ public class AppetiserImageProcessorTests
     public async Task ProcessImage_UpdatesAssetDimensions()
     {
         // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId);
         var imageProcessorResponse = new AppetiserResponseModel
         {
             Height = 1000,
             Width = 5000,
         };
 
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-
-        var context = IngestionContextFactory.GetIngestionContext();
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._, A<CancellationToken>._))
+            .Returns(imageProcessorResponse);
 
         // Act
         await sut.ProcessImage(context);
@@ -176,19 +212,20 @@ public class AppetiserImageProcessorTests
     [InlineData(true, OriginStrategyType.BasicHttp)]
     [InlineData(true, OriginStrategyType.SFTP)]
     [InlineData(false, OriginStrategyType.S3Ambient)]
-    public async Task ProcessImage_UploadsGeneratedFileToDlcsBucket_AndSetsImageLocation_IfNotS3OptimisedStrategy(bool optimised,
+    public async Task ProcessImage_UploadsGeneratedFileToDlcsBucket_AndSetsImageLocation_IfNotUseOriginal(bool optimised,
         OriginStrategyType strategy)
     {
         // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel();
-        var context = IngestionContextFactory.GetIngestionContext("/1/2/test");
-        
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-        A.CallTo(() => appetiserClient.GetJP2FilePath(A<AssetId>._, context.IngestId, A<bool>._))
+        var assetId = new AssetId(1, 2, "test");
+        var context = IngestionContextFactory.GetIngestionContext(assetId);
+
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._, A<CancellationToken>._))
+            .Returns(new AppetiserResponseModel());
+        A.CallTo(() => appetiserClient.GetJP2FilePath(assetId, context.IngestId, A<bool>._))
             .Returns($"scratch/{context.IngestId}/1/2/test/outputtest.jp2");
-        
-        context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy
+
+        context.AssetFromOrigin!.CustomerOriginStrategy = new CustomerOriginStrategy
         {
             Optimised = optimised,
             Strategy = strategy
@@ -197,7 +234,7 @@ public class AppetiserImageProcessorTests
         const string expected = "s3://appetiser-test/1/2/test";
         A.CallTo(() => storageKeyGenerator.GetS3Uri(A<ObjectInBucket>._, A<bool>._))
             .Returns(new Uri(expected));
-        
+
         // Act
         await sut.ProcessImage(context);
 
@@ -206,7 +243,7 @@ public class AppetiserImageProcessorTests
             .ShouldHaveKey("1/2/test")
             .WithFilePath($"scratch/{context.IngestId}/1/2/test/outputtest.jp2")
             .WithContentType("image/jp2");
-        context.ImageLocation.S3.Should().Be(expected);
+        context.ImageLocation!.S3.Should().Be(expected);
         context.StoredObjects.Should().NotBeEmpty();
     }
 
@@ -214,14 +251,14 @@ public class AppetiserImageProcessorTests
     public async Task ProcessImage_UploadsFileToBucket_UsingLocationOnDisk_IfUseOriginal_AndNotOptimised()
     {
         // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel();
-
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-
+        var assetId = new AssetId(1, 2, "test");
         const string locationOnDisk = "/file/on/disk";
-        var context = IngestionContextFactory.GetIngestionContext("/1/2/test", imageDeliveryChannelPolicy: "use-original");
-        context.AssetFromOrigin.Location = locationOnDisk;
+        var context = IngestionContextFactory.GetIngestionContext(assetId, imageDeliveryChannelPolicy: "use-original");
+        context.AssetFromOrigin!.Location = locationOnDisk;
+
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._, A<CancellationToken>._))
+            .Returns(new AppetiserResponseModel());
 
         // Act
         await sut.ProcessImage(context);
@@ -235,16 +272,17 @@ public class AppetiserImageProcessorTests
     }
 
     [Fact]
-    public async Task ProcessImage_SetsImageLocation_WithoutUploading_IfNotS3OptimisedStrategy()
+    public async Task ProcessImage_SetsImageLocation_WithoutUploading_IfUseOriginalAndOptimisedStrategy()
     {
         // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel();
-
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-
-        var context = IngestionContextFactory.GetIngestionContext(imageDeliveryChannelPolicy: "use-original", optimised: true);
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId, imageDeliveryChannelPolicy: "use-original",
+                optimised: true);
         context.Asset.Origin = "https://s3.amazonaws.com/dlcs-storage/2/1/foo-bar";
+
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._, A<CancellationToken>._))
+            .Returns(new AppetiserResponseModel());
 
         const string expected = "s3://dlcs-storage/2/1/foo-bar";
 
@@ -256,7 +294,7 @@ public class AppetiserImageProcessorTests
 
         // Assert
         bucketWriter.Operations.Should().BeEmpty();
-        context.ImageLocation.S3.Should().Be(expected);
+        context.ImageLocation!.S3.Should().Be(expected);
         context.StoredObjects.Should().BeEmpty();
     }
 
@@ -264,26 +302,20 @@ public class AppetiserImageProcessorTests
     public async Task ProcessImage_ProcessesNewThumbs()
     {
         // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel();
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId);
         
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-        
-        A.CallTo(() => thumbsClient.GenerateThumbnails(
-                A<IngestionContext>._, 
-                A<List<string>>._, A<string>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new List<ImageOnDisk>()
-            {
-                new()
-                {
-                    Height = 100, 
-                    Width = 50, 
-                    Path = "/path/to/thumb/100.jpg"
-                }
-            }));
+        var imageProcessorResponse = new AppetiserResponseModel
+        {
+            Thumbs =
+            [
+                new ImageOnDisk { Height = 100, Width = 50, Path = "/path/to/thumb/100.jpg" }
+            ],
+        };
 
-        var context = IngestionContextFactory.GetIngestionContext();
-        context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = false };
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._, A<CancellationToken>._))
+            .Returns(imageProcessorResponse);
 
         // Act
         await sut.ProcessImage(context);
@@ -294,226 +326,127 @@ public class AppetiserImageProcessorTests
             ))
             .MustHaveHappened();
     }
-    
+
     [Fact]
-    public async Task ProcessImage_ProcessesUnionOfThumbs()
+    public async Task ProcessImage_SpecifiesUnionOfThumbSizes()
     {
         // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel();
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId);
         
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-        
-        A.CallTo(() => thumbsClient.GenerateThumbnails(
-                A<IngestionContext>._, 
-                A<List<string>>._, A<string>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new List<ImageOnDisk>()
-            {
-                new()
-                {
-                    Height = 100, 
-                    Width = 50, 
-                    Path = "/path/to/thumb/100.jpg"
-                }
-            }));
+        IReadOnlyList<SizeParameter>? sizes = null;
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._, A<CancellationToken>._))
+            .Invokes((IngestionContext _, AssetId _, IReadOnlyList<SizeParameter> sp, ImageProcessorOperations _,
+                CancellationToken _) => sizes = sp)
+            .Returns(new AppetiserResponseModel());
 
-        var context = IngestionContextFactory.GetIngestionContext();
-        context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = false };
+        var expected = new List<SizeParameter>
+        {
+            SizeParameter.Parse("!1024,1024"),
+            SizeParameter.Parse("!1000,1000"),
+            SizeParameter.Parse("!400,400"),
+            SizeParameter.Parse("!200,200"),
+            SizeParameter.Parse("!100,100"),
+        };
 
         // Act
         await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => thumbsClient.GenerateThumbnails(A<IngestionContext>._,
-            A<List<string>>.That.Matches( x => x.Count == 5), A<string>._, A<CancellationToken>._)
-        ).MustHaveHappened(); // union of delivery channel + default thumbs, with removed duplicates
-        A.CallTo(() => thumbsClient.GenerateThumbnails(A<IngestionContext>._,
-            A<List<string>>.That.Matches( x => x.Contains("!1000,1000")), A<string>._, A<CancellationToken>._)
-        ).MustHaveHappened(); // from ingestion context asset (mimicking delivery channel)
-        A.CallTo(() => thumbsClient.GenerateThumbnails(A<IngestionContext>._,
-            A<List<string>>.That.Matches( x => x.Contains("!1024,1024")), A<string>._, A<CancellationToken>._)
-        ).MustHaveHappened(); // from default thumbs
-        A.CallTo(() => thumbsClient.GenerateThumbnails(A<IngestionContext>._,
-            A<List<string>>.That.Matches( x => x.Count(y => y == "!100,100") == 1), A<string>._, A<CancellationToken>._)
-        ).MustHaveHappened(); // from both
+        sizes!.Should().BeEquivalentTo(expected, "Passed sizes is union of delivery policy and system defaults");
     }
 
     [Fact]
-    public async Task ProcessImage_ProcessesThumbsWhenNoThumbsChannel()
+    public async Task ProcessImage_PassesSystemThumbs_WhenNoThumbsChannel()
     {
         // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel();
-
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-
-        A.CallTo(() => thumbsClient.GenerateThumbnails(
-                A<IngestionContext>._,
-                A<List<string>>._, A<string>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new List<ImageOnDisk>()
-            {
-                new()
-                {
-                    Height = 100,
-                    Width = 50,
-                    Path = "/path/to/thumb/100.jpg"
-                }
-            }));
-
-        var context = IngestionContextFactory.GetIngestionContext();
-        context.Asset.ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId);
+        context.Asset.ImageDeliveryChannels = new List<ImageDeliveryChannel>
         {
             new()
             {
                 Channel = AssetDeliveryChannels.Image,
                 DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
-                DeliveryChannelPolicy = new DeliveryChannelPolicy
-                {
-                    Name = "default"
-                }
+                DeliveryChannelPolicy = new DeliveryChannelPolicy { Name = "default" }
             }
         };
-        context.AssetFromOrigin.CustomerOriginStrategy = new CustomerOriginStrategy { Optimised = false };
+
+        IReadOnlyList<SizeParameter>? sizes = null;
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._, A<CancellationToken>._))
+            .Invokes((IngestionContext _, AssetId _, IReadOnlyList<SizeParameter> sp, ImageProcessorOperations _,
+                CancellationToken _) => sizes = sp)
+            .Returns(new AppetiserResponseModel());
+
+        var expected = new List<SizeParameter>
+        {
+            SizeParameter.Parse("!1024,1024"),
+            SizeParameter.Parse("!400,400"),
+            SizeParameter.Parse("!200,200"),
+            SizeParameter.Parse("!100,100"),
+        };
 
         // Act
         await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => thumbsClient.GenerateThumbnails(A<IngestionContext>._,
-            A<List<string>>.That.Matches(x => x.Count == 4), A<string>._, A<CancellationToken>._)
-        ).MustHaveHappened();
-        A.CallTo(() => thumbsClient.GenerateThumbnails(A<IngestionContext>._,
-            A<List<string>>.That.Matches(x => x.Contains("!1024,1024")), A<string>._, A<CancellationToken>._)
-        ).MustHaveHappened();
-        A.CallTo(() => thumbsClient.GenerateThumbnails(A<IngestionContext>._,
-            A<List<string>>.That.Matches(x => x.Count(y => y == "!100,100") == 1), A<string>._, A<CancellationToken>._)
-        ).MustHaveHappened();
+        sizes!.Should().BeEquivalentTo(expected, "Passed sizes is union of delivery policy and system defaults");
     }
 
-    [Theory]
-    [InlineData("image/jp2")]
-    [InlineData("image/jpx")]
-    public async Task ProcessImage_UseOriginal_NoImageDeliveryChannel(string originContentType)
+    [Fact]
+    public async Task ProcessImage_UseOriginal_NoImageDeliveryChannel_CreatesThumbs_DoesNotStoreAsset()
     {
         // Arrange
         var imageProcessorResponse = new AppetiserResponseModel
         {
             Height = 1000,
             Width = 5000,
+            Thumbs =
+            [
+                new ImageOnDisk { Path = "foo" }, new ImageOnDisk { Path = "bar" }
+            ]
         };
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId, imageDeliveryChannelPolicy: "");
 
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-        
-        A.CallTo(() => thumbsClient.GenerateThumbnails(
-                A<IngestionContext>._, 
-                A<List<string>>._, A<string>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new List<ImageOnDisk>()
-            {
-                new()
-                {
-                    Path = "foo"
-                },
-                new()
-                {
-                    Path = "bar"
-                }
-            }));
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._, A<CancellationToken>._))
+            .Returns(imageProcessorResponse);
 
-        var context = IngestionContextFactory.GetIngestionContext(contentType: originContentType,
-            cos: new CustomerOriginStrategy { Optimised = true, Strategy = OriginStrategyType.S3Ambient },
-            imageDeliveryChannelPolicy: "use-original");
-        
         context.Asset.ImageDeliveryChannels = new List<ImageDeliveryChannel>
         {
             new()
-            { 
+            {
                 Channel = AssetDeliveryChannels.Thumbnails,
                 DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
-                DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                DeliveryChannelPolicy = new DeliveryChannelPolicy
                 {
                     PolicyData = "[\"1000,1000\",\"400,400\",\"200,200\",\"100,100\"]"
                 }
             }
         };
-            
-        context.AssetFromOrigin.Location = "/file/on/disk";
+
+        context.AssetFromOrigin!.Location = "/file/on/disk";
         context.Asset.Origin = "s3://origin/2/1/foo-bar";
-        
+
         A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
 
         // Act
         await sut.ProcessImage(context);
 
         // Assert
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
+        A.CallTo(() =>
+                thumbnailCreator.CreateNewThumbs(context.Asset,
+                    A<IReadOnlyList<ImageOnDisk>>.That.Matches(i => i.Count == 2)))
             .MustHaveHappened();
-        A.CallTo(() => thumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<string>._, A<CancellationToken>._))
-            .MustHaveHappened();
-        A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
-            .MustHaveHappened();
-        context.ImageStorage.ThumbnailSize.Should().Be(200, "Thumbs saved");
+        context.ImageStorage!.ThumbnailSize.Should().Be(200, "Thumbs saved");
         context.ImageStorage.Size.Should().Be(0, "JP2 not written");
         bucketWriter.Operations.Should().BeEmpty();
         context.Asset.Height.Should().Be(1000);
         context.Asset.Width.Should().Be(5000);
         context.StoredObjects.Should().BeEmpty();
-    }
-    
-    [Theory]
-    [InlineData("image/jp2", true, OriginStrategyType.BasicHttp)]
-    [InlineData("image/jp2", false, OriginStrategyType.S3Ambient)]
-    [InlineData("image/tiff", true, OriginStrategyType.S3Ambient)]
-    public async Task ProcessImage_NotJp2_OptimisedOrigin(string originContentType, bool optimised,
-        OriginStrategyType strategyType)
-    {
-        // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel
-        {
-            Height = 1000,
-            Width = 5000,
-        };
-        
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-        
-        A.CallTo(() => thumbsClient.GenerateThumbnails(
-                A<IngestionContext>._, 
-                A<List<string>>._, A<string>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new List<ImageOnDisk>()
-            {
-                new()
-                {
-                    Path = "foo"
-                },
-                new()
-                {
-                    Path = "bar"
-                }
-            }));
-
-        var context = IngestionContextFactory.GetIngestionContext(contentType: originContentType,
-            cos: new CustomerOriginStrategy { Optimised = optimised, Strategy = strategyType });
-        context.AssetFromOrigin.Location = "/file/on/disk";
-        context.Asset.Origin = "s3://origin/2/1/foo-bar";
-        A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
-
-        // Act
-        await sut.ProcessImage(context);
-
-        // Assert
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .MustHaveHappened();
-        A.CallTo(() => thumbsClient.GenerateThumbnails(A<IngestionContext>._, A<List<string>>._, A<string>._, A<CancellationToken>._))
-            .MustHaveHappened();
-        A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
-            .MustHaveHappened();
-        context.ImageStorage.ThumbnailSize.Should().Be(200, "Thumbs saved");
-        context.ImageStorage.Size.Should().Be(100, "JP2 written to S3");
-        bucketWriter.ShouldHaveKey("1/2/something");
-        context.Asset.Height.Should().Be(imageProcessorResponse.Height, "JP2 Generated");
-        context.Asset.Width.Should().Be(imageProcessorResponse.Width, "JP2 Generated");
-        context.StoredObjects.Should().NotBeEmpty();
     }
     
     [Fact]
@@ -524,35 +457,26 @@ public class AppetiserImageProcessorTests
         {
             Height = 1000,
             Width = 5000,
+            Thumbs =
+            [
+                new ImageOnDisk { Path = "foo" }, new ImageOnDisk { Path = "bar" }
+            ]
         };
         
-        A.CallTo(() => appetiserClient.GenerateJP2(A<IngestionContext>._, A<AssetId>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(imageProcessorResponse as IAppetiserResponse));
-        
-        A.CallTo(() => thumbsClient.GenerateThumbnails(
-                A<IngestionContext>._, 
-                A<List<string>>._, A<string>._, A<CancellationToken>._))
-            .Returns(Task.FromResult(new List<ImageOnDisk>()
-            {
-                new()
-                {
-                    Path = "foo"
-                },
-                new()
-                {
-                    Path = "bar"
-                }
-            }));
-
-        var context = IngestionContextFactory.GetIngestionContext(
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId,
             cos: new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient },
             imageDeliveryChannelPolicy: "use-original");
-        context.AssetFromOrigin.Location = "/file/on/disk";
+        context.AssetFromOrigin!.Location = "/file/on/disk";
         context.Asset.Origin = "s3://origin/2/1/foo-bar";
+
+        A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
+                A<ImageProcessorOperations>._, A<CancellationToken>._))
+            .Returns(imageProcessorResponse);
+        
         var alreadyUploadedFile = new RegionalisedObjectInBucket("appetiser-test", $"{context.Asset.Id}/original", "Fake-Region");
         context.StoredObjects.Add(alreadyUploadedFile, -999);
 
-        AppetiserRequestModel? requestModel = null;
         A.CallTo(() => fileSystem.GetFileSize(A<string>._)).Returns(100);
 
         // Act
@@ -561,7 +485,7 @@ public class AppetiserImageProcessorTests
         // Assert
         A.CallTo(() => thumbnailCreator.CreateNewThumbs(context.Asset, A<IReadOnlyList<ImageOnDisk>>._))
             .MustHaveHappened();
-        context.ImageStorage.ThumbnailSize.Should().Be(200, "Thumbs saved");
+        context.ImageStorage!.ThumbnailSize.Should().Be(200, "Thumbs saved");
         context.ImageStorage.Size.Should().Be(0, "JP2 not written to S3");
         bucketWriter.Operations.Should().BeEmpty("JP2 not written to S3");
         context.Asset.Height.Should().Be(imageProcessorResponse.Height);

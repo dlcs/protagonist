@@ -3,7 +3,7 @@ namespace Engine.Ingest.Image.ImageServer.Models;
 /// <summary>
 /// Response model for receiving requests back from Appetiser.
 /// </summary>
-public class AppetiserResponseModel : IAppetiserResponse
+public class AppetiserResponseModel : IImageProcessorResponse
 {
     public string ImageId { get; set; }
     public string JobId { get; set; }
