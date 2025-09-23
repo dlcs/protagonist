@@ -6,26 +6,18 @@ using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
 using Engine.Data;
 using IIIF;
+using IIIF.ImageApi;
 using Newtonsoft.Json;
 
 namespace Engine.Ingest.Image;
 
-public class ThumbCreator : IThumbCreator
+public class ThumbCreator(
+    IBucketWriter bucketWriter,
+    IStorageKeyGenerator storageKeyGenerator,
+    ILogger<ThumbCreator> logger)
+    : IThumbCreator
 {
-    private readonly IBucketWriter bucketWriter;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly ILogger<ThumbCreator> logger;
     private readonly AsyncKeyedLock asyncLocker = new();
-
-    public ThumbCreator(
-        IBucketWriter bucketWriter,
-        IStorageKeyGenerator storageKeyGenerator,
-        ILogger<ThumbCreator> logger)
-    {
-        this.bucketWriter = bucketWriter;
-        this.storageKeyGenerator = storageKeyGenerator;
-        this.logger = logger;
-    }
 
     public async Task<int> CreateNewThumbs(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess)
     {
@@ -40,13 +32,12 @@ public class ThumbCreator : IThumbCreator
         // Images processed Largest->Smallest. This is how they are stored in S3 + DB as it saves reordering on read 
         var orderedThumbs = thumbsToProcess.OrderByDescending(i => Math.Max(i.Height, i.Width)).ToList();
 
-        var maxAvailableThumb = GetMaxThumbnailSize(asset, orderedThumbs);
+        var maxAvailableThumb = GetMaxAvailableThumbnailSize(asset, orderedThumbs);
         var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
         var processedWidths = new List<int>(thumbsToProcess.Count);
         
         using var processLock = await asyncLocker.LockAsync($"create:{assetId}");
 
-        // First is always largest
         foreach (var thumbCandidate in orderedThumbs)
         {
             if (thumbCandidate.Width > asset.Width || thumbCandidate.Height > asset.Height) continue;
@@ -82,7 +73,7 @@ public class ThumbCreator : IThumbCreator
         return thumbnailSizes.Count;
     }
     
-    private Size GetMaxThumbnailSize(Asset asset, List<ImageOnDisk> orderedThumbsToProcess)
+    private static Size GetMaxAvailableThumbnailSize(Asset asset, List<ImageOnDisk> orderedThumbsToProcess)
     {
         if (asset.MaxUnauthorised == 0) return new Size(0, 0);
         if ((asset.MaxUnauthorised ?? -1) == -1) return new Size(orderedThumbsToProcess[0].Width, orderedThumbsToProcess[0].Height);
@@ -106,8 +97,7 @@ public class ThumbCreator : IThumbCreator
         // NOTE - this data is read via AssetApplicationMetadataX.GetThumbsMetadata
         var serializedThumbnailSizes = JsonConvert.SerializeObject(thumbnailSizes);
         var sizesDest = storageKeyGenerator.GetThumbsSizesJsonLocation(asset.Id);
-        await bucketWriter.WriteToBucket(sizesDest, serializedThumbnailSizes,
-            "application/json");
+        await bucketWriter.WriteToBucket(sizesDest, serializedThumbnailSizes, "application/json");
         asset.UpsertApplicationMetadata(AssetApplicationMetadataTypes.ThumbSizes, serializedThumbnailSizes);
     }
 }

@@ -23,12 +23,13 @@ public interface IImageProcessorClient
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Retrieves a JP2 filepath for an image
+    /// Retrieves the JP2 filepath for an image to be ingested
     /// </summary>
     /// <param name="assetId">The asset id used to retrieve the JP2 filepath</param>
     /// <param name="ingestId">The id for the ingest operation associated with this image</param>
-    /// <param name="forImageProcessor">Whether this is for the image processor or not</param>
-    /// <returns></returns>
+    /// <param name="forImageProcessor">True if the generated path is to be passed to image-server. False if the
+    /// generated path is for use by Protagonist only.
+    /// </param>
     public string GetJP2FilePath(AssetId assetId, string ingestId, bool forImageProcessor);
 }
 

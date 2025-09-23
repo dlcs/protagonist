@@ -47,7 +47,7 @@ public class ThumbCreatorTests
         var asset = new Asset(new AssetId(10, 20, "foo"));
         
         // Act
-        var thumbsCreated = await sut.CreateNewThumbs(asset, Array.Empty<ImageOnDisk>());
+        var thumbsCreated = await sut.CreateNewThumbs(asset, []);
         
         // Assert
         thumbsCreated.Should().Be(0);
@@ -272,7 +272,7 @@ public class ThumbCreatorTests
     }
     
     [Fact]
-    public async Task CreateNewThumbs_UploadsNothing_MaxUnauthorisedIs0()
+    public async Task CreateNewThumbs_UploadsAllAuth_MaxUnauthorisedIs0()
     {
         // Arrange
         var assetId = new AssetId(10, 20, "foo");
