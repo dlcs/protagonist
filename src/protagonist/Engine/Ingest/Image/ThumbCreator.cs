@@ -40,8 +40,6 @@ public class ThumbCreator(
 
         foreach (var thumbCandidate in orderedThumbs)
         {
-            if (thumbCandidate.Width > asset.Width || thumbCandidate.Height > asset.Height) continue;
-            
             // Safety check for duplicate
             if (processedWidths.Contains(thumbCandidate.Width))
             {
