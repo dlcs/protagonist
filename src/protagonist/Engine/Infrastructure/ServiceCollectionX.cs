@@ -27,7 +27,6 @@ using Engine.Ingest.Image;
 using Engine.Ingest.Image.Completion;
 using Engine.Ingest.Image.ImageServer;
 using Engine.Ingest.Image.ImageServer.Clients;
-using Engine.Ingest.Image.ImageServer.Measuring;
 using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased;
 using Engine.Ingest.Timebased.Completion;
@@ -104,26 +103,13 @@ public static class ServiceCollectionX
         if (engineSettings.ImageIngest != null)
         {
             services.AddTransient<TimingHandler>();
-            services.AddScoped<IImageProcessor, AppetiserImageProcessor>()
-                .AddScoped<IImageMeasurer, ImageSharpMeasurer>();
+            services.AddScoped<IImageProcessor, AppetiserImageProcessor>();
 
             services.AddHttpClient<IImageProcessorClient, AppetiserClient>(client =>
             {
                 client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
                 client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
             }).AddHttpMessageHandler<TimingHandler>();
-
-            services.AddHttpClient<IThumbsClient, ImageServerThumbsClient>(client =>
-                {
-                    var thumbsClient = new UriBuilder(engineSettings.ImageIngest.ThumbsProcessorUrl)
-                    {
-                        Path = engineSettings.ImageIngest.ThumbsProcessorPathBase
-                    };
-                    client.BaseAddress = thumbsClient.Uri;
-                    client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
-                })
-                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false })
-                .AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<IOrchestratorClient, InfoJsonOrchestratorClient>(client =>
             {

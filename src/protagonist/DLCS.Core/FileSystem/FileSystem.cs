@@ -47,10 +47,4 @@ public class FileSystem : IFileSystem
     }
 
     public void SetLastWriteTimeUtc(string path, DateTime dateTime) => File.SetLastWriteTimeUtc(path, dateTime);
-    
-    public async Task CreateFileFromStream(string path, Stream stream, CancellationToken cancellationToken = default)
-    {
-        await using var fileStream = new FileStream(path, FileMode.Create);
-        await stream.CopyToAsync(fileStream, cancellationToken);
-    }
 }

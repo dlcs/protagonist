@@ -166,12 +166,6 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
         return new ObjectInBucket(s3Options.SecurityObjectsBucket, key);
     }
 
-    public RegionalisedObjectInBucket GetTransientImageLocation(AssetId assetId)
-    {
-        var key = GetStorageKey(assetId);
-        return new RegionalisedObjectInBucket(s3Options.StorageBucket, $"transient/{key}", awsSettings.Region);
-    }
-
     public ObjectInBucket GetTranscodeDestinationRoot(AssetId assetId, string jobId)
     {
         var key = $"{jobId}/{GetStorageKey(assetId)}/transcode";

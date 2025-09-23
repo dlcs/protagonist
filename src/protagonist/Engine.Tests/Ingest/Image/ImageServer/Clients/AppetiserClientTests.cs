@@ -1,7 +1,4 @@
 ﻿using System.Net;
-using System.Net.Http.Headers;
-using System.Text.Json;
-using DLCS.Core.Types;
 using Engine.Ingest.Image.ImageServer;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Models;

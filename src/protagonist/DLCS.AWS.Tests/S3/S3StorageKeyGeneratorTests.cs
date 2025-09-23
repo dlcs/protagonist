@@ -357,20 +357,6 @@ public class S3StorageKeyGeneratorTests
     }
     
     [Fact]
-    public void GetTransientImageLocation_Correct()
-    {
-        // Arrange
-        var assetId = new AssetId(10, 20, "foo-bar");
-        
-        // Act
-        var result = sut.GetTransientImageLocation(assetId);
-        
-        // Assert
-        result.Bucket.Should().Be("test-storage");
-        result.Key.Should().Be("transient/10/20/foo-bar");
-    }
-    
-    [Fact]
     public void GetTranscodeDestinationRoot_Correct()
     {
         // Arrange

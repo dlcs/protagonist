@@ -25,10 +25,4 @@ public class FakeFileSystem : IFileSystem
     {
         // no-op
     }
-
-    public Task CreateFileFromStream(string path, Stream stream, CancellationToken cancellationToken = default)
-    {
-        return Task.CompletedTask;
-        // no-op
-    }
 }

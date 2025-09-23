@@ -53,9 +53,6 @@ public class AppetiserImageProcessorTests
         A.CallTo(() => storageKeyGenerator.GetStoredOriginalLocation(A<AssetId>._))
             .ReturnsLazily((AssetId assetId) =>
                 new RegionalisedObjectInBucket("appetiser-test", $"{assetId}/original", "Fake-Region"));
-        A.CallTo(() => storageKeyGenerator.GetTransientImageLocation(A<AssetId>._))
-            .ReturnsLazily((AssetId assetId) =>
-                new RegionalisedObjectInBucket("appetiser-test", $"transient/{assetId}", "Fake-Region"));
 
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
 

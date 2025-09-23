@@ -17,5 +17,4 @@ public interface IFileSystem
     bool FileExists(string path);
     long GetFileSize(string path);
     void SetLastWriteTimeUtc(string path, DateTime dateTime);
-    Task CreateFileFromStream(string path, Stream stream, CancellationToken cancellationToken = default);
 }
