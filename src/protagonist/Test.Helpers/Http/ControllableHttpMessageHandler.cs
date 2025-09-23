@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -12,14 +14,30 @@ namespace Test.Helpers.Http;
 /// </summary>
 public class ControllableHttpMessageHandler : HttpMessageHandler
 {
+    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
     private HttpResponseMessage response;
-    public List<string> CallsMade { get; }= new List<string>();
+    public List<string> CallsMade { get; }= new();
 
     private Action<HttpRequestMessage> Callback { get; set; }
 
     private Dictionary<string, CallAndResponse> Callbacks { get; } = new();
     private Dictionary<string, Predicate<HttpRequestMessage>> CallbackSelectors { get; } = new();
+    
+    /// <summary>
+    /// Helper method to generate an HttpResponseMessage object
+    /// </summary>
+    public HttpResponseMessage GetJsonResponseMessage<T>(T content, HttpStatusCode httpStatusCode)
+    {
+        var serialized = JsonSerializer.Serialize(content, Settings);
+        var httpContent = new StringContent(serialized, Encoding.UTF8, "application/json");
 
+        response = new HttpResponseMessage
+        {
+            StatusCode = httpStatusCode,
+            Content = httpContent,
+        };
+        return response;
+    }
 
     /// <summary>
     /// Helper method to generate an HttpResponseMessage object

@@ -2,9 +2,13 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using DLCS.Core.Types;
+using Engine.Ingest.Image.ImageServer;
 using Engine.Ingest.Image.ImageServer.Clients;
 using Engine.Ingest.Image.ImageServer.Models;
 using Engine.Settings;
+using IIIF.ImageApi;
+using Microsoft.Extensions.Logging.Abstractions;
+using Test.Helpers.Data;
 using Test.Helpers.Http;
 using Test.Helpers.Settings;
 
@@ -14,7 +18,10 @@ public class AppetiserClientTests
 {
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly IImageProcessorClient sut;
-    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
+    
+
+    private readonly IReadOnlyList<SizeParameter> thumbnailSizes =
+        [SizeParameter.Parse("!1024,1024"), SizeParameter.Parse("880,")];
     
     public AppetiserClientTests()
     {
@@ -33,58 +40,91 @@ public class AppetiserClientTests
 
         var httpClient = new HttpClient(httpHandler);
         httpClient.BaseAddress = new Uri("http://image-processor/");
-        sut = new AppetiserClient(httpClient, optionsMonitor);
-    }
-
-    [Fact]
-    public async Task GenerateJpeg2000_ReturnsSuccessfulAppetiserResponse_WhenSuccess()
-    {
-        // Arrange
-        var imageProcessorResponse = new AppetiserResponseModel
-        {
-            Height = 1000,
-            Width = 5000,
-        };
-
-        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
-            HttpStatusCode.OK);
-        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-        httpHandler.SetResponse(response);
-        var context = IngestionContextFactory.GetIngestionContext();
-
-        // Act
-        var appetiserResponse = await sut.GenerateJP2(context, new AssetId(1, 2, "stuff/asset"));
-
-        var convertedAppetiserResponse = appetiserResponse as AppetiserResponseModel;
-
-        // Assert
-        convertedAppetiserResponse.Height.Should().Be(imageProcessorResponse.Height);
-        convertedAppetiserResponse.Width.Should().Be(imageProcessorResponse.Width);
+        sut = new AppetiserClient(httpClient, optionsMonitor, NullLogger<AppetiserClient>.Instance);
     }
     
     [Fact]
-    public async Task GenerateJpeg2000_ReturnsErrorAppetiserResponse_WhenNotSuccess()
+    public async Task GenerateDerivatives_ReturnsError_IfNoImageProcessorOptions()
     {
-        // Arrange
-        var imageProcessorResponse = new AppetiserResponseErrorModel()
-        {
-            Message = "Error",
-            Status = "Error"
-        };
-
-        var response = httpHandler.GetResponseMessage(JsonSerializer.Serialize(imageProcessorResponse, Settings),
-            HttpStatusCode.InternalServerError);
-        response.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-        httpHandler.SetResponse(response);
-        var context = IngestionContextFactory.GetIngestionContext();
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId);
         
         // Act
-        var appetiserResponse = await sut.GenerateJP2(context, new AssetId(1, 2, "stuff/asset"));
-
-        var convertedAppetiserResponse = appetiserResponse as AppetiserResponseErrorModel;
+        var response = await sut.GenerateDerivatives(context, assetId, thumbnailSizes, ImageProcessorOperations.None);
 
         // Assert
-        convertedAppetiserResponse.Message.Should().Be(imageProcessorResponse.Message);
-        convertedAppetiserResponse.Status.Should().Be(imageProcessorResponse.Status);
+        var errorResponse = (AppetiserResponseErrorModel)response;
+        errorResponse.Status.Should().Be("500");
+        errorResponse.Message.Should().Be("You must specify an operation");
+    }
+    
+    [Theory]
+    [InlineData(ImageProcessorOperations.Thumbnails | ImageProcessorOperations.Derivative, "ingest")]
+    [InlineData(ImageProcessorOperations.Thumbnails, "derivatives-only")]
+    public async Task GenerateDerivatives_MakesCorrectRequest(ImageProcessorOperations operation, string passedValue)
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId);
+
+        HttpRequestMessage message = null!;
+        AppetiserRequestModel requestModel = null!;
+        httpHandler.RegisterCallback(r =>
+        {
+            message = r;
+            requestModel = message.Content.ReadAsAsync<AppetiserRequestModel>().Result;
+        });
+
+        // Act
+        await sut.GenerateDerivatives(context, assetId, thumbnailSizes, operation);
+
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle().Which.Should().Be("http://image-processor/convert");
+        message.Method.Should().Be(HttpMethod.Post);
+        requestModel.Operation.Should().Be(passedValue);
+    }
+
+    [Fact]
+    public async Task GenerateDerivatives_ReturnsSuccessfulAppetiserResponse_WhenSuccess()
+    {
+        // Arrange
+        var imageProcessorResponse = new AppetiserResponseModel { Height = 1000, Width = 5000, };
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId);
+
+        var httpResponse = httpHandler.GetJsonResponseMessage(imageProcessorResponse, HttpStatusCode.OK);
+        httpHandler.SetResponse(httpResponse);
+
+        // Act
+        var response =
+            await sut.GenerateDerivatives(context, assetId, thumbnailSizes, ImageProcessorOperations.Derivative);
+        
+        // Assert
+        var convertedResponse = (AppetiserResponseModel)response;
+        convertedResponse.Height.Should().Be(imageProcessorResponse.Height);
+        convertedResponse.Width.Should().Be(imageProcessorResponse.Width);
+    }
+    
+    [Fact]
+    public async Task GenerateDerivatives_ReturnsErrorAppetiserResponse_WhenNotSuccess()
+    {
+        // Arrange
+        var imageProcessorResponse = new AppetiserResponseErrorModel { Message = "Error Message", Status = "Error" };
+
+        var assetId = AssetIdGenerator.GetAssetId();
+        var context = IngestionContextFactory.GetIngestionContext(assetId);
+
+        var httpResponse =
+            httpHandler.GetJsonResponseMessage(imageProcessorResponse, HttpStatusCode.UnprocessableContent);
+        httpHandler.SetResponse(httpResponse);
+
+        // Act
+        var response =
+            await sut.GenerateDerivatives(context, assetId, thumbnailSizes, ImageProcessorOperations.Derivative);
+
+        // Assert
+        var convertedResponse = (AppetiserResponseErrorModel)response;
+        convertedResponse.Message.Should().Be(imageProcessorResponse.Message);
+        convertedResponse.Status.Should().Be(imageProcessorResponse.Status);
     }
 }

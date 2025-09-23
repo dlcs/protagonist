@@ -27,14 +27,6 @@ public class AppetiserClient(
         Message = "Unknown response from Appetiser", Status = "503"
     };
 
-    public async Task<IImageProcessorResponse> GenerateJP2(
-        IngestionContext context, 
-        AssetId modifiedAssetId,
-        CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task<IImageProcessorResponse> GenerateDerivatives(IngestionContext context, AssetId modifiedAssetId,
         IReadOnlyList<SizeParameter> thumbnailSizes, ImageProcessorOperations options,
         CancellationToken cancellationToken = default)
@@ -54,14 +46,12 @@ public class AppetiserClient(
             if (response.IsSuccessStatusCode)
             {
                 responseModel =
-                    await response.Content.ReadFromJsonAsync<AppetiserResponseModel>(
-                        cancellationToken: cancellationToken);
+                    await response.Content.ReadFromJsonAsync<AppetiserResponseModel>(cancellationToken);
             }
             else
             {
                 responseModel =
-                    await response.Content.ReadFromJsonAsync<AppetiserResponseErrorModel>(
-                        cancellationToken: cancellationToken);
+                    await response.Content.ReadFromJsonAsync<AppetiserResponseErrorModel>(cancellationToken);
             }
 
             return responseModel ?? UnknownResponse;
