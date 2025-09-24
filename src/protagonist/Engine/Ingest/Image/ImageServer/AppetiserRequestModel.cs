@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Engine.Ingest.Image.ImageServer;
 
 /// <summary>
@@ -13,5 +15,7 @@ public class AppetiserRequestModel
     public required string Optimisation { get; init; }
     public required string Operation { get; init; }
     public required string Origin { get; init; }
-    public required IEnumerable<string> ThumbIIIFSize  { get; init; }
+    
+    [JsonPropertyName("thumbIIIFSizes")]
+    public required IEnumerable<string> ThumbIIIFSizes  { get; init; }
 }

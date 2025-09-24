@@ -94,7 +94,8 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 new ImageOnDisk { Height = 800, Width = 400, Path = "/path/to/800.jpg" },
                 new ImageOnDisk { Height = 400, Width = 200, Path = "/path/to/400.jpg" },
                 new ImageOnDisk { Height = 200, Width = 100, Path = "/path/to/200.jpg" }
-            ]
+            ],
+            JP2 = "/path/to.jp2"
         };
 
         var appetiserResponseJson = JsonSerializer.Serialize(appetiserResponse, settings);

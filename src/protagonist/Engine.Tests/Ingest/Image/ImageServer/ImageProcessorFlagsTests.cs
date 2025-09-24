@@ -18,7 +18,7 @@ public class ImageProcessorFlagsTests
         var context = new IngestionContext(new Asset());
         
         // Act
-        Action action = () => new AppetiserImageProcessor.ImageProcessorFlags(context, "");
+        Action action = () => new AppetiserImageProcessor.ImageProcessorFlags(context);
         
         // Asset
         action.Should().Throw<ArgumentNullException>();
@@ -31,7 +31,7 @@ public class ImageProcessorFlagsTests
         var context = GetContext(false, false, "image/tiff");
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         
         // Asset
         flags.Operations.Should()
@@ -40,7 +40,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
-        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
 
     [Fact]
@@ -50,7 +49,7 @@ public class ImageProcessorFlagsTests
         var context = GetContext(false, true, "image/tiff");
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         
         // Asset
         flags.Operations.Should()
@@ -59,7 +58,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
-        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
     
     [Fact]
@@ -69,7 +67,7 @@ public class ImageProcessorFlagsTests
         var context = GetContext(false, true, "image/tiff", false);
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         
         // Asset
         flags.Operations.Should()
@@ -78,7 +76,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
     
     [Fact]
@@ -88,7 +85,7 @@ public class ImageProcessorFlagsTests
         var context = GetContext(false, false, "image/jp2", false);
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         
         // Asset
         flags.Operations.Should()
@@ -97,7 +94,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
     
     [Fact]
@@ -107,7 +103,7 @@ public class ImageProcessorFlagsTests
         var context = GetContext(false, true, "image/tiff", false);
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         context.Asset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.File,
@@ -121,7 +117,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
     
     [Fact]
@@ -131,7 +126,7 @@ public class ImageProcessorFlagsTests
         var context = GetContext(false, false, "image/jp2", false);
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         context.Asset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.File,
@@ -145,7 +140,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
 
     [Fact]
@@ -155,7 +149,7 @@ public class ImageProcessorFlagsTests
         var context = GetContext(true, false, "image/jp2");
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         
         // Asset
         flags.Operations.Should()
@@ -164,7 +158,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeTrue();
-        flags.ImageServerFilePath.Should().Be("/path/to/original");
     }
 
    
@@ -175,7 +168,7 @@ public class ImageProcessorFlagsTests
         var context = GetContext(true, true, "image/tiff");
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         
         // Asset
         flags.Operations.Should()
@@ -184,7 +177,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be("/path/to/original");
     }
     
     [Fact]
@@ -194,7 +186,7 @@ public class ImageProcessorFlagsTests
         var context = GetContext(true, true, "image/tiff", false);
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         
         // Asset
         flags.Operations.Should()
@@ -203,7 +195,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
     
     [Fact]
@@ -213,7 +204,7 @@ public class ImageProcessorFlagsTests
         var context = GetContext(true, false, "image/jp2", false);
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         
         // Asset
         flags.Operations.Should()
@@ -222,7 +213,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
     
     [Fact]
@@ -238,7 +228,7 @@ public class ImageProcessorFlagsTests
         });
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         
         // Asset
         flags.Operations.Should()
@@ -247,7 +237,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeTrue();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be("/path/to/generated.jp2");
     }
 
     [Fact]
@@ -263,7 +252,7 @@ public class ImageProcessorFlagsTests
         });
         
         // Act
-        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context, "/path/to/generated.jp2");
+        var flags = new AppetiserImageProcessor.ImageProcessorFlags(context);
         
         // Asset
         flags.Operations.Should()
@@ -272,7 +261,6 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeTrue();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
-        flags.ImageServerFilePath.Should().Be($"/path/to/generated.jp2");
     }
     
     private static IngestionContext GetContext(bool useOriginal, 

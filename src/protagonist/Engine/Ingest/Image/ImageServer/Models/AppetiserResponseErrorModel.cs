@@ -6,5 +6,5 @@
 public class AppetiserResponseErrorModel : IImageProcessorResponse
 {
     public required string Message { get; init; }
-    public required string Status { get; init; }
+    public required int Status { get; init; }
 }

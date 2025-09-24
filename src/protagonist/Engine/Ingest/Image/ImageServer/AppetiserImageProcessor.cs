@@ -3,7 +3,6 @@ using DLCS.AWS.S3.Models;
 using DLCS.Core;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Guard;
-using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
@@ -40,7 +39,7 @@ public class AppetiserImageProcessor(
 
         try
         {
-            var flags = new ImageProcessorFlags(context, appetiserClient.GetJP2FilePath(modifiedAssetId, context.IngestId, false));
+            var flags = new ImageProcessorFlags(context);
             logger.LogDebug("Got flags '{@Flags}' for {AssetId}", flags, context.AssetId);
             var sizes = GetThumbSizes(context);
             var responseModel =
@@ -49,7 +48,7 @@ public class AppetiserImageProcessor(
             switch (responseModel)
             {
                 case AppetiserResponseModel successResponse:
-                    await ProcessResponse(context, successResponse, flags, modifiedAssetId);
+                    await ProcessResponse(context, successResponse, flags);
                     return true;
                 case AppetiserResponseErrorModel failResponse:
                     context.Asset.Error = $"Appetiser Error: {failResponse.Message}";
@@ -101,21 +100,23 @@ public class AppetiserImageProcessor(
         {
             sizes = sizes.Union(thumbPolicy).ToList();
         }
-        
-        return sizes.Select(SizeParameter.Parse).ToList();
+
+        var sizeParameters = sizes.Select(SizeParameter.Parse).ToList();
+        logger.LogDebug("Using size parameters {SizeParams}", sizeParameters);
+        return sizeParameters;
     }
 
     private async Task ProcessResponse(IngestionContext context, AppetiserResponseModel responseModel, 
-        ImageProcessorFlags processorFlags, AssetId modifiedAssetId)
+        ImageProcessorFlags processorFlags)
     {
         // Update dimensions on Asset
         UpdateImageDimensions(context.Asset, responseModel);
 
         // Process output: upload derivative/original to DLCS storage if required and set Location + Storage on context 
-        await ProcessOriginImage(context, processorFlags);
+        await ProcessOriginImage(context, processorFlags, responseModel.JP2);
         
         // Create new thumbnails + update Storage on context
-        await CreateNewThumbs(context, responseModel, modifiedAssetId);
+        await CreateNewThumbs(context, responseModel);
     }
 
     private static void UpdateImageDimensions(Asset asset, AppetiserResponseModel responseModel)
@@ -124,7 +125,8 @@ public class AppetiserImageProcessor(
         asset.Width = responseModel.Width;
     }
 
-    private async Task ProcessOriginImage(IngestionContext context, ImageProcessorFlags processorFlags)
+    private async Task ProcessOriginImage(IngestionContext context, ImageProcessorFlags processorFlags,
+        string? imageServerFile)
     {
         var asset = context.Asset;
 
@@ -166,7 +168,11 @@ public class AppetiserImageProcessor(
             logger.LogDebug("Asset {AssetId} derivative will be stored in DLCS storage", context.AssetId);
         }
 
-        var imageServerFile = processorFlags.ImageServerFilePath;
+        if (string.IsNullOrEmpty(imageServerFile))
+        {
+            logger.LogWarning("No JP2 output file to save but SaveInDlcsStorage was true");
+            return;
+        }
         var contentType = processorFlags.OriginIsImageServerReady ? context.Asset.MediaType : MIMEHelper.JP2;
 
         logger.LogDebug("Asset {Asset} will be stored to {S3Location} with content-type {ContentType}", context.AssetId,
@@ -177,7 +183,7 @@ public class AppetiserImageProcessor(
                 $"Failed to write image-server file {imageServerFile} to storage bucket with content-type {contentType}");
         }
         
-        var storedImageSize = fileSystem.GetFileSize(processorFlags.ImageServerFilePath);
+        var storedImageSize = fileSystem.GetFileSize(imageServerFile);
         context.StoredObjects[targetStorageLocation] = storedImageSize;
         context.WithStorage(assetSize: storedImageSize);
 
@@ -192,27 +198,12 @@ public class AppetiserImageProcessor(
         }
     }
 
-    private async Task CreateNewThumbs(IngestionContext context, AppetiserResponseModel responseModel,
-        AssetId modifiedAssetId)
+    private async Task CreateNewThumbs(IngestionContext context, AppetiserResponseModel responseModel)
     {
-        SetThumbsOnDiskLocation(responseModel, modifiedAssetId);
-
         await thumbCreator.CreateNewThumbs(context.Asset, responseModel.Thumbs.ToList());
 
         var thumbSize = responseModel.Thumbs.Sum(t => fileSystem.GetFileSize(t.Path));
         context.WithStorage(thumbnailSize: thumbSize);
-    }
-    
-    private void SetThumbsOnDiskLocation(AppetiserResponseModel responseModel, AssetId modifiedAssetId)
-    {
-        // Update the location of all thumbs to be full path on disk, relative to orchestrator
-        var partialTemplate = TemplatedFolders.GenerateFolderTemplate(imageIngestSettings.ThumbsTemplate,
-            modifiedAssetId, root: imageIngestSettings.GetRoot());
-        foreach (var thumb in responseModel.Thumbs)
-        {
-            var key = thumb.Path.EverythingAfterLast('/');
-            thumb.Path = string.Concat(partialTemplate, key);
-        }
     }
 
     public class ImageProcessorFlags
@@ -248,9 +239,10 @@ public class AppetiserImageProcessor(
         /// This can be the Origin file as-is, or the generated JP2. 
         /// </summary>
         /// <remarks>Used for calculating size and uploading (if required)</remarks>
-        public string ImageServerFilePath { get; }
+        //[Obsolete("This should be on the Appetiser model only")]
+        //public string ImageServerFilePath { get; }
 
-        public ImageProcessorFlags(IngestionContext ingestionContext, string jp2OutputPath)
+        public ImageProcessorFlags(IngestionContext ingestionContext)
         {
             var assetFromOrigin =
                 ingestionContext.AssetFromOrigin.ThrowIfNull(nameof(ingestionContext.AssetFromOrigin));
@@ -263,7 +255,7 @@ public class AppetiserImageProcessor(
 
             // only set image server ready if an image server ready policy is set explicitly
             OriginIsImageServerReady = imagePolicy != null && derivativesOnlyPolicies.Contains(imagePolicy);
-            ImageServerFilePath = OriginIsImageServerReady ? assetFromOrigin.Location : jp2OutputPath;
+            //ImageServerFilePath = OriginIsImageServerReady ? assetFromOrigin.Location : jp2OutputPath;
 
             // We will always be generating thumbs
             Operations = ImageProcessorOperations.Thumbnails;

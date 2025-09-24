@@ -9,7 +9,7 @@ public interface IImageProcessorClient
     /// <summary>
     /// Calls image-processor to generate a image derivatives
     /// </summary>
-    /// <param name="modifiedAssetId">The modified asset id</param>
+    /// <param name="modifiedAssetId">The modified asset id (ie safe to use in file path)</param>
     /// <param name="context">Ingestion context for the request</param>
     /// <param name="thumbnailSizes">A list of IIIF SizeParameters for thumbnail sizes</param>
     /// <param name="options">Image processing instructions</param>
@@ -21,16 +21,6 @@ public interface IImageProcessorClient
         IReadOnlyList<SizeParameter> thumbnailSizes,
         ImageProcessorOperations options,
         CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Retrieves the JP2 filepath for an image to be ingested
-    /// </summary>
-    /// <param name="assetId">The asset id used to retrieve the JP2 filepath</param>
-    /// <param name="ingestId">The id for the ingest operation associated with this image</param>
-    /// <param name="forImageProcessor">True if the generated path is to be passed to image-server. False if the
-    /// generated path is for use by Protagonist only.
-    /// </param>
-    public string GetJP2FilePath(AssetId assetId, string ingestId, bool forImageProcessor);
 }
 
 

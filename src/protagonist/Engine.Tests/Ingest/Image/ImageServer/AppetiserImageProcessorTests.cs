@@ -104,7 +104,7 @@ public class AppetiserImageProcessorTests
             .Returns(new AppetiserResponseErrorModel
             {
                 Message = "error message",
-                Status = "some status"
+                Status = 422
             });
 
 
@@ -218,9 +218,10 @@ public class AppetiserImageProcessorTests
 
         A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
                 A<ImageProcessorOperations>._, A<CancellationToken>._))
-            .Returns(new AppetiserResponseModel());
-        A.CallTo(() => appetiserClient.GetJP2FilePath(assetId, context.IngestId, A<bool>._))
-            .Returns($"scratch/{context.IngestId}/1/2/test/outputtest.jp2");
+            .Returns(new AppetiserResponseModel
+            {
+                JP2 = $"scratch/{context.IngestId}/1/2/test/outputtest.jp2"
+            });
 
         context.AssetFromOrigin!.CustomerOriginStrategy = new CustomerOriginStrategy
         {
@@ -255,7 +256,10 @@ public class AppetiserImageProcessorTests
 
         A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
                 A<ImageProcessorOperations>._, A<CancellationToken>._))
-            .Returns(new AppetiserResponseModel());
+            .Returns(new AppetiserResponseModel
+            {
+                JP2 = locationOnDisk,
+            });
 
         // Act
         await sut.ProcessImage(context);
