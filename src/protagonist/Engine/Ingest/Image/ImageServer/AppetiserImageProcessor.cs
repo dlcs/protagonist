@@ -133,9 +133,15 @@ public class AppetiserImageProcessor(
         if (!processorFlags.SaveInDlcsStorage)
         {
             // Optimised + either image-server ready OR no image channel. No need to store - set imageLocation to origin
-            logger.LogDebug("Asset {AssetId} can be served from origin. No file to save", context.AssetId);
-            var originObject = RegionalisedObjectInBucket.Parse(asset.Origin!, true)!;
-            SetAssetLocation(originObject);
+            logger.LogDebug("Asset {AssetId} can be served from origin or no image channel. No file to save",
+                context.AssetId);
+
+            if (processorFlags.HasImageDeliveryChannel)
+            {
+                var originObject = RegionalisedObjectInBucket.Parse(asset.Origin!, true)!;
+                SetAssetLocation(originObject);
+            }
+
             return;
         }
 
@@ -209,6 +215,11 @@ public class AppetiserImageProcessor(
     public class ImageProcessorFlags
     {
         private readonly List<string> derivativesOnlyPolicies = ["use-original"];
+        
+        /// <summary>
+        /// Whether this has image delivery channel
+        /// </summary>
+        public bool HasImageDeliveryChannel { get; }
 
         /// <summary>
         /// Flags for what operations are required when processing image
@@ -234,43 +245,34 @@ public class AppetiserImageProcessor(
         /// </summary>
         public bool AlreadyUploadedNoImage { get; set; }
 
-        /// <summary>
-        /// Path on disk where image-server ready file will be located.
-        /// This can be the Origin file as-is, or the generated JP2. 
-        /// </summary>
-        /// <remarks>Used for calculating size and uploading (if required)</remarks>
-        //[Obsolete("This should be on the Appetiser model only")]
-        //public string ImageServerFilePath { get; }
-
         public ImageProcessorFlags(IngestionContext ingestionContext)
         {
             var assetFromOrigin =
                 ingestionContext.AssetFromOrigin.ThrowIfNull(nameof(ingestionContext.AssetFromOrigin));
 
-            var hasImageDeliveryChannel = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image);
+            HasImageDeliveryChannel = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.Image);
 
-            var imagePolicy = hasImageDeliveryChannel
+            var imagePolicy = HasImageDeliveryChannel
                 ? ingestionContext.Asset.ImageDeliveryChannels.GetImageChannel()?.DeliveryChannelPolicy.Name
                 : null;
 
             // only set image server ready if an image server ready policy is set explicitly
             OriginIsImageServerReady = imagePolicy != null && derivativesOnlyPolicies.Contains(imagePolicy);
-            //ImageServerFilePath = OriginIsImageServerReady ? assetFromOrigin.Location : jp2OutputPath;
 
             // We will always be generating thumbs
             Operations = ImageProcessorOperations.Thumbnails;
 
             // We will want to generate a JP2 derivative unless it's use-original
-            if (hasImageDeliveryChannel && !OriginIsImageServerReady)
+            if (HasImageDeliveryChannel && !OriginIsImageServerReady)
             {
                 Operations |= ImageProcessorOperations.Derivative;
             }
 
             AlreadyUploadedNoImage = ingestionContext.Asset.HasDeliveryChannel(AssetDeliveryChannels.File) &&
-                                     !hasImageDeliveryChannel;
+                                     !HasImageDeliveryChannel;
 
             // Save in DLCS unless the image is image-server ready AND the strategy is optimised
-            if (!hasImageDeliveryChannel)
+            if (!HasImageDeliveryChannel)
             {
                 SaveInDlcsStorage = false;
             }

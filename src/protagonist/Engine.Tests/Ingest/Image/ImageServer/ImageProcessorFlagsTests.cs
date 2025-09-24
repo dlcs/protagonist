@@ -40,6 +40,7 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
+        flags.HasImageDeliveryChannel.Should().BeTrue();
     }
 
     [Fact]
@@ -58,6 +59,7 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeTrue();
+        flags.HasImageDeliveryChannel.Should().BeTrue();
     }
     
     [Fact]
@@ -76,6 +78,7 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.HasImageDeliveryChannel.Should().BeFalse();
     }
     
     [Fact]
@@ -94,6 +97,7 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.HasImageDeliveryChannel.Should().BeFalse();
     }
     
     [Fact]
@@ -117,6 +121,7 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.HasImageDeliveryChannel.Should().BeFalse();
     }
     
     [Fact]
@@ -140,6 +145,7 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.HasImageDeliveryChannel.Should().BeFalse();
     }
 
     [Fact]
@@ -158,8 +164,8 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeTrue();
+        flags.HasImageDeliveryChannel.Should().BeTrue();
     }
-
    
     [Fact]
     public void Ctor_UseOriginal_Optimised()
@@ -177,6 +183,7 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeTrue();
         flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.HasImageDeliveryChannel.Should().BeTrue();
     }
     
     [Fact]
@@ -195,6 +202,7 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.HasImageDeliveryChannel.Should().BeFalse();
     }
     
     [Fact]
@@ -213,6 +221,7 @@ public class ImageProcessorFlagsTests
         flags.AlreadyUploadedNoImage.Should().BeFalse();
         flags.OriginIsImageServerReady.Should().BeFalse();
         flags.SaveInDlcsStorage.Should().BeFalse();
+        flags.HasImageDeliveryChannel.Should().BeFalse();
     }
     
     [Fact]
