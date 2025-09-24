@@ -5,6 +5,6 @@
 /// </summary>
 public class AppetiserResponseErrorModel : IImageProcessorResponse
 {
-    public string Message { get; set; }
-    public string Status { get; set; }
+    public required string Message { get; init; }
+    public required string Status { get; init; }
 }

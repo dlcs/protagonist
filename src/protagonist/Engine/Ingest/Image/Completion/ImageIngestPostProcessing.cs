@@ -81,12 +81,12 @@ public class ImageIngestPostProcessing : IImageIngestPostProcessing
     private bool ShouldOrchestrate(int customerId)
     {
         var customerSpecific = engineSettings.GetCustomerSettings(customerId);
-        return customerSpecific.OrchestrateImageAfterIngest ?? engineSettings.ImageIngest.OrchestrateImageAfterIngest;
+        return customerSpecific.OrchestrateImageAfterIngest ?? engineSettings.ImageIngest!.OrchestrateImageAfterIngest;
     }
 
     private void DeleteWorkingFolder(IngestionContext ingestionContext)
     {
-        var sourceTemplate = ImageIngestionHelpers.GetWorkingFolder(ingestionContext.IngestId, engineSettings.ImageIngest);
+        var sourceTemplate = ImageIngestionHelpers.GetWorkingFolder(ingestionContext.IngestId, engineSettings.ImageIngest!);
         fileSystem.DeleteDirectory(sourceTemplate, true);
     }
 }

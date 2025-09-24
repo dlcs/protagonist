@@ -46,18 +46,17 @@ public class AppetiserImageProcessor(
             var responseModel =
                 await appetiserClient.GenerateDerivatives(context, modifiedAssetId, sizes, flags.Operations);
 
-            if (responseModel is AppetiserResponseModel successResponse)
+            switch (responseModel)
             {
-                await ProcessResponse(context, successResponse, flags, modifiedAssetId);
-                return true;
+                case AppetiserResponseModel successResponse:
+                    await ProcessResponse(context, successResponse, flags, modifiedAssetId);
+                    return true;
+                case AppetiserResponseErrorModel failResponse:
+                    context.Asset.Error = $"Appetiser Error: {failResponse.Message}";
+                    return false;
+                default:
+                    return false;
             }
-            else if (responseModel is AppetiserResponseErrorModel failResponse)
-            {
-                context.Asset.Error = $"Appetiser Error: {failResponse.Message}";
-                return false;
-            }
-
-            return false;
         }
         catch (Exception e)
         {

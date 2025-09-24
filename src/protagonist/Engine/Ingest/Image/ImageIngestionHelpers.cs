@@ -20,7 +20,7 @@ internal static class ImageIngestionHelpers
     /// </summary>
     public static string GetSourceFolder(IngestionContext ingestionContext, EngineSettings engineSettings)
     {
-        var imageIngest = engineSettings.ImageIngest;
+        var imageIngest = engineSettings.ImageIngest!;
         var workingFolder = GetWorkingFolder(ingestionContext.IngestId, imageIngest);
         
         // source is the main folder for storing downloaded image

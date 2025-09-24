@@ -15,7 +15,6 @@ public class AppetiserClientTests
 {
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly IImageProcessorClient sut;
-    
 
     private readonly IReadOnlyList<SizeParameter> thumbnailSizes =
         [SizeParameter.Parse("!1024,1024"), SizeParameter.Parse("880,")];
