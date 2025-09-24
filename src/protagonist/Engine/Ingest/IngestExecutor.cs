@@ -41,23 +41,12 @@ public class IngestExecutor
         // If the asset has the `none` delivery channel specified, skip processing and mark the ingest as being complete
         if (asset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
         {
-            var imageStorage = new ImageStorage
-            {
-                Id = asset.Id,
-                Customer = asset.Customer,
-                Space = asset.Space,
-                Size = 0,
-                LastChecked = DateTime.UtcNow,
-                ThumbnailSize = 0,
-            };
-            await assetRepository.UpdateIngestedAsset(context.Asset, null, imageStorage, 
+            context.WithStorage();
+            await assetRepository.UpdateIngestedAsset(context.Asset, null, context.ImageStorage, 
                 true, cancellationToken);
             return new IngestResult(asset.Id, IngestResultStatus.Success);
         }
         
-        var workers = workerBuilder.GetWorkers(asset);
-        var overallStatus = IngestResultStatus.Unknown;
-
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
         {
             var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
@@ -74,30 +63,29 @@ public class IngestExecutor
             context.WithPreIngestionAssetSize(preIngestionAssetSize);
         }
         
+        var workers = workerBuilder.GetWorkers(asset);
+        var overallStatus = IngestResultStatus.Unknown;
         var postProcessors = new List<IAssetIngesterPostProcess>(workers.Count);
 
-        if (overallStatus != IngestResultStatus.StorageLimitExceeded)
+        foreach (var worker in workers)
         {
-            foreach (var worker in workers)
+            if (worker is IAssetIngesterPostProcess process)
             {
-                if (worker is IAssetIngesterPostProcess process)
-                {
-                    postProcessors.Add(process);
-                }
+                postProcessors.Add(process);
+            }
 
-                logger.LogDebug("Calling {Worker} for {AssetId}..", worker.GetType(), asset.Id);
-                var result = await worker.Ingest(context, customerOriginStrategy, cancellationToken);
-                if (result is IngestResultStatus.Failed or IngestResultStatus.StorageLimitExceeded)
-                {
-                    overallStatus = result;
-                    break;
-                }
+            logger.LogDebug("Calling {Worker} for {AssetId}..", worker.GetType(), asset.Id);
+            var result = await worker.Ingest(context, customerOriginStrategy, cancellationToken);
+            if (result is IngestResultStatus.Failed or IngestResultStatus.StorageLimitExceeded)
+            {
+                overallStatus = result;
+                break;
+            }
 
-                // Don't overwrite a QueuedForProcessing result - this wins
-                if (overallStatus != IngestResultStatus.QueuedForProcessing)
-                {
-                    overallStatus = result;
-                }
+            // Don't overwrite a QueuedForProcessing result - this wins
+            if (overallStatus != IngestResultStatus.QueuedForProcessing)
+            {
+                overallStatus = result;
             }
         }
 

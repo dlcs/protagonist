@@ -20,13 +20,13 @@ public class IngestController(IAssetIngester ingester) : Controller
         var message =
             await JsonSerializer.DeserializeAsync<IngestAssetRequest>(Request.Body,
                 JsonSerializerOptions, cancellationToken);
-        
-        var result = await ingester.Ingest(message, cancellationToken);
 
-        return ConvertToStatusCode(message, result.Status);
+        var result = await ingester.Ingest(message!, cancellationToken);
+
+        return ConvertToStatusCode(message!, result.Status);
     }
     
-    private IActionResult ConvertToStatusCode(object message, IngestResultStatus result)
+    private ObjectResult ConvertToStatusCode(object message, IngestResultStatus result)
         => result switch
         {
             IngestResultStatus.Failed => StatusCode(500, message),
