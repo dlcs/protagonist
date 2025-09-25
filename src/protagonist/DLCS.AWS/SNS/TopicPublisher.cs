@@ -8,22 +8,15 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.AWS.SNS;
 
-public class TopicPublisher : ITopicPublisher
+public class TopicPublisher(
+    IAmazonSimpleNotificationService snsClient,
+    IOptions<AWSSettings> settings,
+    ILogger<TopicPublisher> logger)
+    : ITopicPublisher
 {
-    private readonly IAmazonSimpleNotificationService snsClient;
-    private readonly ILogger<TopicPublisher> logger;
-    private readonly SNSSettings snsSettings;
+    private readonly SNSSettings snsSettings = settings.Value.SNS;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
-    public TopicPublisher(IAmazonSimpleNotificationService snsClient,
-        IOptions<AWSSettings> settings,
-        ILogger<TopicPublisher> logger)
-    {
-        this.snsClient = snsClient;
-        this.logger = logger;
-        snsSettings = settings.Value.SNS;
-    }
-    
     /// <inheritdoc />
     public async Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<AssetModifiedNotification> messages,
         CancellationToken cancellationToken = default)
@@ -34,7 +27,7 @@ public class TopicPublisher : ITopicPublisher
             return await PublishToAssetModifiedTopic(singleMessage, cancellationToken);
         }
 
-        const int maxSnsBatchSize = 10;
+        const int maxSnsBatchSize = 5;
         var allBatchSuccess = true;
         var batchIdPrefix = Guid.NewGuid();
         logger.LogDebug("Publishing SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
@@ -46,7 +39,7 @@ public class TopicPublisher : ITopicPublisher
             if (allBatchSuccess) allBatchSuccess = success;
         }
         
-        logger.LogDebug("Published SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
+        logger.LogTrace("Published SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
             messages.Count);
         return allBatchSuccess;
     }
