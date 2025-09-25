@@ -28,6 +28,8 @@ public class ThumbCreator(
             logger.LogDebug("No thumbs to process for {AssetId}, aborting", assetId);
             return 0;
         }
+        
+        logger.LogDebug("Creating {ThumbsCount} thumbs for {AssetId}", thumbsToProcess.Count, assetId);
 
         // Images processed Largest->Smallest. This is how they are stored in S3 + DB as it saves reordering on read 
         var orderedThumbs = thumbsToProcess.OrderByDescending(i => Math.Max(i.Height, i.Width)).ToList();
@@ -84,6 +86,7 @@ public class ThumbCreator(
     private async Task UploadThumbs(AssetId assetId, ImageOnDisk thumbCandidate, Size thumb, bool isOpen)
     {
         var thumbKey = storageKeyGenerator.GetThumbnailLocation(assetId, thumb.MaxDimension, isOpen);
+        logger.LogTrace("Saving thumbnail {ThumbnailKey}", thumbKey);
         await bucketWriter.WriteFileToBucket(thumbKey, thumbCandidate.Path, MIMEHelper.JPEG);
     }
     
@@ -92,6 +95,7 @@ public class ThumbCreator(
         // NOTE - this data is read via AssetApplicationMetadataX.GetThumbsMetadata
         var serializedThumbnailSizes = JsonConvert.SerializeObject(thumbnailSizes);
         var sizesDest = storageKeyGenerator.GetThumbsSizesJsonLocation(asset.Id);
+        logger.LogTrace("Saving sizes json {SizesKey}", sizesDest);
         await bucketWriter.WriteToBucket(sizesDest, serializedThumbnailSizes, "application/json");
         asset.UpsertApplicationMetadata(AssetApplicationMetadataTypes.ThumbSizes, serializedThumbnailSizes);
     }

@@ -130,18 +130,20 @@ public class AppetiserImageProcessor(
     {
         var asset = context.Asset;
 
+        if (!processorFlags.HasImageDeliveryChannel)
+        {
+            logger.LogTrace("Asset {AssetId} has no img delivery channel, no image storage required", context.AssetId);
+            return;
+        }
+
         if (!processorFlags.SaveInDlcsStorage)
         {
-            // Optimised + either image-server ready OR no image channel. No need to store - set imageLocation to origin
+            // Optimised + image-server ready. No need to store - set imageLocation to origin
             logger.LogDebug("Asset {AssetId} can be served from origin or no image channel. No file to save",
                 context.AssetId);
 
-            if (processorFlags.HasImageDeliveryChannel)
-            {
-                var originObject = RegionalisedObjectInBucket.Parse(asset.Origin!, true)!;
-                SetAssetLocation(originObject);
-            }
-
+            var originObject = RegionalisedObjectInBucket.Parse(asset.Origin!, true)!;
+            SetAssetLocation(originObject);
             return;
         }
 
@@ -171,7 +173,7 @@ public class AppetiserImageProcessor(
         {
             // Location for derivative
             targetStorageLocation = storageKeyGenerator.GetStorageLocation(context.AssetId);
-            logger.LogDebug("Asset {AssetId} derivative will be stored in DLCS storage", context.AssetId);
+            logger.LogTrace("Asset {AssetId} derivative will be stored in DLCS storage", context.AssetId);
         }
 
         if (string.IsNullOrEmpty(imageServerFile))
