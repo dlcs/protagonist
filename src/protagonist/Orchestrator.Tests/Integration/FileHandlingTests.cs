@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Orchestrator.Tests.Integration.Infrastructure;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Yarp.ReverseProxy.Forwarder;
 
@@ -29,14 +30,14 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
     private readonly string stubAddress;
-    private readonly List<ImageDeliveryChannel> deliveryChannelsForFile = new()
-    {
-        new ImageDeliveryChannel()
+    private readonly List<ImageDeliveryChannel> deliveryChannelsForFile =
+    [
+        new()
         {
             Channel = AssetDeliveryChannels.File,
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
         }
-    };
+    ];
 
     private const string ValidAuth = "Basic dW5hbWU6cHdvcmQ=";
 
@@ -125,7 +126,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_Returns404_IfNotForDelivery()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotForDelivery)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true, imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
 
@@ -142,8 +143,8 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_Returns404_IfNotFileDeliveryChannel(string deliveryChannel, int deliveryChannelPolicyId)
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotFileDeliveryChannel)}{deliveryChannel}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: new List<ImageDeliveryChannel>()
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: new List<ImageDeliveryChannel>
         {
             new()
             {
@@ -164,7 +165,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_NotOptimisedOrigin_ReturnsFileFromDLCSStorage()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_NotOptimisedOrigin_ReturnsFileFromDLCSStorage)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "text/plain",
             origin: $"{stubAddress}/testfile", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
@@ -264,7 +265,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_OptimisedOrigin_ReturnsFile()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_OptimisedOrigin_ReturnsFile)}");
+        var id = AssetIdGenerator.GetAssetId();
         var s3Key = $"{id}/this-is-where";
         await dbFixture.DbContext.Images.AddTestAsset(id, 
             mediaType: "text/plain",
@@ -272,22 +273,22 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
 
-        var expectedPath = new Uri($"https://s3.amazonaws.com/{LocalStackFixture.OriginBucketName}/{s3Key}");
+        var expectedPathRegex = GetExpectedPathRegex(s3Key);
 
         // Act
         var response = await httpClient.GetAsync($"file/{id}");
         var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
         
         // Assert
-        proxyResponse.Uri.Should().Be(expectedPath);
+        proxyResponse.Uri.ToString().Should().MatchRegex(expectedPathRegex);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
-    
+
     [Fact]
     public async Task Get_RequiresAuth_Returns401_IfNoCookie()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_OptimisedOrigin_ReturnsFile)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -303,7 +304,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_RequiresAuth_Returns401_IfInvalidNoCookie()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_RequiresAuth_Returns401_IfInvalidNoCookie)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -321,7 +322,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_RequiresAuth_Returns401_IfExpiredCookie()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_RequiresAuth_Returns401_IfExpiredCookie)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", imageDeliveryChannels: deliveryChannelsForFile);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -344,7 +345,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_RequiresAuth_RedirectsToFile_IfCookieProvided()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_RequiresAuth_RedirectsToFile_IfCookieProvided)}");
+        var id = AssetIdGenerator.GetAssetId();
         var s3Key = $"{id}/this-is-where";
         await dbFixture.DbContext.Images.AddTestAsset(id, 
             roles: "clickthrough",
@@ -357,7 +358,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             sessionUserId: userSession.Entity.Id);
         await dbFixture.DbContext.SaveChangesAsync();
         
-        var expectedPath = new Uri($"https://s3.amazonaws.com/{LocalStackFixture.OriginBucketName}/{s3Key}");
+        var expectedPathRegex = GetExpectedPathRegex(s3Key);
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"file/{id}");
@@ -368,9 +369,13 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("Set-Cookie");
-        proxyResponse.Uri.Should().Be(expectedPath);
+        proxyResponse.Uri.ToString().Should().MatchRegex(expectedPathRegex);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
+
+    // Regex for presignedURL, port will depend on what localStack is using. Expires + Signature will always differ
+    private static string GetExpectedPathRegex(string s3Key) =>
+        $"https://localhost:\\d+/{LocalStackFixture.OriginBucketName}/{s3Key}\\?AWSAccessKeyId=foo\\&Expires=\\d+\\&Signature=.*";
 
     private static void ConfigureStubbery(OrchestratorFixture orchestratorFixture)
     {
