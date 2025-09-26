@@ -49,7 +49,8 @@ public class FakePdfCreator : IProjectionCreator<PdfParsedNamedQuery>
         throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");
     }
 
-    public Task MarkControlFileComplete(PdfParsedNamedQuery parsedNamedQuery, ControlFile controlFile, long fileSize)
+    public Task MarkControlFileComplete(PdfParsedNamedQuery parsedNamedQuery, ControlFile controlFile, long fileSize,
+        CancellationToken cancellationToken)
     {
         CompletedControlFiles.Add(parsedNamedQuery.StorageKey);
         return Task.CompletedTask;

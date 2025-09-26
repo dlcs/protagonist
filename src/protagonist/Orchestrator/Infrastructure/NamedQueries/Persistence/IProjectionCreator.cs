@@ -21,5 +21,6 @@ public interface IProjectionCreator<in T>
     /// <summary>
     /// Mark the <see cref="ControlFile"/> for parsedNamedQuery as being completed (ie item exists)
     /// </summary>
-    Task MarkControlFileComplete(T parsedNamedQuery, ControlFile controlFile, long fileSize);
+    Task MarkControlFileComplete(T parsedNamedQuery, ControlFile controlFile, long fileSize,
+        CancellationToken cancellationToken);
 }

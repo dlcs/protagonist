@@ -149,7 +149,7 @@ public class StoredNamedQueryManager(
                 itemKey);
 
             await projectionCreator.MarkControlFileComplete(parsedNamedQuery, controlFile,
-                projection.Headers.ContentLength ?? 0);
+                projection.Headers.ContentLength ?? 0, cancellationToken);
             return new(projection.Stream, PersistedProjectionStatus.Available, requiresAuth);
         }
 

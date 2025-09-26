@@ -30,7 +30,8 @@ public class FakeZipCreator : IProjectionCreator<ZipParsedNamedQuery>
         throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");
     }
 
-    public Task MarkControlFileComplete(ZipParsedNamedQuery parsedNamedQuery, ControlFile controlFile, long fileSize)
+    public Task MarkControlFileComplete(ZipParsedNamedQuery parsedNamedQuery, ControlFile controlFile, long fileSize,
+        CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
     }
