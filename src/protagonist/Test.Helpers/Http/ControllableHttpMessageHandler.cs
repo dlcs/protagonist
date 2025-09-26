@@ -16,7 +16,7 @@ public class ControllableHttpMessageHandler : HttpMessageHandler
 {
     private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
     private HttpResponseMessage response;
-    public List<string> CallsMade { get; }= new();
+    public List<string> CallsMade { get; } = new();
 
     private Action<HttpRequestMessage> Callback { get; set; }
 

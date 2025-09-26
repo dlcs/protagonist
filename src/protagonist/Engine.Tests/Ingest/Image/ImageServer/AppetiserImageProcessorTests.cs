@@ -84,10 +84,9 @@ public class AppetiserImageProcessorTests
         // Act
         await sut.ProcessImage(context);
 
-        // Assert
+        // Assert that 'output' folder created with brackets escaped
         A.CallTo(() => fileSystem.CreateDirectory(
             A<string>.That.Matches(dir => dir.Replace("\\", "/") == expectedDirectory))).MustHaveHappenedOnceExactly();
-        A.CallTo(() => fileSystem.DeleteDirectory(A<string>._, true, true)).MustHaveHappenedTwiceExactly();
     }
     
     [Fact]

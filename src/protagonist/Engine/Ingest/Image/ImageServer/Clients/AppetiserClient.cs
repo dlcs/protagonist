@@ -139,7 +139,7 @@ public class AppetiserClient(
 
     /// <summary>
     /// Attempt to simplify logic for building paths. Appetiser needs unix paths relative to mount share but
-    /// Orchestrator will want relative paths dependant on OS it's running on.
+    /// Orchestrator will want relative paths dependent on OS it's running on.
     /// 
     /// This logic allows handling when running locally on win/unix and when deployed to unix
     /// </summary>
@@ -149,7 +149,6 @@ public class AppetiserClient(
     /// <param name="templateType">Type of template to use</param>
     /// <param name="extensionForFile">Leave null if want directory only. If supplied then result will be
     /// "{destFolder}{assetId.Asset}.{extensionForFile}"</param>
-    /// <returns></returns>
     private string GetImageServerAwarePath(AssetId assetId, string ingestId, bool forAppetiser, TemplateType templateType,
         string? extensionForFile = null)
     {

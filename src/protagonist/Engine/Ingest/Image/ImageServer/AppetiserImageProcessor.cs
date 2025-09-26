@@ -54,6 +54,7 @@ public class AppetiserImageProcessor(
                     context.Asset.Error = $"Appetiser Error: {failResponse.Message}";
                     return false;
                 default:
+                    context.Asset.Error = $"Unexpected image-processor response model: {responseModel.GetType().Name}";
                     return false;
             }
         }

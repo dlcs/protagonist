@@ -224,7 +224,7 @@ public class IngestExecutorTests
         // Act
         var result = await sut.IngestAsset(asset, customerOriginStrategy);
 
-        // Assert
+        // Assert we receive success and an empty ImageStorage record is created
         result.Status.Should().Be(IngestResultStatus.Success);
         A.CallTo(() => repo.UpdateIngestedAsset(asset, null,
                 A<ImageStorage?>.That.Matches(s => s!.ThumbnailSize == 0L && s.Size == 0L), true,
