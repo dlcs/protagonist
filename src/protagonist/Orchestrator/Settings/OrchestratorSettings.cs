@@ -145,7 +145,7 @@ public class ProxySettings
     /// Direct URL access requires the object to be publicly available, or for a bucket policy to be configured to allow
     /// access, e.g. with aws:sourceVpce or aws:sourceVpc access allowed.
     /// </remarks>
-    public bool UsePresignedUrlsForOptimised { get; set; } = false;
+    public bool UsePresignedUrlsForOptimised { get; set; } = true;
     
     /// <summary>
     /// If true, Yarp will proxy to S3 optimised origins using presigned URLs.

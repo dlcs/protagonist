@@ -4,16 +4,13 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using DLCS.Core.Collections;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Auth;
-using DLCS.Model.Customers;
 using DLCS.Model.Policies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
 using Orchestrator.Tests.Integration.Infrastructure;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Yarp.ReverseProxy.Forwarder;
 
@@ -29,19 +26,16 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
     private readonly string stubAddress;
-    private readonly List<ImageDeliveryChannel> deliveryChannelsForFile = new()
-    {
-        new ImageDeliveryChannel()
+    private readonly List<ImageDeliveryChannel> deliveryChannelsForFile =
+    [
+        new()
         {
             Channel = AssetDeliveryChannels.File,
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault
         }
-    };
+    ];
 
     private const string ValidAuth = "Basic dW5hbWU6cHdvcmQ=";
-
-    private readonly string validCreds =
-        JsonConvert.SerializeObject(new BasicCredentials { Password = "pword", User = "uname" });
 
     public FileHandlingTests(ProtagonistAppFactory<Startup> factory, OrchestratorFixture orchestratorFixture)
     {
@@ -125,7 +119,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_Returns404_IfNotForDelivery()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotForDelivery)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true, imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
 
@@ -142,8 +136,8 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_Returns404_IfNotFileDeliveryChannel(string deliveryChannel, int deliveryChannelPolicyId)
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotFileDeliveryChannel)}{deliveryChannel}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: new List<ImageDeliveryChannel>()
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: new List<ImageDeliveryChannel>
         {
             new()
             {
@@ -164,7 +158,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_NotOptimisedOrigin_ReturnsFileFromDLCSStorage()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_NotOptimisedOrigin_ReturnsFileFromDLCSStorage)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "text/plain",
             origin: $"{stubAddress}/testfile", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
@@ -180,91 +174,11 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
-    [Fact(Skip = "'not in dlcs storage' handling removed when switch to Yarp handling")]
-    public async Task Get_NotInDlcsStorage_NotAtOrigin_Returns404()
-    {
-        // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_NotInDlcsStorage_NotAtOrigin_Returns404)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "text/plain",
-            origin: $"{stubAddress}/not-found", imageDeliveryChannels: deliveryChannelsForFile);
-        await dbFixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var response = await httpClient.GetAsync($"file/{id}");
-        
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-    
-    [Fact(Skip = "'not in dlcs storage' handling removed when switch to Yarp handling")]
-    public async Task Get_NotInDlcsStorage_FallsbackToHttpOrigin_ReturnsFile()
-    {
-        // Note - this is for backwards compat and depends on appropriate appSetting being set
-        // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_NotInDlcsStorage_FallsbackToHttpOrigin_ReturnsFile)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "text/plain",
-            origin: $"{stubAddress}/testfile", imageDeliveryChannels: deliveryChannelsForFile);
-        await dbFixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var response = await httpClient.GetAsync($"file/{id}");
-        
-        // Assert
-        response.Content.Headers.ContentType.MediaType.Should().Be("text/plain");
-        (await response.Content.ReadAsStringAsync()).Should().Be("from-stub");
-        response.Content.Headers.ContentLength.Should().BeGreaterThan(0);
-    }
-    
-    [Fact(Skip = "'not in dlcs storage' handling removed when switch to Yarp handling")]
-    public async Task Get_NotInDlcsStorage_FallsbackToBasicAuthHttpOrigin_ReturnsFile()
-    {
-        // Note - this is for backwards compat and depends on appropriate appSetting being set
-        // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_NotInDlcsStorage_FallsbackToBasicAuthHttpOrigin_ReturnsFile)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "text/plain",
-            origin: $"{stubAddress}/authfile", imageDeliveryChannels: deliveryChannelsForFile);
-        await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
-        {
-            Credentials = validCreds, Customer = 99, Id = "basic-auth-file", 
-            Strategy = OriginStrategyType.BasicHttp, Regex = $"{stubAddress}/authfile"
-        });
-        await dbFixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var response = await httpClient.GetAsync($"file/{id}");
-        
-        // Assert
-        response.Content.Headers.ContentType.MediaType.Should().Be("text/plain");
-        (await response.Content.ReadAsStringAsync()).Should().Be("secure-from-stub");
-        response.Content.Headers.ContentLength.Should().BeGreaterThan(0);
-    }
-    
-    [Fact(Skip = "'not in dlcs storage' handling removed when switch to Yarp handling")]
-    public async Task Get_NotInDlcsStorage_BasicAuthHttpOrigin_BadCredentials_Returns404()
-    {
-        // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_NotInDlcsStorage_FallsbackToBasicAuthHttpOrigin_ReturnsFile)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "application/pdf",
-            origin: $"{stubAddress}/forbiddenfile", imageDeliveryChannels: deliveryChannelsForFile);
-        await dbFixture.DbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
-        {
-            Credentials = validCreds, Customer = 99, Id = "basic-forbidden-file", 
-            Strategy = OriginStrategyType.BasicHttp, Regex = $"{stubAddress}/forbiddenfile"
-        });
-        await dbFixture.DbContext.SaveChangesAsync();
-
-        // Act
-        var response = await httpClient.GetAsync($"file/{id}");
-        
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
     [Fact]
     public async Task Get_OptimisedOrigin_ReturnsFile()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_OptimisedOrigin_ReturnsFile)}");
+        var id = AssetIdGenerator.GetAssetId();
         var s3Key = $"{id}/this-is-where";
         await dbFixture.DbContext.Images.AddTestAsset(id, 
             mediaType: "text/plain",
@@ -272,22 +186,22 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
 
-        var expectedPath = new Uri($"https://s3.amazonaws.com/{LocalStackFixture.OriginBucketName}/{s3Key}");
+        var expectedPathRegex = GetExpectedPathRegex(s3Key);
 
         // Act
         var response = await httpClient.GetAsync($"file/{id}");
         var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
         
         // Assert
-        proxyResponse.Uri.Should().Be(expectedPath);
+        proxyResponse.Uri.ToString().Should().MatchRegex(expectedPathRegex);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
-    
+
     [Fact]
     public async Task Get_RequiresAuth_Returns401_IfNoCookie()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_OptimisedOrigin_ReturnsFile)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -303,7 +217,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_RequiresAuth_Returns401_IfInvalidNoCookie()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_RequiresAuth_Returns401_IfInvalidNoCookie)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", imageDeliveryChannels: deliveryChannelsForFile);
         await dbFixture.DbContext.SaveChangesAsync();
         
@@ -321,7 +235,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_RequiresAuth_Returns401_IfExpiredCookie()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_RequiresAuth_Returns401_IfExpiredCookie)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: "basic", imageDeliveryChannels: deliveryChannelsForFile);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -344,7 +258,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Get_RequiresAuth_RedirectsToFile_IfCookieProvided()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_RequiresAuth_RedirectsToFile_IfCookieProvided)}");
+        var id = AssetIdGenerator.GetAssetId();
         var s3Key = $"{id}/this-is-where";
         await dbFixture.DbContext.Images.AddTestAsset(id, 
             roles: "clickthrough",
@@ -357,7 +271,7 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             sessionUserId: userSession.Entity.Id);
         await dbFixture.DbContext.SaveChangesAsync();
         
-        var expectedPath = new Uri($"https://s3.amazonaws.com/{LocalStackFixture.OriginBucketName}/{s3Key}");
+        var expectedPathRegex = GetExpectedPathRegex(s3Key);
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"file/{id}");
@@ -368,19 +282,23 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.Should().ContainKey("Set-Cookie");
-        proxyResponse.Uri.Should().Be(expectedPath);
+        proxyResponse.Uri.ToString().Should().MatchRegex(expectedPathRegex);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
 
+    // Regex for presignedURL, port will depend on what localStack is using. Expires + Signature will always differ
+    private static string GetExpectedPathRegex(string s3Key) =>
+        $"https://localhost:\\d+/{LocalStackFixture.OriginBucketName}/{s3Key}\\?AWSAccessKeyId=foo\\&Expires=\\d+\\&Signature=.*";
+
     private static void ConfigureStubbery(OrchestratorFixture orchestratorFixture)
     {
-        orchestratorFixture.ApiStub.Get("/testfile", (request, args) => "from-stub")
+        orchestratorFixture.ApiStub.Get("/testfile", (_, _) => "from-stub")
             .Header("Content-Type", "text/plain");
 
-        orchestratorFixture.ApiStub.Get("/authfile", (request, args) => "secure-from-stub")
+        orchestratorFixture.ApiStub.Get("/authfile", (_, _) => "secure-from-stub")
             .Header("Content-Type", "text/plain")
             .IfHeader("Authorization", ValidAuth);
 
-        orchestratorFixture.ApiStub.Get("/forbiddenfile", (request, args) => new ForbidResult());
+        orchestratorFixture.ApiStub.Get("/forbiddenfile", (_, _) => new ForbidResult());
     }
 }
