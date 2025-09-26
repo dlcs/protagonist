@@ -196,14 +196,14 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task GetZip_Returns200_WithNewlyCreateZip_IfZipControlFileStale()
+    public async Task GetZip_Returns200_WithNewlyCreateZip_IfZipControlFileStale_AndZipDoesNotExist()
     {
         // Arrange
-        var fakeContent = nameof(GetZip_Returns200_WithNewlyCreateZip_IfZipControlFileStale);
+        var fakeContent = nameof(GetZip_Returns200_WithNewlyCreateZip_IfZipControlFileStale_AndZipDoesNotExist);
         const string storageKey = "99/zip/test-zip/my-ref/1/3/tester.zip";
         const string path = "zip/99/test-zip/my-ref/1/3";
         await AddControlFile("99/zip/test-zip/my-ref/1/3/tester.json",
-            new ControlFile { Created = DateTime.UtcNow.AddHours(-1), InProcess = false });
+            new ControlFile { Created = DateTime.UtcNow.AddHours(-1), InProcess = true });
 
         zipCreator.AddCallbackFor(storageKey, (_, _) =>
         {
@@ -219,7 +219,7 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
         (await response.Content.ReadAsStringAsync()).Should().Be(fakeContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/zip"));
     }
-
+    
     [Fact]
     public async Task GetZip_Returns500_IfZipCreatedButCannotBeFound()
     {
