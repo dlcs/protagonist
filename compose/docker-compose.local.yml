@@ -50,12 +50,12 @@ services:
       - .env
 
   appetiser:
-    image: ghcr.io/dlcs/appetiser:latest
+    image: ghcr.io/dlcs/appetiser:pr-25 # TODO - temp use PR until release cut
     ports:
-      - "5031:80"
+      - "5031:8000"
     volumes:
       - $HOME\Docker\scratch:/scratch
-      - $HOME\.aws:/root/.aws
+      - ./kdu_src:/kdu_src
     env_file:
       - .env
 

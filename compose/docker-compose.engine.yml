@@ -1,29 +1,10 @@
-version: '3'
-
 services:
   appetiser:
-    image: ghcr.io/dlcs/appetiser:latest
+    image: ghcr.io/dlcs/appetiser:pr-25 # TODO - temp use PR until release cut
     ports:
-      - "5031:80"
+      - "5031:8000"
     volumes:
       - $HOME\Docker\scratch:/scratch
-      - $HOME\.aws:/root/.aws
-    env_file:
-      - .env
-
-  thumbs-client:
-    image: ghcr.io/dlcs/cantaloupe:5.0.5
-    ports:
-      - "5126:8182"
-    environment:
-      - ENDPOINT_ADMIN_ENABLED=true
-      - ENDPOINT_ADMIN_SECRET=admin
-      - DELEGATE_SCRIPT_ENABLED=true
-      - SOURCE_STATIC=S3Source
-      - DELEGATE_SCRIPT_PATHNAME=/cantaloupe/delegates.rb
-      - S3SOURCE_LOOKUP_STRATEGY=ScriptLookupStrategy
-      - AWS_ACCESS_KEY_ID=${SS_AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${SS_AWS_SECRET_ACCESS_KEY}
-      - MAX_SCALE=0
+      - ./kdu_src:/kdu_src
     env_file:
       - .env

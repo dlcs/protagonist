@@ -47,7 +47,7 @@ public class ThumbCreatorTests
         var asset = new Asset(new AssetId(10, 20, "foo"));
         
         // Act
-        var thumbsCreated = await sut.CreateNewThumbs(asset, Array.Empty<ImageOnDisk>());
+        var thumbsCreated = await sut.CreateNewThumbs(asset, []);
         
         // Assert
         thumbsCreated.Should().Be(0);
@@ -272,7 +272,52 @@ public class ThumbCreatorTests
     }
     
     [Fact]
-    public async Task CreateNewThumbs_UploadsNothing_MaxUnauthorisedIs0()
+    public async Task CreateNewThumbs_UploadsExpected_ThumbLargerThanImage()
+    {
+        // Arrange
+        var assetId = new AssetId(10, 20, "foo");
+        var asset = new Asset(assetId)
+        {
+            Width = 266, Height = 440,
+            ImageDeliveryChannels = thumbsDeliveryChannel
+        };
+
+        // NOTE - this handles using upscaling thumbnail size
+        var imagesOnDisk = new List<ImageOnDisk>
+        {
+            new() { Width = 532, Height = 880, Path = "880.jpg" },
+            new() { Width = 266, Height = 440, Path = "500.jpg" },
+            new() { Width = 60, Height = 100, Path = "100.jpg" }
+        };
+        
+        const string thumbSizes = "{\"o\":[[532,880],[266,440],[60,100]],\"a\":[]}";
+        
+        // Act
+        var thumbsCreated = await sut.CreateNewThumbs(asset, imagesOnDisk);
+        
+        // Assert
+        thumbsCreated.Should().Be(3);
+        
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/o/880.jpg")
+            .WithFilePath("880.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/o/440.jpg")
+            .WithFilePath("500.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/o/100.jpg")
+            .WithFilePath("100.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/s.json")
+            .WithContents(thumbSizes);
+        
+        bucketWriter.ShouldHaveNoUnverifiedPaths();
+        asset.AssetApplicationMetadata.Should()
+            .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
+    }
+    
+    [Fact]
+    public async Task CreateNewThumbs_UploadsAllAuth_MaxUnauthorisedIs0()
     {
         // Arrange
         var assetId = new AssetId(10, 20, "foo");

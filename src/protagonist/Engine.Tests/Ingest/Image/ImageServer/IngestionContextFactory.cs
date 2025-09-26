@@ -9,20 +9,33 @@ namespace Engine.Tests.Ingest.Image.ImageServer;
 
 public static class IngestionContextFactory
 {
-    public static IngestionContext GetIngestionContext(string assetId = "/1/2/something",
+    public static IngestionContext GetIngestionContext(AssetId assetId,
         string contentType = "image/jpg", CustomerOriginStrategy? cos = null, 
         bool optimised = false, string imageDeliveryChannelPolicy = "default")
     {
         cos ??= new CustomerOriginStrategy { Strategy = OriginStrategyType.Default, Optimised = optimised };
         var asset = new Asset
         {
-            Id = AssetId.FromString(assetId), Customer = 1, Space = 2,
-            DeliveryChannels = new[] { AssetDeliveryChannels.Image }, MediaType = contentType
+            Id = assetId, Customer = assetId.Customer, Space = assetId.Space, 
+            MediaType = contentType,
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
+            {
+                new()
+                {
+                    Channel = AssetDeliveryChannels.Thumbnails,
+                    DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
+                    {
+                        PolicyData = "[\"!1000,1000\",\"!400,400\",\"!200,200\",\"!100,100\"]"
+                    }
+                }
+            }
         };
-        
-        asset.ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+
+        if (!string.IsNullOrEmpty(imageDeliveryChannelPolicy))
         {
-            new()
+            asset.DeliveryChannels = asset.DeliveryChannels.Concat([AssetDeliveryChannels.Image]).ToArray();
+            asset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
             {
                 Channel = AssetDeliveryChannels.Image,
                 DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
@@ -30,17 +43,8 @@ public static class IngestionContextFactory
                 {
                     Name = imageDeliveryChannelPolicy
                 }
-            },
-            new()
-            {
-                Channel = AssetDeliveryChannels.Thumbnails,
-                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
-                DeliveryChannelPolicy = new DeliveryChannelPolicy
-                {
-                    PolicyData = "[\"!1000,1000\",\"!400,400\",\"!200,200\",\"!100,100\"]"
-                }
-            }
-        };
+            });
+        }
 
         var context = new IngestionContext(asset);
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 123, "./scratch/here.jpg", contentType)

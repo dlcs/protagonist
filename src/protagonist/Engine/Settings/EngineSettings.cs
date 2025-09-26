@@ -59,17 +59,6 @@ public class ImageIngestSettings
     public Uri ImageProcessorUrl { get; set; }
     
     /// <summary>
-    /// URI of downstream thumbnail processor
-    /// </summary>
-    public Uri ThumbsProcessorUrl { get; set; }
-    
-    /// <summary>
-    /// Optional path prefix for thumbnail processor. Requested url will be
-    /// $"{ThumbsProcessorUrl}/{ThumbsProcessorPathBase}"
-    /// </summary>
-    public string? ThumbsProcessorPathBase { get; set; } = "iiif/3/";
-
-    /// <summary>
     /// How long, in ms, to delay calling Image-Processor after copying file to shared disk 
     /// </summary>
     public int ImageProcessorDelayMs { get; set; } = 0;
@@ -118,15 +107,6 @@ public class ImageIngestSettings
     /// A list of thumbnails that will be added to every asset regardless of the thumbnail policy
     /// </summary>
     public List<string> DefaultThumbs { get; set; } = new();
-
-    /// <summary>
-    /// A set of cookie names used by the load balancer to indicate stickiness
-    /// </summary>
-    public List<string> LoadBalancerStickinessCookieNames { get; set; } = new()
-    {
-        "AWSALB",
-        "AWSALBCORS"
-    };
 
     /// <summary>
     /// Get the root folder, if forImageProcessor will ensure that it is compatible with needs of image-processor

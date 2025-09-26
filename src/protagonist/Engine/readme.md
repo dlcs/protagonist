@@ -90,7 +90,6 @@ These are in strongly typed to `EngineSettings` object and are split by prefix b
 | `ImageProcessorRoot`                | Root folder for use by Image-Processor sidecar                                                     |                                                      |
 | `ImageProcessorUrl`                 | URI of downstream image/derivative processor (e.g. appetiser)                                      |                                                      |
 | `IncludeRegionInS3Uri`              | Whether to add region to s3:// URIs. Unofficial but required for backwards compat with deliverator | `false`                                              |
-| `LoadBalancerStickinessCookieNames` | A set of cookie names used by the load balancer to indicate stickiness. Used for thumbs generation |                                                      |
 | `OpenBracketReplacement`            | The character to use when replacing an open bracket character when saving to disk                  | `_`                                                  |
 | `OrchestratorBaseUrl`               | Base url for calling orchestrator                                                                  |                                                      |
 | `OrchestrateImageAfterIngest`       | If true a request is made to Orchestrator to orchestrate image immediately after ingestion         | `true`                                               |
@@ -98,8 +97,6 @@ These are in strongly typed to `EngineSettings` object and are split by prefix b
 | `ScratchRoot`                       | Root folder for engine, replaces `{root}` in templates                                             |                                                      |
 | `SourceTemplate`                    | Path template for where assets downloaded to, for images should be accessible by image-processor   |                                                      |
 | `ThumbsTemplate`                    | Path template for where thumbnail derivatives will generated to                                    |                                                      |
-| `ThumbsProcessorUrl`                | URI of downstream thumbnail processor                                                              |                                                      |
-| `ThumbsProcessorPathBase`           | Optional path prefix for thumbnail processor                                                       |                                                      |
 
 ### `AWS:Transcode`
 
