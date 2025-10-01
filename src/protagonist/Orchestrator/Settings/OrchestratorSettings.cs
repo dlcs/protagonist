@@ -261,12 +261,17 @@ public class NamedQuerySettings
     /// <summary>
     /// URL root of fireball service for PDF generation
     /// </summary>
-    public Uri FireballRoot { get; set; }
+    public Uri? FireballRoot { get; set; }
+    
+    /// <summary>
+    /// Timeout, in ms, to wait for calls to fireball
+    /// </summary>
+    public int FireballTimeoutMs { get; set; } = 60000;
 
     /// <summary>
     /// Folder template for creating local Zip file
     /// </summary>
-    public string ZipFolderTemplate { get; set; }
+    public string ZipFolderTemplate { get; set; } = null!;
     
     /// <summary>
     /// Customer-specific overrides; keyed by customer Id

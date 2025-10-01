@@ -21,36 +21,28 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence;
 /// to inheriting class 
 /// </summary>
 /// <typeparam name="T">Type of NQ handled</typeparam>
-public abstract class BaseProjectionCreator<T> : IProjectionCreator<T>
+public abstract class BaseProjectionCreator<T>(
+    IBucketReader bucketReader,
+    IBucketWriter bucketWriter,
+    IOptions<NamedQuerySettings> namedQuerySettings,
+    IStorageKeyGenerator storageKeyGenerator,
+    ILogger logger)
+    : IProjectionCreator<T>
     where T : StoredParsedNamedQuery
 {
-    protected readonly IBucketReader BucketReader;
-    protected readonly IBucketWriter BucketWriter;
-    protected readonly ILogger Logger;
-    protected readonly NamedQuerySettings NamedQuerySettings;
-    protected readonly IStorageKeyGenerator StorageKeyGenerator;
+    protected readonly IBucketReader BucketReader = bucketReader;
+    protected readonly IBucketWriter BucketWriter = bucketWriter;
+    protected readonly ILogger Logger = logger;
+    protected readonly NamedQuerySettings NamedQuerySettings = namedQuerySettings.Value;
+    protected readonly IStorageKeyGenerator StorageKeyGenerator = storageKeyGenerator;
 
-    public BaseProjectionCreator(
-        IBucketReader bucketReader,
-        IBucketWriter bucketWriter,
-        IOptions<NamedQuerySettings> namedQuerySettings,
-        IStorageKeyGenerator storageKeyGenerator,
-        ILogger logger)
-    {
-        BucketReader = bucketReader;
-        BucketWriter = bucketWriter;
-        Logger = logger;
-        NamedQuerySettings = namedQuerySettings.Value;
-        StorageKeyGenerator = storageKeyGenerator;
-    }
-    
     public async Task<(bool success, ControlFile? controlFile)> PersistProjection(T parsedNamedQuery, List<Asset> images,
         CancellationToken cancellationToken = default)
     {
         ControlFile? controlFile = null;
         try
         {
-            controlFile = await CreateControlFile(images, parsedNamedQuery);
+            controlFile = await CreateControlFile(images, parsedNamedQuery, cancellationToken);
 
             var createResponse = await CreateFile(parsedNamedQuery, images, cancellationToken);
 
@@ -59,10 +51,7 @@ public abstract class BaseProjectionCreator<T> : IProjectionCreator<T>
                 return (false, controlFile);
             }
 
-            controlFile.Exists = true;
-            controlFile.InProcess = false;
-            controlFile.SizeBytes = createResponse.Size;
-            await UpdateControlFile(parsedNamedQuery.ControlFileStorageKey, controlFile);
+            await MarkControlFileComplete(parsedNamedQuery, controlFile, createResponse.Size, cancellationToken);
             return (true, controlFile);
         }
         catch (Exception ex)
@@ -71,9 +60,20 @@ public abstract class BaseProjectionCreator<T> : IProjectionCreator<T>
             return (false, controlFile);
         }
     }
-    
+
+    public Task MarkControlFileComplete(T parsedNamedQuery, ControlFile controlFile, long fileSize,
+        CancellationToken cancellationToken)
+    {
+        Logger.LogDebug("Marking control file, item exists: {ControlS3Key}", parsedNamedQuery.ControlFileStorageKey);
+        controlFile.Exists = true;
+        controlFile.InProcess = false;
+        controlFile.SizeBytes = fileSize;
+        
+        return UpdateControlFile(parsedNamedQuery.ControlFileStorageKey, controlFile, cancellationToken);
+    }
+
     private async Task<ControlFile> CreateControlFile(List<Asset> assets,
-        StoredParsedNamedQuery parsedNamedQuery)
+        StoredParsedNamedQuery parsedNamedQuery, CancellationToken cancellationToken)
     {
         Logger.LogInformation("Creating new control file: {ControlS3Key}", parsedNamedQuery.ControlFileStorageKey);
         var relevantRoles = GetRelevantRoles(assets, parsedNamedQuery);
@@ -88,7 +88,7 @@ public abstract class BaseProjectionCreator<T> : IProjectionCreator<T>
             Roles = relevantRoles.IsNullOrEmpty() ? null : relevantRoles,
         };
 
-        await UpdateControlFile(parsedNamedQuery.ControlFileStorageKey, controlFile);
+        await UpdateControlFile(parsedNamedQuery.ControlFileStorageKey, controlFile, cancellationToken);
         return controlFile;
     }
 
@@ -106,9 +106,10 @@ public abstract class BaseProjectionCreator<T> : IProjectionCreator<T>
         return relevantRoles;
     }
 
-    private Task UpdateControlFile(string controlFileKey, ControlFile? controlFile) =>
+    private Task UpdateControlFile(string controlFileKey, ControlFile? controlFile,
+        CancellationToken cancellationToken) =>
         BucketWriter.WriteToBucket(StorageKeyGenerator.GetOutputLocation(controlFileKey),
-            JsonConvert.SerializeObject(controlFile), "application/json");
+            JsonConvert.SerializeObject(controlFile), "application/json", cancellationToken);
 
     protected abstract Task<CreateProjectionResult> CreateFile(T parsedNamedQuery, List<Asset> assets,
         CancellationToken cancellationToken);

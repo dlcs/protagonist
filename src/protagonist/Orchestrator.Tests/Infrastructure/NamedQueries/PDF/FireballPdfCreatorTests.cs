@@ -24,7 +24,6 @@ namespace Orchestrator.Tests.Infrastructure.NamedQueries.PDF;
 
 public class FireballPdfCreatorTests
 {
-    private readonly IBucketReader bucketReader;
     private readonly IThumbSizeProvider thumbSizeProvider;
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly FireballPdfCreator sut;
@@ -44,7 +43,7 @@ public class FireballPdfCreatorTests
             }
         });
     
-        bucketReader = A.Fake<IBucketReader>();
+        var bucketReader = A.Fake<IBucketReader>();
         bucketWriter = A.Fake<IBucketWriter>();
         thumbSizeProvider = A.Fake<IThumbSizeProvider>();
         
@@ -239,7 +238,7 @@ public class FireballPdfCreatorTests
         
         FireballPlaybook playbook = null;
         httpHandler.RegisterCallback(message =>
-            playbook = message.Content.ReadFromJsonAsync<FireballPlaybook>().Result);
+            playbook = message.Content!.ReadFromJsonAsync<FireballPlaybook>().Result);
 
         var expectedPageTypes = new[] { "pdf", "jpg", "redacted", "redacted", "jpg", "jpg" };
         

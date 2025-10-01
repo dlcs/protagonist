@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Core.Guard;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Web.Response;
@@ -24,32 +25,25 @@ namespace Orchestrator.Infrastructure.NamedQueries.PDF;
 /// <summary>
 /// Use Fireball for projection of NamedQuery to PDF file
 /// </summary>
-/// <remarks>See https://github.com/fractos/fireball</remarks>
-public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
+/// <remarks>See https://github.com/dlcs/fireball</remarks>
+public class FireballPdfCreator(
+    IBucketReader bucketReader,
+    IBucketWriter bucketWriter,
+    IOptions<NamedQuerySettings> namedQuerySettings,
+    IThumbSizeProvider thumbSizeProvider,
+    ILogger<FireballPdfCreator> logger,
+    HttpClient fireballClient,
+    IStorageKeyGenerator storageKeyGenerator)
+    : BaseProjectionCreator<PdfParsedNamedQuery>(bucketReader, bucketWriter, namedQuerySettings, storageKeyGenerator,
+        logger)
 {
     private const string PdfEndpoint = "pdf";
-    private readonly IThumbSizeProvider thumbSizeProvider;
-    private readonly HttpClient fireballClient;
-    private readonly JsonSerializerSettings jsonSerializerSettings;
 
-    public FireballPdfCreator(
-        IBucketReader bucketReader,
-        IBucketWriter bucketWriter,
-        IOptions<NamedQuerySettings> namedQuerySettings,
-        IThumbSizeProvider thumbSizeProvider,
-        ILogger<FireballPdfCreator> logger,
-        HttpClient fireballClient,
-        IStorageKeyGenerator storageKeyGenerator
-    ) : base(bucketReader, bucketWriter, namedQuerySettings, storageKeyGenerator, logger)
+    private readonly JsonSerializerSettings jsonSerializerSettings = new()
     {
-        this.thumbSizeProvider = thumbSizeProvider;
-        this.fireballClient = fireballClient;
-        jsonSerializerSettings = new JsonSerializerSettings
-        {
-            NullValueHandling = NullValueHandling.Ignore,
-            ContractResolver = new CamelCasePropertyNamesContractResolver()
-        };
-    }
+        NullValueHandling = NullValueHandling.Ignore,
+        ContractResolver = new CamelCasePropertyNamesContractResolver()
+    };
 
     protected override async Task<CreateProjectionResult> CreateFile(PdfParsedNamedQuery parsedNamedQuery,
         List<Asset> assets, CancellationToken cancellationToken)
@@ -61,7 +55,7 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
             Logger.LogDebug("Creating new pdf document at {PdfS3Key}", pdfKey);
             var playbook = await GeneratePlaybook(pdfKey, parsedNamedQuery, assets);
 
-            var fireballResponse = await CallFireball(cancellationToken, playbook, pdfKey);
+            var fireballResponse = await CallFireball(playbook, pdfKey, cancellationToken);
             return fireballResponse;
         }
         catch (HttpRequestException ex)
@@ -140,7 +134,8 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
     private static bool RolesAreOnWhitelist(Asset i, CustomerOverride overrides) 
         => i.RolesList.All(r => overrides.PdfRolesWhitelist.Contains(r));
 
-    private async Task<CreateProjectionResult?> CallFireball(CancellationToken cancellationToken, FireballPlaybook playbook, string pdfKey)
+    private async Task<CreateProjectionResult> CallFireball(FireballPlaybook playbook, string pdfKey,
+        CancellationToken cancellationToken)
     {
         var jsonString = JsonConvert.SerializeObject(playbook, jsonSerializerSettings);
         var request = new HttpRequestMessage(HttpMethod.Post, PdfEndpoint)
@@ -154,19 +149,19 @@ public class FireballPdfCreator : BaseProjectionCreator<PdfParsedNamedQuery>
         sw.Stop();
         Logger.LogDebug("Created new pdf document at {PdfS3Key} with size in bytes = {SizeBytes}. Took {Elapsed}ms",
             pdfKey, fireballResponse?.Size ?? -1, sw.ElapsedMilliseconds);
-        return fireballResponse;
+        return fireballResponse.ThrowIfNull(nameof(fireballResponse));
     }
 }
 
 public class FireballPlaybook
 {
     public string Method { get; set; } = "s3";
+
+    public string Output { get; set; } = null!;
     
-    public string Output { get; set; }
+    public string Title { get; set; } = null!;
     
-    public string Title { get; set; }
-    
-    public FireballCustomTypes CustomTypes { get; set; }
+    public FireballCustomTypes CustomTypes { get; set; } = null!;
 
     public List<FireballPage> Pages { get; set; } = new();
 }
@@ -174,7 +169,7 @@ public class FireballPlaybook
 public class FireballCustomTypes
 {
     [JsonProperty("redacted")] 
-    public FireballMessageProp RedactedMessage { get; set; }
+    public FireballMessageProp? RedactedMessage { get; set; }
 
     [JsonProperty("missing")] 
     public FireballMessageProp MissingMessage { get; set; } = new() { Message = "Unable to display this page" };
@@ -182,12 +177,12 @@ public class FireballCustomTypes
 
 public class FireballMessageProp
 {
-    public string Message { get; set; }
+    public string? Message { get; set; }
 }
 
 public class FireballPage
 {
-    public string Type { get; set; }
+    public string Type { get; set; } = null!;
     
     public string? Method { get; set; }
     
@@ -195,7 +190,7 @@ public class FireballPage
 
     public static FireballPage Redacted() => new() { Type = "redacted" };
 
-    public static FireballPage Download(string url) =>
+    public static FireballPage Download(string? url) =>
         new() { Type = "pdf", Method = "download", Input = url };
     
     public static FireballPage Image(string url) =>

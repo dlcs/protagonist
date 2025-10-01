@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Assets.NamedQueries;
+﻿using System;
+using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.NamedQueries.Infrastructure;
 using DLCS.Repository.NamedQueries.Parsing;
 using Microsoft.Extensions.Configuration;
@@ -28,12 +29,15 @@ public static class ServiceCollectionX
             .AddScoped<ZipNamedQueryParser>()
             .AddScoped<NamedQueryResultGenerator>()
             .AddScoped<IProjectionCreator<ZipParsedNamedQuery>, ImageThumbZipCreator>();
-        
-        var fireballRoot = configuration.Get<OrchestratorSettings>().NamedQuery.FireballRoot;
+
+        var namedQuerySettings = configuration.Get<OrchestratorSettings>()?.NamedQuery;
+        var fireballRoot = namedQuerySettings?.FireballRoot;
+        var fireballTimeout = namedQuerySettings?.FireballTimeoutMs ?? 60;
         services.AddHttpClient<IProjectionCreator<PdfParsedNamedQuery>, FireballPdfCreator>(client =>
         {
             client.DefaultRequestHeaders.WithRequestedBy();
             client.BaseAddress = fireballRoot;
+            client.Timeout = TimeSpan.FromMilliseconds(fireballTimeout);
         });
 
         return services;
