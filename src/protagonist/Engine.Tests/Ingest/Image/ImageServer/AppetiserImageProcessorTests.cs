@@ -255,10 +255,7 @@ public class AppetiserImageProcessorTests
 
         A.CallTo(() => appetiserClient.GenerateDerivatives(context, assetId, A<IReadOnlyList<SizeParameter>>._,
                 A<ImageProcessorOperations>._, A<CancellationToken>._))
-            .Returns(new AppetiserResponseModel
-            {
-                JP2 = locationOnDisk,
-            });
+            .Returns(new AppetiserResponseModel());
 
         // Act
         await sut.ProcessImage(context);
