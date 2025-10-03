@@ -85,7 +85,7 @@ public abstract class InfoJsonConstructorTemplate<T> : IInfoJsonConstructor
         
         if (orchestrationImage.MaxUnauthorised > 0)
         {
-            SetImageServiceTiles (imageService, orchestrationImage);
+            SetImageServiceTiles(imageService, orchestrationImage);
         }
     }
 

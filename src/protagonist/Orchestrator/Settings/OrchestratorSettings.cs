@@ -145,7 +145,7 @@ public class ProxySettings
     /// Direct URL access requires the object to be publicly available, or for a bucket policy to be configured to allow
     /// access, e.g. with aws:sourceVpce or aws:sourceVpc access allowed.
     /// </remarks>
-    public bool UsePresignedUrlsForOptimised { get; set; } = false;
+    public bool UsePresignedUrlsForOptimised { get; set; } = true;
     
     /// <summary>
     /// If true, Yarp will proxy to S3 optimised origins using presigned URLs.
@@ -261,12 +261,17 @@ public class NamedQuerySettings
     /// <summary>
     /// URL root of fireball service for PDF generation
     /// </summary>
-    public Uri FireballRoot { get; set; }
+    public Uri? FireballRoot { get; set; }
+    
+    /// <summary>
+    /// Timeout, in ms, to wait for calls to fireball
+    /// </summary>
+    public int FireballTimeoutMs { get; set; } = 60000;
 
     /// <summary>
     /// Folder template for creating local Zip file
     /// </summary>
-    public string ZipFolderTemplate { get; set; }
+    public string ZipFolderTemplate { get; set; } = null!;
     
     /// <summary>
     /// Customer-specific overrides; keyed by customer Id

@@ -15,32 +15,22 @@ namespace DLCS.Repository.Strategy;
 /// <summary>
 /// OriginStrategy implementation for 'basic-http-authentication' assets.
 /// </summary>
-public class BasicHttpAuthOriginStrategy : IOriginStrategy
+public class BasicHttpAuthOriginStrategy(
+    IHttpClientFactory httpClientFactory,
+    ICredentialsRepository credentialsRepository,
+    ILogger<BasicHttpAuthOriginStrategy> logger)
+    : IOriginStrategy
 {
-    private readonly IHttpClientFactory httpClientFactory;
-    private readonly ICredentialsRepository credentialsRepository;
-    private readonly ILogger<BasicHttpAuthOriginStrategy> logger;
-    
-    public BasicHttpAuthOriginStrategy(
-        IHttpClientFactory httpClientFactory,
-        ICredentialsRepository credentialsRepository,
-        ILogger<BasicHttpAuthOriginStrategy> logger)
-    {
-        this.httpClientFactory = httpClientFactory;
-        this.credentialsRepository = credentialsRepository;
-        this.logger = logger;
-    }
-
     public async Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("Fetching {Asset} from Origin: {Url}", assetId, origin);
-        customerOriginStrategy.ThrowIfNull(nameof(customerOriginStrategy));
+        customerOriginStrategy = customerOriginStrategy.ThrowIfNull(nameof(customerOriginStrategy));
 
         try
         {
             var response = await GetHttpResponse(customerOriginStrategy, origin, cancellationToken);
-            var originResponse = await CreateOriginResponse(response);
+            var originResponse = await response.CreateOriginResponse(cancellationToken);
             return originResponse;
         }
         catch (Exception ex)
@@ -57,7 +47,7 @@ public class BasicHttpAuthOriginStrategy : IOriginStrategy
         request.Headers.Authorization = await SetBasicAuthHeader(customerOriginStrategy);
 
         var httpClient = httpClientFactory.CreateClient(HttpClients.OriginStrategy);
-        var response = await httpClient.SendAsync(request, cancellationToken);
+        var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         return response;
     }
 
@@ -75,19 +65,5 @@ public class BasicHttpAuthOriginStrategy : IOriginStrategy
         var creds = Convert.ToBase64String(
             Encoding.ASCII.GetBytes($"{basicCredentials.User}:{basicCredentials.Password}"));
         return AuthenticationHeaderValue.Parse($"Basic {creds}");
-    }
-
-    private static async Task<OriginResponse> CreateOriginResponse(HttpResponseMessage response)
-    {
-        response.EnsureSuccessStatusCode();
-        var content = response.Content;
-        if (content == null)
-        {
-            return OriginResponse.Empty;
-        }
-
-        return new OriginResponse(await content.ReadAsStreamAsync())
-            .WithContentLength(content.Headers.ContentLength)
-            .WithContentType(content.Headers?.ContentType?.MediaType);
     }
 }

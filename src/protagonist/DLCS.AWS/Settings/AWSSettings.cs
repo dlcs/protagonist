@@ -40,4 +40,9 @@ public class AWSSettings
     /// Cloudfront settings
     /// </summary>
     public CloudfrontSettings Cloudfront { get; set; } = new();
+    
+    /// <summary>
+    /// Settings related to transcode operations
+    /// </summary>
+    public TranscodeSettings Transcode { get; set; } = new();
 }

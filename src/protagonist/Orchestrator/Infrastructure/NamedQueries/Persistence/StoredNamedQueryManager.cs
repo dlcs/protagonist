@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
+using DLCS.Core.Streams;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.NamedQueries;
@@ -20,24 +21,13 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence;
 /// <summary>
 /// Service for handling NQ projections that are created and stored alongside a corresponding control-file.
 /// </summary>
-public class StoredNamedQueryManager
+public class StoredNamedQueryManager(
+    NamedQueryStorageService namedQueryStorageService,
+    IOptions<NamedQuerySettings> namedQuerySettings,
+    ILogger<StoredNamedQueryManager> logger,
+    IAssetAccessValidator assetAccessValidator)
 {
-    private readonly NamedQueryStorageService namedQueryStorageService;
-    private readonly ILogger<StoredNamedQueryManager> logger;
-    private readonly IAssetAccessValidator assetAccessValidator;
-    private readonly NamedQuerySettings namedQuerySettings;
-
-    public StoredNamedQueryManager(
-        NamedQueryStorageService namedQueryStorageService,
-        IOptions<NamedQuerySettings> namedQuerySettings,
-        ILogger<StoredNamedQueryManager> logger, 
-        IAssetAccessValidator assetAccessValidator)
-    {
-        this.namedQueryStorageService = namedQueryStorageService;
-        this.namedQuerySettings = namedQuerySettings.Value;
-        this.logger = logger;
-        this.assetAccessValidator = assetAccessValidator;
-    }
+    private readonly NamedQuerySettings namedQuerySettings = namedQuerySettings.Value;
 
     /// <summary>
     /// Get <see cref="StoredResult"/> containing data stream and status for specific named query result.
@@ -52,8 +42,9 @@ public class StoredNamedQueryManager
         var parsedNamedQuery = namedQueryResult.ParsedQuery!;
 
         // Check to see if we can use an existing item
-        var existingResult = await TryGetExistingResource(parsedNamedQuery, validateRoles, cancellationToken);
-
+        var existingResult =
+            await TryGetExistingResource(parsedNamedQuery, validateRoles, projectionCreator, cancellationToken);
+        
         // If it's Found or InProcess then no further processing for now, returns what's found
         if (existingResult.Status is PersistedProjectionStatus.Available or PersistedProjectionStatus.InProcess
             or PersistedProjectionStatus.Restricted)
@@ -61,6 +52,7 @@ public class StoredNamedQueryManager
             return existingResult;
         }
 
+        // If we hit here there is no projection - create one
         var imageResults = await namedQueryResult.Results
             .IncludeRelevantMetadata()
             .AsSplitQuery()
@@ -74,8 +66,10 @@ public class StoredNamedQueryManager
         var (success, controlFile) =
             await projectionCreator.PersistProjection(parsedNamedQuery, imageResults, cancellationToken);
         if (!success)
+        {
             return new StoredResult(Stream.Null, PersistedProjectionStatus.Error, existingResult.RequiresAuth);
-        
+        }
+
         var requiresAuth = !controlFile!.Roles.IsNullOrEmpty();
         
         if (validateRoles && requiresAuth)
@@ -87,9 +81,9 @@ public class StoredNamedQueryManager
         }
 
         var projection = await namedQueryStorageService.LoadProjection(parsedNamedQuery, cancellationToken);
-        if (projection.Stream != null && projection.Stream != Stream.Null)
+        if (!projection.Stream.IsNull())
         {
-            return new(projection.Stream!, PersistedProjectionStatus.Available, requiresAuth);
+            return new(projection.Stream, PersistedProjectionStatus.Available, requiresAuth);
         }
 
         logger.LogWarning("File {S3Key} was successfully created but now cannot be loaded",
@@ -97,8 +91,9 @@ public class StoredNamedQueryManager
         return new(Stream.Null, PersistedProjectionStatus.Error, requiresAuth);
     }
 
-    private async Task<StoredResult> TryGetExistingResource(StoredParsedNamedQuery parsedNamedQuery,
-        bool validateRoles, CancellationToken cancellationToken)
+    private async Task<StoredResult> TryGetExistingResource<T>(T parsedNamedQuery,
+        bool validateRoles, IProjectionCreator<T> projectionCreator, CancellationToken cancellationToken)
+        where T : StoredParsedNamedQuery
     {
         var controlFile = await namedQueryStorageService.GetControlFile(parsedNamedQuery, cancellationToken);
         if (controlFile == null) return new(Stream.Null, PersistedProjectionStatus.NotFound, null);
@@ -106,19 +101,14 @@ public class StoredNamedQueryManager
         var itemKey = parsedNamedQuery.StorageKey;
         var requiresAuth = !controlFile.Roles.IsNullOrEmpty();
         
-        if (validateRoles && requiresAuth)
+        if (validateRoles && requiresAuth && !await CanUserViewItem(parsedNamedQuery, controlFile))
         {
-            if (!await CanUserViewItem(parsedNamedQuery, controlFile))
-            {
-                return new(Stream.Null, PersistedProjectionStatus.Restricted, true);
-            }
+            return new(Stream.Null, PersistedProjectionStatus.Restricted, true);
         }
 
-        if (controlFile.IsStale(namedQuerySettings.ControlStaleSecs)) // TODO - allow different values
+        if (controlFile.IsStale(namedQuerySettings.ControlStaleSecs))
         {
-            logger.LogWarning("File {S3Key} has valid control-file but it is stale. Will recreate",
-                itemKey);
-            return new(Stream.Null, PersistedProjectionStatus.NotFound, requiresAuth);
+            return await HandleStaleControlFile(parsedNamedQuery, projectionCreator, controlFile, itemKey, requiresAuth, cancellationToken);
         }
 
         if (controlFile.InProcess)
@@ -128,9 +118,9 @@ public class StoredNamedQueryManager
         }
 
         var resource = await namedQueryStorageService.LoadProjection(parsedNamedQuery, cancellationToken);
-        if (resource.Stream != null && resource.Stream != Stream.Null)
+        if (!resource.Stream.IsNull())
         {
-            return new(resource.Stream!, PersistedProjectionStatus.Available, requiresAuth);
+            return new(resource.Stream, PersistedProjectionStatus.Available, requiresAuth);
         }
 
         logger.LogWarning("File {S3Key} has valid control-file but item not found. Will recreate", itemKey);
@@ -143,6 +133,29 @@ public class StoredNamedQueryManager
         var access = await assetAccessValidator.TryValidate(mockAssetId, controlFile.Roles ?? new List<string>(),
             AuthMechanism.Cookie);
         return access is AssetAccessResult.Open or AssetAccessResult.Authorized;
+    }
+    
+    private async Task<StoredResult> HandleStaleControlFile<T>(T parsedNamedQuery,
+        IProjectionCreator<T> projectionCreator, ControlFile controlFile, string itemKey, bool requiresAuth,
+        CancellationToken cancellationToken)
+        where T : StoredParsedNamedQuery
+    {
+        // If control-file is stale, check to see if the downstream service completed eventually - if this is the case
+        // then the projection will exist and will have been created after the control-file 
+        var projection = await namedQueryStorageService.LoadProjection(parsedNamedQuery, cancellationToken);
+        if (!projection.Stream.IsNull() && controlFile.Created < projection.Headers.LastModified)
+        {
+            logger.LogInformation("File {S3Key} has stale control-file but projection exists, updating control file",
+                itemKey);
+
+            await projectionCreator.MarkControlFileComplete(parsedNamedQuery, controlFile,
+                projection.Headers.ContentLength ?? 0, cancellationToken);
+            return new(projection.Stream, PersistedProjectionStatus.Available, requiresAuth);
+        }
+
+        logger.LogWarning("File {S3Key} has valid control-file but it is stale. Will recreate",
+            itemKey);
+        return new(Stream.Null, PersistedProjectionStatus.NotFound, requiresAuth);
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using DLCS.AWS.S3.Models;
+using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
@@ -10,14 +11,14 @@ namespace Engine.Ingest;
 /// <summary>
 /// Context for an in-flight ingestion request.
 /// </summary>
-public class IngestionContext
+public class IngestionContext(Asset asset)
 {
-    public Asset Asset { get; }
-    
-    public AssetId AssetId { get; }
-    
-    public string IngestId { get; }
-    
+    public Asset Asset { get; } = asset;
+
+    public AssetId AssetId { get; } = asset.Id;
+
+    public string IngestId { get; } = DateTime.Now.Ticks.ToString();
+
     public AssetFromOrigin? AssetFromOrigin { get; private set; }
         
     public ImageLocation? ImageLocation { get; private set; }
@@ -30,14 +31,7 @@ public class IngestionContext
     /// Any objects, and their size, uploaded to DLCS storage
     /// </summary>
     public Dictionary<ObjectInBucket, long> StoredObjects { get; } = new();
-    
-    public IngestionContext(Asset asset)
-    {
-        Asset = asset;
-        AssetId = asset.Id;
-        IngestId = DateTime.Now.Ticks.ToString();
-    }
-    
+
     public IngestionContext WithAssetFromOrigin(AssetFromOrigin assetFromOrigin)
     {
         AssetFromOrigin = assetFromOrigin;
@@ -58,7 +52,6 @@ public class IngestionContext
     public IngestionContext WithPreIngestionAssetSize(long? assetSize = null)
     {
         PreIngestionAssetSize = assetSize ?? 0;
-        
         return this;
     }
     
@@ -79,14 +72,13 @@ public class IngestionContext
     }
 
     /// <summary>
-    /// Updates the media type if it's been set as something the caller didn't understand
+    /// Updates the media type to value from origin if it is the Protagonist fallback value
     /// </summary>
-    /// <returns></returns>
     public IngestionContext UpdateMediaTypeIfRequired()
     {
         if (AssetFromOrigin == null) return this;
         
-        if (Asset.MediaType == "image/unknown" && !AssetFromOrigin.ContentType.IsNullOrEmpty())
+        if (Asset.MediaType == MIMEHelper.UnknownImage && !AssetFromOrigin.ContentType.IsNullOrEmpty())
         {
             Asset.MediaType = AssetFromOrigin.ContentType;
         }

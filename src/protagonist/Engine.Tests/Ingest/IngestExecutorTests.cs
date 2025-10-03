@@ -5,6 +5,7 @@ using Engine.Data;
 using Engine.Ingest;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
+using Test.Helpers.Data;
 
 namespace Engine.Tests.Ingest;
 
@@ -15,14 +16,13 @@ public class IngestExecutorTests
     private readonly IngestExecutor sut;
     private readonly CustomerOriginStrategy customerOriginStrategy = new();
     private readonly IAssetIngestorSizeCheck assetSizeCheck;
-    private readonly IStorageRepository storageRepository;
 
     public IngestExecutorTests()
     {
         workerBuilder = A.Fake<IWorkerBuilder>();
         repo = A.Fake<IEngineAssetRepository>();
         assetSizeCheck = A.Fake<IAssetIngestorSizeCheck>();
-        storageRepository = A.Fake<IStorageRepository>();
+        var storageRepository = A.Fake<IStorageRepository>();
         
         A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
             .Returns(new AssetStorageMetric
@@ -209,22 +209,27 @@ public class IngestExecutorTests
     public async Task IngestAsset_SkipsProcessing_IfAssetHasNoneDeliveryChannel()
     {
         // Arrange
-        var asset = new Asset()
+        var asset = new Asset
         {
-            ImageDeliveryChannels = new[]
-            {
-                new ImageDeliveryChannel()
+            Id = AssetIdGenerator.GetAssetId(),
+            ImageDeliveryChannels =
+            [
+                new ImageDeliveryChannel
                 {
                     Channel = AssetDeliveryChannels.None
                 }
-            }
+            ]
         };
         
         // Act
         var result = await sut.IngestAsset(asset, customerOriginStrategy);
 
-        // Assert
+        // Assert we receive success and an empty ImageStorage record is created
         result.Status.Should().Be(IngestResultStatus.Success);
+        A.CallTo(() => repo.UpdateIngestedAsset(asset, null,
+                A<ImageStorage?>.That.Matches(s => s!.ThumbnailSize == 0L && s.Size == 0L), true,
+                A<CancellationToken>._))
+            .MustHaveHappened();
     }
 }
 

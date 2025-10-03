@@ -2,7 +2,7 @@
 
 public class ImageOnDisk
 {
-    public string Path { get; set; }
+    public string Path { get; set; } = null!;
     public int Height { get; set; }
     public int Width { get; set; }
 }

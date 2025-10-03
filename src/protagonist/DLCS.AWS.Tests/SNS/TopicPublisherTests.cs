@@ -93,10 +93,12 @@ public class TopicPublisherTests
     public async Task PublishToAssetModifiedTopicBatch_SuccessfullyPublishesMultipleBatches()
     {
         // Arrange
-        var notifications = new List<AssetModifiedNotification>(15);
-        for (int x = 0; x < 15; x++)
+        const int batchSize = 5;
+        const int numberOfMessages = batchSize * 2;
+        var notifications = new List<AssetModifiedNotification>(numberOfMessages);
+        for (int x = 0; x < numberOfMessages; x++)
         {
-            notifications.Add(new AssetModifiedNotification(x < 10 ? "message" : "next", GetAttributes(ChangeType.Delete, false)));
+            notifications.Add(new AssetModifiedNotification(x < batchSize ? "message" : "next", GetAttributes(ChangeType.Delete, false)));
         } 
 
         // Act
@@ -109,7 +111,7 @@ public class TopicPublisherTests
                                                              r.Message == "message" &&
                                                              r.MessageAttributes["messageType"].StringValue ==
                                                              "Delete") &&
-                                                         b.PublishBatchRequestEntries.Count == 10),
+                                                         b.PublishBatchRequestEntries.Count == batchSize),
                 A<CancellationToken>._)).MustHaveHappened();
         A.CallTo(() =>
             snsClient.PublishBatchAsync(
@@ -117,7 +119,7 @@ public class TopicPublisherTests
                                                              r.Message == "next" &&
                                                              r.MessageAttributes["messageType"].StringValue ==
                                                              "Delete") &&
-                                                         b.PublishBatchRequestEntries.Count == 5),
+                                                         b.PublishBatchRequestEntries.Count == batchSize),
                 A<CancellationToken>._)).MustHaveHappened();
     }
     

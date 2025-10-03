@@ -220,14 +220,14 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileStale()
+    public async Task GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileStale_AndPdfDoesNotExist()
     {
         // Arrange
         var fakePdfContent = nameof(GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
         const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/3/tester";
         const string path = "pdf/99/test-pdf/my-ref/1/3";
         await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/3/tester.json",
-            new ControlFile { Created = DateTime.UtcNow.AddHours(-1), InProcess = false });
+            new ControlFile { Created = DateTime.UtcNow.AddHours(-1), InProcess = true });
 
         pdfCreator.AddCallbackFor(pdfStorageKey, (_, _) =>
         {
@@ -239,10 +239,33 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.GetAsync(path);
 
         // Assert
-        response.Headers.CacheControl.Public.Should().BeTrue();
+        response.Headers.CacheControl!.Public.Should().BeTrue();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).Should().Be(fakePdfContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/pdf"));
+    }
+    
+    [Fact]
+    public async Task GetPdf_Returns200_WithExistingPdf_IfPdfControlFileStale_ButNewerPdfExists()
+    {
+        // This test simulates an initial PDF creation request timing out but the PDF service successfully completes PDF
+        // see https://github.com/dlcs/protagonist/issues/1045
+        var fakePdfContent = nameof(GetPdf_Returns200_WithNewlyCreatedPdf_IfPdfControlFileExistsButPdfDoesnt);
+        const string pdfStorageKey = "99/pdf/test-pdf/my-ref/1/13/tester";
+        const string path = "pdf/99/test-pdf/my-ref/1/13";
+        await AddPdfControlFile("99/pdf/test-pdf/my-ref/1/13/tester.json",
+            new ControlFile { Created = DateTime.UtcNow.AddHours(-1), InProcess = true, Exists = false });
+        await AddPdf(pdfStorageKey, fakePdfContent);
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+
+        // Assert
+        response.Headers.CacheControl!.Public.Should().BeTrue();
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await response.Content.ReadAsStringAsync()).Should().Be(fakePdfContent);
+        response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/pdf"));
+        pdfCreator.ShouldHaveCompletedControlFileFor(pdfStorageKey);
     }
 
     [Fact]
@@ -303,7 +326,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Headers.CacheControl.Public.Should().BeFalse();
+        response.Headers.CacheControl!.Public.Should().BeFalse();
         (await response.Content.ReadAsStringAsync()).Should().Be(fakePdfContent);
         response.Content.Headers.ContentType.Should().Be(new MediaTypeHeaderValue("application/pdf"));
     }

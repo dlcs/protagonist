@@ -75,4 +75,126 @@ public class ImageDeliveryChannelXTests
         var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-img" }, thumbsChannel };
         idcs.GetThumbsChannel(true).Should().Be(thumbsChannel);
     }
+    
+    [Fact]
+    public void GetTimebasedChannel_ThrowIfNotFoundFalse_ReturnsNull_IfListNull()
+    {
+        List<ImageDeliveryChannel> idcs = null;
+        idcs.GetTimebasedChannel(false).Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetTimebasedChannel_ThrowIfNotFoundFalse_ReturnsNull_IfListEmpty()
+    {
+        var idcs = new List<ImageDeliveryChannel>();
+        idcs.GetTimebasedChannel(false).Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetTimebasedChannel_ThrowIfNotFoundFalse_ReturnsNull_IfTimebasedNotFound()
+    {
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-img" } };
+        idcs.GetTimebasedChannel(false).Should().BeNull();
+    }
+    
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void GetTimebasedChannel_ReturnsTimebased_IfFound(bool throwIfNotFound)
+    {
+        var timebasedChannel = new ImageDeliveryChannel
+        {
+            Channel = "iiif-av", DeliveryChannelPolicyId = 12354
+        };
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-img" }, timebasedChannel };
+        idcs.GetTimebasedChannel(throwIfNotFound).Should().Be(timebasedChannel);
+    }
+    
+    [Fact]
+    public void GetTimebasedChannel_ThrowIfNotFoundTrue_Throws_IfListNull()
+    {
+        List<ImageDeliveryChannel> idcs = null;
+        Action action = () => idcs.GetTimebasedChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public void GetTimebasedChannel_ThrowIfNotFoundTrue_Throws_IfListEmpty()
+    {
+        var idcs = new List<ImageDeliveryChannel>();
+        Action action = () => idcs.GetTimebasedChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public void GetTimebasedChannel_ThrowIfNotFoundTrue_Throws_IfTimebasedNotFound()
+    {
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-img" } };
+        Action action = () => idcs.GetTimebasedChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundFalse_ReturnsNull_IfListNull()
+    {
+        List<ImageDeliveryChannel> idcs = null;
+        idcs.GetImageChannel(false).Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundFalse_ReturnsNull_IfListEmpty()
+    {
+        var idcs = new List<ImageDeliveryChannel>();
+        idcs.GetImageChannel(false).Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundFalse_ReturnsNull_IfImageNotFound()
+    {
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-av" } };
+        idcs.GetImageChannel(false).Should().BeNull();
+    }
+    
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void GetImageChannel_ReturnsImage_IfFound(bool throwIfNotFound)
+    {
+        var imageChannel = new ImageDeliveryChannel
+        {
+            Channel = "iiif-img", DeliveryChannelPolicyId = 12354
+        };
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-av" }, imageChannel };
+        idcs.GetImageChannel(throwIfNotFound).Should().Be(imageChannel);
+    }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundTrue_Throws_IfListNull()
+    {
+        List<ImageDeliveryChannel> idcs = null;
+        Action action = () => idcs.GetImageChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundTrue_Throws_IfListEmpty()
+    {
+        var idcs = new List<ImageDeliveryChannel>();
+        Action action = () => idcs.GetImageChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public void GetImageChannel_ThrowIfNotFoundTrue_Throws_IfImageNotFound()
+    {
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-av" } };
+        Action action = () => idcs.GetImageChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
 }

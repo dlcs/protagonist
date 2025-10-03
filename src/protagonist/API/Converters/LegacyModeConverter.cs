@@ -14,8 +14,6 @@ namespace API.Converters;
 /// </summary>
 public static class LegacyModeConverter
 {
-    private const string DefaultMediaType = "image/unknown";
-
     internal static void LogLegacyUsage(this ILogger logger, string message, params object?[] args)
         => logger.LogWarning("LEGACY USE:" + message, args);
     
@@ -37,7 +35,7 @@ public static class LegacyModeConverter
             logger?.LogLegacyUsage("Null or empty media type");
             var contentType = image.Origin?.Split('.').Last() ?? string.Empty;
          
-            image.MediaType = MIMEHelper.GetContentTypeForExtension(contentType) ?? DefaultMediaType;
+            image.MediaType = MIMEHelper.GetContentTypeForExtension(contentType) ?? MIMEHelper.UnknownImage;
             image.Family ??= AssetFamily.Image;
         }
         

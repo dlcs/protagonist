@@ -13,7 +13,7 @@ public class ControlFile
     /// The storage key that this control file refers to. 
     /// </summary>
     [JsonProperty("key")]
-    public string Key { get; set; }
+    public string Key { get; set; } = null!;
     
     /// <summary>
     /// A marker for whether the related file exists in storage.
@@ -61,7 +61,7 @@ public class ControlFile
         SizeBytes = 0,
         ItemCount = 0,
         Key = string.Empty,
-        Roles = new List<string>(0)
+        Roles = []
     };
 
     /// <summary>

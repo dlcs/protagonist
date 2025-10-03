@@ -15,8 +15,8 @@
         <PackageReference Include="Amazon.Extensions.Configuration.SystemsManager"/>
         <PackageReference Include="AWSSDK.CloudFront"/>
         <PackageReference Include="AWSSDK.Core"/>
-        <PackageReference Include="AWSSDK.ElasticTranscoder"/>
         <PackageReference Include="AWSSDK.Extensions.NETCore.Setup"/>
+        <PackageReference Include="AWSSDK.MediaConvert" />
         <PackageReference Include="AWSSDK.S3"/>
         <PackageReference Include="AWSSDK.SimpleNotificationService"/>
         <PackageReference Include="AWSSDK.SQS"/>
@@ -27,5 +27,4 @@
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions"/>
         <PackageReference Include="Newtonsoft.Json"/>
     </ItemGroup>
-
 </Project>

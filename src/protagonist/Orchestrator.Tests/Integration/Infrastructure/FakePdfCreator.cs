@@ -4,6 +4,8 @@ using System.Threading;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.NamedQueries.Models;
+using FluentAssertions.Execution;
+using JetBrains.Annotations;
 using Orchestrator.Infrastructure.NamedQueries.Persistence;
 
 namespace Orchestrator.Tests.Integration.Infrastructure;
@@ -17,10 +19,18 @@ public class FakePdfCreator : IProjectionCreator<PdfParsedNamedQuery>
     private static readonly Dictionary<string, Func<ParsedNamedQuery, List<Asset>, bool>> Callbacks = new();
 
     private static readonly Dictionary<string, Func<ControlFile, ControlFile>> ControlFileCallbacks = new();
+    
+    private static readonly List<string> CompletedControlFiles = new();
 
+    /// <summary>
+    /// Add a callback for when PDF with specified key is persisted
+    /// </summary>
     public void AddCallbackFor(string pdfKey, Func<ParsedNamedQuery, List<Asset>, bool> callback)
         => Callbacks.Add(pdfKey, callback);
 
+    /// <summary>
+    /// Add a callback to allow control of ControlFile returned when PDF with specified key is persisted
+    /// </summary>
     public void AddCallbackFor(string pdfKey, Func<ControlFile, ControlFile> callback)
         => ControlFileCallbacks.Add(pdfKey, callback);
 
@@ -37,5 +47,20 @@ public class FakePdfCreator : IProjectionCreator<PdfParsedNamedQuery>
         }
 
         throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");
+    }
+
+    public Task MarkControlFileComplete(PdfParsedNamedQuery parsedNamedQuery, ControlFile controlFile, long fileSize,
+        CancellationToken cancellationToken)
+    {
+        CompletedControlFiles.Add(parsedNamedQuery.StorageKey);
+        return Task.CompletedTask;
+    }
+
+    public void ShouldHaveCompletedControlFileFor(string key)
+    {
+        if (!CompletedControlFiles.Contains(key))
+        {
+            throw new AssertionFailedException($"Control file for PDF {key} not completed");
+        }
     }
 }

@@ -1,9 +1,10 @@
 using DLCS.AWS.Configuration;
-using DLCS.AWS.ElasticTranscoder;
+using DLCS.AWS.MediaConvert;
 using DLCS.AWS.S3;
 using DLCS.AWS.SNS;
 using DLCS.AWS.SNS.Messaging;
 using DLCS.AWS.SQS;
+using DLCS.AWS.Transcoding;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
 using DLCS.Model.Auth;
@@ -26,7 +27,6 @@ using Engine.Ingest.Image;
 using Engine.Ingest.Image.Completion;
 using Engine.Ingest.Image.ImageServer;
 using Engine.Ingest.Image.ImageServer.Clients;
-using Engine.Ingest.Image.ImageServer.Measuring;
 using Engine.Ingest.Persistence;
 using Engine.Ingest.Timebased;
 using Engine.Ingest.Timebased.Completion;
@@ -48,14 +48,14 @@ public static class ServiceCollectionX
             .AddSingleton<IBucketReader, S3BucketReader>()
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>()
-            .AddSingleton<IElasticTranscoderWrapper, ElasticTranscoderWrapper>()
-            .AddSingleton<IElasticTranscoderPresetLookup, ElasticTranscoderPresetLookup>()
+            .AddSingleton<ITranscoderWrapper, MediaConvertWrapper>()
+            .AddSingleton<ITranscoderPresetLookup, SettingsBasedPresetLookup>()
             .AddScoped<ITopicPublisher, TopicPublisher>()
             .SetupAWS(configuration, webHostEnvironment)
             .WithAmazonS3()
             .WithAmazonSQS()
             .WithAmazonSNS()
-            .WithAmazonElasticTranscoder();
+            .WithMediaConvert();
 
         return services;
     }
@@ -94,7 +94,7 @@ public static class ServiceCollectionX
             .AddScoped<IThumbCreator, ThumbCreator>()
             .AddScoped<IWorkerBuilder, WorkerBuilder>()
             .AddSingleton<IFileSystem, FileSystem>()
-            .AddSingleton<IMediaTranscoder, ElasticTranscoder>()
+            .AddSingleton<IMediaTranscoder, MediaConvert>()
             .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<IAssetToS3, AssetToS3>()
@@ -103,26 +103,13 @@ public static class ServiceCollectionX
         if (engineSettings.ImageIngest != null)
         {
             services.AddTransient<TimingHandler>();
-            services.AddScoped<IImageProcessor, ImageServerClient>()
-                .AddScoped<IImageMeasurer, ImageSharpMeasurer>();
+            services.AddScoped<IImageProcessor, AppetiserImageProcessor>();
 
-            services.AddHttpClient<IAppetiserClient, AppetiserClient>(client =>
-                {
-                    client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
-                    client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
-                }).AddHttpMessageHandler<TimingHandler>();
-
-            services.AddHttpClient<IThumbsClient, ImageServerThumbsClient>(client =>
-                {
-                    var thumbsClient = new UriBuilder(engineSettings.ImageIngest.ThumbsProcessorUrl)
-                    {
-                        Path = engineSettings.ImageIngest.ThumbsProcessorPathBase
-                    };
-                    client.BaseAddress = thumbsClient.Uri;
-                    client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
-                })
-                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false })
-                .AddHttpMessageHandler<TimingHandler>();
+            services.AddHttpClient<IImageProcessorClient, AppetiserClient>(client =>
+            {
+                client.BaseAddress = engineSettings.ImageIngest.ImageProcessorUrl;
+                client.Timeout = TimeSpan.FromMilliseconds(engineSettings.ImageIngest.ImageProcessorTimeoutMs);
+            }).AddHttpMessageHandler<TimingHandler>();
 
             services.AddHttpClient<IOrchestratorClient, InfoJsonOrchestratorClient>(client =>
             {

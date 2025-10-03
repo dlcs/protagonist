@@ -35,7 +35,15 @@ public class MIMEHelper
     /// <summary>
     /// MIME type for JPEG (image/jpeg)
     /// </summary>
-    public static string? JPEG = "image/jpeg";
+    public const string JPEG = "image/jpeg";
+    
+    /// <summary>
+    /// MIME type representing an unknown image type
+    /// </summary>
+    /// <remarks>
+    /// The type (image/) is the important part so use "unknown" as subtype if we know it's an imge but not exact type
+    /// </remarks>
+    public const string UnknownImage = "image/unknown"; 
 
     // Forward = extension:contentType
     // Reverse = contentType:extension

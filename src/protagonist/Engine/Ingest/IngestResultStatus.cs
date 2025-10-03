@@ -21,7 +21,7 @@ public enum IngestResultStatus
     Failed = 2,
         
     /// <summary>
-    /// Ingestion operation has successfully been queued for further processing (e.g. by ElasticTranscoder)
+    /// Ingestion operation has successfully been queued for further processing (e.g. by MediaConvert)
     /// </summary>
     QueuedForProcessing = 3,
     

@@ -96,9 +96,7 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
         TrySetContentTypeForBinary(originResponse, asset);
         var extension = GetFileExtension(originResponse);
 
-        var path = Path.Join(destinationTemplate,
-            asset.Id.Asset.Replace("(", engineSettings.ImageIngest.OpenBracketReplacement)
-                .Replace(")", engineSettings.ImageIngest.CloseBracketReplacement));
+        var path = Path.Join(destinationTemplate, asset.Id.GetDiskSafeAssetId(engineSettings.ImageIngest));
 
         var targetPath = $"{path}.{extension}";
 

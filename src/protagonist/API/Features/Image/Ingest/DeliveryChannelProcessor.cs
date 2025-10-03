@@ -42,7 +42,7 @@ public class DeliveryChannelProcessor
             try
             {
                 var deliveryChannelChanged = await SetImageDeliveryChannels(updatedAsset,
-                    deliveryChannelsBeforeProcessing ?? Array.Empty<DeliveryChannelsBeforeProcessing>(), existingAsset != null);
+                    deliveryChannelsBeforeProcessing ?? [], existingAsset != null);
                 return deliveryChannelChanged;
             }
             catch (InvalidOperationException ioEx)
@@ -54,7 +54,7 @@ public class DeliveryChannelProcessor
         return false;
     }
 
-    private bool DeliveryChannelsRequireReprocessing(Asset originalAsset, DeliveryChannelsBeforeProcessing[] deliveryChannelsBeforeProcessing)
+    private bool DeliveryChannelsRequireReprocessing(Asset originalAsset, DeliveryChannelsBeforeProcessing[]? deliveryChannelsBeforeProcessing)
     {
         // PUT prevents empty delivery channels from being passed here, but PATCH doesn't
         if (deliveryChannelsBeforeProcessing.IsNullOrEmpty()) return false;

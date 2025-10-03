@@ -75,11 +75,13 @@ public static class QueueMessageX
     }
     
     /// <summary>
-    /// Serializes a queue message body into a class of type <see cref="T"/>
+    /// Deserializes a queue message body into a class of type <see cref="T"/>.
+    ///
+    /// Handles when the message can be from SNS->SQS, SNS->SQS with RawDelivery or SQS directly.
     /// </summary>
-    /// <param name="message">The message to serialize</param>
+    /// <param name="message">The message to deserialize</param>
     /// <param name="throwIfConversionFails">Whether to throw an exception on failure to deserialize</param>
-    /// <typeparam name="T">The class type to serialize to</typeparam>
+    /// <typeparam name="T">The class type to deserialize to</typeparam>
     /// <returns>A class of type <see cref="T"/></returns>
     public static T? GetMessageContents<T>(this QueueMessage message, bool throwIfConversionFails = true)
         where T : class

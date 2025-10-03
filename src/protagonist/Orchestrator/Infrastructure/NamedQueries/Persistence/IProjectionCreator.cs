@@ -17,4 +17,10 @@ public interface IProjectionCreator<in T>
     /// </summary>
     Task<(bool success, ControlFile? controlFile)> PersistProjection(T parsedNamedQuery, List<Asset> images,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Mark the <see cref="ControlFile"/> for parsedNamedQuery as being completed (ie item exists)
+    /// </summary>
+    Task MarkControlFileComplete(T parsedNamedQuery, ControlFile controlFile, long fileSize,
+        CancellationToken cancellationToken);
 }

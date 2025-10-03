@@ -11,7 +11,7 @@ namespace Orchestrator.Tests.Integration.Infrastructure;
 public class FakeZipCreator : IProjectionCreator<ZipParsedNamedQuery>
 {
     private static readonly Dictionary<string, Func<ParsedNamedQuery, List<Asset>, bool>> callbacks = new();
-
+    
     /// <summary>
     /// Add a callback for when zip is to be created and persisted to S3, allows control of success/failure for
     /// testing
@@ -28,5 +28,11 @@ public class FakeZipCreator : IProjectionCreator<ZipParsedNamedQuery>
         }
 
         throw new Exception($"Request with key {parsedNamedQuery.StorageKey} not setup");
+    }
+
+    public Task MarkControlFileComplete(ZipParsedNamedQuery parsedNamedQuery, ControlFile controlFile, long fileSize,
+        CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
     }
 }

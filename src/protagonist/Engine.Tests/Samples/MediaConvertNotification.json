@@ -1,0 +1,40 @@
+{
+  "version": "0",
+  "id": "3ad3d4dc-4a19-5b06-60aa-c89033cca851",
+  "detail-type": "MediaConvert Job State Change",
+  "source": "aws.mediaconvert",
+  "account": "167865917244",
+  "time": "2025-08-21T12:08:23Z",
+  "region": "eu-west-1",
+  "resources": [
+    "arn:aws:mediaconvert:eu-west-1:123456789123:jobs/1755778100597-pcfy7p"
+  ],
+  "detail": {
+    "timestamp": 1755778103731,
+    "accountId": "123456789123",
+    "queue": "arn:aws:mediaconvert:eu-west-1:123456789123:queues/test-timebased",
+    "jobId": "123456789123-abcd1f",
+    "status": "COMPLETE",
+    "userMetadata": {
+      "batchId": "123",
+      "dlcsId": "2/1/foo",
+      "mediaType": "audio/wav",
+      "jobId": "2f5e480b-d86f-498e-9268-83fe5f9548cc",
+      "startTime": "1756888977",
+      "storedOriginSize": "0"
+    },
+    "outputGroupDetails": [
+      {
+        "outputDetails": [
+          {
+            "outputFilePaths": [
+              "s3://output/2/1/converted.mp3"
+            ],
+            "durationInMs": 14675
+          }
+        ],
+        "type": "FILE_GROUP"
+      }
+    ]
+  }
+}

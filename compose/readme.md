@@ -18,6 +18,8 @@ This contains external dependencies for running the dotnet apps locally.
 
 This contains external dependencies for debugging the Engine.
 
+[Appetiser](https://github.com/dlcs/appetiser) requires Kakadu binaries. By default this expects `kdu_src/kdu.tar` to exist. See Appetiser readme for alternative approaches for supplying Kakadu.
+
 ## `docker-compose.orchestrator.yml`
 
 This contains external dependencies for debugging Orchestrator.
