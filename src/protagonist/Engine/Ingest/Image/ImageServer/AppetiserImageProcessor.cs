@@ -169,6 +169,12 @@ public class AppetiserImageProcessor(
                 SetAssetLocation(targetStorageLocation);
                 return;
             }
+            
+            // origin is image-server ready so set imageServerFile location to image downloaded from origin
+            if (string.IsNullOrEmpty(imageServerFile))
+            {
+                imageServerFile = context.AssetFromOrigin?.Location;
+            }
         }
         else
         {
