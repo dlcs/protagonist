@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using API.Infrastructure.Requests;
+using Dapper;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -39,7 +40,7 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
         
         return updatedAssets;
     }
-
+    
     private async Task UpdateManifests(List<AssetId> assetIds, List<string>? value, OperationType operation, int customerId,
         CancellationToken cancellationToken)
     {
@@ -48,10 +49,7 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
         switch (operation)
         {
             case OperationType.Add:
-                await dlcsContext.Images
-                    .Where(a => assetIds.Any(aid => aid == a.Id) && a.Customer == customerId)
-                    .ExecuteUpdateAsync(setters =>
-                        setters.SetProperty(a => a.Manifests, a => a.Manifests.Concat(value)), cancellationToken);
+                await AddManifestValue(assetIds, value);
                 break;
             case OperationType.Remove:
                 await RemoveManifests(assetIds, value, customerId, cancellationToken);
@@ -66,6 +64,18 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
                 throw new InvalidOperationException($"Unsupported operation '{operation}'");
         }
     }
+
+    private async Task AddManifestValue(List<AssetId> assetIds, List<string>? value)
+    {
+        var conn = await dlcsContext.GetOpenNpgSqlConnection();
+        await conn.ExecuteAsync(AddManifestSql, new { Manifest = value, AssetIds = assetIds.Select(a => a.ToString()).ToArray(), Values = value });
+    }
+    
+    private static string AddManifestSql = @"
+update ""Images""
+set    ""Manifests"" = (select array_agg(distinct e) from unnest(""Manifests"" || @Manifest) e)
+where ""Id"" = ANY(@AssetIds);
+";
 
     // allows a query to be generated using a list, while avoiding issues with SQL injection
     private async Task RemoveManifests(List<AssetId> assetIds, List<string>? value, int customerId, CancellationToken cancellationToken)
