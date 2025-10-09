@@ -7,7 +7,6 @@ using DLCS.Model.Assets;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using NpgsqlTypes;
 
 namespace API.Features.Customer;
 
