@@ -57,7 +57,7 @@ public class ManifestV3BuilderTests
 
         manifest.Id.Should().Be(manifestId);
         manifest.Thumbnail.Should().BeNull("No thumbnail delivery channel");
-        var canvas = manifest.Items.Single();
+        var canvas = manifest.Items!.Single();
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
@@ -87,7 +87,7 @@ public class ManifestV3BuilderTests
         manifest.Id.Should().Be(manifestId);
         manifest.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
         
-        var canvas = manifest.Items.Single();
+        var canvas = manifest.Items!.Single();
         canvas.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
@@ -117,9 +117,9 @@ public class ManifestV3BuilderTests
         manifest.Id.Should().Be(manifestId);
         manifest.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
         
-        var canvas = manifest.Items.Single();
+        var canvas = manifest.Items!.Single();
         canvas.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
-        var rendering = canvas.Rendering.Single().As<Image>();
+        var rendering = canvas.Rendering!.Single().As<Image>();
         rendering.Should().NotBeNull("Has file delivery channel");
         rendering.Width.Should().Be(1500, "Width of origin");
         rendering.Height.Should().Be(1000, "Height of origin");
@@ -147,7 +147,7 @@ public class ManifestV3BuilderTests
         manifest.Id.Should().Be(manifestId);
         manifest.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
         
-        var canvas = manifest.Items.Single();
+        var canvas = manifest.Items!.Single();
         canvas.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
@@ -174,9 +174,9 @@ public class ManifestV3BuilderTests
         manifest.Id.Should().Be(manifestId);
         manifest.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
         
-        var canvas = manifest.Items.Single();
+        var canvas = manifest.Items!.Single();
         canvas.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
-        var rendering = canvas.Rendering.Single().As<Image>();
+        var rendering = canvas.Rendering!.Single().As<Image>();
         rendering.Should().NotBeNull("Has file delivery channel");
         rendering.Width.Should().Be(1500, "Width of origin");
         rendering.Height.Should().Be(1000, "Height of origin");
@@ -211,12 +211,12 @@ public class ManifestV3BuilderTests
         manifest.Id.Should().Be(manifestId);
         manifest.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         
-        var canvas = manifest.Items.Single();
+        var canvas = manifest.Items!.Single();
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
         var sound = canvas.GetCanvasPaintingBody<Sound>();
-        sound.Duration.Should().Be(14666, "Duration of transcode");
+        sound.Duration.Should().Be(14.666, "Duration of transcode");
     }
     
     [Fact]
@@ -242,15 +242,15 @@ public class ManifestV3BuilderTests
         manifest.Id.Should().Be(manifestId);
         manifest.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         
-        var canvas = manifest.Items.Single();
+        var canvas = manifest.Items!.Single();
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
-        var rendering = canvas.Rendering.Single().As<Sound>();
+        var rendering = canvas.Rendering!.Single().As<Sound>();
         rendering.Should().NotBeNull("Has file delivery channel");
-        rendering.Duration.Should().Be(15000, "Duration of origin");
+        rendering.Duration.Should().Be(15, "Duration of origin");
         rendering.Format.Should().Be("audio/wav", "Mediatype of origin");
         
         var sound = canvas.GetCanvasPaintingBody<Sound>();
-        sound.Duration.Should().Be(14666, "Duration of transcode");
+        sound.Duration.Should().Be(14.666, "Duration of transcode");
     }
     
     [Fact]
@@ -286,19 +286,19 @@ public class ManifestV3BuilderTests
         manifest.Id.Should().Be(manifestId);
         manifest.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         
-        var canvas = manifest.Items.Single();
+        var canvas = manifest.Items!.Single();
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
         var choice = canvas.GetCanvasPaintingBody<PaintingChoice>();
         choice.Items.Should().HaveCount(2, "2 transcodes for video");
-        var first = choice.Items[0].As<Video>();
-        first.Duration.Should().Be(14666, "From first transcode");
+        var first = choice.Items![0].As<Video>();
+        first.Duration.Should().Be(14.666, "From first transcode");
         first.Format.Should().Be("video/mp4", "From first transcode");
         first.Width.Should().Be(400, "From first transcode");
         first.Height.Should().Be(401, "From first transcode");
         var second = choice.Items[1].As<Video>();
-        second.Duration.Should().Be(15002, "From second transcode");
+        second.Duration.Should().Be(15.002, "From second transcode");
         second.Format.Should().Be("video/mpeg", "From second transcode");
         second.Width.Should().Be(500, "From second transcode");
         second.Height.Should().Be(500, "From second transcode");
@@ -337,24 +337,24 @@ public class ManifestV3BuilderTests
         manifest.Id.Should().Be(manifestId);
         manifest.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         
-        var canvas = manifest.Items.Single();
+        var canvas = manifest.Items!.Single();
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
-        var rendering = canvas.Rendering.Single().As<Video>();
+        var rendering = canvas.Rendering!.Single().As<Video>();
         rendering.Should().NotBeNull("Has file delivery channel");
-        rendering.Duration.Should().Be(15000, "Duration of origin");
+        rendering.Duration.Should().Be(15, "Duration of origin");
         rendering.Width.Should().Be(800, "Width of origin");
         rendering.Height.Should().Be(800, "Height of origin");
         rendering.Format.Should().Be("video/raw", "Mediatype of origin");
         
         var choice = canvas.GetCanvasPaintingBody<PaintingChoice>();
         choice.Items.Should().HaveCount(2, "2 transcodes for video");
-        var first = choice.Items[0].As<Video>();
-        first.Duration.Should().Be(14666, "From first transcode");
+        var first = choice.Items![0].As<Video>();
+        first.Duration.Should().Be(14.666, "From first transcode");
         first.Format.Should().Be("video/mp4", "From first transcode");
         first.Width.Should().Be(400, "From first transcode");
         first.Height.Should().Be(401, "From first transcode");
         var second = choice.Items[1].As<Video>();
-        second.Duration.Should().Be(15002, "From second transcode");
+        second.Duration.Should().Be(15.002, "From second transcode");
         second.Format.Should().Be("video/mpeg", "From second transcode");
         second.Width.Should().Be(500, "From second transcode");
         second.Height.Should().Be(500, "From second transcode");
@@ -403,15 +403,97 @@ public class ManifestV3BuilderTests
             .Contain("https://iiif.wellcomecollection.org/extensions/born-digital/context.json",
                 "Using custom behaviours");
         
-        var canvas = manifest.Items.Single();
+        var canvas = manifest.Items!.Single();
         canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
         canvas.Behavior.Should().Contain("placeholder", "Placeholder canvas for original");
-        var rendering = canvas.Rendering.Single().As<Image>();
+        var rendering = canvas.Rendering!.Single().As<Image>();
         rendering.Should().NotBeNull("Has file delivery channel");
         rendering.Behavior.Should().Contain("original");
         rendering.Width.Should().Be(1500, "Width of origin");
         rendering.Height.Should().Be(1000, "Height of origin");
         rendering.Format.Should().Be("image/tiff", "Format of origin");
+        
+        var image = canvas.GetCanvasPaintingBody<Image>();
+        image.Width.Should().Be(1000, "Width of static placeholder");
+        image.Height.Should().Be(1000, "Height of static placeholder");
+        image.Format.Should().Be("image/png", "Type of static placeholder");
+        image.Service.Should().BeNull("No image service");
+    }
+    
+    [Fact]
+    public async Task BuildManifest_FileBinary()
+    {
+        var asset = new Asset
+        {
+            Id = AssetIdGenerator.GetAssetId(),
+            MediaType = "application/pdf",
+            ImageDeliveryChannels = "file".GenerateDeliveryChannels()
+        };
+        
+        var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
+        A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
+            .Returns("https://dlcs.test/image-url/");
+        A.CallTo(() => builderUtils.GetCanvasId(asset, pathElement, A<int>._))
+            .Returns("https://dlcs.test/canvas/0");
+
+        var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
+            ManifestType.NamedQuery, CancellationToken.None);
+
+        manifest.Id.Should().Be(manifestId);
+        manifest.Thumbnail.Should().BeNull("No thumbnail delivery channel");
+        manifest.Context.As<List<string>>().Should()
+            .Contain("https://iiif.wellcomecollection.org/extensions/born-digital/context.json",
+                "Using custom behaviours");
+        
+        var canvas = manifest.Items!.Single();
+        canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
+        canvas.Behavior.Should().Contain("placeholder", "Placeholder canvas for original");
+        var rendering = canvas.Rendering!.Single().As<ExternalResource>();
+        rendering.Should().NotBeNull("Has file delivery channel");
+        rendering.Behavior.Should().Contain("original");
+        rendering.Format.Should().Be("application/pdf", "Format of origin");
+        
+        var image = canvas.GetCanvasPaintingBody<Image>();
+        image.Width.Should().Be(1000, "Width of static placeholder");
+        image.Height.Should().Be(1000, "Height of static placeholder");
+        image.Format.Should().Be("image/png", "Type of static placeholder");
+        image.Service.Should().BeNull("No image service");
+    }
+    
+    [Fact]
+    public async Task BuildManifest_FileAudio()
+    {
+        var asset = new Asset
+        {
+            Id = AssetIdGenerator.GetAssetId(),
+            MediaType = "audio/mp3",
+            ImageDeliveryChannels = "file".GenerateDeliveryChannels(),
+            Duration = 0,
+        };
+        
+        var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
+        A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
+            .Returns("https://dlcs.test/image-url/");
+        A.CallTo(() => builderUtils.GetCanvasId(asset, pathElement, A<int>._))
+            .Returns("https://dlcs.test/canvas/0");
+
+        var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
+            ManifestType.NamedQuery, CancellationToken.None);
+
+        manifest.Id.Should().Be(manifestId);
+        manifest.Thumbnail.Should().BeNull("No thumbnail delivery channel");
+        manifest.Context.As<List<string>>().Should()
+            .Contain("https://iiif.wellcomecollection.org/extensions/born-digital/context.json",
+                "Using custom behaviours");
+        
+        var canvas = manifest.Items!.Single();
+        canvas.Thumbnail.Should().BeNull("No thumbnail delivery channel");
+        canvas.Behavior.Should().Contain("placeholder", "Placeholder canvas for original");
+        var rendering = canvas.Rendering!.Single().As<Sound>();
+        rendering.Duration.Should().BeNull("Duration not known");
+        rendering.Should().NotBeNull("Has file delivery channel");
+        rendering.Behavior.Should().Contain("original");
+        rendering.Format.Should().Be("audio/mp3", "Format of origin");
         
         var image = canvas.GetCanvasPaintingBody<Image>();
         image.Width.Should().Be(1000, "Width of static placeholder");

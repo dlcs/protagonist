@@ -274,7 +274,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         
         canvas.Width = asset.Width;
         canvas.Height = asset.Height;
-        canvas.Duration = asset.Duration;
+        canvas.Duration = GetDisplayDuration(asset.Duration);
 
         var paintables = transcodes
             .Select(t => GetPaintableForTranscode(asset, customerPathElement, t, authServices))
@@ -357,7 +357,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
 
         if (rendering is ITemporal temporal)
         {
-            temporal.Duration = asset.Duration;
+            temporal.Duration = GetDisplayDuration(asset.Duration);
         }
         
         return rendering;
@@ -391,7 +391,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             {
                 Id = GetPathForTranscode(asset, customerPathElement, transcode),
                 Format = transcode.MediaType,
-                Duration = transcode.Duration,
+                Duration = GetDisplayDuration(transcode.Duration),
                 Height = transcode.Height,
                 Width = transcode.Width,
                 Service = authServices,
@@ -400,9 +400,12 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             {
                 Id = GetPathForTranscode(asset, customerPathElement, transcode),
                 Format = transcode.MediaType,
-                Duration = transcode.Duration,
+                Duration = GetDisplayDuration(transcode.Duration),
                 Service = authServices,
             };
+    
+    // Duration is stored in milliseconds for greater precision but the IIIF spec states it must be seconds
+    private static double? GetDisplayDuration(long? duration) => (duration ?? 0) == 0 ? null : duration / 1000D;
 
     private string GetPathForTranscode(Asset asset, CustomerPathElement customerPathElement,
         AVTranscode avTranscode)
