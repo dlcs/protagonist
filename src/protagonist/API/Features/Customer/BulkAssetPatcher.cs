@@ -70,7 +70,7 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher, IDap
 
     private async Task AddManifestValue(List<AssetId> assetIds, List<string>? value)
     {
-        await this.ExecuteScalarAsync<object?>(AddManifestSql, new { Manifest = value, AssetIds = assetIds.Select(a => a.ToString()).ToArray() });
+        await this.ExecuteAsync(AddManifestSql, new { Manifest = value, AssetIds = assetIds.Select(a => a.ToString()).ToArray() });
     }
 
     // allows a query to be generated using a list, while avoiding issues with SQL injection
