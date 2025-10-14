@@ -89,6 +89,13 @@ public static class DapperRepositoryX
         return await HandleCommand<T>(repository,
             dbConnection => dbConnection.ExecuteScalarAsync<T>(sql, param));
     }
+    
+    public static async Task<int> ExecuteAsync(this IDapperRepository repository, string sql,
+        object? param = null)
+    {
+        return await HandleCommand(repository,
+            dbConnection => dbConnection.ExecuteAsync(sql, param));
+    }
 
     private static async Task<T> HandleCommand<T>(IDapperRepository repository, Func<DbConnection, Task<T>> handler)
     {
