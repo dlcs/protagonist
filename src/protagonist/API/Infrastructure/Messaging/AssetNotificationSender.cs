@@ -1,12 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using DLCS.AWS.SNS;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Model.PathElements;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Logging;
 
 namespace API.Infrastructure.Messaging;
@@ -21,7 +23,11 @@ public class AssetNotificationSender : IAssetNotificationSender
     private readonly IPathCustomerRepository customerPathRepository;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web)
     {
-        ReferenceHandler = ReferenceHandler.IgnoreCycles
+        ReferenceHandler = ReferenceHandler.IgnoreCycles,
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver
+        {
+            Modifiers = { AssetSerialiserContractModifier }
+        }
     };
 
     private readonly Dictionary<int, CustomerPathElement> customerPathElements = new();
@@ -105,7 +111,7 @@ public class AssetNotificationSender : IAssetNotificationSender
     {
         var customerPathElement = await GetCustomerPathElement(modifiedAsset.Customer);
         
-        var request = new AssetCreatedNotificationRequest()
+        var request = new AssetCreatedNotificationRequest
         {
             Asset = modifiedAsset,
             CustomerPathElement = customerPathElement
@@ -118,14 +124,15 @@ public class AssetNotificationSender : IAssetNotificationSender
     {
         var customerPathElement = await GetCustomerPathElement(modifiedAssetBefore.Customer);
         
-        var request = new AssetUpdatedNotificationRequest()
+        var request = new AssetUpdatedNotificationRequest
         {
             AssetBeforeUpdate = modifiedAssetBefore,
             AssetAfterUpdate = modifiedAssetAfter, 
             CustomerPathElement = customerPathElement
         };
 
-        return JsonSerializer.Serialize(request, settings);
+        var serialisedAssetUpdatedNotification = JsonSerializer.Serialize(request, settings);
+        return serialisedAssetUpdatedNotification;
     }
     
     private async Task<CustomerPathElement> GetCustomerPathElement(int customer)
@@ -135,5 +142,31 @@ public class AssetNotificationSender : IAssetNotificationSender
         var customerPathElement = await customerPathRepository.GetCustomerPathElement(customer.ToString());
         customerPathElements[customer] = customerPathElement;
         return customerPathElement;
+    }
+    
+    private static void AssetSerialiserContractModifier(JsonTypeInfo typeInfo)
+    {
+        // Collection of properties to ignore when serialising Asset object, by containing type
+        var exclusionsByType = new Dictionary<Type, HashSet<string>>
+        {
+            [typeof(Asset)] = new(StringComparer.OrdinalIgnoreCase)
+            {
+                nameof(Asset.BatchAssets), nameof(Asset.ImageOptimisationPolicy), nameof(Asset.ThumbnailPolicy)
+            },
+            [typeof(ImageDeliveryChannel)] = new(StringComparer.OrdinalIgnoreCase)
+            {
+                nameof(ImageDeliveryChannel.DeliveryChannelPolicy)
+            }
+        };
+
+        if (!exclusionsByType.TryGetValue(typeInfo.Type, out var exclusions)) return;
+
+        foreach (var prop in typeInfo.Properties)
+        {
+            if (exclusions.Contains(prop.Name))
+            {
+                prop.ShouldSerialize = static (_, _) => false;
+            }
+        }
     }
 }
