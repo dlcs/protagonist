@@ -7,8 +7,11 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Model.PathElements;
+using DLCS.Model.Policies;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace API.Tests.Infrastructure.Messaging;
 
@@ -103,5 +106,51 @@ public class AssetNotificationSenderTests
                     n.Count == 2 && n.All(m =>
                         n.First().Attributes.Values.Contains(ChangeType.Delete.ToString()) && m.MessageContents.Contains(customerName))),
                 A<CancellationToken>._)).MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task SendAssetModifiedMessage_OmitsExpectedProperties()
+    {
+        var asset = new Asset(new AssetId(1, 2, "foo"))
+        {
+            ImageOptimisationPolicy = "test",
+            ThumbnailPolicy = "100,200,300",
+            BatchAssets = [new()],
+            ImageDeliveryChannels = [new ImageDeliveryChannel
+            {
+                DeliveryChannelPolicyId = 1234,
+                Channel = AssetDeliveryChannels.Timebased,
+                DeliveryChannelPolicy = new DeliveryChannelPolicy
+                {
+                    Id = 1234,
+                    Channel = AssetDeliveryChannels.Image
+                }
+            }]
+        };
+
+        var assetModifiedRecord = AssetModificationRecord.Delete(asset, ImageCacheType.Cdn);
+        const string customerName = "uno";
+        A.CallTo(() => customerPathRepository.GetCustomerPathElement("1"))
+            .Returns(new CustomerPathElement(1, customerName));
+        
+        IReadOnlyList<AssetModifiedNotification> payload = null;
+        A.CallTo(() =>
+                topicPublisher.PublishToAssetModifiedTopic(A<IReadOnlyList<AssetModifiedNotification>>._,
+                    CancellationToken.None))
+            .Invokes((IReadOnlyList<AssetModifiedNotification> n, CancellationToken _) => payload = n);
+        
+        // Act
+        await sut.SendAssetModifiedMessage(assetModifiedRecord, CancellationToken.None);
+
+        // Assert
+        payload.Should().HaveCount(1);
+        var deleted = JsonNode.Parse(payload.Single().MessageContents)
+            .Deserialize<AssetDeletedNotificationRequest>(JsonSerializerOptions.Web).Asset!;
+        deleted.Id.Should().Be(asset.Id, "Confirm entire message not cleared");
+        deleted.BatchAssets.Should().BeNull("BatchAsset ignored");
+        deleted.ImageOptimisationPolicy.Should().BeNull("ImageOptimisationPolicy ignored");
+        deleted.ThumbnailPolicy.Should().BeNull("ThumbnailPolicy ignored");
+        deleted.ImageDeliveryChannels.Should().HaveCount(1, "ImageDeliveryChannels NOT ignored")
+            .And.Subject.Single().DeliveryChannelPolicy.Should().BeNull("DeliveryChannelPolicy ignored");
     }
 }
