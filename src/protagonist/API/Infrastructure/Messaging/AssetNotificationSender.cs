@@ -8,7 +8,6 @@ using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Model.PathElements;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.Extensions.Logging;
 
 namespace API.Infrastructure.Messaging;
@@ -16,11 +15,12 @@ namespace API.Infrastructure.Messaging;
 /// <summary>
 /// Class that handles raising notifications for modifications made to assets (Create/Update/Delete)
 /// </summary>
-public class AssetNotificationSender : IAssetNotificationSender
+public class AssetNotificationSender(
+    ITopicPublisher topicPublisher,
+    IPathCustomerRepository customerPathRepository,
+    ILogger<AssetNotificationSender> logger)
+    : IAssetNotificationSender
 {
-    private readonly ILogger<AssetNotificationSender> logger;
-    private readonly ITopicPublisher topicPublisher;
-    private readonly IPathCustomerRepository customerPathRepository;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web)
     {
         ReferenceHandler = ReferenceHandler.IgnoreCycles,
@@ -31,16 +31,6 @@ public class AssetNotificationSender : IAssetNotificationSender
     };
 
     private readonly Dictionary<int, CustomerPathElement> customerPathElements = new();
-
-    public AssetNotificationSender(
-        ITopicPublisher topicPublisher,
-        IPathCustomerRepository customerPathRepository,
-        ILogger<AssetNotificationSender> logger)
-    {
-        this.logger = logger;
-        this.topicPublisher = topicPublisher;
-        this.customerPathRepository = customerPathRepository;
-    }
 
     public Task SendAssetModifiedMessage(AssetModificationRecord notification,
         CancellationToken cancellationToken = default)
@@ -131,8 +121,7 @@ public class AssetNotificationSender : IAssetNotificationSender
             CustomerPathElement = customerPathElement
         };
 
-        var serialisedAssetUpdatedNotification = JsonSerializer.Serialize(request, settings);
-        return serialisedAssetUpdatedNotification;
+        return JsonSerializer.Serialize(request, settings);
     }
     
     private async Task<CustomerPathElement> GetCustomerPathElement(int customer)
