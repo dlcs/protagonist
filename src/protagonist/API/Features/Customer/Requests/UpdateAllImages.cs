@@ -41,5 +41,10 @@ public class UpdateAllImagesHandler(IBulkAssetPatcher bulkAssetPatcher, ILogger<
             logger.LogError(e, "Failed to update assets {Assets}", request.AssetIds);
             return ModifyEntityResult<List<Asset>>.Failure(e.Message, WriteResult.BadRequest);
         }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Unknown error updating assets {Assets}", request.AssetIds);
+            return ModifyEntityResult<List<Asset>>.Failure(e.Message);
+        }
     }
 }
