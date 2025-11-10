@@ -1402,12 +1402,40 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == 201);
         dbBatch.Superseded.Should().BeTrue();
+        dbBatch.Finished.Should().NotBeNull("Batch was marked as finished");
         
         A.CallTo(() =>
                 NotificationSender.SendBatchCompletedMessage(
                     A<Batch>.That.Matches(b => b.Id == dbBatch.Id),
                     A<CancellationToken>._))
             .MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Post_TestBatch_MarksBatchAsSuperseded_IfNoImagesFound_NoNotificationRaisedIfAlreadyFinished()
+    {
+        // Arrange
+        const int batchId = 2011;
+        await dbContext.Batches.AddTestBatch(batchId, finished: DateTime.UtcNow);
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/99/queue/batches/{batchId}/test";
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync(path, null!);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonDoc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
+
+        var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == batchId);
+        dbBatch.Superseded.Should().BeTrue();
+        
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == dbBatch.Id),
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
     
     [Fact]
@@ -1502,6 +1530,40 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == batch);
         dbBatch.Superseded.Should().BeFalse();
         dbBatch.Finished.Should().BeCloseTo(finished, TimeSpan.FromMinutes((1)));
+        dbBatch.Count.Should().Be(3);
+        
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == dbBatch.Id),
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Post_TestBatch_DoesNotFinishBatch_IfImagesFoundAndAllFinished_ButFinishedBeforeBatchSubmitted()
+    {
+        // This test covers the case where existing Assets were reprocessed, they have been finished in the past but this
+        // was prior to batch creation
+        const int batch = 206;
+        var submitted = DateTime.UtcNow.AddDays(3);
+        await dbContext.Batches.AddTestBatch(batch, count: 3, submitted: submitted);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/june"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/hunger"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.Images.AddTestAsset(AssetId.FromString("2/1/grace"), batch: batch, finished: DateTime.UtcNow);
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/99/queue/batches/{batch}/test";
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync(path, null!);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonDoc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeFalse();
+
+        var dbBatch = await dbContext.Batches.SingleAsync(b => b.Id == batch);
+        dbBatch.Superseded.Should().BeFalse();
+        dbBatch.Finished.Should().BeNull("All images are completed but they completed before submission");
         dbBatch.Count.Should().Be(3);
         
         A.CallTo(() =>

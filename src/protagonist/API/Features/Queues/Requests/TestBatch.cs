@@ -10,36 +10,20 @@ using Microsoft.Extensions.Logging;
 namespace API.Features.Queues.Requests;
 
 /// <summary>
-/// Tests batch to check if it has been superseded or is complete
+/// Tests batch to check if it has been superseded, is complete or has incorrect counts
 /// </summary>
-public class TestBatch : IRequest<bool?>
+public class TestBatch(int customerId, int batchId) : IRequest<bool?>
 {
-    public int CustomerId { get; }
-    public int BatchId { get; }
-    
-    public TestBatch(int customerId, int batchId)
-    {
-        CustomerId = customerId;
-        BatchId = batchId;
-    }
+    public int CustomerId { get; } = customerId;
+    public int BatchId { get; } = batchId;
 }
 
-public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
+public class TestBatchHandler(
+    DlcsContext dlcsContext,
+    IBatchCompletedNotificationSender batchCompletedNotificationSender,
+    ILogger<TestBatchHandler> logger)
+    : IRequestHandler<TestBatch, bool?>
 {
-    private readonly DlcsContext dlcsContext;
-    private readonly ILogger<TestBatchHandler> logger;
-    private readonly IBatchCompletedNotificationSender batchCompletedNotificationSender;
-
-    public TestBatchHandler(
-        DlcsContext dlcsContext,
-        IBatchCompletedNotificationSender batchCompletedNotificationSender,
-        ILogger<TestBatchHandler> logger)
-    {
-        this.dlcsContext = dlcsContext;
-        this.batchCompletedNotificationSender = batchCompletedNotificationSender;
-        this.logger = logger;
-    }
-    
     public async Task<bool?> Handle(TestBatch request, CancellationToken cancellationToken)
     {
         var batch = await GetBatchToTest(request, cancellationToken);
@@ -54,12 +38,12 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
         bool changesMade = false;
         if (!batch.Superseded && IsBatchSuperseded(batchImages))
         {
-            logger.LogDebug("Batch {BatchId} for superseded", request.BatchId);
+            logger.LogDebug("Batch {BatchId} superseded", request.BatchId);
             batch.Superseded = true;
             changesMade = true;
         }
 
-        if (IsBatchComplete(batchImages))
+        if (IsBatchComplete(batch, batchImages))
         {
             logger.LogDebug("Batch {BatchId} complete", request.BatchId);
             if (batch.Finished == null)
@@ -91,8 +75,8 @@ public class TestBatchHandler : IRequestHandler<TestBatch, bool?>
         return false;
     }
 
-    private static bool IsBatchComplete(IEnumerable<Asset> batchImages)
-        => batchImages.All(i => i.Finished != null);
+    private static bool IsBatchComplete(Batch batch, IEnumerable<Asset> batchImages) 
+        => batchImages.All(i => i.Finished != null && i.Finished >= batch.Submitted);
 
     private Task<Batch?> GetBatchToTest(TestBatch request, CancellationToken cancellationToken)
     {
