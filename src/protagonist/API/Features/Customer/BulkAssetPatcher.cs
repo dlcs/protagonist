@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using API.Infrastructure.Requests;
+using Dapper;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using NpgsqlTypes;
 
 namespace API.Features.Customer;
 
@@ -19,8 +19,12 @@ public interface IBulkAssetPatcher
         string field, int customerId, CancellationToken cancellationToken = default);
 }
 
-public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
+public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher, IDapperContextRepository
 {
+
+    public DlcsContext DlcsContext { get; } = dlcsContext;
+    
+    
     public async Task<List<Asset>> UpdateAssets(List<AssetId> assetIds, List<string>? value, OperationType operation, 
         string field, int customerId, CancellationToken cancellationToken = default)
     {
@@ -33,13 +37,13 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
                 throw new InvalidOperationException($"Unsupported field '{field}'");
         };
 
-        var updatedAssets = await dlcsContext.Images.AsNoTracking()
+        var updatedAssets = await DlcsContext.Images.AsNoTracking()
             .Where(i => i.Customer == customerId && assetIds.Contains(i.Id))
             .ToListAsync(cancellationToken);
         
         return updatedAssets;
     }
-
+    
     private async Task UpdateManifests(List<AssetId> assetIds, List<string>? value, OperationType operation, int customerId,
         CancellationToken cancellationToken)
     {
@@ -48,16 +52,13 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
         switch (operation)
         {
             case OperationType.Add:
-                await dlcsContext.Images
-                    .Where(a => assetIds.Any(aid => aid == a.Id) && a.Customer == customerId)
-                    .ExecuteUpdateAsync(setters =>
-                        setters.SetProperty(a => a.Manifests, a => a.Manifests.Concat(value)), cancellationToken);
+                await AddManifestValue(assetIds, value);
                 break;
             case OperationType.Remove:
                 await RemoveManifests(assetIds, value, customerId, cancellationToken);
                 break;
             case OperationType.Replace:
-                await dlcsContext.Images
+                await DlcsContext.Images
                     .Where(a => assetIds.Any(aid => aid == a.Id) && a.Customer == customerId)
                     .ExecuteUpdateAsync(setters => setters.SetProperty(a => a.Manifests, value),
                         cancellationToken);
@@ -67,10 +68,15 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
         }
     }
 
+    private async Task AddManifestValue(List<AssetId> assetIds, List<string>? value)
+    {
+        await this.ExecuteAsync(AddManifestSql, new { Manifest = value, AssetIds = assetIds.Select(a => a.ToString()).ToArray() });
+    }
+
     // allows a query to be generated using a list, while avoiding issues with SQL injection
     private async Task RemoveManifests(List<AssetId> assetIds, List<string>? value, int customerId, CancellationToken cancellationToken)
     {
-        await using var batchedQuery = new NpgsqlBatch(await dlcsContext.GetOpenNpgSqlConnection());
+        await using var batchedQuery = new NpgsqlBatch(await DlcsContext.GetOpenNpgSqlConnection());
         
         foreach (var valueToRemove in value ?? [])
         {
@@ -98,4 +104,10 @@ public class BulkAssetPatcher(DlcsContext dlcsContext) : IBulkAssetPatcher
     {
         public const string ManifestField = "manifests";
     }
+    
+    private const string AddManifestSql = @"
+update ""Images""
+set    ""Manifests"" = (select array_agg(distinct e) from unnest(""Manifests"" || @Manifest) e)
+where ""Id"" = ANY(@AssetIds);
+";
 }
