@@ -250,11 +250,15 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
 
         if (!BuilderUtils.ShouldAddThumbs(asset, thumbnailSizes)) return (annotationPage, null);
 
+        var targetThumbnail = BuilderUtils.GetFullQualifiedThumb(asset, customerPathElement, thumbnailSizes.OpenThumbnails);
         var thumbnail = new Image
         {
-            Id = BuilderUtils.GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
+            Id = targetThumbnail.Path,
+            Width = targetThumbnail.Size.Width,
+            Height = targetThumbnail.Size.Height,
             Format = "image/jpeg",
-            Service = BuilderUtils.GetImageServiceForThumbnail(asset, customerPathElement, thumbnailSizes.OpenThumbnails)
+            Service = BuilderUtils.GetImageServiceForThumbnail(asset, customerPathElement,
+                thumbnailSizes.OpenThumbnails)
         };
         return (annotationPage, thumbnail);
     }

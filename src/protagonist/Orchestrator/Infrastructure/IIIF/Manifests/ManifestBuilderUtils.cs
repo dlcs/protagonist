@@ -36,7 +36,7 @@ public interface IManifestBuilderUtils
     List<IService> GetImageServiceForThumbnail(Asset asset, CustomerPathElement customerPathElement,
         List<Size> thumbnailSizes);
 
-    string GetFullQualifiedThumbPath(Asset asset, CustomerPathElement customerPathElement,
+    ThumbnailPathAndSize GetFullQualifiedThumb(Asset asset, CustomerPathElement customerPathElement,
         List<Size> availableThumbs);
 
     string GetFullQualifiedImagePath(Asset asset, CustomerPathElement customerPathElement, Size size,
@@ -87,7 +87,7 @@ public class ManifestBuilderUtils(
             image2 => image2.Sizes = thumbnailSizes,
             image3 => image3.Sizes = thumbnailSizes);
 
-    public string GetFullQualifiedThumbPath(Asset asset, CustomerPathElement customerPathElement,
+    public ThumbnailPathAndSize GetFullQualifiedThumb(Asset asset, CustomerPathElement customerPathElement,
         List<Size> availableThumbs)
     {
         var targetThumb = orchestratorSettings.TargetThumbnailSize;
@@ -95,7 +95,8 @@ public class ManifestBuilderUtils(
         // Get the thumbnail size that is closest to the system-wide TargetThumbnailSize
         var closestSize = availableThumbs.SizeClosestTo(targetThumb);
 
-        return GetFullQualifiedImagePath(asset, customerPathElement, closestSize, true);
+        return new ThumbnailPathAndSize(GetFullQualifiedImagePath(asset, customerPathElement, closestSize, true),
+            closestSize);
     }
 
     public string GetFullQualifiedImagePath(Asset asset, CustomerPathElement customerPathElement, Size size,
@@ -267,3 +268,8 @@ public class ImageSizeDetails(List<Size> openThumbnails, Size maxDerivativeSize)
     /// </summary>
     public Size MaxDerivativeSize { get; } = maxDerivativeSize;
 }
+
+/// <summary>
+/// Path to a thumbnail and the size of that thumbnail
+/// </summary>
+public record ThumbnailPathAndSize(string Path, Size Size);
