@@ -139,16 +139,19 @@ public class ManifestV3BuilderTests
         var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, true))
             .Returns("https://dlcs.test/thumbs-url/");
+        A.CallTo(() => builderUtils.GetFullQualifiedThumb(asset, pathElement, A<List<Size>>._))
+            .Returns(new ThumbnailPathAndSize("https://dlcs.test/thumbs-url/full/!100,200/0/default.jpg",
+                new Size(100, 200)));
         A.CallTo(() => builderUtils.ShouldAddThumbs(asset, A<ImageSizeDetails>._)).Returns(true);
 
         var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
             ManifestType.NamedQuery, CancellationToken.None);
-
+    
         manifest.Id.Should().Be(manifestId);
-        manifest.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
-        
+        ValidateThumbnail(manifest.Thumbnail);
+
         var canvas = manifest.Items!.Single();
-        canvas.Thumbnail.Should().NotBeNull("Has thumbnail delivery channel");
+        ValidateThumbnail(canvas.Thumbnail);
         canvas.Rendering.Should().BeNull("No file delivery channel");
         
         var image = canvas.GetCanvasPaintingBody<Image>();
@@ -156,6 +159,15 @@ public class ManifestV3BuilderTests
         image.Height.Should().Be(200, "Height of largest derivative");
         image.Id.Should().Be("https://dlcs.test/thumbs-url/");
         image.Service.Should().BeNull("No image delivery channel");
+
+        void ValidateThumbnail(List<ExternalResource> thumbnails)
+        {
+            thumbnails.Should().NotBeNull("Has thumbnail delivery channel");
+            var manifestThumbnail = thumbnails.Cast<Image>().Single();
+            manifestThumbnail.Id.Should().Be("https://dlcs.test/thumbs-url/full/!100,200/0/default.jpg");
+            manifestThumbnail.Width.Should().Be(100);
+            manifestThumbnail.Height.Should().Be(200);
+        }
     }
     
     [Fact]
@@ -512,3 +524,4 @@ public class ManifestV3BuilderTests
             ImageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels()
         };
 }
+
