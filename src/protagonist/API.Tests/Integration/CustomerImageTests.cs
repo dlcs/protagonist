@@ -211,6 +211,9 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("first", "[\"second\"]", "remove", "first")]
     [InlineData("first,second,third", "[\"second\",\"third\"]", "remove", "first")]
     [InlineData("first,second", "[]", "remove", "first", "second")]
+    [InlineData("first,second", "[\"first\"]", "add", "first", "second")]
+    [InlineData("first", "[\"first\",\"second\"]", "add", "first", "second")]
+    [InlineData("b", "[\"a\",\"c\"]", "add", "a", "b", "c")]
     public async Task Patch_AllImages_TestManifestPermutations(string initial, string update, string operation, params string[] result)
     {
         // Arrange

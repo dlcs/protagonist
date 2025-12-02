@@ -104,9 +104,11 @@ public class ManifestV2Builder : ManifestBuilderBase<Manifest>
 
             if (BuilderUtils.ShouldAddThumbs(asset, thumbnailSizes))
             {
+                var targetThumbnail =
+                    BuilderUtils.GetFullQualifiedThumb(asset, customerPathElement, thumbnailSizes.OpenThumbnails);
                 canvas.Thumbnail = new Thumbnail
                 {
-                    Id = BuilderUtils.GetFullQualifiedThumbPath(asset, customerPathElement, thumbnailSizes.OpenThumbnails),
+                    Id = targetThumbnail.Path,
                     Service = BuilderUtils.GetImageServiceForThumbnail(asset, customerPathElement,
                         thumbnailSizes.OpenThumbnails)
                 }.AsList();
