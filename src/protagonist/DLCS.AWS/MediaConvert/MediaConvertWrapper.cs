@@ -114,6 +114,7 @@ public class MediaConvertWrapper(
             }
         };
         
+        logger.LogDebug("Creating MediaConvert job {@CreateJobRequest}", createJobRequest);
         var response = await mediaConvert.CreateJobAsync(createJobRequest, token);
         logger.LogDebug("Created job {JobId} with {OutputCount} outputs. Status:{StatusCode}", response.Job.Id,
             response.HttpStatusCode, outputGroup.Outputs.Count);
