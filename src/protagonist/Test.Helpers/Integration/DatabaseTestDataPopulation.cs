@@ -6,7 +6,6 @@ using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
-using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.DeliveryChannels;
@@ -14,6 +13,7 @@ using DLCS.Model.Policies;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
+using IIIF.Presentation.V3.Strings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Test.Helpers.Data;
@@ -63,6 +63,26 @@ public static class DatabaseTestDataPopulation
             ImageDeliveryChannels = imageDeliveryChannels ?? new List<ImageDeliveryChannel>()
         });
     }
+    
+    public static ValueTask<EntityEntry<Adjunct>> AddTestAdjunct(this DbSet<Adjunct> adjuncts,
+        string id, AssetId assetId, string mediaType = "image/jpg", IiifLinkType iiifLinkType = IiifLinkType.SeeAlso, 
+        string profile = null, LanguageMap label = null,
+        string[] language = null, Uri externalId = null, long? size = null)
+        => adjuncts.AddAsync(
+            new Adjunct
+            {
+                Id = id,
+                MediaType = mediaType,
+                IiifLink = iiifLinkType,
+                AssetId = assetId,
+                Profile = profile,
+                Label = label,
+                Language = language,
+                ExternalId = externalId,
+                Created = DateTime.UtcNow,
+                Modified = DateTime.UtcNow,
+                Size = size
+            });
 
     public static ValueTask<EntityEntry<AuthToken>> AddTestToken(this DbSet<AuthToken> authTokens,
         int customer = 99, int ttl = 100, DateTime? expires = null, string? sessionUserId = null,

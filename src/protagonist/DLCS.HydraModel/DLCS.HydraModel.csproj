@@ -9,4 +9,8 @@
         <ProjectReference Include="..\Hydra\Hydra.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="iiif-net" />
+    </ItemGroup>
+
 </Project>
