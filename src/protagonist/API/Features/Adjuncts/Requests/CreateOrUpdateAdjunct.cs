@@ -8,9 +8,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Adjuncts.Requests;
 
-public class CreateOrUpdateAdjunct(Adjunct adjunct) : IRequest<ModifyEntityResult<Adjunct>>
+public class CreateOrUpdateAdjunct(Adjunct adjunct, bool createOnly) : IRequest<ModifyEntityResult<Adjunct>>
 {
+    /// <summary>
+    /// The adjunct to create/update
+    /// </summary>
     public Adjunct Adjunct { get; set; } = adjunct;
+    
+    /// <summary>
+    /// Whether only creation is allowed (no update)
+    /// </summary>
+    public bool CreateOnly { get; set; } = createOnly;
 }
 
 public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
@@ -18,10 +26,36 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
 {
     public async Task<ModifyEntityResult<Adjunct>> Handle(CreateOrUpdateAdjunct request, CancellationToken cancellationToken)
     {
-        request.Adjunct.Created = DateTime.UtcNow;
-        request.Adjunct.Modified = DateTime.UtcNow;
+        var adjunct = request.Adjunct;
         
-        await dbContext.Adjuncts.AddAsync(request.Adjunct, cancellationToken);
+        Adjunct? dbAdjunct = null;
+        if (!request.CreateOnly)
+        {
+            dbAdjunct = await dbContext.Adjuncts.SingleOrDefaultAsync(a =>
+                a.Id == adjunct.Id && a.AssetId == adjunct.AssetId, cancellationToken);
+        }
+
+        if (dbAdjunct != null)
+        {
+            dbAdjunct.Id = adjunct.Id;
+            dbAdjunct.MediaType = adjunct.MediaType;
+            dbAdjunct.IIIFLink = adjunct.IIIFLink;
+            dbAdjunct.AssetId = adjunct.AssetId;
+            dbAdjunct.Profile = adjunct.Profile;
+            dbAdjunct.Label = adjunct.Label;
+            dbAdjunct.Language = adjunct.Language;
+            dbAdjunct.ExternalId = adjunct.ExternalId;
+            dbAdjunct.Modified = DateTime.UtcNow;
+            dbAdjunct.Size = adjunct.Size;
+        }
+        else
+        {
+            request.Adjunct.Created = DateTime.UtcNow;
+            request.Adjunct.Modified = DateTime.UtcNow;
+            
+            await dbContext.Adjuncts.AddAsync(request.Adjunct, cancellationToken);
+        }
+        
         try
         {
             await dbContext.SaveChangesAsync(cancellationToken);
@@ -33,6 +67,7 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
                 WriteResult.Conflict);
         }
 
-        return ModifyEntityResult<Adjunct>.Success(request.Adjunct, WriteResult.Created);
+        return ModifyEntityResult<Adjunct>.Success(dbAdjunct ?? request.Adjunct,
+            dbAdjunct == null ? WriteResult.Created : WriteResult.Updated);
     }
 }

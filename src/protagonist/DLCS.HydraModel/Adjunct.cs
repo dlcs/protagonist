@@ -29,7 +29,7 @@ public class Adjunct : DlcsResource
     [RdfProperty(Description = "How this adjunct is expressed in IIIF presentation.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 12, PropertyName = "iiifLink")]
-    public string? IiifLink { get; set; }
+    public string? IIIFLink { get; set; }
     
     [JsonIgnore]
     public string? AssetId { get; set; }

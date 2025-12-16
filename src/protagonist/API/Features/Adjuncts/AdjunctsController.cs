@@ -5,7 +5,6 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
-using FluentValidation;
 using Hydra.Collections;
 using Hydra.Model;
 using MediatR;
@@ -29,7 +28,7 @@ public class AdjunctsController(
     /// <summary>
     /// Get details of all adjuncts for an asset.
     /// </summary>
-    /// <returns>A Hydra JSON-LD Image object representing the adjuncts.</returns>
+    /// <returns>A Hydra JSON-LD Adjunct object representing the adjuncts.</returns>
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
     [ProducesResponseType(404, Type = typeof(Error))]
@@ -41,7 +40,7 @@ public class AdjunctsController(
     /// <summary>
     /// Get details of an adjunct.
     /// </summary>
-    /// <returns>A Hydra JSON-LD Image object representing the adjunct.</returns>
+    /// <returns>A Hydra JSON-LD Adjunct object representing the adjunct.</returns>
     [HttpGet("{adjunctId}")]
     [ProducesResponseType(200, Type = typeof(Adjunct))]
     [ProducesResponseType(404, Type = typeof(Error))]
@@ -60,7 +59,7 @@ public class AdjunctsController(
     /// <summary>
     /// Create an adjunct for an asset.
     /// </summary>
-    /// <returns>A Hydra JSON-LD Image object representing the adjuncts.</returns>
+    /// <returns>A Hydra JSON-LD Adjunct object representing the adjuncts.</returns>
     [HttpPost]
     [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
     [ProducesResponseType(404, Type = typeof(Error))]
@@ -68,38 +67,53 @@ public class AdjunctsController(
         [FromBody] Adjunct hydraAdjunct, 
         [FromServices] HydraAdjunctValidator validator, CancellationToken cancellationToken = default)
     {
-        var validationResult = await validator.ValidateAsync(hydraAdjunct, 
-            strategy => strategy.IncludeRuleSets("default", "create"), cancellationToken); //todo: combine with put?
+        return await CreateOrUpdateAdjunct(customerId, spaceId, imageId, hydraAdjunct, validator, true, cancellationToken);
+    }
+
+    /// <summary>
+    /// Create or update an adjunct for an asset.
+    /// </summary>
+    /// <returns>A Hydra JSON-LD Adjunct object representing the adjuncts.</returns>
+    [HttpPut("{adjunctId}")]
+    [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
+    [ProducesResponseType(404, Type = typeof(Error))]
+    public async Task<IActionResult> PutAdjunct(int customerId, int spaceId, string imageId, string adjunctId, [FromBody] Adjunct hydraAdjunct, 
+        [FromServices] HydraAdjunctValidator validator, CancellationToken cancellationToken = default)
+    {
+        if (hydraAdjunct.ModelId != null && adjunctId != hydraAdjunct.ModelId)
+        {
+            return this.HydraProblem($"The adjunct id from the request URI does not match the 'id' from the request body",
+                null, 400);
+        }
+        
+        hydraAdjunct.ModelId = adjunctId;
+        
+        return await CreateOrUpdateAdjunct(customerId, spaceId, imageId, hydraAdjunct, validator, false, cancellationToken);
+    }
+    
+    private async Task<IActionResult> CreateOrUpdateAdjunct(int customerId, int spaceId, string imageId, Adjunct hydraAdjunct,
+        HydraAdjunctValidator validator, bool createOnly, CancellationToken cancellationToken)
+    {
+        var validationResult = await validator.ValidateAsync(hydraAdjunct, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
         }
-        
-        var createOrUpdateRequest = new CreateOrUpdateAdjunct(hydraAdjunct.ToDlcsModel(customerId, spaceId, imageId));
+
+        var createOrUpdateRequest =
+            new CreateOrUpdateAdjunct(hydraAdjunct.ToDlcsModel(customerId, spaceId, imageId), createOnly);
 
         return await HandleUpsert(
             createOrUpdateRequest,
             a => a.ToHydra(GetUrlRoots()),
             createOrUpdateRequest.Adjunct.Id,
-            "POST adjunct failed", cancellationToken);
+             "Create or update adjunct failed", cancellationToken);
     }
-    
-    /// <summary>
-    /// Create or update an adjunct for an asset.
-    /// </summary>
-    /// <returns>A Hydra JSON-LD Image object representing the adjuncts.</returns>
-    [HttpPut("{adjunctId}")]
-    [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
-    [ProducesResponseType(404, Type = typeof(Error))]
-    public async Task<IActionResult> PutAdjunct(int customerId, int spaceId, string imageId, string adjunctId)
-    {
-        throw new NotImplementedException();
-    }
-    
+
     /// <summary>
     /// Delete an adjunct for an asset.
     /// </summary>
-    /// <returns>A Hydra JSON-LD Image object representing the adjuncts.</returns>
+    /// <returns>A Hydra JSON-LD Adjunct object representing the adjuncts.</returns>
     [HttpDelete("{adjunctId}")]
     [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
     [ProducesResponseType(404, Type = typeof(Error))]

@@ -15,7 +15,7 @@ public class HydraAdjunctValidatorTests
         {
             ExternalId = "https://localhost:2000/some-id",
             MediaType = "mediaType",
-            IiifLink = "SeeAlso",
+            IIIFLink = "SeeAlso",
             Id = "https://localhost/customers/1/spaces/1/images/assetId/adjuncts/adjunctId",
         };
         var result = sut.TestValidate(adjunct);
@@ -29,7 +29,7 @@ public class HydraAdjunctValidatorTests
         {
             ExternalId = "not-uri",
             MediaType = "mediaType",
-            IiifLink = "SeeAlso",
+            IIIFLink = "SeeAlso",
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.ExternalId)
@@ -42,10 +42,10 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
             MediaType = "mediaType",
-            IiifLink = "Invalid"
+            IIIFLink = "Invalid"
         };
         var result = sut.TestValidate(adjunct);
-        result.ShouldHaveValidationErrorFor(r => r.IiifLink)
+        result.ShouldHaveValidationErrorFor(r => r.IIIFLink)
             .WithErrorMessage("Valid values for 'iiifLink' are 'SeeAlso', 'Annotations' and 'Rendering'");
     }
     
@@ -55,7 +55,7 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
             MediaType = "mediaType",
-            IiifLink = "SeeAlso",
+            IIIFLink = "SeeAlso",
             Id = "https://localhost/customers/1/spaces/1/images/assetId/adjuncts/different",
         };
         var result = sut.TestValidate(adjunct);
@@ -71,7 +71,7 @@ public class HydraAdjunctValidatorTests
             MediaType = "mediaType"
         };
         var result = sut.TestValidate(adjunct);
-        result.ShouldHaveValidationErrorFor(r => r.IiifLink)
+        result.ShouldHaveValidationErrorFor(r => r.IIIFLink)
             .WithErrorMessage("'iiifLink' is required");
     }
     
@@ -80,7 +80,7 @@ public class HydraAdjunctValidatorTests
     {
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
-            IiifLink = "SeeAlso"
+            IIIFLink = "SeeAlso"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.MediaType)
@@ -93,7 +93,7 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", null)
         {
             MediaType = "mediaType",
-            IiifLink = "SeeAlso"
+            IIIFLink = "SeeAlso"
         };
         var result = sut.TestValidate(adjunct, strategy => strategy.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(r => r.ModelId)

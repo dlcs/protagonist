@@ -720,12 +720,12 @@ public partial class DlcsContext : DbContext
                     l => l.Split(",", StringSplitOptions.RemoveEmptyEntries),
                     stringArrayComparer);
             
-            entity.Property(a => a.IiifLink)
+            entity.Property(a => a.IIIFLink)
                 .IsRequired()
                 .HasMaxLength(500)
                 .HasConversion(
                     i => i.GetDescription(),
-                    i => i.GetEnumFromString<IiifLinkType>(true));
+                    i => i.GetEnumFromString<IIIFLinkType>(true));
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -31,7 +31,7 @@ public static class AdjunctConverter
             adjunctId = hydraAdjunct.ModelId;
         }
         
-        var enumParsed = Enum.TryParse(hydraAdjunct.IiifLink, out IiifLinkType iiifLink);
+        var enumParsed = Enum.TryParse(hydraAdjunct.IIIFLink, out IIIFLinkType iiifLink);
 
         if (!enumParsed)
         {
@@ -44,7 +44,7 @@ public static class AdjunctConverter
         {
             Id = adjunctId,
             MediaType = hydraAdjunct.MediaType!,
-            IiifLink = iiifLink,
+            IIIFLink = iiifLink,
             AssetId = new AssetId(customerId, spaceId, assetId),
             Profile = hydraAdjunct.Profile,
             Label = hydraAdjunct.Label,
@@ -58,7 +58,7 @@ public static class AdjunctConverter
         return new DLCS.HydraModel.Adjunct(urlRoots.BaseUrl, adjunct.AssetId.Customer, adjunct.AssetId.Space, adjunct.AssetId.Asset, adjunct.Id)
         {
             MediaType = adjunct.MediaType,
-            IiifLink = adjunct.IiifLink.ToString(),
+            IIIFLink = adjunct.IIIFLink.ToString(),
             AssetId = adjunct.AssetId.ToString(),
             Profile = adjunct.Profile,
             Label = adjunct.Label,

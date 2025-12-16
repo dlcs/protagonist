@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -55,13 +56,13 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
 
         // Assert
-        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
         response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
 
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
-        adjunct.IiifLink.Should().Be("SeeAlso");
+        adjunct.IIIFLink.Should().Be("SeeAlso");
         adjunct.Label.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.AssetId.Should().BeNull();
@@ -153,7 +154,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
-        adjunct.IiifLink.Should().Be("SeeAlso");
+        adjunct.IIIFLink.Should().Be("SeeAlso");
     }
     
     [Fact]
@@ -187,6 +188,119 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task PutAdjunct_FailsToCreateAdjunct_WhenIdDiffersBetweenBodyAndUri()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        const string newAdjunctJson = $@"{{
+          ""id"": ""someAdjunctId"",
+          ""externalId"": ""https://some-location.com/an-adjunct"",
+          ""iiifLink"": ""SeeAlso"",
+          ""mediaType"": ""a-mediaType"",
+          ""label"": {{""label"": [""value""]}},
+          ""language"": [""en""],
+        }}";
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts/differentId";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        
+        var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
+        error.Detail.Should().Be("The adjunct id from the request URI does not match the 'id' from the request body");
+    }
+    
+    [Fact]
+    public async Task PutAdjunct_UpdatesAdjunct_WhenIdAlreadyExists()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId", assetId, created: DateTime.UtcNow.AddDays(-2),
+            modified: DateTime.UtcNow.AddDays(-2));
+        await dbContext.SaveChangesAsync();
+        
+        const string newAdjunctJson = $@"{{
+          ""id"": ""someAdjunctId"",
+          ""externalId"": ""https://some-location.com/an-adjunct"",
+          ""iiifLink"": ""SeeAlso"",
+          ""mediaType"": ""a-mediaType"",
+          ""label"": {{""label"": [""value""]}},
+          ""language"": [""en""],
+        }}";
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+
+        adjunct.Id.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+        adjunct.IIIFLink.Should().Be("SeeAlso");
+        adjunct.Label.First().Key.Should().Be("label");
+        adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
+        adjunct.AssetId.Should().BeNull();
+        adjunct.Created.Should().BeCloseTo(DateTime.UtcNow.AddDays(-2), TimeSpan.FromSeconds(5));
+        adjunct.Modified.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
+    }
+    
+    [Fact]
+    public async Task PutAdjunct_CreatesAdjunct_WhenIdDoesNotExists()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+        
+        const string newAdjunctJson = $@"{{
+          ""id"": ""someAdjunctId"",
+          ""externalId"": ""https://some-location.com/an-adjunct"",
+          ""iiifLink"": ""SeeAlso"",
+          ""mediaType"": ""a-mediaType"",
+          ""label"": {{""label"": [""value""]}},
+          ""language"": [""en""],
+        }}";
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+
+        adjunct.Id.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+        adjunct.IIIFLink.Should().Be("SeeAlso");
+        adjunct.Label.First().Key.Should().Be("label");
+        adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
+        adjunct.AssetId.Should().BeNull();
+        adjunct.Created.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        adjunct.Modified.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
     }
 
     // todo: @type

@@ -45,7 +45,7 @@ namespace DLCS.Repository.Migrations
                     b.Property<string>("ExternalId")
                         .HasColumnType("text");
 
-                    b.Property<string>("IiifLink")
+                    b.Property<string>("IIIFLink")
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");

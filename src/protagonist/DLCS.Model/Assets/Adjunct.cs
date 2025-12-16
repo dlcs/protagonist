@@ -19,7 +19,7 @@ public class Adjunct
     /// <summary>
     /// How this adjunct is expressed in IIIF presentation
     /// </summary>
-    public required IiifLinkType IiifLink { get; set; }
+    public required IIIFLinkType IIIFLink { get; set; }
     
     /// <summary>
     /// The asset this adjunct is associated with
@@ -64,7 +64,7 @@ public class Adjunct
     public Asset Asset { get; set; } = null!;
 }
 
-public enum IiifLinkType
+public enum IIIFLinkType
 {
     SeeAlso,
     Annotations,

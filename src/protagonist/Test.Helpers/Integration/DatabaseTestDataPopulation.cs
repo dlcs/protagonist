@@ -65,22 +65,22 @@ public static class DatabaseTestDataPopulation
     }
     
     public static ValueTask<EntityEntry<Adjunct>> AddTestAdjunct(this DbSet<Adjunct> adjuncts,
-        string id, AssetId assetId, string mediaType = "image/jpg", IiifLinkType iiifLinkType = IiifLinkType.SeeAlso, 
+        string id, AssetId assetId, string mediaType = "image/jpg", IIIFLinkType iiifLinkType = IIIFLinkType.SeeAlso, 
         string profile = null, LanguageMap label = null,
-        string[] language = null, Uri externalId = null, long? size = null)
+        string[] language = null, Uri externalId = null, DateTime? created = null, DateTime? modified = null, long? size = null)
         => adjuncts.AddAsync(
             new Adjunct
             {
                 Id = id,
                 MediaType = mediaType,
-                IiifLink = iiifLinkType,
+                IIIFLink = iiifLinkType,
                 AssetId = assetId,
                 Profile = profile,
                 Label = label,
                 Language = language,
                 ExternalId = externalId,
-                Created = DateTime.UtcNow,
-                Modified = DateTime.UtcNow,
+                Created = created ?? DateTime.UtcNow,
+                Modified = modified ?? DateTime.UtcNow,
                 Size = size
             });
 
