@@ -27,6 +27,11 @@ public class Adjunct
     public required AssetId AssetId { get; set; }
     
     /// <summary>
+    /// The type of the adjunct
+    /// </summary>
+    public required string Type { get; set; }
+    
+    /// <summary>
     /// A schema or named set of functionality available from the resource
     /// </summary>
     public string? Profile { get; set; }

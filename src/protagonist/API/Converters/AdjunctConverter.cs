@@ -43,6 +43,7 @@ public static class AdjunctConverter
         return new Adjunct
         {
             Id = adjunctId,
+            Type = hydraAdjunct.Type,
             MediaType = hydraAdjunct.MediaType!,
             IIIFLink = iiifLink,
             AssetId = new AssetId(customerId, spaceId, assetId),
@@ -57,6 +58,7 @@ public static class AdjunctConverter
     {
         return new DLCS.HydraModel.Adjunct(urlRoots.BaseUrl, adjunct.AssetId.Customer, adjunct.AssetId.Space, adjunct.AssetId.Asset, adjunct.Id)
         {
+            Type = adjunct.Type,
             MediaType = adjunct.MediaType,
             IIIFLink = adjunct.IIIFLink.ToString(),
             AssetId = adjunct.AssetId.ToString(),

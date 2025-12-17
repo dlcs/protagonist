@@ -70,6 +70,10 @@ namespace DLCS.Repository.Migrations
                     b.Property<long?>("Size")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id", "AssetId");
 
                     b.HasIndex("AssetId");

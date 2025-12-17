@@ -60,7 +60,7 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
         {
             await dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (ex.GetDatabaseError() is UniqueConstraintError) // todo: update as well
+        catch (DbUpdateException ex) when (ex.GetDatabaseError() is UniqueConstraintError)
         {
             return ModifyEntityResult<Adjunct>.Failure(
                 $"An adjunct called '{request.Adjunct.Id}' already exists",

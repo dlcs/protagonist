@@ -9,7 +9,6 @@ using Hydra.Collections;
 using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Adjuncts;
@@ -21,8 +20,7 @@ namespace API.Features.Adjuncts;
 [ApiController]
 public class AdjunctsController(
     IOptions<ApiSettings> options,
-    IMediator mediator,
-    ILogger<AdjunctsController> logger)
+    IMediator mediator)
     : HydraController(options.Value, mediator)
 {
     /// <summary>
@@ -32,9 +30,16 @@ public class AdjunctsController(
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
     [ProducesResponseType(404, Type = typeof(Error))]
-    public async Task<IActionResult> GetAdjuncts(int customerId, int spaceId, string imageId)
+    public async Task<IActionResult> GetAdjuncts(int customerId, int spaceId, string imageId, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var getAdjuncts = new GetAdjuncts(new AssetId(customerId, spaceId, imageId));
+
+        return await HandlePagedFetch<DLCS.Model.Assets.Adjunct, GetAdjuncts, Adjunct>(
+            getAdjuncts,
+            policy => policy.ToHydra(GetUrlRoots()),
+            errorTitle: "Get adjuncts failed",
+            cancellationToken: cancellationToken
+        );
     }
     
     /// <summary>
@@ -107,18 +112,20 @@ public class AdjunctsController(
             createOrUpdateRequest,
             a => a.ToHydra(GetUrlRoots()),
             createOrUpdateRequest.Adjunct.Id,
-             "Create or update adjunct failed", cancellationToken);
+            "Create or update adjunct failed", cancellationToken);
     }
 
     /// <summary>
     /// Delete an adjunct for an asset.
     /// </summary>
-    /// <returns>A Hydra JSON-LD Adjunct object representing the adjuncts.</returns>
+    /// <returns>A delete result.</returns>
     [HttpDelete("{adjunctId}")]
     [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
     [ProducesResponseType(404, Type = typeof(Error))]
     public async Task<IActionResult> DeleteAdjunct(int customerId, int spaceId, string imageId, string adjunctId)
     {
-        throw new NotImplementedException();
+        var deleteRequest = new DeleteAdjunct(adjunctId, new AssetId(customerId, spaceId, imageId));
+
+        return await HandleDelete(deleteRequest);
     }
 }

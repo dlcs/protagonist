@@ -16,6 +16,9 @@ public class Adjunct : DlcsResource
         Init(baseUrl, true, customerId, space, assetId, ModelId);
     }
     
+    [JsonProperty(Order = 3, PropertyName = "@type")]
+    public override string Type { get; set; }
+    
     [RdfProperty(Description = "The identifier for the adjunct",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 10, PropertyName = "id")]
@@ -42,7 +45,7 @@ public class Adjunct : DlcsResource
     [RdfProperty(Description = "A human readable label, name or title.",
         Range = Names.XmlSchema.Base, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 15, PropertyName = "label")]
-    public LanguageMap? Label { get; set; }
+    public LanguageMap? Label { get; set; } //todo: remove IIIF
     
     [RdfProperty(Description = "The language(s) of the content.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]

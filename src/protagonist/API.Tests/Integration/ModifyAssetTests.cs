@@ -2619,6 +2619,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId);
         await dbContext.ImageLocations.AddTestImageLocation(assetId);
         await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 100L);
+        await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId", assetId);
         var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
             sizeOfStored: 1000L, sizeOfThumbs: 1000L);
         var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
@@ -2637,14 +2638,16 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         
-        // Asset, Location + Storage deleted
+        // Asset, Location, Storage + Adjunct deleted
         var dbAsset = await dbContext.Images.SingleOrDefaultAsync(i => i.Id == assetId);
         dbAsset.Should().BeNull();
         var dbLocation = await dbContext.ImageLocations.SingleOrDefaultAsync(i => i.Id == assetId);
         dbLocation.Should().BeNull();
-        
         var dbStorage = await dbContext.ImageStorages.SingleOrDefaultAsync(i => i.Id == assetId);
         dbStorage.Should().BeNull();
+        var dbAdjunct =
+            await dbContext.Adjuncts.SingleOrDefaultAsync(i => i.Id == "someAdjunctId" && i.AssetId == assetId);
+        dbAdjunct.Should().BeNull();
         
         // CustomerStorage values reduced
         await dbContext.Entry(customerSpaceStorage.Entity).ReloadAsync();

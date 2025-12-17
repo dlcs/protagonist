@@ -8,6 +8,7 @@ using API.Tests.Integration.Infrastructure;
 using DLCS.HydraModel;
 using DLCS.Repository;
 using DLCS.Web.Response;
+using Hydra.Collections;
 using Hydra.Model;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
@@ -42,6 +43,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         const string newAdjunctJson = $@"{{
           ""id"": ""someAdjunctId"",
+          ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
           ""iiifLink"": ""SeeAlso"",
           ""mediaType"": ""a-mediaType"",
@@ -67,6 +69,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.AssetId.Should().BeNull();
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
+
+        response.Headers.Location.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
     }
     
     [Fact]
@@ -80,6 +86,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         const string newAdjunctJson = $@"{{
           ""id"": ""someAdjunctId"",
+          ""@type"": ""Image"",
           ""externalId"": ""an-adjunct"",
           ""iiifLink"": ""SeeAlso"",
           ""mediaType"": ""a-mediaType"",
@@ -112,6 +119,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         const string newAdjunctJson = $@"{{
           ""id"": ""someAdjunctId"",
+          ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
           ""iiifLink"": ""SeeAlso"",
           ""mediaType"": ""a-mediaType"",
@@ -191,6 +199,72 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task GetAdjunctS_RetrievesListOfAdjuncts()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId", assetId);
+        await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId2", assetId);
+        await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId3", assetId);
+        await dbContext.SaveChangesAsync();
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjunct = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+
+        adjunct.Members.Length.Should().Be(3);
+        adjunct.Members[0].Id.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+    }
+    
+    [Fact]
+    public async Task GetAdjunctS_RetrievesEmptyListOfAdjuncts_WhenNoAdjuncts()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjunct = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+
+        adjunct.Members.Length.Should().Be(0);
+    }
+    
+    [Fact]
+    public async Task GetAdjunctS_RetrievesEmptyListOfAdjuncts_WhenNoAsset()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjunct = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+
+        adjunct.Members.Length.Should().Be(0);
+    }
+    
+    [Fact]
     public async Task PutAdjunct_FailsToCreateAdjunct_WhenIdDiffersBetweenBodyAndUri()
     {
         // Arrange
@@ -201,6 +275,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         const string newAdjunctJson = $@"{{
           ""id"": ""someAdjunctId"",
+          ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
           ""iiifLink"": ""SeeAlso"",
           ""mediaType"": ""a-mediaType"",
@@ -234,6 +309,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         const string newAdjunctJson = $@"{{
           ""id"": ""someAdjunctId"",
+          ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
           ""iiifLink"": ""SeeAlso"",
           ""mediaType"": ""a-mediaType"",
@@ -274,6 +350,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         const string newAdjunctJson = $@"{{
           ""id"": ""someAdjunctId"",
+          ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
           ""iiifLink"": ""SeeAlso"",
           ""mediaType"": ""a-mediaType"",
@@ -281,11 +358,11 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""language"": [""en""],
         }}";
         
-        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
 
         // Act
-        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+        var response = await httpClient.AsCustomer(assetId.Customer).PutAsync(path, content);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -301,7 +378,46 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Created.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.Modified.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
+        
+        response.Headers.Location.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
     }
+    
+    [Fact]
+    public async Task DeleteAdjunct_NothingHappens_WhenDoesNotExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
 
-    // todo: @type
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).DeleteAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task DeleteAdjunct_DeletesAdjunct_WhenDoesExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId", assetId);
+        await dbContext.SaveChangesAsync();
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).DeleteAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
 }

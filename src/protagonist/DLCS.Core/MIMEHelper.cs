@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
+using DLCS.Core.Types;
 
 namespace DLCS.Core;
 
@@ -959,12 +960,12 @@ public class MIMEHelper
     /// <remarks>Mapping from https://iiif.io/api/presentation/3.0/#type</remarks>
     public static string GetRdfType(string? mediaType)
     {
-        if (IsImage(mediaType)) return "Image";
-        if (IsAudio(mediaType)) return "Sound";
-        if (IsVideo(mediaType)) return "Video";
-        if (mediaType?.StartsWith("text/") ?? false) return "Text";
-        if (mediaType?.StartsWith("model/") ?? false) return "Model";
+        if (IsImage(mediaType)) return ResourceType.Image;
+        if (IsAudio(mediaType)) return ResourceType.Sound;
+        if (IsVideo(mediaType)) return ResourceType.Video;
+        if (mediaType?.StartsWith("text/") ?? false) return ResourceType.Text;
+        if (mediaType?.StartsWith("model/") ?? false) return ResourceType.Model;
 
-        return "Dataset";
+        return ResourceType.Dataset;
     }
 }

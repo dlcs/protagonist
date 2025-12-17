@@ -16,6 +16,7 @@ public class HydraAdjunctValidatorTests
             ExternalId = "https://localhost:2000/some-id",
             MediaType = "mediaType",
             IIIFLink = "SeeAlso",
+            Type = "Image",
             Id = "https://localhost/customers/1/spaces/1/images/assetId/adjuncts/adjunctId",
         };
         var result = sut.TestValidate(adjunct);
@@ -30,6 +31,7 @@ public class HydraAdjunctValidatorTests
             ExternalId = "not-uri",
             MediaType = "mediaType",
             IIIFLink = "SeeAlso",
+            Type = "Image"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.ExternalId)
@@ -42,7 +44,8 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
             MediaType = "mediaType",
-            IIIFLink = "Invalid"
+            IIIFLink = "Invalid",
+            Type = "Image"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.IIIFLink)
@@ -56,6 +59,7 @@ public class HydraAdjunctValidatorTests
         {
             MediaType = "mediaType",
             IIIFLink = "SeeAlso",
+            Type = "Image",
             Id = "https://localhost/customers/1/spaces/1/images/assetId/adjuncts/different",
         };
         var result = sut.TestValidate(adjunct);
@@ -68,7 +72,8 @@ public class HydraAdjunctValidatorTests
     {
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
-            MediaType = "mediaType"
+            MediaType = "mediaType",
+            Type = "Image"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.IIIFLink)
@@ -80,7 +85,8 @@ public class HydraAdjunctValidatorTests
     {
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
-            IIIFLink = "SeeAlso"
+            IIIFLink = "SeeAlso",
+            Type = "Image"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.MediaType)
@@ -93,10 +99,38 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", null)
         {
             MediaType = "mediaType",
-            IIIFLink = "SeeAlso"
+            IIIFLink = "SeeAlso",
+            Type = "Image"
         };
-        var result = sut.TestValidate(adjunct, strategy => strategy.IncludeRuleSets("default", "create"));
+        var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.ModelId)
             .WithErrorMessage("Adjunct identifier could not be found");
+    }
+    
+    [Fact]
+    public void Type_Error_WhenNotSet()
+    {
+        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", null)
+        {
+            MediaType = "mediaType",
+            IIIFLink = "SeeAlso"
+        };
+        var result = sut.TestValidate(adjunct);
+        result.ShouldHaveValidationErrorFor(r => r.Type)
+            .WithErrorMessage("'@type' must be one of the following: Image, Sound, Video, Text, model, Dataset");
+    }
+    
+    [Fact]
+    public void Type_Error_WhenIncorrect()
+    {
+        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", null)
+        {
+            MediaType = "mediaType",
+            IIIFLink = "SeeAlso",
+            Type = "wrong"
+        };
+        var result = sut.TestValidate(adjunct);
+        result.ShouldHaveValidationErrorFor(r => r.Type)
+            .WithErrorMessage("'@type' must be one of the following: Image, Sound, Video, Text, model, Dataset");
     }
 }
