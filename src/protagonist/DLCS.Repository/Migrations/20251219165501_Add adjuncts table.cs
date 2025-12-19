@@ -25,7 +25,7 @@ namespace DLCS.Repository.Migrations
                     Language = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     ExternalId = table.Column<string>(type: "text", nullable: false),
                     Created = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Modified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Finished = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Size = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>

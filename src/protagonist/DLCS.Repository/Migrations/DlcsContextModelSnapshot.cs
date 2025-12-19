@@ -46,6 +46,9 @@ namespace DLCS.Repository.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("Finished")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("IIIFLink")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -61,9 +64,6 @@ namespace DLCS.Repository.Migrations
                     b.Property<string>("MediaType")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<DateTime>("Modified")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Profile")
                         .HasColumnType("text");

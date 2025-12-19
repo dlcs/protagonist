@@ -69,7 +69,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.AssetId.Should().BeNull();
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
-
+        adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
+        
         response.Headers.Location.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
@@ -301,10 +302,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-
+        await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId", assetId, created: DateTime.UtcNow.AddDays(-2));
         await dbContext.Images.AddTestAsset(assetId);
-        await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId", assetId, created: DateTime.UtcNow.AddDays(-2),
-            modified: DateTime.UtcNow.AddDays(-2));
         await dbContext.SaveChangesAsync();
         
         const string newAdjunctJson = @"{
@@ -335,8 +334,9 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.AssetId.Should().BeNull();
         adjunct.Created.Should().BeCloseTo(DateTime.UtcNow.AddDays(-2), TimeSpan.FromSeconds(5));
-        adjunct.Modified.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
+        adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
     }
     
     [Fact]
@@ -376,8 +376,9 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.AssetId.Should().BeNull();
         adjunct.Created.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
-        adjunct.Modified.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
+        adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
         
         response.Headers.Location.Should()
             .Be(

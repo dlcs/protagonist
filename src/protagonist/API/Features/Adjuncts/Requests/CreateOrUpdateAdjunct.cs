@@ -45,13 +45,13 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
             dbAdjunct.Label = adjunct.Label;
             dbAdjunct.Language = adjunct.Language;
             dbAdjunct.ExternalId = adjunct.ExternalId;
-            dbAdjunct.Modified = DateTime.UtcNow;
+            dbAdjunct.Finished = DateTime.UtcNow;
             dbAdjunct.Size = adjunct.Size;
         }
         else
         {
             request.Adjunct.Created = DateTime.UtcNow;
-            request.Adjunct.Modified = DateTime.UtcNow;
+            request.Adjunct.Finished = DateTime.UtcNow;
             
             await dbContext.Adjuncts.AddAsync(request.Adjunct, cancellationToken);
         }

@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    [Migration("20251219113700_Add adjuncts table")]
+    [Migration("20251219165501_Add adjuncts table")]
     partial class Addadjunctstable
     {
         /// <inheritdoc />
@@ -49,6 +49,9 @@ namespace DLCS.Repository.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("Finished")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("IIIFLink")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -64,9 +67,6 @@ namespace DLCS.Repository.Migrations
                     b.Property<string>("MediaType")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<DateTime>("Modified")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Profile")
                         .HasColumnType("text");

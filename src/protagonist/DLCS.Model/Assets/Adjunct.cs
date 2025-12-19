@@ -57,9 +57,9 @@ public class Adjunct
     public DateTime Created { get; set; }
     
     /// <summary>
-    /// When the adjunct was modified
+    /// When the adjunct last finished processing
     /// </summary>
-    public DateTime Modified { get; set; }
+    public DateTime Finished { get; set; }
     
     /// <summary>
     /// The size in bytes of the adjunct

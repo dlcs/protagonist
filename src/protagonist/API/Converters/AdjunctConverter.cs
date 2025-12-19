@@ -74,8 +74,9 @@ public static class AdjunctConverter
             Label = adjunct.Label,
             Language = adjunct.Language,
             ExternalId = adjunct.ExternalId.ToString(),
+            PublicId = adjunct.ExternalId.ToString(),
             Created = adjunct.Created,
-            Modified = adjunct.Modified
+            Finished = adjunct.Finished
         };
     }
 }
