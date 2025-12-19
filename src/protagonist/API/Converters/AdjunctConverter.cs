@@ -3,6 +3,8 @@ using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using Adjunct = DLCS.Model.Assets.Adjunct;
+using LanguageMap = IIIF.Presentation.V3.Strings.LanguageMap;
 
 namespace API.Converters;
 
@@ -40,6 +42,12 @@ public static class AdjunctConverter
         
         Debug.Assert(adjunctId != null, "adjunctId != null");
 
+        LanguageMap? label = null;
+        if (hydraAdjunct.Label != null)
+        {
+            label = hydraAdjunct.Label.ToLanguageMap();
+        }
+
         return new Adjunct
         {
             Id = adjunctId,
@@ -48,9 +56,9 @@ public static class AdjunctConverter
             IIIFLink = iiifLink,
             AssetId = new AssetId(customerId, spaceId, assetId),
             Profile = hydraAdjunct.Profile,
-            Label = hydraAdjunct.Label,
+            Label = label,
             Language = hydraAdjunct.Language,
-            ExternalId = hydraAdjunct.ExternalId != null ? new Uri(hydraAdjunct.ExternalId) : null
+            ExternalId = new Uri(hydraAdjunct.ExternalId)
         };
     }
     
@@ -65,7 +73,7 @@ public static class AdjunctConverter
             Profile = adjunct.Profile,
             Label = adjunct.Label,
             Language = adjunct.Language,
-            ExternalId = adjunct.ExternalId != null ? adjunct.ExternalId.ToString() : null,
+            ExternalId = adjunct.ExternalId.ToString(),
             Created = adjunct.Created,
             Modified = adjunct.Modified
         };

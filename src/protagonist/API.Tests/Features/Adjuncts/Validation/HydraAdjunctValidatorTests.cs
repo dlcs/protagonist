@@ -35,7 +35,22 @@ public class HydraAdjunctValidatorTests
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.ExternalId)
-            .WithErrorMessage("'externalId' must be a well formed URI");
+            .WithErrorMessage("'externalId' is required and must be a well formed URI");
+    }
+    
+    [Fact]
+    public void ExternalId_Null()
+    {
+        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
+        {
+            ExternalId = null,
+            MediaType = "mediaType",
+            IIIFLink = "SeeAlso",
+            Type = "Image"
+        };
+        var result = sut.TestValidate(adjunct);
+        result.ShouldHaveValidationErrorFor(r => r.ExternalId)
+            .WithErrorMessage("'externalId' is required and must be a well formed URI");
     }
     
     [Fact]
@@ -45,7 +60,8 @@ public class HydraAdjunctValidatorTests
         {
             MediaType = "mediaType",
             IIIFLink = "Invalid",
-            Type = "Image"
+            Type = "Image",
+            ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.IIIFLink)
@@ -61,6 +77,7 @@ public class HydraAdjunctValidatorTests
             IIIFLink = "SeeAlso",
             Type = "Image",
             Id = "https://localhost/customers/1/spaces/1/images/assetId/adjuncts/different",
+            ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r)
@@ -73,7 +90,8 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
             MediaType = "mediaType",
-            Type = "Image"
+            Type = "Image",
+            ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.IIIFLink)
@@ -86,7 +104,8 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
             IIIFLink = "SeeAlso",
-            Type = "Image"
+            Type = "Image",
+            ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.MediaType)
@@ -100,7 +119,8 @@ public class HydraAdjunctValidatorTests
         {
             MediaType = "mediaType",
             IIIFLink = "SeeAlso",
-            Type = "Image"
+            Type = "Image",
+            ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.ModelId)
@@ -113,24 +133,12 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", null)
         {
             MediaType = "mediaType",
-            IIIFLink = "SeeAlso"
-        };
-        var result = sut.TestValidate(adjunct);
-        result.ShouldHaveValidationErrorFor(r => r.Type)
-            .WithErrorMessage("'@type' must be one of the following: Image, Sound, Video, Text, model, Dataset");
-    }
-    
-    [Fact]
-    public void Type_Error_WhenIncorrect()
-    {
-        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", null)
-        {
-            MediaType = "mediaType",
             IIIFLink = "SeeAlso",
-            Type = "wrong"
+            Type = null,
+            ExternalId = "https://localhost/customers/1/spaces/1/images/assetId"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.Type)
-            .WithErrorMessage("'@type' must be one of the following: Image, Sound, Video, Text, model, Dataset");
+            .WithErrorMessage("'@type' is required");
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using Hydra;
-using IIIF.Presentation.V3.Strings;
 using Newtonsoft.Json;
 
 namespace DLCS.HydraModel;
@@ -17,7 +17,7 @@ public class Adjunct : DlcsResource
     }
     
     [JsonProperty(Order = 3, PropertyName = "@type")]
-    public override string Type { get; set; }
+    public override required string Type { get; set; }
     
     [RdfProperty(Description = "The identifier for the adjunct",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
@@ -45,7 +45,7 @@ public class Adjunct : DlcsResource
     [RdfProperty(Description = "A human readable label, name or title.",
         Range = Names.XmlSchema.Base, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 15, PropertyName = "label")]
-    public LanguageMap? Label { get; set; } //todo: remove IIIF
+    public Dictionary<string, List<string>>? Label { get; set; }
     
     [RdfProperty(Description = "The language(s) of the content.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
@@ -55,7 +55,7 @@ public class Adjunct : DlcsResource
     [RdfProperty(Description = "A fully-qualified URL external to the platform.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 17, PropertyName = "externalId")]
-    public string? ExternalId { get; set; }
+    public required string ExternalId { get; set; }
     
     [RdfProperty(Description = "The size in bytes of the adjunct.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]

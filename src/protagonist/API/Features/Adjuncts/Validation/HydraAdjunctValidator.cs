@@ -13,9 +13,10 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
         RuleFor(a => a.MediaType).NotEmpty()
             .WithMessage("'mediaType' is required");
         
-        RuleFor(a => a.ExternalId).Must(a => Uri.IsWellFormedUriString(a, UriKind.Absolute))
-            .When(a => a.ExternalId != null)
-            .WithMessage("'externalId' must be a well formed URI");
+        RuleFor(a => a.ExternalId)
+            .NotEmpty()
+            .Must(a => Uri.IsWellFormedUriString(a, UriKind.Absolute))
+            .WithMessage("'externalId' is required and must be a well formed URI");
         
         RuleFor(a => a.IIIFLink).Must(a => Enum.IsDefined(typeof(IIIFLinkType), a!))
             .When(a => a.IIIFLink != null)
@@ -30,7 +31,7 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
             .WithMessage("Adjunct identifier could not be found");
         
         RuleFor(a => a.Type)
-            .Must(t => ResourceType.All.Contains(t))
-            .WithMessage($"'@type' must be one of the following: {string.Join(", ", ResourceType.All)}");
+            .NotEmpty()
+            .WithMessage($"'@type' is required");
     }
 }

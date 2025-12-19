@@ -49,7 +49,7 @@ public class Adjunct
     /// <summary>
     /// A fully-qualified URL external to the platform
     /// </summary>
-    public Uri? ExternalId { get; set; }
+    public required Uri ExternalId { get; set; }
     
     /// <summary>
     /// When the adjunct was created
