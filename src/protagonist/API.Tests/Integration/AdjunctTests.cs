@@ -41,15 +41,15 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = $@"{{
+        const string newAdjunctJson = @"{
           ""id"": ""someAdjunctId"",
           ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
           ""iiifLink"": ""SeeAlso"",
           ""mediaType"": ""a-mediaType"",
-          ""label"": {{""label"": [""value""]}},
+          ""label"": {""label"": [""value""]},
           ""language"": [""en""],
-        }}";
+        }";
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -84,15 +84,15 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = $@"{{
+        const string newAdjunctJson = @"{
           ""id"": ""someAdjunctId"",
           ""@type"": ""Image"",
           ""externalId"": ""an-adjunct"",
           ""iiifLink"": ""SeeAlso"",
           ""mediaType"": ""a-mediaType"",
-          ""label"": {{""label"": [""value""]}},
+          ""label"": {""label"": [""value""]},
           ""language"": [""en""],
-        }}";
+        }";
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -273,15 +273,15 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = $@"{{
+        const string newAdjunctJson = @"{
           ""id"": ""someAdjunctId"",
           ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
           ""iiifLink"": ""SeeAlso"",
           ""mediaType"": ""a-mediaType"",
-          ""label"": {{""label"": [""value""]}},
+          ""label"": {""label"": [""value""]},
           ""language"": [""en""],
-        }}";
+        }";
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/differentId";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -307,15 +307,15 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             modified: DateTime.UtcNow.AddDays(-2));
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = $@"{{
+        const string newAdjunctJson = @"{
           ""id"": ""someAdjunctId"",
           ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
           ""iiifLink"": ""SeeAlso"",
           ""mediaType"": ""a-mediaType"",
-          ""label"": {{""label"": [""value""]}},
+          ""label"": {""label"": [""value""]},
           ""language"": [""en""],
-        }}";
+        }";
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -348,15 +348,15 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = $@"{{
+        const string newAdjunctJson = @"{
           ""id"": ""someAdjunctId"",
           ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
           ""iiifLink"": ""SeeAlso"",
           ""mediaType"": ""a-mediaType"",
-          ""label"": {{""label"": [""value""]}},
+          ""label"": {""label"": [""value""]},
           ""language"": [""en""],
-        }}";
+        }";
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
