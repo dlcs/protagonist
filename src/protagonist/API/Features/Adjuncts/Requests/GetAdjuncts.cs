@@ -1,4 +1,5 @@
-﻿using API.Infrastructure.Requests;
+﻿using System.Collections.Generic;
+using API.Infrastructure.Requests;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Page;
@@ -8,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Adjuncts.Requests;
 
-public class GetAdjuncts(AssetId assetId) : IRequest<FetchEntityResult<PageOf<Adjunct>>>, IPagedRequest
+public class GetAdjuncts(AssetId assetId) : IRequest<FetchEntityResult<IReadOnlyCollection<Adjunct>>>, IPagedRequest
 {
     public int Page { get; set; }
     public int PageSize { get; set; }
@@ -16,13 +17,13 @@ public class GetAdjuncts(AssetId assetId) : IRequest<FetchEntityResult<PageOf<Ad
     public AssetId AssetId { get; } = assetId;
 }
 
-public class GetAdjunctsHandler(DlcsContext dbContext) : IRequestHandler<GetAdjuncts, FetchEntityResult<PageOf<Adjunct>>>
+public class GetAdjunctsHandler(DlcsContext dbContext) : IRequestHandler<GetAdjuncts, FetchEntityResult<IReadOnlyCollection<Adjunct>>>
 {
-    public async Task<FetchEntityResult<PageOf<Adjunct>>> Handle(GetAdjuncts request, CancellationToken cancellationToken)
+    public async Task<FetchEntityResult<IReadOnlyCollection<Adjunct>>> Handle(GetAdjuncts request, CancellationToken cancellationToken)
     {
-        var result = await dbContext.Adjuncts.AsNoTracking().Where(a => a.AssetId == request.AssetId)
-            .CreatePagedResult(request, q => q, q => q.OrderBy(i => i.Id), cancellationToken);
+        var adjuncts = await dbContext.Adjuncts.AsNoTracking().Where(a => a.AssetId == request.AssetId)
+            .ToListAsync(cancellationToken);
         
-        return FetchEntityResult<PageOf<Adjunct>>.Success(result);
+        return FetchEntityResult<IReadOnlyCollection<Adjunct>>.Success(adjuncts);
     }
 }

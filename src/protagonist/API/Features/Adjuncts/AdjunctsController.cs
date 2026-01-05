@@ -34,7 +34,7 @@ public class AdjunctsController(
     {
         var getAdjuncts = new GetAdjuncts(new AssetId(customerId, spaceId, imageId));
 
-        return await HandlePagedFetch<DLCS.Model.Assets.Adjunct, GetAdjuncts, Adjunct>(
+        return await HandleListFetch<DLCS.Model.Assets.Adjunct, GetAdjuncts, Adjunct>(
             getAdjuncts,
             policy => policy.ToHydra(GetUrlRoots()),
             errorTitle: "Get adjuncts failed",
