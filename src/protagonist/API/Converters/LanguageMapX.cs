@@ -5,15 +5,20 @@ namespace API.Converters;
 
 public static class LanguageMapX
 {
-    public static LanguageMap ToLanguageMap(this Dictionary<string, List<string>> dictionaryToConvert)
+    public static LanguageMap? ToLanguageMap(this Dictionary<string, List<string>>? dictionaryToConvert)
     {
-        LanguageMap lm = new LanguageMap();
+        LanguageMap? lm = null;
 
-        foreach (var keyValueToConvert in dictionaryToConvert)
+        if (dictionaryToConvert != null)
         {
-            lm.Add(keyValueToConvert.Key, keyValueToConvert.Value);
+            lm = new LanguageMap();
+            
+            foreach (var keyValueToConvert in dictionaryToConvert)
+            {
+                lm.Add(keyValueToConvert.Key, keyValueToConvert.Value);
+            }
         }
-        
+
         return lm;
     }
 }

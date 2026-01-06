@@ -722,7 +722,6 @@ public partial class DlcsContext : DbContext
             
             entity.Property(a => a.IIIFLink)
                 .IsRequired()
-                .HasMaxLength(500)
                 .HasConversion(
                     i => i.GetDescription(),
                     i => i.GetEnumFromString<IIIFLinkType>(true));

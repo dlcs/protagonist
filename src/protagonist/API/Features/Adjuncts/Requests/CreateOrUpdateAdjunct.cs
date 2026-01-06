@@ -13,12 +13,12 @@ public class CreateOrUpdateAdjunct(Adjunct adjunct, bool createOnly) : IRequest<
     /// <summary>
     /// The adjunct to create/update
     /// </summary>
-    public Adjunct Adjunct { get; set; } = adjunct;
+    public Adjunct Adjunct { get; } = adjunct;
     
     /// <summary>
     /// Whether only creation is allowed (no update)
     /// </summary>
-    public bool CreateOnly { get; set; } = createOnly;
+    public bool CreateOnly { get; } = createOnly;
 }
 
 public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
@@ -37,10 +37,8 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
 
         if (dbAdjunct != null)
         {
-            dbAdjunct.Id = adjunct.Id;
             dbAdjunct.MediaType = adjunct.MediaType;
             dbAdjunct.IIIFLink = adjunct.IIIFLink;
-            dbAdjunct.AssetId = adjunct.AssetId;
             dbAdjunct.Profile = adjunct.Profile;
             dbAdjunct.Label = adjunct.Label;
             dbAdjunct.Language = adjunct.Language;
@@ -50,10 +48,10 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
         }
         else
         {
-            request.Adjunct.Created = DateTime.UtcNow;
-            request.Adjunct.Finished = DateTime.UtcNow;
+            adjunct.Created = DateTime.UtcNow;
+            adjunct.Finished = DateTime.UtcNow;
             
-            await dbContext.Adjuncts.AddAsync(request.Adjunct, cancellationToken);
+            await dbContext.Adjuncts.AddAsync(adjunct, cancellationToken);
         }
         
         try
@@ -63,11 +61,11 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
         catch (DbUpdateException ex) when (ex.GetDatabaseError() is UniqueConstraintError)
         {
             return ModifyEntityResult<Adjunct>.Failure(
-                $"An adjunct called '{request.Adjunct.Id}' already exists",
+                $"An adjunct with id '{adjunct.Id}' already exists",
                 WriteResult.Conflict);
         }
 
-        return ModifyEntityResult<Adjunct>.Success(dbAdjunct ?? request.Adjunct,
+        return ModifyEntityResult<Adjunct>.Success(dbAdjunct ?? adjunct,
             dbAdjunct == null ? WriteResult.Created : WriteResult.Updated);
     }
 }

@@ -23,7 +23,6 @@ public class DeleteAdjunctHandler(DlcsContext dbContext)
             .Adjuncts
             .Where(a => a.Id == request.Id && a.AssetId == request.AssetId)
             .ExecuteDeleteAsync(cancellationToken);
-        await dbContext.SaveChangesAsync(cancellationToken);
 
         if (deletion == 0)
         {

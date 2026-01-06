@@ -18,7 +18,7 @@ namespace DLCS.Repository.Migrations
                     Id = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     AssetId = table.Column<string>(type: "character varying(500)", nullable: false),
                     MediaType = table.Column<string>(type: "text", nullable: false),
-                    IIIFLink = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    IIIFLink = table.Column<string>(type: "text", nullable: false),
                     Type = table.Column<string>(type: "text", nullable: false),
                     Profile = table.Column<string>(type: "text", nullable: true),
                     Label = table.Column<string>(type: "jsonb", nullable: true),

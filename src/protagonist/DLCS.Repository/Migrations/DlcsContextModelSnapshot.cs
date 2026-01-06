@@ -51,8 +51,7 @@ namespace DLCS.Repository.Migrations
 
                     b.Property<string>("IIIFLink")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Label")
                         .HasColumnType("jsonb");

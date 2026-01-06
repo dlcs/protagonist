@@ -1,4 +1,6 @@
-﻿using DLCS.Core.Types;
+﻿using System.Collections.Generic;
+using DLCS.Core.Strings;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using FluentValidation;
 
@@ -10,6 +12,10 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
     {
         RuleFor(a => a.IIIFLink).NotEmpty()
             .WithMessage("'iiifLink' is required");
+        RuleFor(a => a.IIIFLink).Must(a => validIiifLinkTypes.Contains(a!))
+            .When(a => a.IIIFLink != null)
+            .WithMessage($"Valid values for 'iiifLink' are '{string.Join("', '", validIiifLinkTypes)}'");
+        
         RuleFor(a => a.MediaType).NotEmpty()
             .WithMessage("'mediaType' is required");
         
@@ -17,10 +23,6 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
             .NotEmpty()
             .Must(a => Uri.IsWellFormedUriString(a, UriKind.Absolute))
             .WithMessage("'externalId' is required and must be a well formed URI");
-        
-        RuleFor(a => a.IIIFLink).Must(a => Enum.IsDefined(typeof(IIIFLinkType), a!))
-            .When(a => a.IIIFLink != null)
-            .WithMessage("Valid values for 'iiifLink' are 'SeeAlso', 'Annotations' and 'Rendering'");
         
         RuleFor(a => a).Must(a => a.Id!.Split('/').Last() == a.ModelId)
             .When(a => a.Id != null && a.ModelId != null)
@@ -32,6 +34,9 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
         
         RuleFor(a => a.Type)
             .NotEmpty()
-            .WithMessage($"'@type' is required");
+            .WithMessage("'@type' is required");
     }
+
+    private readonly List<string> validIiifLinkTypes =
+        Enum.GetNames(typeof(IIIFLinkType)).Select(i => i.ToCamelCase(true)).ToList();
 }

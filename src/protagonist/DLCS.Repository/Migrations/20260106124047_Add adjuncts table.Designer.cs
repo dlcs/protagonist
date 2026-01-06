@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    [Migration("20251219165501_Add adjuncts table")]
+    [Migration("20260106124047_Add adjuncts table")]
     partial class Addadjunctstable
     {
         /// <inheritdoc />
@@ -54,8 +54,7 @@ namespace DLCS.Repository.Migrations
 
                     b.Property<string>("IIIFLink")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Label")
                         .HasColumnType("jsonb");

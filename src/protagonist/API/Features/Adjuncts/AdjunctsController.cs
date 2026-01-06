@@ -26,15 +26,15 @@ public class AdjunctsController(
     /// <summary>
     /// Get details of all adjuncts for an asset.
     /// </summary>
-    /// <returns>A Hydra JSON-LD Adjunct object representing the adjuncts.</returns>
+    /// <returns>A Hydra JSON-LD collection of Adjunct objects, representing the adjuncts.</returns>
     [HttpGet]
     [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
     [ProducesResponseType(404, Type = typeof(Error))]
-    public async Task<IActionResult> GetAdjuncts(int customerId, int spaceId, string imageId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAllAdjuncts(int customerId, int spaceId, string imageId, CancellationToken cancellationToken)
     {
-        var getAdjuncts = new GetAdjuncts(new AssetId(customerId, spaceId, imageId));
+        var getAdjuncts = new GetAllAdjuncts(new AssetId(customerId, spaceId, imageId));
 
-        return await HandleListFetch<DLCS.Model.Assets.Adjunct, GetAdjuncts, Adjunct>(
+        return await HandleListFetch<DLCS.Model.Assets.Adjunct, GetAllAdjuncts, Adjunct>(
             getAdjuncts,
             policy => policy.ToHydra(GetUrlRoots()),
             errorTitle: "Get adjuncts failed",
@@ -95,6 +95,20 @@ public class AdjunctsController(
         
         return await CreateOrUpdateAdjunct(customerId, spaceId, imageId, hydraAdjunct, validator, false, cancellationToken);
     }
+
+    /// <summary>
+    /// Delete an adjunct for an asset.
+    /// </summary>
+    /// <returns>A delete result.</returns>
+    [HttpDelete("{adjunctId}")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(404, Type = typeof(Error))]
+    public async Task<IActionResult> DeleteAdjunct(int customerId, int spaceId, string imageId, string adjunctId)
+    {
+        var deleteRequest = new DeleteAdjunct(adjunctId, new AssetId(customerId, spaceId, imageId));
+
+        return await HandleDelete(deleteRequest);
+    }
     
     private async Task<IActionResult> CreateOrUpdateAdjunct(int customerId, int spaceId, string imageId, Adjunct hydraAdjunct,
         HydraAdjunctValidator validator, bool createOnly, CancellationToken cancellationToken)
@@ -113,19 +127,5 @@ public class AdjunctsController(
             a => a.ToHydra(GetUrlRoots()),
             createOrUpdateRequest.Adjunct.Id,
             "Create or update adjunct failed", cancellationToken);
-    }
-
-    /// <summary>
-    /// Delete an adjunct for an asset.
-    /// </summary>
-    /// <returns>A delete result.</returns>
-    [HttpDelete("{adjunctId}")]
-    [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
-    [ProducesResponseType(404, Type = typeof(Error))]
-    public async Task<IActionResult> DeleteAdjunct(int customerId, int spaceId, string imageId, string adjunctId)
-    {
-        var deleteRequest = new DeleteAdjunct(adjunctId, new AssetId(customerId, spaceId, imageId));
-
-        return await HandleDelete(deleteRequest);
     }
 }

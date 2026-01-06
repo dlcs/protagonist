@@ -17,16 +17,14 @@ using Test.Helpers.Integration.Infrastructure;
 namespace API.Tests.Integration;
 
 [Trait("Category", "Integration")]
-[Collection(StorageCollection.CollectionName)]
+[Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
 public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly HttpClient httpClient;
     private readonly DlcsContext dbContext;
     
-    public AdjunctTests(StorageFixture storageFixture, ProtagonistAppFactory<Startup> factory)
+    public AdjunctTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
     {
-        var dbFixture = storageFixture.DbFixture;
-        
         httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
         dbContext = dbFixture.DbContext;
         dbFixture.CleanUp();
@@ -45,7 +43,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""id"": ""someAdjunctId"",
           ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""SeeAlso"",
+          ""iiifLink"": ""seeAlso"",
           ""mediaType"": ""a-mediaType"",
           ""label"": {""label"": [""value""]},
           ""language"": [""en""],
@@ -64,7 +62,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
-        adjunct.IIIFLink.Should().Be("SeeAlso");
+        adjunct.IIIFLink.Should().Be("seeAlso");
         adjunct.Label.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.AssetId.Should().BeNull();
@@ -89,7 +87,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""id"": ""someAdjunctId"",
           ""@type"": ""Image"",
           ""externalId"": ""an-adjunct"",
-          ""iiifLink"": ""SeeAlso"",
+          ""iiifLink"": ""seeAlso"",
           ""mediaType"": ""a-mediaType"",
           ""label"": {""label"": [""value""]},
           ""language"": [""en""],
@@ -122,7 +120,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""id"": ""someAdjunctId"",
           ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""SeeAlso"",
+          ""iiifLink"": ""seeAlso"",
           ""mediaType"": ""a-mediaType"",
           ""label"": {{""label"": [""value""]}},
           ""language"": [""en""],
@@ -138,7 +136,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
-        error.Detail.Should().Be("An adjunct called 'someAdjunctId' already exists");
+        error.Detail.Should().Be("An adjunct with id 'someAdjunctId' already exists");
     }
     
     [Fact]
@@ -163,7 +161,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
-        adjunct.IIIFLink.Should().Be("SeeAlso");
+        adjunct.IIIFLink.Should().Be("seeAlso");
     }
     
     [Fact]
@@ -200,7 +198,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task GetAdjunctS_RetrievesListOfAdjuncts()
+    public async Task GetAdjuncts_RetrievesListOfAdjuncts()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -227,7 +225,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task GetAdjunctS_RetrievesEmptyListOfAdjuncts_WhenNoAdjuncts()
+    public async Task GetAdjuncts_RetrievesEmptyListOfAdjuncts_WhenNoAdjuncts()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -248,7 +246,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task GetAdjunctS_RetrievesEmptyListOfAdjuncts_WhenNoAsset()
+    public async Task GetAdjuncts_Returns404_WhenNoAsset()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -259,10 +257,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(assetId.Customer).GetAsync(path);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var adjunct = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
-
-        adjunct.Members.Length.Should().Be(0);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
     
     [Fact]
@@ -278,7 +273,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""id"": ""someAdjunctId"",
           ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""SeeAlso"",
+          ""iiifLink"": ""seeAlso"",
           ""mediaType"": ""a-mediaType"",
           ""label"": {""label"": [""value""]},
           ""language"": [""en""],
@@ -310,7 +305,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""id"": ""someAdjunctId"",
           ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""SeeAlso"",
+          ""iiifLink"": ""seeAlso"",
           ""mediaType"": ""a-mediaType"",
           ""label"": {""label"": [""value""]},
           ""language"": [""en""],
@@ -329,7 +324,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
-        adjunct.IIIFLink.Should().Be("SeeAlso");
+        adjunct.IIIFLink.Should().Be("seeAlso");
         adjunct.Label.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.AssetId.Should().BeNull();
@@ -352,7 +347,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""id"": ""someAdjunctId"",
           ""@type"": ""Image"",
           ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""SeeAlso"",
+          ""iiifLink"": ""seeAlso"",
           ""mediaType"": ""a-mediaType"",
           ""label"": {""label"": [""value""]},
           ""language"": [""en""],
@@ -371,7 +366,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
-        adjunct.IIIFLink.Should().Be("SeeAlso");
+        adjunct.IIIFLink.Should().Be("seeAlso");
         adjunct.Label.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.AssetId.Should().BeNull();
@@ -386,7 +381,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task DeleteAdjunct_NothingHappens_WhenDoesNotExist()
+    public async Task DeleteAdjunct_Returns404_WhenDoesNotExist()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();

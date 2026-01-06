@@ -22,7 +22,7 @@ public class Adjunct
     public required IIIFLinkType IIIFLink { get; set; }
     
     /// <summary>
-    /// The asset this adjunct is associated with
+    /// The asset id this adjunct is associated with
     /// </summary>
     public required AssetId AssetId { get; set; }
     
@@ -47,7 +47,7 @@ public class Adjunct
     public string[]? Language { get; set; }
     
     /// <summary>
-    /// A fully-qualified URL external to the platform
+    /// A fully-qualified URL external to the platform where the adjunct is hosted
     /// </summary>
     public required Uri ExternalId { get; set; }
     

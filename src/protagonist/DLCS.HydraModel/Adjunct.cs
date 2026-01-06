@@ -57,7 +57,7 @@ public class Adjunct : DlcsResource
     [JsonProperty(Order = 17, PropertyName = "externalId")]
     public required string ExternalId { get; set; }
     
-    [RdfProperty(Description = "Where this adjunct is hosted publically.",
+    [RdfProperty(Description = "Where this adjunct is hosted publicly.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 18, PropertyName = "publicId")]
     public string? PublicId { get; set; }

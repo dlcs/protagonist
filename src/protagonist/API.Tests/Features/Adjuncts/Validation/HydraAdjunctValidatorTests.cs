@@ -15,7 +15,7 @@ public class HydraAdjunctValidatorTests
         {
             ExternalId = "https://localhost:2000/some-id",
             MediaType = "mediaType",
-            IIIFLink = "SeeAlso",
+            IIIFLink = "seeAlso",
             Type = "Image",
             Id = "https://localhost/customers/1/spaces/1/images/assetId/adjuncts/adjunctId",
         };
@@ -30,7 +30,7 @@ public class HydraAdjunctValidatorTests
         {
             ExternalId = "not-uri",
             MediaType = "mediaType",
-            IIIFLink = "SeeAlso",
+            IIIFLink = "seeAlso",
             Type = "Image"
         };
         var result = sut.TestValidate(adjunct);
@@ -45,7 +45,7 @@ public class HydraAdjunctValidatorTests
         {
             ExternalId = null,
             MediaType = "mediaType",
-            IIIFLink = "SeeAlso",
+            IIIFLink = "seeAlso",
             Type = "Image"
         };
         var result = sut.TestValidate(adjunct);
@@ -53,19 +53,21 @@ public class HydraAdjunctValidatorTests
             .WithErrorMessage("'externalId' is required and must be a well formed URI");
     }
     
-    [Fact]
-    public void IiifLink_NotValid()
+    [Theory]
+    [InlineData("SeeAlso")]
+    [InlineData("Invalid")]
+    public void IIIFLink_NotValid(string iiifLink)
     {
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
             MediaType = "mediaType",
-            IIIFLink = "Invalid",
+            IIIFLink = iiifLink,
             Type = "Image",
             ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.IIIFLink)
-            .WithErrorMessage("Valid values for 'iiifLink' are 'SeeAlso', 'Annotations' and 'Rendering'");
+            .WithErrorMessage("Valid values for 'iiifLink' are 'seeAlso', 'annotations', 'rendering'");
     }
     
     [Fact]
@@ -74,7 +76,7 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
             MediaType = "mediaType",
-            IIIFLink = "SeeAlso",
+            IIIFLink = "seeAlso",
             Type = "Image",
             Id = "https://localhost/customers/1/spaces/1/images/assetId/adjuncts/different",
             ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid"
@@ -85,7 +87,7 @@ public class HydraAdjunctValidatorTests
     }
     
     [Fact]
-    public void IiifLink_Null()
+    public void IIIFLink_Null()
     {
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
@@ -103,7 +105,7 @@ public class HydraAdjunctValidatorTests
     {
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
-            IIIFLink = "SeeAlso",
+            IIIFLink = "seeAlso",
             Type = "Image",
             ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid"
         };
@@ -118,7 +120,7 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", null)
         {
             MediaType = "mediaType",
-            IIIFLink = "SeeAlso",
+            IIIFLink = "seeAlso",
             Type = "Image",
             ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid"
         };
@@ -133,7 +135,7 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", null)
         {
             MediaType = "mediaType",
-            IIIFLink = "SeeAlso",
+            IIIFLink = "seeAlso",
             Type = null,
             ExternalId = "https://localhost/customers/1/spaces/1/images/assetId"
         };
