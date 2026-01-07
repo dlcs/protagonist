@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using DLCS.Core.Types;
 using IIIF.Presentation.V3.Strings;
 
@@ -71,7 +72,10 @@ public class Adjunct
 
 public enum IIIFLinkType
 {
+    [Description("seeAlso")]
     SeeAlso,
+    [Description("annotations")]
     Annotations,
+    [Description("rendering")]
     Rendering
 }

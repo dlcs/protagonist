@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
-using DLCS.Core.Strings;
-using DLCS.Core.Types;
+using DLCS.Core.Enum;
 using DLCS.Model.Assets;
 using FluentValidation;
 
@@ -12,9 +11,9 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
     {
         RuleFor(a => a.IIIFLink).NotEmpty()
             .WithMessage("'iiifLink' is required");
-        RuleFor(a => a.IIIFLink).Must(a => validIiifLinkTypes.Contains(a!))
+        RuleFor(a => a.IIIFLink).Must(a => validIIIFLinkTypes.Contains(a!))
             .When(a => a.IIIFLink != null)
-            .WithMessage($"Valid values for 'iiifLink' are '{string.Join("', '", validIiifLinkTypes)}'");
+            .WithMessage($"Valid values for 'iiifLink' are '{string.Join("', '", validIIIFLinkTypes)}'");
         
         RuleFor(a => a.MediaType).NotEmpty()
             .WithMessage("'mediaType' is required");
@@ -37,6 +36,6 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
             .WithMessage("'@type' is required");
     }
 
-    private readonly List<string> validIiifLinkTypes =
-        Enum.GetNames(typeof(IIIFLinkType)).Select(i => i.ToCamelCase(true)).ToList();
+    private readonly List<string> validIIIFLinkTypes =
+        Enum.GetValues<IIIFLinkType>().Select(a => a.GetDescription()).ToList();
 }

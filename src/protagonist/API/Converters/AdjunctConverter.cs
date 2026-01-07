@@ -1,11 +1,10 @@
 ﻿using System.Diagnostics;
 using API.Exceptions;
 using DLCS.Core.Collections;
-using DLCS.Core.Strings;
+using DLCS.Core.Enum;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using Adjunct = DLCS.Model.Assets.Adjunct;
-using LanguageMap = IIIF.Presentation.V3.Strings.LanguageMap;
 
 namespace API.Converters;
 
@@ -39,8 +38,7 @@ public static class AdjunctConverter
         
         Debug.Assert(adjunctId != null, "adjunctId != null");
 
-        LanguageMap? label = null;
-        label = hydraAdjunct.Label.ToLanguageMap();
+        var label = hydraAdjunct.Label.ToLanguageMap();
 
         return new Adjunct
         {
@@ -68,7 +66,7 @@ public static class AdjunctConverter
         {
             Type = adjunct.Type,
             MediaType = adjunct.MediaType,
-            IIIFLink = adjunct.IIIFLink.ToString().ToCamelCase(true),
+            IIIFLink = adjunct.IIIFLink.GetDescription(),
             AssetId = adjunct.AssetId.ToString(),
             Profile = adjunct.Profile,
             Label = adjunct.Label,

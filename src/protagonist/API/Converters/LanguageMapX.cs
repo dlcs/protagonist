@@ -7,16 +7,13 @@ public static class LanguageMapX
 {
     public static LanguageMap? ToLanguageMap(this Dictionary<string, List<string>>? dictionaryToConvert)
     {
-        LanguageMap? lm = null;
-
-        if (dictionaryToConvert != null)
+        if (dictionaryToConvert == null) return null;
+        
+        var lm = new LanguageMap();
+        
+        foreach (var keyValueToConvert in dictionaryToConvert)
         {
-            lm = new LanguageMap();
-            
-            foreach (var keyValueToConvert in dictionaryToConvert)
-            {
-                lm.Add(keyValueToConvert.Key, keyValueToConvert.Value);
-            }
+            lm.Add(keyValueToConvert.Key, keyValueToConvert.Value);
         }
 
         return lm;

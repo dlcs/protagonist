@@ -198,14 +198,14 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task GetAdjuncts_RetrievesListOfAdjuncts()
+    public async Task GetAllAdjuncts_RetrievesListOfAdjuncts_OrderedById()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
 
         await dbContext.Images.AddTestAsset(assetId); 
-        await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId", assetId);
         await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId2", assetId);
+        await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId", assetId);
         await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId3", assetId);
         await dbContext.SaveChangesAsync();
         
@@ -222,10 +222,16 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Members[0].Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+        adjunct.Members[1].Id.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId2");
+        adjunct.Members[2].Id.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId3");
     }
     
     [Fact]
-    public async Task GetAdjuncts_RetrievesEmptyListOfAdjuncts_WhenNoAdjuncts()
+    public async Task GetAllAdjuncts_RetrievesEmptyListOfAdjuncts_WhenNoAdjuncts()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -246,7 +252,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task GetAdjuncts_Returns404_WhenNoAsset()
+    public async Task GetAllAdjuncts_Returns404_WhenNoAsset()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
