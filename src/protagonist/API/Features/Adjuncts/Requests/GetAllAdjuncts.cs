@@ -17,12 +17,14 @@ public class GetAllAdjunctsHandler(DlcsContext dbContext) : IRequestHandler<GetA
 {
     public async Task<FetchEntityResult<IReadOnlyCollection<Adjunct>>> Handle(GetAllAdjuncts request, CancellationToken cancellationToken)
     {
-        var asset = await dbContext.Images.Include(i => i.Adjuncts)
-            .FirstOrDefaultAsync(i => i.Id == request.AssetId, cancellationToken);
+        var asset = await dbContext.Images
+            .AsNoTracking()
+            .Include(i => i.Adjuncts!.OrderBy(a => a.Id))
+            .Select(i => new Asset { Id = i.Id, Adjuncts = i.Adjuncts })
+            .SingleOrDefaultAsync(i => i.Id == request.AssetId, cancellationToken);
 
         if (asset == null) return FetchEntityResult<IReadOnlyCollection<Adjunct>>.NotFound();
 
-        return FetchEntityResult<IReadOnlyCollection<Adjunct>>.Success(
-            asset.Adjuncts?.OrderBy(a => a.Id).ToList() ?? []);
+        return FetchEntityResult<IReadOnlyCollection<Adjunct>>.Success(asset.Adjuncts ?? []);
     }
 }
