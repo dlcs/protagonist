@@ -112,6 +112,11 @@ public class Asset : ICloneable
     public List<BatchAsset>? BatchAssets { get; set; }
     
     /// <summary>
+    /// A list of adjuncts attached to this asset
+    /// </summary>
+    public List<Adjunct>? Adjuncts { get; set; }
+    
+    /// <summary>
     /// A list of manifest identifiers that this asset is associated with
     /// </summary>
     public List<string>? Manifests { get; set; }

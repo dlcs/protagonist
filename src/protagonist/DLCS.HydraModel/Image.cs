@@ -157,6 +157,11 @@ public class Image : DlcsResource
     [JsonProperty(Order = 20, PropertyName = "height")]
     public int? Height { get; set; }
     
+    [HydraLink(Description = "Adjuncts related to the asset",
+        Range = "vocab:Adjunct", ReadOnly = true, WriteOnly = false, SetManually = false)]
+    [JsonProperty(Order = 81, PropertyName = "adjuncts")]
+    public string? Adjuncts { get; set; }
+    
     // TODO - this is used by Wellcome DDS but is not documented.
     // I think it should be a hydra link property
     [HydraLink(Description = "Processing metadata - used by DDS to learn about transcode output time-based media",
