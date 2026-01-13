@@ -65,7 +65,6 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.IIIFLink.Should().Be("seeAlso");
         adjunct.Label.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
-        adjunct.AssetId.Should().BeNull();
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
         
@@ -366,7 +365,6 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.IIIFLink.Should().Be("seeAlso");
         adjunct.Label.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
-        adjunct.AssetId.Should().BeNull();
         adjunct.Created.Should().BeCloseTo(DateTime.UtcNow.AddDays(-2), TimeSpan.FromSeconds(5));
         adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
@@ -408,7 +406,6 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.IIIFLink.Should().Be("seeAlso");
         adjunct.Label.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
-        adjunct.AssetId.Should().BeNull();
         adjunct.Created.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
@@ -453,7 +450,6 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Id.Should().Be(expectedAdjunctId);
         adjunct.IIIFLink.Should().Be("annotations");
         adjunct.Label.First().Key.Should().Be("none");
-        adjunct.AssetId.Should().BeNull(); // TODO - can this go?
         adjunct.Created.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
@@ -499,7 +495,6 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
         adjunct.IIIFLink.Should().Be("annotations");
         adjunct.Label.First().Key.Should().Be("none");
-        adjunct.AssetId.Should().BeNull(); // TODO - can this go?
         adjunct.Created.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");

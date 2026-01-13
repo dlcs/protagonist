@@ -40,9 +40,6 @@ public class Adjunct : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 12, PropertyName = "iiifLink")]
     public string? IIIFLink { get; set; }
-    
-    [JsonIgnore]
-    public string? AssetId { get; set; }
 
     [RdfProperty(Description = "A schema or named set of functionality available from the resource.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]

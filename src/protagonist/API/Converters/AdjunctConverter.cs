@@ -67,7 +67,6 @@ public static class AdjunctConverter
             Type = adjunct.Type,
             MediaType = adjunct.MediaType,
             IIIFLink = adjunct.IIIFLink.GetDescription(),
-            AssetId = adjunct.AssetId.ToString(),
             Profile = adjunct.Profile,
             Label = adjunct.Label,
             Language = adjunct.Language,
