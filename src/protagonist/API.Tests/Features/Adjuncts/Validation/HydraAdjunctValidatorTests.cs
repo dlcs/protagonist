@@ -18,6 +18,7 @@ public class HydraAdjunctValidatorTests
             IIIFLink = "seeAlso",
             Type = "Image",
             Id = "https://localhost/customers/1/spaces/1/images/assetId/adjuncts/adjunctId",
+            Language = ["fra", "en"]
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldNotHaveAnyValidationErrors();
@@ -41,7 +42,7 @@ public class HydraAdjunctValidatorTests
     [Fact]
     public void ExternalId_Null()
     {
-        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
+        var adjunct = new Adjunct
         {
             ExternalId = null,
             MediaType = "mediaType",
@@ -58,7 +59,7 @@ public class HydraAdjunctValidatorTests
     [InlineData("Invalid")]
     public void IIIFLink_NotValid(string iiifLink)
     {
-        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
+        var adjunct = new Adjunct
         {
             MediaType = "mediaType",
             IIIFLink = iiifLink,
@@ -73,7 +74,7 @@ public class HydraAdjunctValidatorTests
     [Fact]
     public void IIIFLink_Null()
     {
-        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
+        var adjunct = new Adjunct
         {
             MediaType = "mediaType",
             Type = "Image",
@@ -87,7 +88,7 @@ public class HydraAdjunctValidatorTests
     [Fact]
     public void MediaType_Null()
     {
-        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
+        var adjunct = new Adjunct
         {
             IIIFLink = "seeAlso",
             Type = "Image",
@@ -101,7 +102,7 @@ public class HydraAdjunctValidatorTests
     [Fact]
     public void ModelId_Null_WhenCreate()
     {
-        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", null)
+        var adjunct = new Adjunct
         {
             MediaType = "mediaType",
             IIIFLink = "seeAlso",
@@ -116,7 +117,7 @@ public class HydraAdjunctValidatorTests
     [Fact]
     public void Type_Error_WhenNotSet()
     {
-        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", null)
+        var adjunct = new Adjunct
         {
             MediaType = "mediaType",
             IIIFLink = "seeAlso",
@@ -126,5 +127,21 @@ public class HydraAdjunctValidatorTests
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.Type)
             .WithErrorMessage("'@type' is required");
+    }
+    
+    [Fact]
+    public void Language_Error_WhenLongerThan3Chars()
+    {
+        var adjunct = new Adjunct
+        {
+            MediaType = "mediaType",
+            IIIFLink = "seeAlso",
+            Type = "AnnotationPage",
+            Language = ["en", "german"],
+            ExternalId = "https://localhost/customers/1/spaces/1/images/assetId"
+        };
+        var result = sut.TestValidate(adjunct);
+        result.ShouldHaveValidationErrorFor(r => r.Language)
+            .WithErrorMessage("All 'language' values must be 3 characters or less");
     }
 }

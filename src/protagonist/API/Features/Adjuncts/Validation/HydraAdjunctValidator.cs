@@ -30,6 +30,10 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
         RuleFor(a => a.Type)
             .NotEmpty()
             .WithMessage("'@type' is required");
+        
+        RuleForEach(a => a.Language)
+            .MaximumLength(3)
+            .WithMessage("All 'language' values must be 3 characters or less");
     }
 
     private readonly List<string> validIIIFLinkTypes =
