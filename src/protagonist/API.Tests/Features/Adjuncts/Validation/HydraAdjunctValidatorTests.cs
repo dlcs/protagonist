@@ -71,22 +71,6 @@ public class HydraAdjunctValidatorTests
     }
     
     [Fact]
-    public void Id_NotMatched()
-    {
-        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
-        {
-            MediaType = "mediaType",
-            IIIFLink = "seeAlso",
-            Type = "Image",
-            Id = "https://localhost/customers/1/spaces/1/images/assetId/adjuncts/different",
-            ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid"
-        };
-        var result = sut.TestValidate(adjunct);
-        result.ShouldHaveValidationErrorFor(r => r)
-            .WithErrorMessage("'id' and '@id' must have a matching adjunct identifier");
-    }
-    
-    [Fact]
     public void IIIFLink_Null()
     {
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")

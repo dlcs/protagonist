@@ -10,6 +10,13 @@ namespace DLCS.HydraModel;
     UriTemplate = "/customers/{0}/spaces/{1}/images/{2}/adjuncts/{3}")]
 public class Adjunct : DlcsResource
 {
+    /// <summary>
+    /// 0-param ctor used for deserialising
+    /// </summary>
+    public Adjunct()
+    {
+    }
+    
     public Adjunct(string baseUrl, int customerId, int space, string assetId, string modelId)
     {
         ModelId = modelId;

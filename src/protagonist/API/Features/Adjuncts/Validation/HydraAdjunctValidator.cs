@@ -23,10 +23,6 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
             .Must(a => Uri.IsWellFormedUriString(a, UriKind.Absolute))
             .WithMessage("'externalId' is required and must be a well formed URI");
         
-        RuleFor(a => a).Must(a => a.Id!.Split('/').Last() == a.ModelId)
-            .When(a => a.Id != null && a.ModelId != null)
-            .WithMessage("'id' and '@id' must have a matching adjunct identifier");
-        
         RuleFor(a => a.ModelId)
             .NotEmpty()
             .WithMessage("Adjunct identifier could not be found");

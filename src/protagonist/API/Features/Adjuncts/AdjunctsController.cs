@@ -85,9 +85,9 @@ public class AdjunctsController(
     public async Task<IActionResult> PutAdjunct(int customerId, int spaceId, string imageId, string adjunctId, [FromBody] Adjunct hydraAdjunct, 
         [FromServices] HydraAdjunctValidator validator, CancellationToken cancellationToken = default)
     {
-        if (hydraAdjunct.ModelId != null && adjunctId != hydraAdjunct.ModelId)
+        if (!string.IsNullOrEmpty(hydraAdjunct.ModelId) && adjunctId != hydraAdjunct.ModelId)
         {
-            return this.HydraProblem($"The adjunct id from the request URI does not match the 'id' from the request body",
+            return this.HydraProblem($"The adjunct id from the request URI ({adjunctId}) does not match the 'id' from the request body ({hydraAdjunct.ModelId})",
                 null, 400);
         }
         
