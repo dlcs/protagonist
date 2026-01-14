@@ -1,13 +1,15 @@
 ﻿using System.Collections.Generic;
+using API.Settings;
 using DLCS.Core.Enum;
 using DLCS.Model.Assets;
 using FluentValidation;
+using Microsoft.Extensions.Options;
 
 namespace API.Features.Adjuncts.Validation;
 
 public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
 {
-    public HydraAdjunctValidator()
+    public HydraAdjunctValidator(IOptions<ApiSettings> apiSettings)
     {
         RuleFor(a => a.IIIFLink).NotEmpty()
             .WithMessage("'iiifLink' is required");
@@ -26,6 +28,14 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
         RuleFor(a => a.ModelId)
             .NotEmpty()
             .WithMessage("Adjunct identifier could not be found");
+        
+        RuleFor(a => a.ModelId)
+            .MaximumLength(Adjunct.MaxIdLength)
+            .WithMessage($"Adjunct id must be {Adjunct.MaxIdLength} characters or less");
+        
+        RuleFor(a => a.ModelId)
+            .Must(a => !apiSettings.Value.DoesResourceIdContainRestrictedCharacters(a))
+            .WithMessage($"Adjunct id contains at least one of the following restricted characters. Invalid values are: {new string(apiSettings.Value.RestrictedResourceIdCharacters)}");
         
         RuleFor(a => a.Type)
             .NotEmpty()

@@ -1,12 +1,18 @@
 ﻿using API.Features.Adjuncts.Validation;
+using API.Settings;
 using DLCS.HydraModel;
 using FluentValidation.TestHelper;
+using Microsoft.Extensions.Options;
 
 namespace API.Tests.Features.Adjuncts.Validation;
 
 public class HydraAdjunctValidatorTests
 {
-    private readonly HydraAdjunctValidator sut = new();
+    private readonly HydraAdjunctValidator sut = new(Options.Create(
+        new ApiSettings
+        {
+            RestrictedResourceIdCharacterString = "\\ /"
+        }));
     
     [Fact]
     public void Valid_WhenAllValidatorsUsed()
@@ -17,7 +23,6 @@ public class HydraAdjunctValidatorTests
             MediaType = "mediaType",
             IIIFLink = "seeAlso",
             Type = "Image",
-            Id = "https://localhost/customers/1/spaces/1/images/assetId/adjuncts/adjunctId",
             Language = ["fra", "en"]
         };
         var result = sut.TestValidate(adjunct);
@@ -100,7 +105,7 @@ public class HydraAdjunctValidatorTests
     }
     
     [Fact]
-    public void ModelId_Null_WhenCreate()
+    public void ModelId_Null()
     {
         var adjunct = new Adjunct
         {
@@ -112,6 +117,41 @@ public class HydraAdjunctValidatorTests
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.ModelId)
             .WithErrorMessage("Adjunct identifier could not be found");
+    }
+    
+    [Theory]
+    [InlineData(" space")]
+    [InlineData("slash\\")]
+    [InlineData("other/slash")]
+    public void ModelId_InvalidCharacters(string modelId)
+    {
+        var adjunct = new Adjunct
+        {
+            MediaType = "mediaType",
+            IIIFLink = "seeAlso",
+            Type = "Image",
+            ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid",
+            ModelId = modelId
+        };
+        var result = sut.TestValidate(adjunct);
+        result.ShouldHaveValidationErrorFor(r => r.ModelId)
+            .WithErrorMessage("Adjunct id contains at least one of the following restricted characters. Invalid values are: \\ /");
+    }
+    
+    [Fact]
+    public void ModelId_TooLong()
+    {
+        var adjunct = new Adjunct
+        {
+            MediaType = "mediaType",
+            IIIFLink = "seeAlso",
+            Type = "Image",
+            ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid",
+            ModelId = new string('a', 201),
+        };
+        var result = sut.TestValidate(adjunct);
+        result.ShouldHaveValidationErrorFor(r => r.ModelId)
+            .WithErrorMessage("Adjunct id must be 200 characters or less");
     }
     
     [Fact]

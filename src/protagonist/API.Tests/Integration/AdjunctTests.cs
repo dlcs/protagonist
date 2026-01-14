@@ -74,7 +74,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task PostAdjunct_FailsToCreateExternalAdjunct_FailsValidation()
+    public async Task PostAdjunct_Returns400_FailsValidation()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -106,7 +106,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task PostAdjunct_FailsToCreateExternalAdjunct_IfIdMissing()
+    public async Task PostAdjunct_Returns400_IfIdMissing()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -137,7 +137,35 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task PostAdjunct_FailsToCreateAdjunct_WhenIdAlreadyExists()
+    public async Task PostAdjunct_Returns400_WhenIdInvalid()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        var newAdjunctJson = @"{
+          ""id"": ""model Id"",
+          ""@type"": ""Image"",
+          ""externalId"": ""https://some-location.com/an-adjunct"",
+          ""iiifLink"": ""seeAlso"",
+          ""mediaType"": ""a-mediaType"",
+          ""label"": {""label"": [""value""]},
+          ""language"": [""en""],
+        }";
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_Returns409_WhenIdAlreadyExists()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -297,7 +325,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task PutAdjunct_FailsToCreateAdjunct_WhenIdDiffersBetweenBodyAndUri()
+    public async Task PutAdjunct_Returns400_WhenIdDiffersBetweenBodyAndUri()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -328,6 +356,34 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         error.Detail.Should()
             .Be(
                 "The adjunct id from the request URI (differentId) does not match the 'id' from the request body (someAdjunctId)");
+    }
+
+    [Fact]
+    public async Task PutAdjunct_Returns400_WhenIdInvalid()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        var newAdjunctJson = @"{
+          ""id"": ""model Id"",
+          ""@type"": ""Image"",
+          ""externalId"": ""https://some-location.com/an-adjunct"",
+          ""iiifLink"": ""seeAlso"",
+          ""mediaType"": ""a-mediaType"",
+          ""label"": {""label"": [""value""]},
+          ""language"": [""en""],
+        }";
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts/differentId";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
     [Fact]
