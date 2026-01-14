@@ -170,7 +170,7 @@ public static class AssetPreparer
         {
             if (updateAsset.Id.Asset.IndexOfAny(disallowedCharacters) != -1)
             {
-                return AssetPreparationResult.Failure($"Asset id contains at least one of the following restricted characters. Valid values are: {new string(disallowedCharacters)}");
+                return AssetPreparationResult.Failure($"Asset id contains at least one of the following restricted characters. Invalid values are: {new string(disallowedCharacters)}");
             }
         }
         
