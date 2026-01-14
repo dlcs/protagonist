@@ -5,6 +5,11 @@ namespace API.Tests.Settings;
 
 public class ApiSettingsTests
 {
+    private static readonly ApiSettings InvalidCharacterSettings = new()
+    {
+        RestrictedResourceIdCharacterString = "\\  /"
+    };
+
     [Fact]
     public void ApiSettings_LegacySupportDisabledForAllCustomers_byDefault()
     {
@@ -40,10 +45,7 @@ public class ApiSettingsTests
         settings.CustomerOverrides.Add("2", new CustomerOverrideSettings()
         {
             LegacySupport = true,
-            NovelSpaces = new List<string>()
-            {
-                "1"
-            }
+            NovelSpaces = ["1"]
         });
         
         // Assert
@@ -66,7 +68,7 @@ public class ApiSettingsTests
     public void LegacyModeEnabledForSpace_LegacySupportEnabledForAllCustomers_WhenDefaultLegacySupportEnabled()
     {
         // Arrange
-        var settings = new ApiSettings()
+        var settings = new ApiSettings
         {
             DefaultLegacySupport = true
         };
@@ -84,10 +86,7 @@ public class ApiSettingsTests
         settings.CustomerOverrides.Add("2", new CustomerOverrideSettings()
         {
             LegacySupport = true,
-            NovelSpaces = new List<string>()
-            {
-                "1"
-            }
+            NovelSpaces = ["1"]
         });
         
         // Assert
@@ -100,7 +99,7 @@ public class ApiSettingsTests
     public void LegacyModeEnabledForSpace_LegacySupportDisabledForSpace_WhenDefaultLegacyEnabled()
     {
         // Arrange
-        var settings = new ApiSettings()
+        var settings = new ApiSettings
         {
             DefaultLegacySupport = true
         };
@@ -108,10 +107,7 @@ public class ApiSettingsTests
         settings.CustomerOverrides.Add("2", new CustomerOverrideSettings()
         {
             LegacySupport = true,
-            NovelSpaces = new List<string>()
-            {
-                "1"
-            }
+            NovelSpaces = ["1"]
         });
         
         settings.CustomerOverrides.Add("3", new CustomerOverrideSettings()
@@ -129,7 +125,7 @@ public class ApiSettingsTests
     public void LegacyModeEnabledForSpace_LegacySupportDisabledForCustomer_WhenDefaultLegacyEnabled()
     {
         // Arrange
-        var settings = new ApiSettings()
+        var settings = new ApiSettings
         {
             DefaultLegacySupport = true
         };
@@ -158,7 +154,7 @@ public class ApiSettingsTests
     public void LegacyModeEnabledForCustomer_LegacySupportDisabledForAllCustomers_WhenDefaultLegacySupportDisabled()
     {
         // Arrange
-        var settings = new ApiSettings()
+        var settings = new ApiSettings
         {
             DefaultLegacySupport = true
         };
@@ -176,10 +172,7 @@ public class ApiSettingsTests
         settings.CustomerOverrides.Add("2", new CustomerOverrideSettings()
         {
             LegacySupport = true,
-            NovelSpaces = new List<string>()
-            {
-                "1"
-            }
+            NovelSpaces = ["1"]
         });
         
         // Assert
@@ -190,7 +183,7 @@ public class ApiSettingsTests
     public void LegacyModeEnabledForCustomer_LegacySupportDisabledForCustomer_WhenDefaultLegacySupportEnabled()
     {
         // Arrange
-        var settings = new ApiSettings()
+        var settings = new ApiSettings
         {
             DefaultLegacySupport = true
         };
@@ -207,4 +200,33 @@ public class ApiSettingsTests
         // Assert
         settings.LegacyModeEnabledForCustomer(2).Should().BeFalse();
     }
+
+    [Fact]
+    public void DoesResourceIdContainRestrictedCharacters_ReturnsFalse_SettingEmpty()
+    {
+        var settings = new ApiSettings
+        {
+            RestrictedResourceIdCharacterString = ""
+        };
+        
+        settings.DoesResourceIdContainRestrictedCharacters("sp ace").Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(null)]
+    public void DoesResourceIdContainRestrictedCharacters_ReturnsFalse_WhenNullOrEmpty(string resourceId)
+        => InvalidCharacterSettings.DoesResourceIdContainRestrictedCharacters(resourceId).Should().BeFalse();
+    
+    [Fact]
+    public void DoesResourceIdContainRestrictedCharacters_ReturnsFalse_NoInvalidChars()
+        => InvalidCharacterSettings.DoesResourceIdContainRestrictedCharacters("resourceId").Should().BeFalse();
+    
+    [Theory]
+    [InlineData("sp ace")]
+    [InlineData("\\")]
+    [InlineData("/")]
+    [InlineData("foo/bar")]
+    public void DoesResourceIdContainRestrictedCharacters_ReturnsTrue_NoInvalidChars(string resourceId)
+        => InvalidCharacterSettings.DoesResourceIdContainRestrictedCharacters(resourceId).Should().BeTrue();
 }

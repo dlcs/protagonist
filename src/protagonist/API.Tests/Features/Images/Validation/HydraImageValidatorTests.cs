@@ -8,22 +8,14 @@ namespace API.Tests.Features.Images.Validation;
 
 public class HydraImageValidatorTests
 {
-    public HydraImageValidator GetSut()
-    {
-        var apiSettings = new ApiSettings()
-        {
-            RestrictedAssetIdCharacterString = "\\ "
-        };
-        return new HydraImageValidator();
-    }
-    
+    private HydraImageValidator sut => new();
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
     public void MediaType_NullOrEmpty_OnCreate(string mediaType)
     {
-        var sut = GetSut();
         var model = new Image { MediaType = mediaType };
         var result = sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(a => a.MediaType);
@@ -32,7 +24,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void Batch_Provided()
     {
-        var sut = GetSut();
         var model = new Image { Batch = "10" };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Batch);
@@ -41,7 +32,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void Width_Provided()
     {
-        var sut = GetSut();
         var model = new Image { Width = 10 };
         var result = sut.TestValidate(model);
         result
@@ -52,7 +42,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void Height_Provided()
     {
-        var sut = GetSut();
         var model = new Image { Height = 10 };
         var result = sut.TestValidate(model);
         result
@@ -63,7 +52,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void Duration_Provided()
     {
-        var sut = GetSut();
         var model = new Image { Duration = 10 };
         var result = sut.TestValidate(model);
         result
@@ -74,7 +62,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void Finished_Provided()
     {
-        var sut = GetSut();
         var model = new Image { Finished = DateTime.Today };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Finished);
@@ -83,7 +70,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void Created_Provided()
     {
-        var sut = GetSut();
         var model = new Image { Created = DateTime.Today };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Created);
@@ -92,7 +78,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_DeliveryChannelMissingChannel()
     {
-        var sut = GetSut();
         var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
@@ -111,7 +96,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_WhenNoneAndMoreDeliveryChannels()
     {
-        var sut = GetSut();
         var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
@@ -130,7 +114,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_WhenDefaultAndMoreDeliveryChannels()
     {
-        var sut = GetSut();
         var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
@@ -149,7 +132,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_NoValidationError_WhenDeliveryChannelsWithNoNone()
     {
-        var sut = GetSut();
         var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
@@ -168,7 +150,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_NoValidationError_WhenOnlyNone()
     {
-        var sut = GetSut();
         var model = new Image { DeliveryChannels = new[]
         {
             new DeliveryChannel()
@@ -195,7 +176,6 @@ public class HydraImageValidatorTests
     [InlineData("application/pdf", "none")]
     public void DeliveryChannel_NoValidationError_WhenChannelValidForMediaType(string mediaType, string channel)
     {
-        var sut = GetSut();
         var model = new Image { 
             MediaType = mediaType,
             DeliveryChannels = new[]
@@ -218,7 +198,6 @@ public class HydraImageValidatorTests
     [InlineData("application/pdf", "iiif-av")]
     public void DeliveryChannel_ValidationError_WhenWrongChannelForMediaType(string mediaType, string channel)
     {
-        var sut = GetSut();
         var model = new Image { 
             MediaType = mediaType,
             DeliveryChannels = new[]
@@ -235,7 +214,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_WhenEmpty_OnPatch()
     {
-        var sut = GetSut();
         var model = new Image
         {
             DeliveryChannels = Array.Empty<DeliveryChannel>()
@@ -248,7 +226,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void ImageOptimisationPolicy_ValidationError()
     {
-        var sut = GetSut();
         var model = new Image
         {
             ImageOptimisationPolicy = "some-iop-policy"
@@ -260,7 +237,6 @@ public class HydraImageValidatorTests
     [Fact]
     public void ThumbnailPolicy_ValidationError()
     {
-        var sut = GetSut();
         var model = new Image
         {
             ThumbnailPolicy = "some-tp-policy"
