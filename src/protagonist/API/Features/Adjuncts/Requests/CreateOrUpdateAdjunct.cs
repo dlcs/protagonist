@@ -48,7 +48,9 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
         }
         else
         {
+            adjunct.Created = DateTime.UtcNow;
             adjunct.Finished = DateTime.UtcNow;
+            
             await dbContext.Adjuncts.AddAsync(adjunct, cancellationToken);
         }
 
