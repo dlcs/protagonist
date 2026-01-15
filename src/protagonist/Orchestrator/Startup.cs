@@ -122,12 +122,13 @@ public class Startup
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
     {
+        DlcsContextConfiguration.TryRunMigrations(configuration, logger);
+        
         var applicationOptions = configuration.Get<OrchestratorSettings>();
         var pathBase = applicationOptions.PathBase;
-
+        
         if (env.IsDevelopment())
         {
-            DlcsContextConfiguration.TryRunMigrations(configuration, logger);
             app.UseDeveloperExceptionPage();
         }
 
