@@ -34,7 +34,7 @@ namespace DLCS.Repository.Migrations
             
             // This can't be modelled by EFCore, so instead we create manually
             // see https://github.com/npgsql/efcore.pg/issues/119
-            migrationBuilder.Sql($"CREATE UNIQUE INDEX \"{IndexName}\" ON \"Adjuncts\" (LOWER(\"Id\"));");
+            migrationBuilder.Sql($"CREATE UNIQUE INDEX \"{IndexName}\" ON \"Adjuncts\" (LOWER(\"Id\"), \"AssetId\");");
         }
 
         /// <inheritdoc />
