@@ -170,18 +170,18 @@ public class HydraAdjunctValidatorTests
     }
     
     [Fact]
-    public void Language_Error_WhenLongerThan3Chars()
+    public void Language_Error_TooLong()
     {
         var adjunct = new Adjunct
         {
             MediaType = "mediaType",
             IIIFLink = "seeAlso",
             Type = "AnnotationPage",
-            Language = ["en", "german"],
+            Language = ["en", "an overly long language string"],
             ExternalId = "https://localhost/customers/1/spaces/1/images/assetId"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.Language)
-            .WithErrorMessage("All 'language' values must be 3 characters or less");
+            .WithErrorMessage("All 'language' values must be 10 characters or less. e.g. ISO language codes, sub-codes or 'none'");
     }
 }
