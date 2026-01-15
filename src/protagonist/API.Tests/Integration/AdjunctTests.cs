@@ -589,6 +589,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""mediaType"": ""a-mediaType"",
           ""label"": {""label"": [""value""]},
           ""language"": [""en""],
+          ""size"": 1234,
         }";
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
@@ -610,6 +611,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
+        adjunct.Size.Should().Be(1234);
         
         response.Headers.Location.Should().Be(expectedAdjunctId);
         

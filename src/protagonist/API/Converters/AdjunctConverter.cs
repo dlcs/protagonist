@@ -11,7 +11,7 @@ namespace API.Converters;
 public static class AdjunctConverter
 {
     /// <summary>
-    /// This will create a DLCS.Model.Adjunct from a DLCS.HydraModel.Adjunct
+    /// This will create a DLCS <see cref="DLCS.Model.Assets.Adjunct"/> from a hydra <see cref="DLCS.HydraModel.Adjunct"/>
     /// </summary>
     /// <param name="hydraAdjunct">The incoming request</param>
     /// <param name="customerId">Required: an assertion of who this Asset belongs to</param>
@@ -20,7 +20,7 @@ public static class AdjunctConverter
     /// <param name="adjunctId">
     /// Optional: The potential id of the adjunct.
     /// If not supplied, will be determined from Hydra object.</param>
-    /// <returns>A DLCS model representation of the adjunct</returns>
+    /// <returns>A <see cref="DLCS.Model.Assets.Adjunct"/> representation of the adjunct</returns>
     public static Adjunct ToDlcsModel(this DLCS.HydraModel.Adjunct hydraAdjunct, int customerId, int spaceId,
         string assetId, string? adjunctId = null)
     {
@@ -28,17 +28,13 @@ public static class AdjunctConverter
         {
             adjunctId = hydraAdjunct.ModelId;
         }
-        
-        var enumParsed = Enum.TryParse(hydraAdjunct.IIIFLink, true, out IIIFLinkType iiifLink);
 
-        if (!enumParsed)
+        if (!Enum.TryParse(hydraAdjunct.IIIFLink, true, out IIIFLinkType iiifLink))
         {
-            throw new APIException("Hydra adjunct does iiifLink could not be parsed");
+            throw new APIException("Hydra adjunct 'iiifLink' could not be parsed");
         }
-        
-        Debug.Assert(adjunctId != null, "adjunctId != null");
 
-        var label = hydraAdjunct.Label.ToLanguageMap();
+        Debug.Assert(adjunctId != null, "adjunctId != null");
 
         return new Adjunct
         {
@@ -48,21 +44,21 @@ public static class AdjunctConverter
             IIIFLink = iiifLink,
             AssetId = new AssetId(customerId, spaceId, assetId),
             Profile = hydraAdjunct.Profile,
-            Label = label,
+            Label =  hydraAdjunct.Label.ToLanguageMap(),
             Language = hydraAdjunct.Language,
-            ExternalId = new Uri(hydraAdjunct.ExternalId)
+            ExternalId = new Uri(hydraAdjunct.ExternalId),
+            Size = hydraAdjunct.Size,
         };
     }
     
     /// <summary>
-    /// This will create a DLCS.HydraModel.Adjunct from a DLCS.Model.Adjunct
+    /// This will create a hydra <see cref="DLCS.HydraModel.Adjunct"/> from a DLCS <see cref="DLCS.Model.Assets.Adjunct"/> 
     /// </summary>
     /// <param name="adjunct">The DLCS adjunct to convert</param>
     /// <param name="urlRoots">The base address used to create FQDN paths</param>
-    /// <returns>A hydra model representation of the adjunct</returns>
-    public static DLCS.HydraModel.Adjunct ToHydra(this Adjunct adjunct, UrlRoots urlRoots)
-    {
-        return new DLCS.HydraModel.Adjunct(urlRoots.BaseUrl, adjunct.AssetId.Customer, adjunct.AssetId.Space, adjunct.AssetId.Asset, adjunct.Id)
+    /// <returns>A hydra <see cref="DLCS.HydraModel.Adjunct"/> representation of the adjunct</returns>
+    public static DLCS.HydraModel.Adjunct ToHydra(this Adjunct adjunct, UrlRoots urlRoots) 
+        => new(urlRoots.BaseUrl, adjunct.AssetId.Customer, adjunct.AssetId.Space, adjunct.AssetId.Asset, adjunct.Id)
         {
             Type = adjunct.Type,
             MediaType = adjunct.MediaType,
@@ -73,7 +69,7 @@ public static class AdjunctConverter
             ExternalId = adjunct.ExternalId.ToString(),
             PublicId = adjunct.ExternalId.ToString(),
             Created = adjunct.Created,
-            Finished = adjunct.Finished
+            Finished = adjunct.Finished,
+            Size = adjunct.Size,
         };
-    }
 }
