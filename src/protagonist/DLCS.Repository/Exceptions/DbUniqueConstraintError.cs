@@ -7,9 +7,8 @@ using Npgsql;
 namespace DLCS.Repository.Exceptions;
 
 /// <summary>
-/// Provides additional Postgres specific information about a 
-/// <see cref="DbUpdateException"/> thrown by EF Core.This describes 
-/// the case where the exception is a unique constraint violation.
+/// Provides additional Postgres specific information about a  <see cref="DbUpdateException"/> thrown by EF Core.
+/// This describes the case where the exception is a unique constraint violation.
 /// </summary>
 /// <param name="ColumnNames">The column names parsed from the constraint 
 /// name assuming the constraint follows the "IX_{Table}_{Column1}_..._{ColumnN}" naming convention.</param>
@@ -48,7 +47,7 @@ public record UniqueConstraintError(
     }
     
     /// <summary>
-    /// Check if error is for specified columnt
+    /// Check if error is for specified column
     /// </summary>
     public bool ForColumn(string columnName) => ColumnNames.Contains(columnName);
 }

@@ -48,17 +48,21 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
         }
         else
         {
-            adjunct.Created = DateTime.UtcNow;
             adjunct.Finished = DateTime.UtcNow;
-            
             await dbContext.Adjuncts.AddAsync(adjunct, cancellationToken);
         }
-        
+
         try
         {
             await dbContext.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateException ex) when (ex.GetDatabaseError() is UniqueConstraintError)
+        {
+            return ModifyEntityResult<Adjunct>.Failure(
+                $"Create failed. An adjunct with id '{adjunct.Id}' already exists",
+                WriteResult.Conflict);
+        }
+        catch (DbUpdateException ex)
         {
             return ModifyEntityResult<Adjunct>.Failure(
                 $"An adjunct with id '{adjunct.Id}' already exists",

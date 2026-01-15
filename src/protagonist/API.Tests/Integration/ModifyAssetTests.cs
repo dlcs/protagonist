@@ -2616,10 +2616,10 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = new AssetId(99, 1, nameof(Delete_RemovesAssetAndAssociatedEntities_FromDb));
-        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct("someAdjunctId");
         await dbContext.ImageLocations.AddTestImageLocation(assetId);
         await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 100L);
-        await dbContext.Adjuncts.AddTestAdjunct("someAdjunctId", assetId);
         var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
             sizeOfStored: 1000L, sizeOfThumbs: 1000L);
         var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
