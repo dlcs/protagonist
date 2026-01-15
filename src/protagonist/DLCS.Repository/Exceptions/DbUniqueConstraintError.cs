@@ -20,8 +20,8 @@ public record UniqueConstraintError(
     IReadOnlyList<string> ColumnNames,
     string? TableName,
     string? ConstraintName,
-    Exception Exception) : DbError(TableName, ConstraintName, Exception) {
-    
+    Exception Exception) : DbError(TableName, ConstraintName, Exception)
+{
     /// <summary>
     /// Creates a <see cref="UniqueConstraintError"/> from a <see cref="PostgresException"/>.
     /// </summary>
@@ -32,15 +32,15 @@ public record UniqueConstraintError(
         var constraintName = postgresException.ConstraintName;
         var tableName = postgresException.TableName;
        
-        var constrainPrefix = tableName != null ? $"IX_{tableName}_" : null;
+        var constraintPrefix = tableName != null ? $"IX_{tableName}_" : null;
 
         var columnNames = Array.Empty<string>();
         
-        if (constrainPrefix != null
+        if (constraintPrefix != null
             && constraintName != null
-            && constraintName.StartsWith(constrainPrefix, StringComparison.Ordinal))
+            && constraintName.StartsWith(constraintPrefix, StringComparison.Ordinal))
         {
-            columnNames = constraintName[constrainPrefix.Length..].Split('_');
+            columnNames = constraintName[constraintPrefix.Length..].Split('_');
         }
         
         return new UniqueConstraintError(columnNames, tableName, constraintName, postgresException);
