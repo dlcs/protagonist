@@ -191,7 +191,6 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
 
         // Assert
-        var x = await response.Content.ReadAsStringAsync();
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
@@ -230,6 +229,35 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
         error.Detail.Should().Be("Create failed. An adjunct with id 'someAdjunctId' already exists");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_Returns404_WhenAssetDoesNotExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        
+        const string newAdjunctJson = @"{
+          ""id"": ""adj123"",
+          ""@type"": ""Image"",
+          ""externalId"": ""https://some-location.com/an-adjunct"",
+          ""iiifLink"": ""seeAlso"",
+          ""mediaType"": ""a-mediaType"",
+          ""label"": {""label"": [""value""]},
+          ""language"": [""en""],
+        }";
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        
+        var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
+        error.Detail.Should().Be($"Asset with id '{assetId}' not found");
     }
     
     [Fact]
@@ -377,6 +405,34 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+    
+    [Fact]
+    public async Task PutAdjunct_Returns404_WhenAssetDoesNotExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        
+        const string newAdjunctJson = @"{
+          ""@type"": ""Image"",
+          ""externalId"": ""https://some-location.com/an-adjunct"",
+          ""iiifLink"": ""seeAlso"",
+          ""mediaType"": ""a-mediaType"",
+          ""label"": {""label"": [""value""]},
+          ""language"": [""en""],
+        }";
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts/foo";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        
+        var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
+        error.Detail.Should().Be($"Asset with id '{assetId}' not found");
     }
     
     [Fact]
