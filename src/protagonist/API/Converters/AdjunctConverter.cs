@@ -39,14 +39,14 @@ public static class AdjunctConverter
         return new Adjunct
         {
             Id = adjunctId,
-            Type = hydraAdjunct.Type,
+            Type = hydraAdjunct.Type!,
             MediaType = hydraAdjunct.MediaType!,
             IIIFLink = iiifLink,
             AssetId = new AssetId(customerId, spaceId, assetId),
             Profile = hydraAdjunct.Profile,
             Label =  hydraAdjunct.Label.ToLanguageMap(),
             Language = hydraAdjunct.Language,
-            ExternalId = new Uri(hydraAdjunct.ExternalId),
+            ExternalId = new Uri(hydraAdjunct.ExternalId!),
             Size = hydraAdjunct.Size,
         };
     }

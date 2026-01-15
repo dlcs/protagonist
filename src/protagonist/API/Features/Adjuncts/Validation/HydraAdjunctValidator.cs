@@ -21,7 +21,6 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
             .WithMessage("'mediaType' is required");
         
         RuleFor(a => a.ExternalId)
-            .NotEmpty()
             .Must(a => Uri.IsWellFormedUriString(a, UriKind.Absolute))
             .WithMessage("'externalId' is required and must be a well formed URI");
         

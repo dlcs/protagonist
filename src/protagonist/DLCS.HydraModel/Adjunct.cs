@@ -24,7 +24,7 @@ public class Adjunct : DlcsResource
     }
     
     [JsonProperty(Order = 3, PropertyName = "@type")]
-    public override required string Type { get; set; }
+    public override string? Type { get; set; }
     
     [RdfProperty(Description = "The identifier for the adjunct",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
@@ -59,7 +59,7 @@ public class Adjunct : DlcsResource
     [RdfProperty(Description = "A fully-qualified URL external to the platform.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 17, PropertyName = "externalId")]
-    public required string ExternalId { get; set; }
+    public string? ExternalId { get; set; }
     
     [RdfProperty(Description = "Where this adjunct is hosted publicly.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
@@ -74,10 +74,10 @@ public class Adjunct : DlcsResource
     [RdfProperty(Description = "When this adjunct was created.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 20, PropertyName = "created")]
-    public DateTime Created { get; set; }
+    public DateTime? Created { get; set; }
     
     [RdfProperty(Description = "When this adjunct last finished processing.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 22, PropertyName = "finished")]
-    public DateTime Finished { get; set; }
+    public DateTime? Finished { get; set; }
 }
