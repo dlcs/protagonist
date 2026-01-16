@@ -45,6 +45,7 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
             dbAdjunct.ExternalId = adjunct.ExternalId;
             dbAdjunct.Finished = DateTime.UtcNow;
             dbAdjunct.Size = adjunct.Size;
+            dbAdjunct.Type = adjunct.Type;
         }
         else
         {
