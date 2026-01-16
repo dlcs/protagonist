@@ -6,8 +6,8 @@ namespace API.Settings;
 
 public class ApiSettings
 {
-    private char[] restrictedAssetIdCharacters = Array.Empty<char>();
-    private string restrictedAssetIdCharacterString = "";
+    private char[] restrictedResourceIdCharacters = [];
+    private string restrictedResourceIdCharacterString = string.Empty;
     
     /// <summary>
     /// The base URI of DLCS to hand-off requests to.
@@ -83,20 +83,26 @@ public class ApiSettings
             : DefaultLegacySupport;
     
     /// <summary>
-    /// Characters that are not allowed in an asset id
+    /// Characters that are not allowed in resource ids (e.g. Adjunct and Asset)
     /// </summary>
-    public char[] RestrictedAssetIdCharacters => restrictedAssetIdCharacters;
+    public char[] RestrictedResourceIdCharacters => restrictedResourceIdCharacters;
 
     /// <summary>
-    /// A string of characters not allowed in an asset id
+    /// A string of characters not allowed in resource identifiers (e.g. Adjunct and Asset)
     /// </summary>
-    public string RestrictedAssetIdCharacterString
+    public string RestrictedResourceIdCharacterString
     {
-        get => restrictedAssetIdCharacterString;
+        get => restrictedResourceIdCharacterString;
         set
         {
-            restrictedAssetIdCharacterString = value;
-            restrictedAssetIdCharacters = restrictedAssetIdCharacterString.ToCharArray();
+            restrictedResourceIdCharacterString = value;
+            restrictedResourceIdCharacters = restrictedResourceIdCharacterString.ToCharArray();
         }
     }
+
+    /// <summary>
+    /// Check if the provided resourceId contains invalid characters
+    /// </summary>
+    public bool DoesResourceIdContainRestrictedCharacters(string? resourceId)
+        => !string.IsNullOrEmpty(resourceId) && resourceId.IndexOfAny(RestrictedResourceIdCharacters) != -1;
 }

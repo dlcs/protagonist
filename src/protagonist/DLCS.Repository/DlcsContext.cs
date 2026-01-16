@@ -707,10 +707,15 @@ public partial class DlcsContext : DbContext
         
         modelBuilder.Entity<Adjunct>(entity =>
         {
+            // NOTE - to allow case-sensitive writes but case-insensitive reads, use a unique constraint on LOWER(id).
+            // Ideally model with something like the following but that is not supported in EF, so added via migration
+            // see https://github.com/npgsql/efcore.pg/issues/119
+            // entity.HasIndex(a => a.Id.ToLower()).IsUnique();
+            
             entity.HasKey(a => new { a.Id, a.AssetId });
             
             entity.Property(a => a.Id)
-                .HasMaxLength(500);
+                .HasMaxLength(Adjunct.MaxIdLength);
             
             entity.Property(a => a.Label).HasColumnType("jsonb");
             entity.Property(a => a.Language)
@@ -725,10 +730,8 @@ public partial class DlcsContext : DbContext
                 .HasConversion(
                     i => i.GetDescription(),
                     i => i.GetEnumFromString<IIIFLinkType>(true));
+            
+            entity.Property(p => p.Created).HasDefaultValueSql("now()");
         });
-
-        OnModelCreatingPartial(modelBuilder);
     }
-
-    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

@@ -7,6 +7,8 @@ namespace DLCS.Model.Assets;
 
 public class Adjunct
 {
+    public const int MaxIdLength = 200;
+    
     /// <summary>
     /// Model id of the adjunct
     /// </summary>

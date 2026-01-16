@@ -23,9 +23,8 @@ public static class DbUpdateExceptionX
         {
             return postgresException.SqlState switch
             {
-                PostgresErrorCodes.UniqueViolation => UniqueConstraintError
-                    .FromPostgresException(postgresException),
-                //... Other error codes mapped to other error types.
+                PostgresErrorCodes.UniqueViolation => UniqueConstraintError.FromPostgresException(postgresException),
+                PostgresErrorCodes.ForeignKeyViolation => DbForeignKeyConstraintError.FromPostgresException(postgresException),
                 _ => new DbError(
                     postgresException.TableName,
                     postgresException.ConstraintName,

@@ -64,25 +64,32 @@ public static class DatabaseTestDataPopulation
         });
     }
     
-    public static ValueTask<EntityEntry<Adjunct>> AddTestAdjunct(this DbSet<Adjunct> adjuncts,
-        string id, AssetId assetId, string type = "Image", string mediaType = "image/jpg", IIIFLinkType iiifLinkType = IIIFLinkType.SeeAlso, 
+    public static ValueTask<EntityEntry<Asset>> WithTestAdjunct(
+        this ValueTask<EntityEntry<Asset>> asset,
+        string id, string type = "Image", string mediaType = "image/jpg",
+        IIIFLinkType iiifLinkType = IIIFLinkType.SeeAlso,
         string profile = null, LanguageMap label = null,
-        string[] language = null, string externalId = "https://someHost.com/someUri", DateTime? created = null, long? size = null)
-        => adjuncts.AddAsync(
-            new Adjunct
-            {
-                Id = id,
-                Type = type,
-                MediaType = mediaType,
-                IIIFLink = iiifLinkType,
-                AssetId = assetId,
-                Profile = profile,
-                Label = label,
-                Language = language,
-                ExternalId = new Uri(externalId),
-                Created = created ?? DateTime.UtcNow,
-                Size = size
-            });
+        string[] language = null, string externalId = "https://someHost.com/someUri", DateTime? created = null,
+        long? size = null)
+    {
+        asset.Result.Entity.Adjuncts ??= [];
+        asset.Result.Entity.Adjuncts.Add(new Adjunct
+        {
+            Id = id,
+            Type = type,
+            MediaType = mediaType,
+            IIIFLink = iiifLinkType,
+            AssetId = asset.Result.Entity.Id,
+            Profile = profile,
+            Label = label,
+            Language = language,
+            ExternalId = new Uri(externalId),
+            Created = created ?? DateTime.UtcNow,
+            Size = size
+        });
+
+        return asset;
+    }
 
     public static ValueTask<EntityEntry<AuthToken>> AddTestToken(this DbSet<AuthToken> authTokens,
         int customer = 99, int ttl = 100, DateTime? expires = null, string? sessionUserId = null,

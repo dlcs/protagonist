@@ -10,6 +10,13 @@ namespace DLCS.HydraModel;
     UriTemplate = "/customers/{0}/spaces/{1}/images/{2}/adjuncts/{3}")]
 public class Adjunct : DlcsResource
 {
+    /// <summary>
+    /// 0-param ctor used for deserialising
+    /// </summary>
+    public Adjunct()
+    {
+    }
+    
     public Adjunct(string baseUrl, int customerId, int space, string assetId, string modelId)
     {
         ModelId = modelId;
@@ -17,7 +24,7 @@ public class Adjunct : DlcsResource
     }
     
     [JsonProperty(Order = 3, PropertyName = "@type")]
-    public override required string Type { get; set; }
+    public override string? Type { get; set; }
     
     [RdfProperty(Description = "The identifier for the adjunct",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
@@ -33,9 +40,6 @@ public class Adjunct : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 12, PropertyName = "iiifLink")]
     public string? IIIFLink { get; set; }
-    
-    [JsonIgnore]
-    public string? AssetId { get; set; }
 
     [RdfProperty(Description = "A schema or named set of functionality available from the resource.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
@@ -55,7 +59,7 @@ public class Adjunct : DlcsResource
     [RdfProperty(Description = "A fully-qualified URL external to the platform.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 17, PropertyName = "externalId")]
-    public required string ExternalId { get; set; }
+    public string? ExternalId { get; set; }
     
     [RdfProperty(Description = "Where this adjunct is hosted publicly.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
@@ -70,10 +74,10 @@ public class Adjunct : DlcsResource
     [RdfProperty(Description = "When this adjunct was created.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 20, PropertyName = "created")]
-    public DateTime Created { get; set; }
+    public DateTime? Created { get; set; }
     
     [RdfProperty(Description = "When this adjunct last finished processing.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 22, PropertyName = "finished")]
-    public DateTime Finished { get; set; }
+    public DateTime? Finished { get; set; }
 }

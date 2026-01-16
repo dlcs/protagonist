@@ -94,7 +94,7 @@ public class AssetProcessor
             var existingAsset = assetFromDatabase?.Clone();
             var assetPreparationResult =
                 AssetPreparer.PrepareAssetForUpsert(assetFromDatabase, assetBeforeProcessing.Asset, false, isBatchUpdate,
-                    settings.RestrictedAssetIdCharacters);
+                    settings.RestrictedResourceIdCharacters);
 
             if (!assetPreparationResult.Success)
             {

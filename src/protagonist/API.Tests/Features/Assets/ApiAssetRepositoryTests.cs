@@ -304,7 +304,7 @@ public class ApiAssetRepositoryTests
     
         var result = AssetPreparer.PrepareAssetForUpsert(null, newAsset, false, false, new []{' '});
         result.Success.Should().BeFalse();
-        result.ErrorMessage.Should().Be("Asset id contains at least one of the following restricted characters. Valid values are:  ");
+        result.ErrorMessage.Should().Be("Asset id contains at least one of the following restricted characters. Invalid values are:  ");
     }
 
     [Fact]
