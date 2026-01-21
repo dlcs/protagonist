@@ -10,6 +10,7 @@ using DLCS.Web.Requests;
 using IIIF;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.IIIF.Manifests;
@@ -21,15 +22,8 @@ namespace Orchestrator.Features.Manifests;
 /// <summary>
 /// Methods for generating IIIF results from NamedQueries
 /// </summary>
-public class IIIFNamedQueryProjector
+public class IIIFNamedQueryProjector(IIIFManifestBuilder manifestBuilder, ILogger<IIIFNamedQueryProjector> logger)
 {
-    private readonly IIIFManifestBuilder manifestBuilder;
-
-    public IIIFNamedQueryProjector(IIIFManifestBuilder manifestBuilder) 
-    {
-        this.manifestBuilder = manifestBuilder;
-    }
-
     /// <summary>
     /// Project NamedQueryResult to IIIF presentation object
     /// </summary>
@@ -43,7 +37,11 @@ public class IIIFNamedQueryProjector
             .IncludeRelationsForProjections()
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
-        if (assets.Count == 0) return null;
+        if (assets.Count == 0)
+        {
+            logger.LogDebug("No assets found that match NQ parameters");
+            return null;
+        }
 
         var orderedImages = NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery).ToList();
 
