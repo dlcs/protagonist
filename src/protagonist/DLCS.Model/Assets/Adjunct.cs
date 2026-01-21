@@ -72,6 +72,9 @@ public class Adjunct
     public Asset Asset { get; set; } = null!;
 }
 
+/// <summary>
+/// The type of linking property to use for adjunct. Determines how this is output on Manifest.
+/// </summary>
 public enum IIIFLinkType
 {
     [Description("seeAlso")]

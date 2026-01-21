@@ -40,7 +40,7 @@ public class IIIFNamedQueryProjector
         var parsedNamedQuery = namedQueryResult.ParsedQuery.ThrowIfNull(nameof(request.Query))!;
 
         var assets = await namedQueryResult.Results
-            .IncludeRelevantMetadata()
+            .IncludeRelationsForProjections()
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
         if (assets.Count == 0) return null;
