@@ -97,9 +97,16 @@ From documentation:
 
 `maxWidth` applies to _all_ requests regardless of the region. It is not possible to make a request larger than this size, regardless of any other image property.
 
-The available values are:
-* `<= 0`: Orchestrator won't block requests for sizes that are larger than this. Restrictions may be applied by the downstream image server but from Orchestrator perspective it won't attempt to validate/restrict sizes.
-* `> 1`: Orchestrator will check _all_ incoming size requests and will reject if they exceed this value. This may require looking up image dimensions and calculating resulting size (e.g. for `max`, `^max`, `pct:n` and `^pct:n` size parameters). Engine will use to determine which thumbnails to generate.
+The handling of `maxWidth` is the same regardless of the image's `maxWidth`. If the image has a value `> 0` then that specific value is used, falling back to the system-default.
+
+Orchestrator will check _all_ incoming image requests and will reject if they exceed the `maxWidth`. This may require looking up image dimensions and calculating resulting size (e.g. for `max`, `^max`, `pct:n` and `^pct:n` size parameters). Engine will use to determine which thumbnails to generate.
+
+> [!CAUTION]
+> The system-default `maxWidth` in Orchestrator will need to roughly align with the downstream image-server, e.g. `MAX_CVT` for IIPImage or `max_pixels` in Cantaloupe.
+>
+> This affords a layer of protection to prevent Orchestrator forwarding requests that could overwhelm downstream image-servers, with the additional benefit that it could avoid unnecessary orchestrations.
+>
+> We could remove the equivalent setting from downstream image-server and allow Orchestrator to manage the restriction alone but it still seems a safe option to maintain the 2nd layer of protection.
 
 #### [`openFullMax`](https://deploy-preview-2--dlcs-docs.netlify.app/api-doc/asset#openfullmax)
 
@@ -127,13 +134,13 @@ The below table outlines the different permutations and their effect on request 
 
 | `maxWidth` | `openFullMax` | `role` | Request Type                              | Result                         | Description                                   | Notes                                                                              |
 | ---------- | ------------- | ------ | ----------------------------------------- | ------------------------------ | --------------------------------------------- | ---------------------------------------------------------------------------------- |
-| 0          | 0             | `null` | *any*                                     | 200                            | No restrictions, all available                |                                                                                    |
+| 0          | 0             | `null` | *any*                                     | 200                            | No restrictions, all available                | system-default `maxWidth` still applies                                            |
 | 0          | 0             | *any*  | *any*                                     | 200 if user has role, else 401 | No sizes/regions available to anonymous       |                                                                                    |
 | 700        | 0             | `null` | Any region, size <= 700                   | 200                            | Any size <= `maxWidth` is available           |                                                                                    |
 | 700        | 0             | *any*  | Any region, size <= 700                   | 200 if user has role, else 401 | No sizes/regions available to anonymous       |                                                                                    |
 | 700        | 0             | `null` | Any region, size > 700                    | 401                            | No size > `maxWidth` is available             | `maxWidth` applied under all circumstances                                         |
 | 700        | 0             | *any*  | Any region, size > 700                    | 401                            | No size > `maxWidth` is available             | `maxWidth` applied under all circumstances                                         |
-| 0          | 400           | `null` | *any*                                     | 200                            | No restrictions, all available                | `openFullMax` ignored as no `role`                                                 |
+| 0          | 400           | `null` | *any*                                     | 200                            | No restrictions, all available                | `openFullMax` ignored as no `role`, system-default `maxWidth` still applies        |
 | 0          | 400           | *any*  | `/full/` region, size <= 400              | 200                            | `full` <= `openFullMax` available anonymously | Available to all under `openFullMax`                                               |
 | 0          | 400           | *any*  | `/full/` region, size > 400               | 200 if user has role, else 401 | `full` > `openFullMax`so need `role` to view  |                                                                                    |
 | 0          | 400           | *any*  | non-`/full/` region, any size             | 200 if user has role, else 401 | Non `/full/` so need `role` to view           |                                                                                    |
