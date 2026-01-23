@@ -97,9 +97,13 @@ From documentation:
 
 `maxWidth` applies to _all_ requests regardless of the region. It is not possible to make a request larger than this size, regardless of any other image property.
 
-The handling of `maxWidth` is the same regardless of the image's `maxWidth`. If the image has a value `> 0` then that specific value is used, falling back to the system-default.
+The handling of `maxWidth` is the same regardless of the image's `maxWidth`. If the image has a value `> 0` then that specific value is used, falling back to the system-default. 
+
+Attempting to set an image-specific `maxWidth` that exceeds the system-default will result in a 400|BadRequest. 
 
 Orchestrator will check _all_ incoming image requests and will reject if they exceed the `maxWidth`. This may require looking up image dimensions and calculating resulting size (e.g. for `max`, `^max`, `pct:n` and `^pct:n` size parameters). Engine will use to determine which thumbnails to generate.
+
+The calculated `maxWidth` value will be included on all info.json files. If `maxHeight` or `maxArea` is set by image-server this will be overridden.
 
 > [!CAUTION]
 > The system-default `maxWidth` in Orchestrator will need to roughly align with the downstream image-server, e.g. `MAX_CVT` for IIPImage or `max_pixels` in Cantaloupe.
@@ -214,3 +218,5 @@ This will allow us to to a safe rolling deployment. We can follow up with a migr
 The initial migration to add the new columns will need to migrate data, as well as changing schema. We must not break any existing behaviour.
 
 We will continue accepting `maxUnauthorised` in API payloads but these will be mapped to `maxWidth` and/or `openFullMax` to maintain current behaviour as above.
+
+All info.json files will need to be regenerated.
