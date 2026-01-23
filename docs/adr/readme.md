@@ -10,3 +10,4 @@
 8. [In-house Image Server](0007-inhouse-image-server.md)
 9. [ElasticTranscoder Replacement](0008-et-replacement.md)
 10. [Engine Use Appetiser for Thumbs](0009-engine-appetiser-thumbs.md)
+11. [Replace `maxUnauthorised`](0010-replace-maxunauthorised.md)
