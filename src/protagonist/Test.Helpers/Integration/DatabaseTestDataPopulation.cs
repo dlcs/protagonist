@@ -66,7 +66,7 @@ public static class DatabaseTestDataPopulation
     
     public static ValueTask<EntityEntry<Asset>> WithTestAdjunct(
         this ValueTask<EntityEntry<Asset>> asset,
-        string id, string type = "Image", string mediaType = "image/jpg",
+        string id, string type = "Image", string mediaType = "image/jpeg",
         IIIFLinkType iiifLinkType = IIIFLinkType.SeeAlso,
         string profile = null, LanguageMap label = null,
         string[] language = null, string externalId = "https://someHost.com/someUri", DateTime? created = null,

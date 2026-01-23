@@ -209,6 +209,8 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         {
             canvas.Thumbnail = thumbnail.AsListOf<ExternalResource>();
         }
+
+        AddAdjunctsToCanvas(canvas, asset);
         
         return new AssetCanvas(canvas, additionalContexts);
     }
@@ -268,7 +270,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     {
         logger.LogTrace("{CanvasId} is timebased, processing", canvas.Id);
         var canvasId = canvas.Id;
-        var transcodes = asset.AssetApplicationMetadata.GetTranscodeMetadata(false);
+        var transcodes = asset.AssetApplicationMetadata.GetTranscodeMetadata();
         
         if (transcodes.IsNullOrEmpty())
         {
@@ -480,5 +482,47 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             .Cast<IService>()
             .ToList();
         return accessServices;
+    }
+    
+    private void AddAdjunctsToCanvas(Canvas canvas, Asset asset)
+    {
+        var adjuncts = asset.Adjuncts ?? Enumerable.Empty<Adjunct>();
+        
+        foreach (var adjunct in adjuncts)
+        {
+            logger.LogTrace("Adding adjunct {AdjunctId} to {CanvasId}", adjunct.Id, canvas.Id);
+            switch (adjunct.IIIFLink)
+            {
+                case IIIFLinkType.SeeAlso:
+                    canvas.SeeAlso ??= [];
+                    canvas.SeeAlso.Add(CreateExternalResource(adjunct));
+                    break;
+                case IIIFLinkType.Annotations:
+                    canvas.Annotations ??= [];
+                    canvas.Annotations.Add(new AnnotationPage
+                    {
+                        Id = adjunct.ExternalId.ToString(),
+                        Label = adjunct.Label,
+                    });
+                    break;
+                case IIIFLinkType.Rendering:
+                    canvas.Rendering ??= [];
+                    canvas.Rendering.Add(CreateExternalResource(adjunct));
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(adjunct.IIIFLink), adjunct.IIIFLink,
+                        "IIIFLink type not supported");
+            }
+        }
+
+        // "rendering" and "seeAlso" are ExternalResources
+        ExternalResource CreateExternalResource(Adjunct adjunct) => new(adjunct.Type)
+        {
+            Id = adjunct.ExternalId.ToString(),
+            Format = adjunct.MediaType,
+            Profile = adjunct.Profile,
+            Label = adjunct.Label,
+            Language = adjunct.Language?.ToList(),
+        };
     }
 }

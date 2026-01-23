@@ -24,27 +24,28 @@ public class AssetQueryableXTests
     }
     
     [Fact]
-    public async Task IncludeRelevantMetadata_HandlesNoRelatedData()
+    public async Task IncludeRelationsForProjections_HandlesNoRelatedData()
     {
         var assetId = AssetIdGenerator.GetAssetId();
         await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
         
-        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelevantMetadata().SingleAsync();
+        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelationsForProjections().SingleAsync();
 
         asset.Should().NotBeNull("Asset returned despite having no related data");
         asset.AssetApplicationMetadata.Should().BeNullOrEmpty();
         asset.ImageDeliveryChannels.Should().BeNullOrEmpty();
+        asset.Adjuncts.Should().BeNullOrEmpty();
     }
     
     [Fact]
-    public async Task IncludeRelevantMetadata_ReturnsRelatedThumbs()
+    public async Task IncludeRelationsForProjections_ReturnsRelatedThumbs()
     {
         var assetId = AssetIdGenerator.GetAssetId();
         await dbContext.Images.AddTestAsset(assetId).WithTestThumbnailMetadata().WithTestDeliveryChannel("iiif-img");
         await dbContext.SaveChangesAsync();
         
-        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelevantMetadata().SingleAsync();
+        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelationsForProjections().SingleAsync();
 
         asset.Should().NotBeNull();
         asset.AssetApplicationMetadata.Should().HaveCount(1)
@@ -53,7 +54,7 @@ public class AssetQueryableXTests
     }
     
     [Fact]
-    public async Task IncludeRelevantMetadata_ReturnsRelatedTranscodes()
+    public async Task IncludeRelationsForProjections_ReturnsRelatedTranscodes()
     {
         var assetId = AssetIdGenerator.GetAssetId();
         var fakeTranscodes = new List<AVTranscode>
@@ -63,7 +64,7 @@ public class AssetQueryableXTests
         (await dbContext.Images.AddTestAsset(assetId)).Entity.WithTestTranscodeMetadata(fakeTranscodes);
         await dbContext.SaveChangesAsync();
         
-        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelevantMetadata().SingleAsync();
+        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelationsForProjections().SingleAsync();
 
         asset.Should().NotBeNull();
         asset.AssetApplicationMetadata.Should().HaveCount(1)
@@ -71,7 +72,7 @@ public class AssetQueryableXTests
     }
 
     [Fact]
-    public async Task IncludeRelevantMetadata_ReturnsThumbsAndTranscodes()
+    public async Task IncludeRelationsForProjections_ReturnsThumbsAndTranscodes()
     {
         var assetId = AssetIdGenerator.GetAssetId();
         var fakeTranscodes = new List<AVTranscode>
@@ -83,7 +84,7 @@ public class AssetQueryableXTests
         await dbContext.SaveChangesAsync();
         
         var asset = await dbContext.Images.Where(i => i.Id == assetId)
-            .IncludeRelevantMetadata()
+            .IncludeRelationsForProjections()
             .SingleAsync();
 
         asset.Should().NotBeNull();
@@ -91,6 +92,24 @@ public class AssetQueryableXTests
         asset.AssetApplicationMetadata.Should().ContainSingle(m => m.MetadataType == "ThumbSizes");
         asset.AssetApplicationMetadata.Should().ContainSingle(m => m.MetadataType == "AVTranscodes");
         asset.ImageDeliveryChannels.Should().HaveCount(1);
+    }
+    
+    [Fact]
+    public async Task IncludeRelationsForProjections_ReturnsAdjuncts()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string adjuntId = "ekki mukk";
+        await dbContext.Images
+            .AddTestAsset(assetId)
+            .WithTestThumbnailMetadata()
+            .WithTestDeliveryChannel("iiif-img")
+            .WithTestAdjunct(adjuntId);
+        await dbContext.SaveChangesAsync();
+        
+        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelationsForProjections().SingleAsync();
+
+        asset.Should().NotBeNull();
+        asset.Adjuncts.Should().ContainSingle(a => a.Id == adjuntId);
     }
 }
 

@@ -57,7 +57,8 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-nothumbs"), num1: 3, ref1: "my-ref",
             maxUnauthorised: 10, roles: "default")
             .WithTestThumbnailMetadata()
-            .WithTestDeliveryChannel(AssetDeliveryChannels.Image);
+            .WithTestDeliveryChannel(AssetDeliveryChannels.Image)
+            .WithTestAdjunct("test-adjunct", externalId: "https://example.com/see-also-1");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/not-for-delivery"), num1: 4, ref1: "my-ref",
             notForDelivery: true)
             .WithTestThumbnailMetadata()
@@ -371,6 +372,41 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         {
             token["id"].Value<string>().Should().Contain(expectedOrder[count++]);
         }
+    }
+    
+    [Fact]
+    public async Task Get_ReturnsV3ManifestWithCorrectAdjuncts()
+    {
+        // Arrange
+        const string path = "iiif-resource/v3/99/test-named-query/my-ref/1";
+        const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/presentation/3/context.json\"";
+        
+        // Act
+        var response = await httpClient.GetAsync(path);
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.Vary.Should().Contain("Accept");
+        response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
+        
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        manifest.Items.Should().HaveCount(3);
+
+        bool checkedSeeAlso = false;
+        foreach (var canvas in manifest.Items!)
+        {
+            if (canvas.Id.Contains("matching-nothumbs"))
+            {
+                checkedSeeAlso = true;
+                canvas.SeeAlso.Should().ContainSingle(sa => sa.Id == "https://example.com/see-also-1");
+            }
+            else
+            {
+                canvas.SeeAlso.Should().BeNull();
+            }
+        }
+
+        checkedSeeAlso.Should().BeTrue("No seeAlso checked in test, verify test data");
     }
     
     [Fact]

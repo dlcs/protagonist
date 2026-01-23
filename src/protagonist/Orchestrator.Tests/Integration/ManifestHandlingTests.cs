@@ -9,6 +9,7 @@ using IIIF.ImageApi.V2;
 using IIIF.ImageApi.V3;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
+using IIIF.Presentation.V3.Strings;
 using IIIF.Serialisation;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
@@ -793,5 +794,67 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         paintable.Service.OfType<ImageService3>().Single().Service.Should()
             .ContainSingle(s => s is AuthProbeService2 && s.Id.Contains(id.ToString()));
         paintable.Service.OfType<AuthProbeService2>().Single().Id.Should().Contain(id.ToString());
+    }
+
+    [Fact]
+    public async Task Get_V3ManifestWithAdjuncts_OutputsAdjunctsInCorrectLocation()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images
+            .AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels)
+            .WithTestAdjunct("seeAlso1", type: "Dataset", mediaType: "text/xml", iiifLinkType: IIIFLinkType.SeeAlso,
+                profile: "http://www.loc.gov/standards/alto/v3/alto.xsd", label: new LanguageMap("en", "METS-ALTO XML"),
+                externalId: "https://mets.example/1", language: ["en-GB"])
+            .WithTestAdjunct("anno1", type: "Ignored", mediaType: "text/ignored",
+                iiifLinkType: IIIFLinkType.Annotations, label: new LanguageMap("en", "Line-level annos"),
+                externalId: "https://mets.example/w3c", language: ["ignored"])
+            .WithTestAdjunct("rendering1", type: "Text", mediaType: "application/pdf", iiifLinkType: IIIFLinkType.Rendering,
+                label: new LanguageMap("none", "PDF of image"), externalId: "https://pdf.example/1", language: ["fr"])
+            .WithTestAdjunct("seeAlso2", type: "Text", mediaType: "text/xml", iiifLinkType: IIIFLinkType.SeeAlso,
+                externalId: "https://other.example/2");
+        
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        List<AnnotationPage> expectedAnnos =
+        [
+            new() { Id = "https://mets.example/w3c", Label = new LanguageMap("en", "Line-level annos") }
+        ];
+
+        List<ExternalResource> expectedSeeAlso =
+        [
+            new("Dataset")
+            {
+                Id = "https://mets.example/1", Label = new LanguageMap("en", "METS-ALTO XML"),
+                Profile = "http://www.loc.gov/standards/alto/v3/alto.xsd", Format = "text/xml",
+                Language = ["en-GB"]
+            },
+            new("Text")
+            {
+                Id = "https://other.example/2", Format = "text/xml"
+            },
+        ];
+
+        List<ExternalResource> expectedRendering =
+        [
+            new("Text")
+            {
+                Id = "https://pdf.example/1", Label = new LanguageMap("none", "PDF of image"),
+                Format = "application/pdf", Language = ["fr"]
+            },
+        ];
+
+        var path = $"iiif-manifest/v3/{id}";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        var canvas = manifest.Items!.Single();
+        
+        canvas.SeeAlso.Should().BeEquivalentTo(expectedSeeAlso);
+        canvas.Rendering.Should().BeEquivalentTo(expectedRendering);
+        canvas.Annotations.Should().BeEquivalentTo(expectedAnnos);
     }
 }
