@@ -23,5 +23,5 @@ public static class AssetQueryableX
                     md.MetadataType == AssetApplicationMetadataTypes.AVTranscodes))
             .Include(a => a.ImageDeliveryChannels)
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-            .Include(a => a.Adjuncts!.Where(adj => adj.ExternalId != null));
+            .Include(a => a.Adjuncts!.Where(adj => adj.ExternalId != null).OrderBy(ad => ad.Id));
 }

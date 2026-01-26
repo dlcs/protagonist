@@ -98,18 +98,23 @@ public class AssetQueryableXTests
     public async Task IncludeRelationsForProjections_ReturnsAdjuncts()
     {
         var assetId = AssetIdGenerator.GetAssetId();
-        const string adjuntId = "ekki mukk";
+        const string middleAlphaAdjunctId = "ekki mukk";
+        const string lowestAlphaAdjunctId = "kebab";
+        const string highestAlphaAdjunctId = "zombie";
         await dbContext.Images
             .AddTestAsset(assetId)
             .WithTestThumbnailMetadata()
             .WithTestDeliveryChannel("iiif-img")
-            .WithTestAdjunct(adjuntId);
+            .WithTestAdjunct(highestAlphaAdjunctId)
+            .WithTestAdjunct(lowestAlphaAdjunctId)
+            .WithTestAdjunct(middleAlphaAdjunctId);
         await dbContext.SaveChangesAsync();
         
         var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelationsForProjections().SingleAsync();
 
         asset.Should().NotBeNull();
-        asset.Adjuncts.Should().ContainSingle(a => a.Id == adjuntId);
+        asset.Adjuncts.Should().HaveCount(3);
+        asset.Adjuncts.Should().BeInAscendingOrder(a => a.Id);
     }
 }
 
