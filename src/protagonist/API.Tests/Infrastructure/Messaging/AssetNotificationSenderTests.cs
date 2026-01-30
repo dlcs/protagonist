@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using API.Infrastructure.Messaging;
@@ -125,7 +126,18 @@ public class AssetNotificationSenderTests
                     Id = 1234,
                     Channel = AssetDeliveryChannels.Image
                 }
-            }]
+            }],
+            Adjuncts = [
+                new Adjunct
+                {
+                    Id = "someAdjunctId",
+                    MediaType = "image/jpeg",
+                    IIIFLink = IIIFLinkType.SeeAlso,
+                    Type = "Image",
+                    AssetId = new AssetId(1, 2, "foo"),
+                    ExternalId = new Uri("https://somewhere/somePath")
+                }
+            ]
         };
 
         var assetModifiedRecord = AssetModificationRecord.Delete(asset, ImageCacheType.Cdn);
@@ -150,6 +162,7 @@ public class AssetNotificationSenderTests
         deleted.BatchAssets.Should().BeNull("BatchAsset ignored");
         deleted.ImageOptimisationPolicy.Should().BeNull("ImageOptimisationPolicy ignored");
         deleted.ThumbnailPolicy.Should().BeNull("ThumbnailPolicy ignored");
+        deleted.Adjuncts.Should().BeNull("Adjuncts ignored");
         deleted.ImageDeliveryChannels.Should().HaveCount(1, "ImageDeliveryChannels NOT ignored")
             .And.Subject.Single().DeliveryChannelPolicy.Should().BeNull("DeliveryChannelPolicy ignored");
     }

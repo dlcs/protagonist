@@ -52,7 +52,7 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
         
         if (thumbnailSizes != null)
         {
-            logger.LogDebug("ThumbSizes metadata found for {AssetId}", asset.Id);
+            logger.LogTrace("ThumbSizes metadata found for {AssetId}", asset.Id);
             return thumbnailSizes;
         }
 

@@ -7,9 +7,8 @@ using Npgsql;
 namespace DLCS.Repository.Exceptions;
 
 /// <summary>
-/// Provides additional Postgres specific information about a 
-/// <see cref="DbUpdateException"/> thrown by EF Core.This describes 
-/// the case where the exception is a unique constraint violation.
+/// Provides additional Postgres specific information about a  <see cref="DbUpdateException"/> thrown by EF Core.
+/// This describes the case where the exception is a unique constraint violation.
 /// </summary>
 /// <param name="ColumnNames">The column names parsed from the constraint 
 /// name assuming the constraint follows the "IX_{Table}_{Column1}_..._{ColumnN}" naming convention.</param>
@@ -21,8 +20,8 @@ public record UniqueConstraintError(
     IReadOnlyList<string> ColumnNames,
     string? TableName,
     string? ConstraintName,
-    Exception Exception) : DbError(TableName, ConstraintName, Exception) {
-    
+    Exception Exception) : DbError(TableName, ConstraintName, Exception)
+{
     /// <summary>
     /// Creates a <see cref="UniqueConstraintError"/> from a <see cref="PostgresException"/>.
     /// </summary>
@@ -33,22 +32,22 @@ public record UniqueConstraintError(
         var constraintName = postgresException.ConstraintName;
         var tableName = postgresException.TableName;
        
-        var constrainPrefix = tableName != null ? $"IX_{tableName}_" : null;
+        var constraintPrefix = tableName != null ? $"IX_{tableName}_" : null;
 
         var columnNames = Array.Empty<string>();
         
-        if (constrainPrefix != null
+        if (constraintPrefix != null
             && constraintName != null
-            && constraintName.StartsWith(constrainPrefix, StringComparison.Ordinal))
+            && constraintName.StartsWith(constraintPrefix, StringComparison.Ordinal))
         {
-            columnNames = constraintName[constrainPrefix.Length..].Split('_');
+            columnNames = constraintName[constraintPrefix.Length..].Split('_');
         }
         
         return new UniqueConstraintError(columnNames, tableName, constraintName, postgresException);
     }
     
     /// <summary>
-    /// Check if error is for specified columnt
+    /// Check if error is for specified column
     /// </summary>
     public bool ForColumn(string columnName) => ColumnNames.Contains(columnName);
 }

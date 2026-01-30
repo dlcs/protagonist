@@ -2,7 +2,7 @@
 using DLCS.Core.Types;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace DLCS.Repository;
+namespace DLCS.Repository.Converters;
 
 /// <summary>
 /// <see cref="ValueConverter{TModel,TProvider}"/> for converting <see cref="AssetId"/> to/from string in db

@@ -19,8 +19,10 @@ using DLCS.Model.Processing;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
+using DLCS.Repository.Converters;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Serialisation;
+using IIIF.Presentation.V3.Strings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Newtonsoft.Json;
@@ -80,6 +82,7 @@ public partial class DlcsContext : DbContext
     public virtual DbSet<DefaultDeliveryChannel> DefaultDeliveryChannels { get; set; }
     public virtual DbSet<AssetApplicationMetadata> AssetApplicationMetadata { get; set; }
     public virtual DbSet<BatchAsset> BatchAssets { get; set; }
+    public virtual DbSet<Adjunct> Adjuncts { get; set; }
 
     public virtual DbSet<SignupLink> SignupLinks { get; set; }
 
@@ -88,6 +91,10 @@ public partial class DlcsContext : DbContext
         configurationBuilder
             .Properties<AssetId>()
             .HaveConversion<AssetIdConverter>();
+        
+        configurationBuilder
+            .Properties<LanguageMap>()
+            .HaveConversion<LanguageMapConverter, LanguageMapComparer>();
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -697,9 +704,34 @@ public partial class DlcsContext : DbContext
         {
             entity.HasKey(ba => new { ba.BatchId, ba.AssetId, });
         });
-
-        OnModelCreatingPartial(modelBuilder);
+        
+        modelBuilder.Entity<Adjunct>(entity =>
+        {
+            // NOTE - to allow case-sensitive writes but case-insensitive reads, use a unique constraint on LOWER(id).
+            // Ideally model with something like the following but that is not supported in EF, so added via migration
+            // see https://github.com/npgsql/efcore.pg/issues/119
+            // entity.HasIndex(a => a.Id.ToLower()).IsUnique();
+            
+            entity.HasKey(a => new { a.Id, a.AssetId });
+            
+            entity.Property(a => a.Id)
+                .HasMaxLength(Adjunct.MaxIdLength);
+            
+            entity.Property(a => a.Label).HasColumnType("jsonb");
+            entity.Property(a => a.Language)
+                .HasMaxLength(500)
+                .HasConversion(
+                    l => string.Join(",", l),
+                    l => l.Split(",", StringSplitOptions.RemoveEmptyEntries),
+                    stringArrayComparer);
+            
+            entity.Property(a => a.IIIFLink)
+                .IsRequired()
+                .HasConversion(
+                    i => i.GetDescription(),
+                    i => i.GetEnumFromString<IIIFLinkType>(true));
+            
+            entity.Property(p => p.Created).HasDefaultValueSql("now()");
+        });
     }
-
-    partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }

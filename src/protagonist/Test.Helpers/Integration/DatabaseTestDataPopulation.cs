@@ -6,7 +6,6 @@ using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
-using DLCS.Model.Assets.Metadata;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Model.Customers;
 using DLCS.Model.DeliveryChannels;
@@ -14,6 +13,7 @@ using DLCS.Model.Policies;
 using DLCS.Model.Spaces;
 using DLCS.Model.Storage;
 using DLCS.Repository.Auth;
+using IIIF.Presentation.V3.Strings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Test.Helpers.Data;
@@ -62,6 +62,33 @@ public static class DatabaseTestDataPopulation
             Duration = duration, Finished = finished, Manifests = manifests,
             ImageDeliveryChannels = imageDeliveryChannels ?? new List<ImageDeliveryChannel>()
         });
+    }
+    
+    public static ValueTask<EntityEntry<Asset>> WithTestAdjunct(
+        this ValueTask<EntityEntry<Asset>> asset,
+        string id, string type = "Image", string mediaType = "image/jpeg",
+        IIIFLinkType iiifLinkType = IIIFLinkType.SeeAlso,
+        string profile = null, LanguageMap label = null,
+        string[] language = null, string externalId = "https://someHost.com/someUri", DateTime? created = null,
+        long? size = null)
+    {
+        asset.Result.Entity.Adjuncts ??= [];
+        asset.Result.Entity.Adjuncts.Add(new Adjunct
+        {
+            Id = id,
+            Type = type,
+            MediaType = mediaType,
+            IIIFLink = iiifLinkType,
+            AssetId = asset.Result.Entity.Id,
+            Profile = profile,
+            Label = label,
+            Language = language,
+            ExternalId = new Uri(externalId),
+            Created = created ?? DateTime.UtcNow,
+            Size = size
+        });
+
+        return asset;
     }
 
     public static ValueTask<EntityEntry<AuthToken>> AddTestToken(this DbSet<AuthToken> authTokens,

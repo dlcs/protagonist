@@ -30,6 +30,59 @@ namespace DLCS.Repository.Migrations
                 .HasMin(1L)
                 .HasMax(9223372036854775807L);
 
+            modelBuilder.Entity("DLCS.Model.Assets.Adjunct", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("AssetId")
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("Created")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("ExternalId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Finished")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("IIIFLink")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Label")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("Language")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Profile")
+                        .HasColumnType("text");
+
+                    b.Property<long?>("Size")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id", "AssetId");
+
+                    b.HasIndex("AssetId");
+
+                    b.ToTable("Adjuncts");
+                });
+
             modelBuilder.Entity("DLCS.Model.Assets.Asset", b =>
                 {
                     b.Property<string>("Id")
@@ -1083,6 +1136,17 @@ namespace DLCS.Repository.Migrations
                     b.ToTable("MetricThresholds");
                 });
 
+            modelBuilder.Entity("DLCS.Model.Assets.Adjunct", b =>
+                {
+                    b.HasOne("DLCS.Model.Assets.Asset", "Asset")
+                        .WithMany("Adjuncts")
+                        .HasForeignKey("AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asset");
+                });
+
             modelBuilder.Entity("DLCS.Model.Assets.BatchAsset", b =>
                 {
                     b.HasOne("DLCS.Model.Assets.Asset", "Asset")
@@ -1143,6 +1207,8 @@ namespace DLCS.Repository.Migrations
 
             modelBuilder.Entity("DLCS.Model.Assets.Asset", b =>
                 {
+                    b.Navigation("Adjuncts");
+
                     b.Navigation("AssetApplicationMetadata");
 
                     b.Navigation("BatchAssets");

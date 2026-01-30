@@ -12,18 +12,10 @@ namespace Orchestrator.Infrastructure.IIIF;
 /// <summary>
 /// Class for creating IIIF Manifests from provided assets 
 /// </summary>
-public class IIIFManifestBuilder
+public class IIIFManifestBuilder(
+    IBuildManifests<IIIF3.Manifest> manifestV3Builder,
+    IBuildManifests<IIIF2.Manifest> manifestV2Builder)
 {
-    private readonly IBuildManifests<IIIF3.Manifest> manifestV3Builder;
-    private readonly IBuildManifests<IIIF2.Manifest> manifestV2Builder;
-
-    public IIIFManifestBuilder(IBuildManifests<IIIF3.Manifest> manifestV3Builder, 
-        IBuildManifests<IIIF2.Manifest> manifestV2Builder)
-    {
-        this.manifestV3Builder = manifestV3Builder;
-        this.manifestV2Builder = manifestV2Builder;
-    }
-
     public Task<IIIF3.Manifest> GenerateV3Manifest(List<Asset> assets, CustomerPathElement customerPathElement,
         string manifestId, string label, ManifestType manifestType, CancellationToken cancellationToken)
         => manifestV3Builder.BuildManifest(manifestId, label, assets, customerPathElement, manifestType,

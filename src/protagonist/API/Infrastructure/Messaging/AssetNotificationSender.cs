@@ -140,7 +140,10 @@ public class AssetNotificationSender(
         {
             [typeof(Asset)] = new(StringComparer.OrdinalIgnoreCase)
             {
-                nameof(Asset.BatchAssets), nameof(Asset.ImageOptimisationPolicy), nameof(Asset.ThumbnailPolicy)
+                nameof(Asset.BatchAssets), 
+                nameof(Asset.ImageOptimisationPolicy), 
+                nameof(Asset.ThumbnailPolicy), 
+                nameof(Asset.Adjuncts)
             },
             [typeof(ImageDeliveryChannel)] = new(StringComparer.OrdinalIgnoreCase)
             {

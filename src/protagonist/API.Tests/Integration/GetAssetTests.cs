@@ -78,6 +78,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var hydraImage = await response.ReadAsHydraResponseAsync<Image>();
         hydraImage.Id.Should().EndWith(getUrl);
+        hydraImage.Adjuncts.Should().Be($"http://localhost/customers/99/spaces/1/images/{modelId}/adjuncts");
     }
     
     [Fact]
