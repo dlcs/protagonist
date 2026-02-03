@@ -74,15 +74,6 @@ public static class AssetX
     }
 
     /// <summary>
-    /// Reset fields for ingestion, marking as "Ingesting" and clearing errors
-    /// </summary>
-    public static void SetFieldsForIngestion(this Asset asset)
-    {
-        asset.Error = string.Empty;
-        asset.Ingesting = true;
-    }
-
-    /// <summary>
     /// Mark asset as finished, setting "Finished" and "Ingesting" = false 
     /// </summary>
     public static void MarkAsFinished(this Asset asset)
