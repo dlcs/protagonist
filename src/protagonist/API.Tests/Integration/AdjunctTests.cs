@@ -102,7 +102,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-        error.Detail.Should().Be("'externalId' is required and must be a well formed URI");
+        error.Detail.Should().Be("'externalId' must be a well formed URI");
     }
     
     [Fact]
