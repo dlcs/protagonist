@@ -32,4 +32,6 @@ public interface IIngestNotificationSender
     /// <param name="cancellationToken">Current cancellationToken</param>
     Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, 
         CancellationToken cancellationToken = default);
+
+    Task<bool> SendIngestAdjunctRequest(Adjunct adjunctToIngest, CancellationToken cancellationToken = default);
 }

@@ -36,7 +36,7 @@ public static class AdjunctConverter
 
         Debug.Assert(adjunctId != null, "adjunctId != null");
 
-        return new Adjunct
+        var dlcsAdjunct = new Adjunct
         {
             Id = adjunctId,
             Type = hydraAdjunct.Type!,
@@ -46,9 +46,21 @@ public static class AdjunctConverter
             Profile = hydraAdjunct.Profile,
             Label =  hydraAdjunct.Label.ToLanguageMap(),
             Language = hydraAdjunct.Language,
-            ExternalId = new Uri(hydraAdjunct.ExternalId!),
             Size = hydraAdjunct.Size,
         };
+        
+        if (hydraAdjunct.Origin is not null)
+        {
+            dlcsAdjunct.Origin = hydraAdjunct.Origin;
+            dlcsAdjunct.SetFieldsForIngestion();
+        }
+        else
+        {
+            // by validation: if Origin is null, then ExternalId MUST not be
+            dlcsAdjunct.ExternalId = new Uri(hydraAdjunct.ExternalId!);
+        }
+        
+        return dlcsAdjunct;
     }
     
     /// <summary>

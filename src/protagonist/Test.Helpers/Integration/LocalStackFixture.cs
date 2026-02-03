@@ -35,6 +35,7 @@ public class LocalStackFixture : IAsyncLifetime
     public const string TimebasedQueueName = "protagonist-timebased";
     public const string TranscodeCompleteQueueName = "protagonist-transcode-complete";
     public const string FileQueueName = "protagonist-file";
+    public const string AdjunctQueueName = "protagonist-adjunct";
     
     // SNS Topic
     public const string AssetModifiedNotificationTopicArn = "arn:aws:sns:us-east-1:000000000000:asset-modified-notifications";
@@ -126,6 +127,7 @@ public class LocalStackFixture : IAsyncLifetime
         await CreateQueue(amazonSQSClient, TimebasedQueueName);
         await CreateQueue(amazonSQSClient, TranscodeCompleteQueueName);
         await CreateQueue(amazonSQSClient, FileQueueName);
+        await CreateQueue(amazonSQSClient, AdjunctQueueName);
 
         var amazonSNSClient = AWSSNSFactory();
         await CreateTopic(amazonSNSClient, AssetModifiedNotificationTopicArn);

@@ -52,14 +52,16 @@ public class Adjunct : IDeliverable
     /// <summary>
     /// A fully-qualified URL external to the platform where the adjunct is hosted
     /// </summary>
-    public required Uri ExternalId { get; set; }
+    public Uri? ExternalId { get; set; }
     
     /// <inheritdoc/>
     public bool? Ingesting { get; set; }
     
     /// <inheritdoc/>
     public string? Error { get; set; }
-    
+
+    public string? Origin { get; set; }
+
     /// <summary>
     /// When the adjunct was created
     /// </summary>

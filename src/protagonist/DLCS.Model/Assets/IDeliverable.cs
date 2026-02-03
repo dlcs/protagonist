@@ -11,4 +11,9 @@ public interface IDeliverable
     /// Records any errors encountered during latest processing of the object
     /// </summary>
     string? Error { get; set; }
+    
+    /// <summary>
+    /// Contains source to ingest from
+    /// </summary>
+    string? Origin { get; set; }
 }

@@ -26,6 +26,26 @@ public class IngestNotificationSender : IIngestNotificationSender
         this.customerQueueRepository = customerQueueRepository;
     }
     
+    public async Task<bool> SendIngestAdjunctRequest(Adjunct adjunctToIngest, CancellationToken cancellationToken = default)
+    {
+        var customerId = adjunctToIngest.Asset.Customer;
+        // Increment queue - do it before sending to avoid potential for message to immediately being picked up
+        await customerQueueRepository.IncrementSize(customerId, QueueNames.Default,
+            cancellationToken: cancellationToken);
+        
+        var success = await engineClient.AsynchronousIngest(adjunctToIngest, cancellationToken);
+        
+        if (!success)
+        {
+            logger.LogWarning("Decrementing customer {Customer} 'default' queue as enqueue failed",
+                customerId);
+            await customerQueueRepository.DecrementSize(customerId, QueueNames.Default,
+                cancellationToken: cancellationToken);
+        }
+        
+        return success;
+    }
+    
     public async Task<bool> SendIngestAssetRequest(Asset assetToIngest, CancellationToken cancellationToken = default)
     {
         // Increment queue - do it before sending to avoid potential for message to immediately being picked up

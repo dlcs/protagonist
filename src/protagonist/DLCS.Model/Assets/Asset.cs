@@ -17,6 +17,7 @@ public class Asset : ICloneable, IDeliverable
     public int Customer { get; set; }
     public int Space { get; set; }
     public DateTime? Created { get; set; }
+    /// <inheritdoc/>
     public string? Origin { get; set; }
     public string? Tags { get; set; }
     public string? Roles { get; set; }
