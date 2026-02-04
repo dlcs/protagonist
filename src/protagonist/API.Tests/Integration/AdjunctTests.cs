@@ -811,7 +811,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Label.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.Origin.Should().Be("https://some-location.com/an-adjunct");
-        adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
+        adjunct.PublicId.Should().Be("https://dlcs.digirati.io/adjuncts/99/1/PostAdjunct_CreatesHostedAdjunct/someAdjunctId");
         
         response.Headers.Location.Should()
             .Be(

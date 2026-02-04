@@ -80,7 +80,7 @@ public static class AdjunctConverter
             Language = adjunct.Language,
             ExternalId = adjunct.ExternalId?.ToString(),
             Origin = adjunct.Origin,
-            PublicId = adjunct.ExternalId?.ToString() ?? adjunct.Origin,
+            PublicId = adjunct.ExternalId?.ToString() ??  $"{urlRoots.ResourceRoot}adjuncts/{adjunct.AssetId.Customer}/{adjunct.AssetId.Space}/{adjunct.AssetId.Asset}/{adjunct.Id}",
             Created = adjunct.Created,
             Finished = adjunct.Finished,
             Size = adjunct.Size,
