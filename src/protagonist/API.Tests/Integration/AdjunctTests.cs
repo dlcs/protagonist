@@ -17,17 +17,18 @@ using Test.Helpers.Integration.Infrastructure;
 namespace API.Tests.Integration;
 
 [Trait("Category", "Integration")]
-[Collection(CollectionDefinitions.DatabaseCollection.CollectionName)]
+[Collection(StorageCollection.CollectionName)]
 public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly HttpClient httpClient;
     private readonly DlcsContext dbContext;
     
-    public AdjunctTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
+    public AdjunctTests(StorageFixture storageFixture, ProtagonistAppFactory<Startup> factory)
     {
-        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(dbFixture, "API-Test");
-        dbContext = dbFixture.DbContext;
-        dbFixture.CleanUp();
+        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(storageFixture.DbFixture, "API-Test",
+            f => f.WithLocalStack(storageFixture.LocalStackFixture));
+        dbContext = storageFixture.DbFixture.DbContext;
+        storageFixture.DbFixture.CleanUp();
     }
 
     [Fact]
@@ -39,15 +40,17 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = @"{
-          ""id"": ""someAdjunctId"",
-          ""@type"": ""Image"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-        }";
+        const string newAdjunctJson = """
+                                      {
+                                                "id": "someAdjunctId",
+                                                "@type": "Image",
+                                                "externalId": "https://some-location.com/an-adjunct",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                              }
+                                      """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -82,15 +85,17 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = @"{
-          ""id"": ""someAdjunctId"",
-          ""@type"": ""Image"",
-          ""externalId"": ""an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-        }";
+        const string newAdjunctJson = """
+                                      {
+                                                "id": "someAdjunctId",
+                                                "@type": "Image",
+                                                "externalId": "an-adjunct",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                              }
+                                      """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -114,14 +119,16 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = @"{
-          ""@type"": ""Image"",
-          ""externalId"": ""https://example.com/adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-        }";
+        const string newAdjunctJson = """
+                                      {
+                                                "@type": "Image",
+                                                "externalId": "https://example.com/adjunct",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                              }
+                                      """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -144,15 +151,17 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        var newAdjunctJson = @"{
-          ""id"": ""model Id"",
-          ""@type"": ""Image"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-        }";
+        var newAdjunctJson = """
+                             {
+                                       "id": "model Id",
+                                       "@type": "Image",
+                                       "externalId": "https://some-location.com/an-adjunct",
+                                       "iiifLink": "seeAlso",
+                                       "mediaType": "a-mediaType",
+                                       "label": {"label": ["value"]},
+                                       "language": ["en"],
+                                     }
+                             """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -174,15 +183,17 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .WithTestAdjunct("someAdjunctId");
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = @"{
-          ""id"": ""someAdjunctId"",
-          ""@type"": ""Image"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-        }";
+        const string newAdjunctJson = """
+                                      {
+                                                "id": "someAdjunctId",
+                                                "@type": "Image",
+                                                "externalId": "https://some-location.com/an-adjunct",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                              }
+                                      """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -208,15 +219,17 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .WithTestAdjunct(adjunctId.ToUpper());
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = $@"{{
-          ""id"": ""{adjunctId}"",
-          ""@type"": ""Image"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {{""label"": [""value""]}},
-          ""language"": [""en""],
-        }}";
+        const string newAdjunctJson = $$"""
+                                        {
+                                                  "id": "{{adjunctId}}",
+                                                  "@type": "Image",
+                                                  "externalId": "https://some-location.com/an-adjunct",
+                                                  "iiifLink": "seeAlso",
+                                                  "mediaType": "a-mediaType",
+                                                  "label": {"label": ["value"]},
+                                                  "language": ["en"],
+                                                }
+                                        """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -237,15 +250,17 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
         
-        const string newAdjunctJson = @"{
-          ""id"": ""adj123"",
-          ""@type"": ""Image"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-        }";
+        const string newAdjunctJson = """
+                                      {
+                                                "id": "adj123",
+                                                "@type": "Image",
+                                                "externalId": "https://some-location.com/an-adjunct",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                              }
+                                      """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -413,14 +428,16 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
         
-        const string newAdjunctJson = @"{
-          ""@type"": ""Image"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-        }";
+        const string newAdjunctJson = """
+                                      {
+                                                "@type": "Image",
+                                                "externalId": "https://some-location.com/an-adjunct",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                              }
+                                      """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/foo";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -444,15 +461,17 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = @"{
-          ""id"": ""someAdjunctId"",
-          ""@type"": ""Image"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-        }";
+        const string newAdjunctJson = """
+                                      {
+                                                "id": "someAdjunctId",
+                                                "@type": "Image",
+                                                "externalId": "https://some-location.com/an-adjunct",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                              }
+                                      """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/differentId";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -477,15 +496,17 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        var newAdjunctJson = @"{
-          ""id"": ""model Id"",
-          ""@type"": ""Image"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-        }";
+        var newAdjunctJson = """
+                             {
+                                       "id": "model Id",
+                                       "@type": "Image",
+                                       "externalId": "https://some-location.com/an-adjunct",
+                                       "iiifLink": "seeAlso",
+                                       "mediaType": "a-mediaType",
+                                       "label": {"label": ["value"]},
+                                       "language": ["en"],
+                                     }
+                             """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/differentId";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -508,14 +529,16 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .WithTestAdjunct(adjunctId.ToUpper());
         await dbContext.SaveChangesAsync();
         
-        const string updateAdjunctJson = @"{
-          ""@type"": ""Image"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-        }";
+        const string updateAdjunctJson = """
+                                         {
+                                                   "@type": "Image",
+                                                   "externalId": "https://some-location.com/an-adjunct",
+                                                   "iiifLink": "seeAlso",
+                                                   "mediaType": "a-mediaType",
+                                                   "label": {"label": ["value"]},
+                                                   "language": ["en"],
+                                                 }
+                                         """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}";
         var content = new StringContent(updateAdjunctJson, Encoding.UTF8, "application/json");
@@ -539,15 +562,17 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .WithTestAdjunct("someAdjunctId", created: DateTime.UtcNow.AddDays(-2));
         await dbContext.SaveChangesAsync();
         
-        const string updateAdjunctJson = @"{
-          ""id"": ""someAdjunctId"",
-          ""@type"": ""Image"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-        }";
+        const string updateAdjunctJson = """
+                                         {
+                                                   "id": "someAdjunctId",
+                                                   "@type": "Image",
+                                                   "externalId": "https://some-location.com/an-adjunct",
+                                                   "iiifLink": "seeAlso",
+                                                   "mediaType": "a-mediaType",
+                                                   "label": {"label": ["value"]},
+                                                   "language": ["en"],
+                                                 }
+                                         """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
         var content = new StringContent(updateAdjunctJson, Encoding.UTF8, "application/json");
@@ -581,16 +606,18 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = @"{
-          ""id"": ""someAdjunctId"",
-          ""@type"": ""Image"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""seeAlso"",
-          ""mediaType"": ""a-mediaType"",
-          ""label"": {""label"": [""value""]},
-          ""language"": [""en""],
-          ""size"": 1234,
-        }";
+        const string newAdjunctJson = """
+                                      {
+                                                "id": "someAdjunctId",
+                                                "@type": "Image",
+                                                "externalId": "https://some-location.com/an-adjunct",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                                "size": 1234,
+                                              }
+                                      """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -629,13 +656,15 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = @"{
-          ""@type"": ""AnnotationPage"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""annotations"",
-          ""mediaType"": ""application/json"",
-          ""label"": {""none"": [""value""]}
-        }";
+        const string newAdjunctJson = """
+                                      {
+                                                "@type": "AnnotationPage",
+                                                "externalId": "https://some-location.com/an-adjunct",
+                                                "iiifLink": "annotations",
+                                                "mediaType": "application/json",
+                                                "label": {"none": ["value"]}
+                                              }
+                                      """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -673,14 +702,16 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        const string newAdjunctJson = @"{
-          ""id"": """",           
-          ""@type"": ""AnnotationPage"",
-          ""externalId"": ""https://some-location.com/an-adjunct"",
-          ""iiifLink"": ""annotations"",
-          ""mediaType"": ""application/json"",
-          ""label"": {""none"": [""value""]}
-        }";
+        const string newAdjunctJson = """
+                                      {
+                                                "id": "",           
+                                                "@type": "AnnotationPage",
+                                                "externalId": "https://some-location.com/an-adjunct",
+                                                "iiifLink": "annotations",
+                                                "mediaType": "application/json",
+                                                "label": {"none": ["value"]}
+                                              }
+                                      """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -740,5 +771,50 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_CreatesHostedAdjunct()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        const string newAdjunctJson = """
+                                      {
+                                                "id": "someAdjunctId",
+                                                "@type": "Image",
+                                                "origin": "https://some-location.com/an-adjunct",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                              }
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+
+        adjunct.Id.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+        adjunct.IIIFLink.Should().Be("seeAlso");
+        adjunct.Label.First().Key.Should().Be("label");
+        adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
+        adjunct.Origin.Should().Be("https://some-location.com/an-adjunct");
+        adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
+        
+        response.Headers.Location.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
     }
 }

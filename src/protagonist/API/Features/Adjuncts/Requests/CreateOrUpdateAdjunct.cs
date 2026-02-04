@@ -79,6 +79,8 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
                 _ => ModifyEntityResult<Adjunct>.Failure($"Unknown database error saving adjunct '{adjunct.AssetId}'")
             };
         }
+        
+        dbAdjunct = dbContext.Adjuncts.Include(a=>a.Asset).Single(a=>a.Id == dbAdjunct.Id);
 
         if (dbAdjunct.IsToBeIngested())
         {
