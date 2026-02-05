@@ -28,11 +28,23 @@ public class Asset : ICloneable, IDeliverable
     public int? NumberReference1 { get; set; }
     public int? NumberReference2 { get; set; }
     public int? NumberReference3 { get; set; }
-    
+
+    /// <summary>
+    /// Restricts the maximum permitted pixel response as defined in the IIIF Image API.
+    /// </summary>
+    public int? MaxWidth { get; set; }
+
+    /// <summary>
+    /// The maximum longest dimension size that is viewable by unauthorised users.
+    /// </summary>
+    /// <remarks>Only applies when an image has roles, and the image request region is /full/.</remarks>
+    public int? OpenFullMax { get; set; }
+
     /// <summary>
     /// The maximum size of longest dimension that is viewable by unauthorised users.
     /// -1 = null (all open), 0 = no allowed size without being auth 
     /// </summary>
+    [Obsolete("Replaced by maxWidth and openFullMax")]
     public int? MaxUnauthorised { get; set; }
     public int? Width { get; set; }
     public int? Height { get; set; }

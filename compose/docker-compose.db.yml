@@ -1,0 +1,19 @@
+volumes:
+  dlcs_postgres_data: {}
+  dlcs_postgres_data_backups: {}
+
+services:
+  postgres:
+    image: postgres:14
+    hostname: postgres
+    ports:
+      - "5452:5432"
+    volumes:
+      - dlcs_postgres_data:/var/lib/postgresql/data
+      - dlcs_postgres_data_backups:/backups
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=dlcs_password
