@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    partial class DlcsContextModelSnapshot : ModelSnapshot
+    [Migration("20260205152629_Images gains maxWidth openFullMax")]
+    partial class ImagesgainsmaxWidthopenFullMax
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -44,10 +47,8 @@ namespace DLCS.Repository.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("now()");
 
-                    b.Property<string>("Error")
-                        .HasColumnType("text");
-
                     b.Property<string>("ExternalId")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("Finished")
@@ -56,9 +57,6 @@ namespace DLCS.Repository.Migrations
                     b.Property<string>("IIIFLink")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool?>("Ingesting")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Label")
                         .HasColumnType("jsonb");
@@ -69,9 +67,6 @@ namespace DLCS.Repository.Migrations
 
                     b.Property<string>("MediaType")
                         .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Origin")
                         .HasColumnType("text");
 
                     b.Property<string>("Profile")
