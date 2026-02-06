@@ -26,7 +26,7 @@ public static class AssetConverter
     {
         if (dbAsset.Id.Customer != dbAsset.Customer || dbAsset.Id.Space != dbAsset.Space)
         {
-            throw new APIException(
+            throw new BadRequestException(
                 $"Asset {dbAsset.Id} does not start with expected prefix {dbAsset.Customer}/{dbAsset.Space}/");
         }
 
@@ -114,14 +114,14 @@ public static class AssetConverter
     {
         if (customerId <= 0)
         {
-            throw new APIException("Caller must assert which customer this Asset belongs to.");
+            throw new BadRequestException("Caller must assert which customer this Asset belongs to.");
         }
         
         hydraImage.CustomerId = customerId;
 
         if (hydraImage.Space > 0 && spaceId.HasValue && spaceId.Value != hydraImage.Space)
         {
-            throw new APIException("Asserted space does not agree with supplied space.");
+            throw new BadRequestException("Asserted space does not agree with supplied space.");
         }
         
         if (hydraImage.Space <= 0)
@@ -132,7 +132,7 @@ public static class AssetConverter
             }
             else
             {
-                throw new APIException("No Space provided for this Asset.");
+                throw new BadRequestException("No Space provided for this Asset.");
             }
         }
         
@@ -148,7 +148,7 @@ public static class AssetConverter
 
         if (!modelId.HasText())
         {
-            throw new APIException("Hydra Image does not have a ModelId, and no ModelId could be inferred.");
+            throw new BadRequestException("Hydra Image does not have a ModelId, and no ModelId could be inferred.");
         }
         
         // This is a silent test for backwards compatibility with Deliverator.
@@ -165,18 +165,18 @@ public static class AssetConverter
             var idParts = hydraImage.Id.Split("/");
             if (idParts.Length < 6)
             {
-                throw new APIException("Caller supplied an ID that is not in the correct form");
+                throw new BadRequestException("Caller supplied an ID that is not in the correct form");
             }
             idParts = idParts[^6..];
             if (idParts[0] != "customers" || idParts[2] != "spaces" || idParts[4] != "images")
             {
-                throw new APIException("Caller supplied an ID that is not in the correct form");
+                throw new BadRequestException("Caller supplied an ID that is not in the correct form");
             }
 
             var assetIdFromHydraId = AssetId.FromString($"{idParts[1]}/{idParts[3]}/{idParts[5]}");
             if (assetIdFromHydraId != assetId)
             {
-                throw new APIException("Caller supplied an ID that is not supported by the request URL");
+                throw new BadRequestException("Caller supplied an ID that is not supported by the request URL");
             }
             // it's OK if the caller didn't explicitly provide an Id in the JSON body - but it's an error
             // if they supply one that disagrees with the assertions provided in the method call.

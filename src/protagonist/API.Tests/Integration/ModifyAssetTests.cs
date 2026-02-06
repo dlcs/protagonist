@@ -72,6 +72,26 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         LegacyModeHelpers.SetupLegacyCustomer(dbContext).Wait();
     }
+    
+    [Fact]
+    public async Task Put_400_IfProvidedSpaceDiffersFromUrlSpace()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""space"": ""{assetId.Space + 10}"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff""
+        }}";
+        
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer().PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 
     [Fact]
     public async Task Put_NewImageAsset_CreatesAsset()
@@ -117,7 +137,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ""@type"": ""Image"",
             ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
             ""family"": ""I"",
-            ""mediaType"": ""image/tiff""
+            ""mediaType"": ""image/tiff"",
+            ""manifests"": [""first""]
         }}";
         A.CallTo(() =>
                 EngineClient.SynchronousIngest(
@@ -132,9 +153,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         response.Headers.Location.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
-        var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
-            .Single(x => x.Id == assetId);
+        var asset = dbContext.Images.Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
+        asset.Manifests.Should().BeEquivalentTo("first");
     }
     
     [Fact]
