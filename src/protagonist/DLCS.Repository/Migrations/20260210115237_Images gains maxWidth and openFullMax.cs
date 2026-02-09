@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using DLCS.Model.Assets;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -7,7 +8,7 @@ namespace DLCS.Repository.Migrations
     /// <inheritdoc />
     public partial class ImagesgainsmaxWidthandopenFullMax : Migration
     {
-        private const string UnobtainableRole = "https://dlcs.io/roles/unobtainable";
+        private const string UnobtainableRole = Asset.UnobtainableRole;
         
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

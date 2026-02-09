@@ -13,6 +13,8 @@ namespace DLCS.Model.Assets;
 /// </summary>
 public class Asset : ICloneable, IDeliverable
 {
+    public const string UnobtainableRole = "https://dlcs.io/roles/unobtainable";
+    
     public AssetId Id { get; set; }
     public int Customer { get; set; }
     public int Space { get; set; }

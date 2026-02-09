@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
@@ -96,6 +97,59 @@ public class AssetConverterTests
         asset.ImageOptimisationPolicy.Should().Be("super-max");
     }
     
+    [Theory]
+    [MemberData(nameof(MaxUnauthorisedData.Invalid), MemberType = typeof(MaxUnauthorisedData))]
+    public void ToDlcsModel_MaxUnauthorised_Invalid(int? maxUnauthorised, string[] roles, int? maxWidth,
+        int? openFullMax)
+    {
+        var hydraImage = new Image
+        {
+            MaxUnauthorised = maxUnauthorised,
+            Roles = roles,
+            MaxWidth = maxWidth,
+            OpenFullMax = openFullMax,
+        };
+        
+        Action action = () => hydraImage.ToDlcsModel(0, 0);
+        action.Should().ThrowExactly<BadRequestException>();
+    }
+
+    [Theory]
+    [MemberData(nameof(MaxUnauthorisedData.Valid), MemberType = typeof(MaxUnauthorisedData))]
+    public void ToDlcsModel_MapsMaxUnauthorised_ToOpenFullMax(int? maxUnauthorised, string[] roles, int? openFullMax,
+        string[] expectedRoles, string reason)
+    {
+        var hydraImage = new Image
+        {
+            MaxUnauthorised = maxUnauthorised,
+            Roles = roles,
+        };
+
+        var asset = hydraImage.ToDlcsModel(1, 1, nameof(ToDlcsModel_MapsMaxUnauthorised_ToOpenFullMax));
+        asset.MaxWidth.Should().BeNull("MaxWidth is never set from MaxUnauthorised");
+        asset.OpenFullMax.Should().Be(openFullMax, reason);
+        asset.RolesList.Should().BeEquivalentTo(expectedRoles, reason);
+    }
+
+    [Theory]
+    [InlineData(null, null, null, null)]
+    [InlineData(-1, -10, null, null)]
+    [InlineData(0, 0, null, null)]
+    [InlineData(256, 2500, 256, 2500)]
+    public void ToDlcsModel_DefaultsMaxWidth_OpenFullMax_IfNotNull(int? maxWidth, int? openFullMax, int? expectedMaxWidth,
+        int? expectedOpenFullMax)
+    {
+        var hydraImage = new Image
+        {
+            MaxWidth = maxWidth,
+            OpenFullMax = openFullMax,
+        };
+
+        var asset = hydraImage.ToDlcsModel(1, 1, nameof(ToDlcsModel_DefaultsMaxWidth_OpenFullMax_IfNotNull));
+        asset.MaxWidth.Should().Be(expectedMaxWidth);
+        asset.OpenFullMax.Should().Be(expectedOpenFullMax);
+    }
+
     [Fact]
     public void ToDlcsModel_All_Fields_Should_Convert()
     {
@@ -132,7 +186,8 @@ public class AssetConverterTests
             Origin = origin,
             Roles = roles,
             Tags = tags,
-            MaxUnauthorised = 400,
+            MaxWidth = 512,
+            OpenFullMax = 1000,
             MediaType = mediaType,
             ThumbnailPolicy = thumbnailPolicy,
             Manifests = manifests,
@@ -160,14 +215,15 @@ public class AssetConverterTests
         asset.Roles.Split(',').Should().BeEquivalentTo(roles);
         asset.Tags.Split(',').Should().BeEquivalentTo(tags);
         asset.DeliveryChannels.Should().BeEmpty();
-        asset.MaxUnauthorised.Should().Be(400);
+        asset.MaxWidth.Should().Be(512);
+        asset.OpenFullMax.Should().Be(1000);
         asset.MediaType.Should().Be(mediaType);
         asset.ThumbnailPolicy.Should().Be("thumb100");
         asset.Manifests.Should().BeEquivalentTo(manifests);
     }
     
     [Fact]
-    public void ToHydraModel_All_Fields_Should_Convert()
+    public void ToHydra_All_Fields_Should_Convert()
     {
         var created = DateTime.UtcNow.AddDays(-1).Date;
         var finished = DateTime.UtcNow;
@@ -178,7 +234,7 @@ public class AssetConverterTests
         var thumbnailPolicy = "thumb100";
         var manifests = new List<string> { "firstManifest" };
         
-        var asset = new Asset()
+        var asset = new Asset
         {
             Id = AssetId.FromString($"{Customer}/99/asset"),
             Customer = 1,
@@ -203,9 +259,11 @@ public class AssetConverterTests
             MediaType = mediaType,
             ThumbnailPolicy = thumbnailPolicy,
             Manifests = manifests,
+            MaxWidth = 512,
+            OpenFullMax = 1024
         };
 
-        var hydraImage = asset.ToHydra(new UrlRoots()
+        var hydraImage = asset.ToHydra(new UrlRoots
         {
             BaseUrl = "https://dlcs.io"
         });
@@ -234,6 +292,8 @@ public class AssetConverterTests
         hydraImage.MediaType.Should().Be(mediaType);
         hydraImage.ThumbnailPolicy.Should().Be($"https://dlcs.io/thumbnailPolicies/{thumbnailPolicy}");
         hydraImage.Manifests.Should().BeEquivalentTo(manifests);
+        hydraImage.MaxWidth.Should().Be(512);
+        hydraImage.OpenFullMax.Should().Be(1024);
     }
     
     [Fact]
@@ -250,5 +310,45 @@ public class AssetConverterTests
 
         var hydraImage = asset.ToHydra(new UrlRoots { BaseUrl = "https://dlcs.io" });
         hydraImage.Manifests.Should().BeEmpty("Null manifests defaulted to empty list in hydra");
+    }
+
+    private class MaxUnauthorisedData
+    {
+        /// <summary>
+        /// Data expected to cause exceptions due to maxUnauthorised being supplied alongside other size restriction
+        /// values.
+        /// Values are all for incoming values: maxUnauthorised, roles, maxWidth, openFullMax
+        /// </summary>
+        public static TheoryData<int?, string[], int?, int?> Invalid =>
+            new()
+            {
+                { -1, null, 1, null },
+                { 0, null, 1, null },
+                { 1000, null, 1, null },
+                { -1, null, null, 1 },
+                { 0, null, null, 1 },
+                { 1000, null, null, 1 },
+                { -1, ["https://example.role"], 1, null },
+                { 0, ["https://example.role"], 1, null },
+                { 1000, ["https://example.role"], 1, null },
+                { -1, ["https://example.role"], null, 1 },
+                { 0, ["https://example.role"], null, 1 },
+                { 1000, ["https://example.role"], null, 1 },
+            };
+
+        /// <summary>
+        /// Data expected to be mapped from maxUnauthorised to maxWidth or roles.
+        /// Values are: maxUnauthorised, roles, expectedOpenFullMax, expectedRoles, reason
+        /// </summary>
+        public static TheoryData<int?, string[], int?, string[], string> Valid =>
+            new()
+            {
+                { -1, null, null, [], "All sizes/regions available" },
+                { -1, ["https://example.role"], null, ["https://example.role"], "Nothing for anonymous" },
+                { 0, null, null, ["https://dlcs.io/roles/unobtainable"], "No sizes/regions available" },
+                { 0, ["https://example.role"], null, ["https://example.role"], "Nothing for anonymous" },
+                { 1000, null, 1000, ["https://dlcs.io/roles/unobtainable"], "Full to 1000 for anonymous, no tile requests" },
+                { 1000, ["https://example.role"], 1000, ["https://example.role"], "Full to 1000 for anonymous, tiles if have role" },
+            };
     }
 }
