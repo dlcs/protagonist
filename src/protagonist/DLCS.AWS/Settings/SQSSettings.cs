@@ -45,6 +45,11 @@ public class SQSSettings
     public string? UpdateNotificationQueueName { get; set; }
     
     /// <summary>
+    /// Name of queue for ingesting adjuncts
+    /// </summary>
+    public string? AdjunctQueueName { get; set; }
+    
+    /// <summary>
     /// The duration (in seconds) for which the call waits for a message to arrive in the queue before returning
     /// </summary>
     public int WaitTimeSecs { get; set; } = 20;

@@ -1,6 +1,7 @@
 ﻿using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Assets;
+using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Exceptions;
 using MediatR;
@@ -21,12 +22,13 @@ public class CreateOrUpdateAdjunct(Adjunct adjunct, bool createOnly) : IRequest<
     public bool CreateOnly { get; } = createOnly;
 }
 
-public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
+public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotificationSender  notificationSender)
     : IRequestHandler<CreateOrUpdateAdjunct, ModifyEntityResult<Adjunct>>
 {
     public async Task<ModifyEntityResult<Adjunct>> Handle(CreateOrUpdateAdjunct request, CancellationToken cancellationToken)
     {
         var adjunct = request.Adjunct;
+        var isCreate = true;
         
         Adjunct? dbAdjunct = null;
         if (!request.CreateOnly)
@@ -37,22 +39,28 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
 
         if (dbAdjunct != null)
         {
+            // existing is not null => it is not create scenario
+            isCreate = false;
+            
             dbAdjunct.MediaType = adjunct.MediaType;
             dbAdjunct.IIIFLink = adjunct.IIIFLink;
             dbAdjunct.Profile = adjunct.Profile;
             dbAdjunct.Label = adjunct.Label;
             dbAdjunct.Language = adjunct.Language;
             dbAdjunct.ExternalId = adjunct.ExternalId;
+            dbAdjunct.Origin = adjunct.Origin;
+            dbAdjunct.Error = adjunct.Error;
             dbAdjunct.Finished = DateTime.UtcNow;
             dbAdjunct.Size = adjunct.Size;
             dbAdjunct.Type = adjunct.Type;
         }
         else
         {
-            adjunct.Created = DateTime.UtcNow;
-            adjunct.Finished = DateTime.UtcNow;
+            dbAdjunct = adjunct;
+            dbAdjunct.Created = DateTime.UtcNow;
+            dbAdjunct.Finished = DateTime.UtcNow;
             
-            await dbContext.Adjuncts.AddAsync(adjunct, cancellationToken);
+            await dbContext.Adjuncts.AddAsync(dbAdjunct, cancellationToken);
         }
 
         try
@@ -71,8 +79,21 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext)
                 _ => ModifyEntityResult<Adjunct>.Failure($"Unknown database error saving adjunct '{adjunct.AssetId}'")
             };
         }
+        
+        dbAdjunct = dbContext.Adjuncts.Include(a=>a.Asset).Single(a=>a.Id == dbAdjunct.Id);
 
-        return ModifyEntityResult<Adjunct>.Success(dbAdjunct ?? adjunct,
-            dbAdjunct == null ? WriteResult.Created : WriteResult.Updated);
+        if (dbAdjunct.IsToBeIngested())
+        {
+            var success = await notificationSender.SendIngestAdjunctRequest(dbAdjunct, cancellationToken);
+            if (!success)
+            {
+                return ModifyEntityResult<Adjunct>.Failure(
+                    $"Adjunct with id '{adjunct.Id}' failed submission for ingestion and will need to be resubmitted",
+                    WriteResult.NotFound);
+            }
+        }
+
+        return ModifyEntityResult<Adjunct>.Success(dbAdjunct,
+            isCreate ? WriteResult.Created : WriteResult.Updated);
     }
 }

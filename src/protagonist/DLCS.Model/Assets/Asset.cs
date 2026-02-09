@@ -11,12 +11,13 @@ namespace DLCS.Model.Assets;
 /// <summary>
 /// Represents an Asset that is stored in the DLCS database.
 /// </summary>
-public class Asset : ICloneable
+public class Asset : ICloneable, IDeliverable
 {
     public AssetId Id { get; set; }
     public int Customer { get; set; }
     public int Space { get; set; }
     public DateTime? Created { get; set; }
+    /// <inheritdoc/>
     public string? Origin { get; set; }
     public string? Tags { get; set; }
     public string? Roles { get; set; }

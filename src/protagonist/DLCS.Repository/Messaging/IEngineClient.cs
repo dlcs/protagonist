@@ -48,4 +48,7 @@ public interface IEngineClient
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>A dictionary of identifiers and presets</returns>
     Task<IReadOnlyDictionary<string, TranscoderPreset>> GetAvPresets(CancellationToken cancellationToken = default);
+
+    Task<bool> AsynchronousIngest(Adjunct adjunct,
+        CancellationToken cancellationToken = default);
 }

@@ -91,6 +91,25 @@ public class EngineClient : IEngineClient
         return HttpStatusCode.InternalServerError;
     }
 
+    public async Task<bool> AsynchronousIngest(Adjunct adjunct,
+        CancellationToken cancellationToken = default)
+    {
+        var queueName = queueLookup.GetAdjunctsQueueName();
+        var jsonString = GetJsonString(adjunct);
+        var success = await queueSender.QueueMessage(queueName, jsonString, cancellationToken);
+
+        if (!success)
+        {
+            logger.LogInformation("Error queueing ingest request for {AdjunctId}", adjunct.Id);
+        }
+        else
+        {
+            logger.LogDebug("Successfully enqueued ingest request for {AdjunctId}", adjunct.Id);
+        }
+
+        return success;
+    }
+
     public async Task<bool> AsynchronousIngest(Asset asset,
         CancellationToken cancellationToken = default)
     {
@@ -181,8 +200,13 @@ public class EngineClient : IEngineClient
     private static string GetJsonString(Asset asset)
     {
         var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow, asset.Batch);
-        var jsonString = JsonSerializer.Serialize(ingestAssetRequest, SerializerOptions);
-        return jsonString;
+        return JsonSerializer.Serialize(ingestAssetRequest, SerializerOptions);
+    }
+    
+    private static string GetJsonString(Adjunct adjunct)
+    {
+        var ingestAdjunctRequest = new IngestAdjunctRequest(adjunct, DateTime.UtcNow);
+        return JsonSerializer.Serialize(ingestAdjunctRequest, SerializerOptions);
     }
 }
 

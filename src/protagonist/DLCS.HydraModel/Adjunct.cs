@@ -80,4 +80,19 @@ public class Adjunct : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 22, PropertyName = "finished")]
     public DateTime? Finished { get; set; }
+    
+    [RdfProperty(Description = "Origin endpoint from where the original adjunct can be acquired (or was acquired)",
+        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 23, PropertyName = "origin")]
+    public string? Origin { get; set; }
+    
+    [RdfProperty(Description = "Is the adjunct currently being ingested?",
+        Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 24, PropertyName = "ingesting")]
+    public bool? Ingesting { get; set; }
+    
+    [RdfProperty(Description = "Reported errors with this adjunct",
+        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 25, PropertyName = "error")]
+    public string? Error { get; set; }
 }

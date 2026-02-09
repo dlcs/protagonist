@@ -5,7 +5,7 @@ using IIIF.Presentation.V3.Strings;
 
 namespace DLCS.Model.Assets;
 
-public class Adjunct
+public class Adjunct : IDeliverable
 {
     public const int MaxIdLength = 200;
     
@@ -52,8 +52,16 @@ public class Adjunct
     /// <summary>
     /// A fully-qualified URL external to the platform where the adjunct is hosted
     /// </summary>
-    public required Uri ExternalId { get; set; }
+    public Uri? ExternalId { get; set; }
     
+    /// <inheritdoc/>
+    public bool? Ingesting { get; set; }
+    
+    /// <inheritdoc/>
+    public string? Error { get; set; }
+
+    public string? Origin { get; set; }
+
     /// <summary>
     /// When the adjunct was created
     /// </summary>
