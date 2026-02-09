@@ -160,7 +160,7 @@ public static class DatabaseTestDataPopulation
     public static Task AddTestDefaultDeliveryChannels(this DbSet<DefaultDeliveryChannel> defaultDeliveryChannels,
         int customerId) =>
         defaultDeliveryChannels.AddRangeAsync(defaultDeliveryChannels.Where(d => d.Customer == 1 && d.Space == 0)
-            .Select(x => new DefaultDeliveryChannel()
+            .Select(x => new DefaultDeliveryChannel
             {
                 Customer = customerId,
                 Space = x.Space,
@@ -171,7 +171,7 @@ public static class DatabaseTestDataPopulation
     public static Task AddTestDeliveryChannelPolicies(this DbSet<DeliveryChannelPolicy> deliveryChannelPolicies,
         int customerId) =>
         deliveryChannelPolicies.AddRangeAsync(deliveryChannelPolicies.Where(p => p.Customer == 1 && !p.System)
-            .Select(x => new DeliveryChannelPolicy()
+            .Select(x => new DeliveryChannelPolicy
             {
                 Customer = customerId,
                 Name = x.Name,
