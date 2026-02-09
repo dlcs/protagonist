@@ -35,7 +35,7 @@ public class IngestHandler : IMessageHandler
 
             logger.LogDebug("Message {MessageId} handled with result {IngestResult}", message.MessageId,
                 ingestResult.Status);
-            await UpdateCustomerQueue(message, cancellationToken, ingestResult);
+            await UpdateCustomerQueue(message, ingestResult, cancellationToken);
         }
 
         // return true so that the message is deleted from the queue in all instances.
@@ -44,8 +44,8 @@ public class IngestHandler : IMessageHandler
         return true;
     }
 
-    private async Task UpdateCustomerQueue(QueueMessage message, CancellationToken cancellationToken,
-        IngestResult ingestResult)
+    private async Task UpdateCustomerQueue(QueueMessage message,
+        IngestResult ingestResult, CancellationToken cancellationToken)
     {
         var queue = message.QueueName.ToLower().Contains("priority") ? QueueNames.Priority : QueueNames.Default;
         int customer = 0;

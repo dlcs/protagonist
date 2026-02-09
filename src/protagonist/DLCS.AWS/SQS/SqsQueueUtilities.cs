@@ -11,6 +11,14 @@ namespace DLCS.AWS.SQS;
 /// </summary>
 public class SqsQueueUtilities
 {
+    public static class Constants
+    {
+        public static class MessageAttributeNames
+        {
+            public const string IngestType = "IngestType";
+        }
+    }
+    
     private readonly IAmazonSQS client;
     private readonly ILogger<SqsQueueUtilities> logger;
     private readonly AWSSettings options;

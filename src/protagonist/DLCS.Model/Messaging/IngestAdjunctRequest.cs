@@ -10,6 +10,8 @@ namespace DLCS.Model.Messaging;
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public class IngestAdjunctRequest(Adjunct adjunct, DateTime? created)
 {
+    public const string IngestType = "IngestAdjunct";
+    
     /// <summary>
     /// Get date that this request was created.
     /// </summary>

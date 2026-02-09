@@ -17,6 +17,7 @@ using DLCS.Model.Messaging;
 using LazyCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using static DLCS.AWS.SQS.SqsQueueUtilities.Constants.MessageAttributeNames;
 
 namespace DLCS.Repository.Messaging;
 
@@ -32,14 +33,14 @@ public class EngineClient : IEngineClient
     private readonly IAppCache appCache;
     private readonly ILogger<EngineClient> logger;
 
-    private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web)
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
     private static readonly IReadOnlyDictionary<string, TranscoderPreset> NullPresetDictionary =
         new Dictionary<string, TranscoderPreset>();
-    
+
     public EngineClient(
         IQueueLookup queueLookup,
         IQueueSender queueSender,
@@ -55,7 +56,7 @@ public class EngineClient : IEngineClient
         cacheSettings = cacheOptions.Value;
         this.logger = logger;
     }
-    
+
     public async Task<HttpStatusCode> SynchronousIngest(Asset asset, CancellationToken cancellationToken = default)
     {
         var jsonString = GetJsonString(asset);
@@ -96,7 +97,8 @@ public class EngineClient : IEngineClient
     {
         var queueName = queueLookup.GetAdjunctsQueueName();
         var jsonString = GetJsonString(adjunct);
-        var success = await queueSender.QueueMessage(queueName, jsonString, cancellationToken);
+        var attributes = new Dictionary<string, string> { [IngestType] = IngestAdjunctRequest.IngestType };
+        var success = await queueSender.QueueMessage(queueName, jsonString, attributes, cancellationToken);
 
         if (!success)
         {
@@ -115,7 +117,8 @@ public class EngineClient : IEngineClient
     {
         var queueName = queueLookup.GetQueueNameForFamily(asset.Family ?? new AssetFamily());
         var jsonString = GetJsonString(asset);
-        var success = await queueSender.QueueMessage(queueName, jsonString, cancellationToken);
+        var attributes = new Dictionary<string, string> { [IngestType] = IngestAssetRequest.IngestType };
+        var success = await queueSender.QueueMessage(queueName, jsonString, attributes, cancellationToken);
 
         if (!success)
         {
@@ -134,23 +137,25 @@ public class EngineClient : IEngineClient
     {
         var overallSent = 0;
         var batchId = (assets.First().Batch ?? 0).ToString();
-        
+
         // Get a grouping of items in batch by Family - different families can use different queues 
-        var byFamily  = assets.GroupBy(a => a.Family);
-        
+        var byFamily = assets.GroupBy(a => a.Family);
+
         foreach (var familyGrouping in byFamily)
         {
             logger.LogDebug("Sending '{Family}' notifications for {BatchId}", familyGrouping.Key, batchId);
             var queueName = queueLookup.GetQueueNameForFamily(familyGrouping.Key ?? new AssetFamily(), isPriority);
             var capacity = familyGrouping.Count();
-            
+
             var jsonStrings = new List<string>(capacity);
+            var attributes = new Dictionary<string, string> { [IngestType] = IngestAssetRequest.IngestType };
+
             foreach (var asset in familyGrouping.Select(a => a))
             {
                 jsonStrings.Add(GetJsonString(asset));
             }
 
-            var sentCount = await queueSender.QueueMessages(queueName, jsonStrings, batchId, cancellationToken);
+            var sentCount = await queueSender.QueueMessages(queueName, jsonStrings, batchId, attributes, cancellationToken);
             overallSent += sentCount;
             if (sentCount < capacity)
             {
@@ -161,8 +166,9 @@ public class EngineClient : IEngineClient
 
         return overallSent;
     }
-    
-    public async Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(CancellationToken cancellationToken = default)
+
+    public async Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -170,14 +176,15 @@ public class EngineClient : IEngineClient
             return await response.Content.ReadFromJsonAsync<IReadOnlyCollection<string>>(
                 cancellationToken: cancellationToken);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             logger.LogError(ex, "Failed to retrieve allowed iiif-av policy options from Engine");
             return null;
         }
     }
-    
-    public async Task<IReadOnlyDictionary<string, TranscoderPreset>> GetAvPresets(CancellationToken cancellationToken = default)
+
+    public async Task<IReadOnlyDictionary<string, TranscoderPreset>> GetAvPresets(
+        CancellationToken cancellationToken = default)
     {
         const string key = "avPresetList";
         return await appCache.GetOrAddAsync(key, async entry =>
@@ -196,17 +203,16 @@ public class EngineClient : IEngineClient
             }
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
     }
-    
+
     private static string GetJsonString(Asset asset)
     {
         var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow, asset.Batch);
         return JsonSerializer.Serialize(ingestAssetRequest, SerializerOptions);
     }
-    
+
     private static string GetJsonString(Adjunct adjunct)
     {
         var ingestAdjunctRequest = new IngestAdjunctRequest(adjunct, DateTime.UtcNow);
         return JsonSerializer.Serialize(ingestAdjunctRequest, SerializerOptions);
     }
 }
-
