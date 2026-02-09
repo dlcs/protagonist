@@ -13,8 +13,11 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_ChangesNothing_WithNewFormat()
     {
         // Arrange
-        var hydraImage = new Image{ MediaType = "type", Origin = "https://example.org/my-asset",
-            MaxUnauthorised = 5, Family = AssetFamily.File };
+        var hydraImage = new Image
+        {
+            MediaType = "type", Origin = "https://example.org/my-asset",
+            MaxUnauthorised = 5, Family = AssetFamily.File
+        };
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
@@ -29,10 +32,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_Fails_WhenOriginNotSpecified()
     {
         // Arrange
-        var hydraImage = new Image()
-        {
-            Family = AssetFamily.Timebased
-        };
+        var hydraImage = new Image { Family = AssetFamily.Timebased };
 
         // Act
         Action action = () =>
@@ -49,8 +49,8 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_SetsMediaType_WithNotSet()
     {
         // Arrange
-        var hydraImage = new Image{ MaxUnauthorised = 5, Family = AssetFamily.File,
-            Origin = "https://example.org/my-asset"};
+        var hydraImage = new Image
+            { MaxUnauthorised = 5, Family = AssetFamily.File, Origin = "https://example.org/my-asset" };
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
@@ -65,7 +65,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_InferMediaType_WhenOriginSet()
     {
         // Arrange
-        var hydraImage = new Image{ Origin = "something.jpg",MaxUnauthorised = 5, Family = AssetFamily.File};
+        var hydraImage = new Image { Origin = "something.jpg", MaxUnauthorised = 5, Family = AssetFamily.File };
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
@@ -80,7 +80,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_SetMaxUnauthorised_WhenSetToOldFormat()
     {
         // Arrange
-        var hydraImage = new Image{ Origin = "something.jpg",MaxUnauthorised = 0, Family = AssetFamily.File};
+        var hydraImage = new Image { Origin = "something.jpg", MaxUnauthorised = 0, Family = AssetFamily.File };
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
@@ -95,7 +95,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_SetFamily_WhenNotSet()
     {
         // Arrange
-        var hydraImage = new Image{ Origin = "something.jpg"};
+        var hydraImage = new Image { Origin = "something.jpg" };
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
@@ -110,7 +110,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_MaxUnauthorisedUnchanged_WhenRolesSet()
     {
         // Arrange
-        var hydraImage = new Image{ Origin = "something.jpg", Roles = new []{ "some role" }};
+        var hydraImage = new Image { Origin = "something.jpg", Roles = ["some role"] };
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
@@ -125,8 +125,11 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_ModelIdSet_WhenNoModelId()
     {
         // Arrange
-        var hydraImage = new Image{ Id = "https://test/someId", MediaType = "something", 
-            Origin = "https://example.org/my-asset" };
+        var hydraImage = new Image
+        {
+            Id = "https://test/someId", MediaType = "something",
+            Origin = "https://example.org/my-asset"
+        };
         
         // Act
         var convertedImage = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
@@ -139,7 +142,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_AddsDeliveryChannels_WhenNotSet_ForImage()
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Family = AssetFamily.Image,
             Origin = "something.jpg",
@@ -163,7 +166,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_AddsDeliveryChannels_WhenProvidedWithoutPolicy_ForImage(string iop, string tp)
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Family = AssetFamily.Image,
             Origin = "something.jpg",
@@ -186,7 +189,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_AddsDeliveryChannels_WhenNotSet_ForVideo()
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Family = AssetFamily.Timebased,
             Origin = "something.mp4",
@@ -205,7 +208,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_AddsDeliveryChannels_WhenNotSet_ForAudio()
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Family = AssetFamily.Timebased,
             Origin = "something.mp3",
@@ -224,7 +227,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_AddsDeliveryChannels_WhenNotSet_ForFile()
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Family = AssetFamily.File,
             Origin = "something.pdf",
@@ -246,7 +249,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_TreatsAsImage_ForNonImagesWithoutFamily(string fileExtension)
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Origin = $"something.{fileExtension}",
         };
@@ -267,7 +270,7 @@ public class LegacyModeConverterTests
         string imageOptimisationPolicy)
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Origin = "something.jpg",
             ImageOptimisationPolicy = imageOptimisationPolicy
@@ -291,7 +294,7 @@ public class LegacyModeConverterTests
         string thumbnailPolicy)
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Origin = "something.jpg",
             ThumbnailPolicy = thumbnailPolicy
@@ -316,7 +319,7 @@ public class LegacyModeConverterTests
         string imageOptimisationPolicy, string thumbnailPolicy)
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Origin = "something.jpg",
             ImageOptimisationPolicy = imageOptimisationPolicy,
@@ -341,7 +344,7 @@ public class LegacyModeConverterTests
         string imageOptimisationPolicy)
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Family = AssetFamily.Timebased,
             Origin = "something.mp4",
@@ -364,7 +367,7 @@ public class LegacyModeConverterTests
         string imageOptimisationPolicy)
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Family = AssetFamily.Timebased,
             Origin = "something.mp3",
@@ -384,15 +387,14 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_Fails_WhenInvalidImageOptimisationPolicySpecified_ForImageAsset()
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Origin = "something.tiff",
             ImageOptimisationPolicy = "not-a-policy"
         };
 
         // Act
-        Action action = () =>
-            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+        Action action = () => LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         action.Should()
@@ -405,20 +407,19 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_Fails_WhenInvalidThumbnailPolicySpecified_ForImageAsset()
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Origin = "something.tiff",
             ThumbnailPolicy = "not-a-policy"
         };
 
         // Act
-        Action action = () =>
-            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+        Action action = () => LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         action.Should()
             .Throw<APIException>()
-            .WithMessage($"'not-a-policy' is not a valid thumbnailPolicy for an image")
+            .WithMessage("'not-a-policy' is not a valid thumbnailPolicy for an image")
             .And.StatusCode.Should().Be(400);
     }
  
@@ -426,7 +427,7 @@ public class LegacyModeConverterTests
     public void VerifyAndConvertToModernFormat_Fails_WhenImageOptimisationPolicySpecified_ForTimebasedAsset()
     {
         // Arrange
-        var hydraImage = new Image()
+        var hydraImage = new Image
         {
             Family = AssetFamily.Timebased,
             Origin = "something.mp4",
@@ -434,13 +435,12 @@ public class LegacyModeConverterTests
         };
 
         // Act
-        Action action = () =>
-            LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
+        Action action = () => LegacyModeConverter.VerifyAndConvertToModernFormat(hydraImage);
 
         // Assert
         action.Should()
             .Throw<APIException>()
-            .WithMessage($"'not-a-policy' is not a valid imageOptimisationPolicy for a timebased asset")
+            .WithMessage("'not-a-policy' is not a valid imageOptimisationPolicy for a timebased asset")
             .And.StatusCode.Should().Be(400);
     }
 }
