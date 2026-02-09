@@ -1,5 +1,4 @@
-﻿using System;
-using API.Features.Image.Validation;
+﻿using API.Features.Image.Validation;
 using API.Settings;
 using DLCS.HydraModel;
 using FluentValidation.TestHelper;
@@ -29,7 +28,7 @@ public class ImageBatchPatchValidatorTests
     [Fact]
     public void Members_Empty()
     {
-        var model = new HydraCollection<Image> { Members = Array.Empty<Image>() };
+        var model = new HydraCollection<Image> { Members = [] };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(r => r.Members);
     }
@@ -39,14 +38,14 @@ public class ImageBatchPatchValidatorTests
     {
         var model = new HydraCollection<Image>
         {
-            Members = new[]
-            {
+            Members =
+            [
                 new Image { ModelId = "1/2/f" },
                 new Image { ModelId = "1/2/fo" },
                 new Image { ModelId = "1/2/foo" },
                 new Image { ModelId = "1/2/bar" },
-                new Image { ModelId = "1/2/baz" },
-            }
+                new Image { ModelId = "1/2/baz" }
+            ]
         };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(r => r.Members)
@@ -58,13 +57,13 @@ public class ImageBatchPatchValidatorTests
     {
         var model = new HydraCollection<Image>
         {
-            Members = new[]
-            {
+            Members =
+            [
                 new Image { ModelId = "1/2/fo" },
                 new Image { ModelId = "1/2/foo" },
                 new Image { ModelId = "1/2/bar" },
-                new Image { ModelId = "1/2/baz" },
-            }
+                new Image { ModelId = "1/2/baz" }
+            ]
         };
         var result = sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(r => r.Members);
@@ -75,12 +74,12 @@ public class ImageBatchPatchValidatorTests
     {
         var model = new HydraCollection<Image>
         {
-            Members = new[]
-            {
+            Members =
+            [
                 new Image { ModelId = "1/2/foo" },
                 new Image { ModelId = "1/2/bar" },
-                new Image { ModelId = "1/2/foo" },
-            }
+                new Image { ModelId = "1/2/foo" }
+            ]
         };
         var result = sut.TestValidate(model);
         result
@@ -94,7 +93,7 @@ public class ImageBatchPatchValidatorTests
     [InlineData(" ")]
     public void Member_ModelId_NullOrEmpty(string id)
     {
-        var model = new HydraCollection<Image> { Members = new[] { new Image { ModelId = id } } };
+        var model = new HydraCollection<Image> { Members = [new Image { ModelId = id }] };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].ModelId");
     }
@@ -102,10 +101,13 @@ public class ImageBatchPatchValidatorTests
     [Fact]
     public void Member_Origin_Provided()
     {
-        var model = new HydraCollection<Image> { Members = new[]
+        var model = new HydraCollection<Image>
         {
-            new Image { Origin = "https://example.com/images/example-image.jpg" }
-        } };
+            Members =
+            [
+                new Image { Origin = "https://example.com/images/example-image.jpg" }
+            ]
+        };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].Origin");
     }
@@ -113,10 +115,13 @@ public class ImageBatchPatchValidatorTests
     [Fact]
     public void Member_ImageOptimisationPolicy_Provided()
     {
-        var model = new HydraCollection<Image> { Members = new[]
+        var model = new HydraCollection<Image>
         {
-            new Image { ImageOptimisationPolicy = "example-policy" }
-        } };
+            Members =
+            [
+                new Image { ImageOptimisationPolicy = "example-policy" }
+            ]
+        };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].ImageOptimisationPolicy");
     }
@@ -124,21 +129,55 @@ public class ImageBatchPatchValidatorTests
     [Fact]
     public void Member_MaxUnauthorised_Provided()
     {
-        var model = new HydraCollection<Image> { Members = new[]
+        var model = new HydraCollection<Image>
         {
-            new Image { MaxUnauthorised = 200 }
-        } };
+            Members =
+            [
+                new Image { MaxUnauthorised = 200 }
+            ]
+        };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].MaxUnauthorised");
     }
     
     [Fact]
+    public void Member_MaxWidth_Provided()
+    {
+        var model = new HydraCollection<Image>
+        {
+            Members =
+            [
+                new Image { MaxWidth = 200 }
+            ]
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].MaxWidth");
+    }
+    
+    [Fact]
+    public void Member_OpenFullMax_Provided()
+    {
+        var model = new HydraCollection<Image>
+        {
+            Members =
+            [
+                new Image { OpenFullMax = 200 }
+            ]
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].OpenFullMax");
+    }
+    
+    [Fact]
     public void Member_ThumbnailPolicy_Provided()
     {
-        var model = new HydraCollection<Image> { Members = new[]
+        var model = new HydraCollection<Image>
         {
-            new Image { ThumbnailPolicy = "example-policy" }
-        } };
+            Members =
+            [
+                new Image { ThumbnailPolicy = "example-policy" }
+            ]
+        };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].ThumbnailPolicy");
     }
@@ -146,17 +185,19 @@ public class ImageBatchPatchValidatorTests
     [Fact]
     public void Member_DeliveryChannels_Provided()
     {
-        var model = new HydraCollection<Image> { Members = new[]
+        var model = new HydraCollection<Image>
         {
-            new Image { DeliveryChannels = new []
-            {
-                new DeliveryChannel()
+            Members =
+            [
+                new Image
                 {
-                    Channel = "iiif-img",
-                    Policy = "default"
+                    DeliveryChannels =
+                    [
+                        new DeliveryChannel { Channel = "iiif-img", Policy = "default" }
+                    ]
                 }
-            }}
-        } };
+            ]
+        };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].DeliveryChannels");
     }

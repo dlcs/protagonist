@@ -139,15 +139,11 @@ public class ImagesController : HydraController
             }
             catch (APIException apiEx)
             {
-                return this.HydraProblem(
-                    apiEx.Message, 
-                    null, 500, apiEx.Label);
+                return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode, apiEx.Label);
             }
             catch (Exception ex)
             {
-                return this.HydraProblem(
-                    ex.Message,
-                    null, 500, "Could not patch images");
+                return this.HydraProblem(ex.Message, null, 500, "Could not patch images");
             }
         }
         
