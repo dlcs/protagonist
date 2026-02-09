@@ -3,12 +3,13 @@ using API.Features.Image.Validation;
 using API.Settings;
 using DLCS.HydraModel;
 using FluentValidation.TestHelper;
+using Microsoft.Extensions.Options;
 
 namespace API.Tests.Features.Images.Validation;
 
 public class HydraImageValidatorTests
 {
-    private HydraImageValidator sut => new();
+    private static HydraImageValidator Sut => new(Options.Create(new ApiSettings()));
 
     [Theory]
     [InlineData(null)]
@@ -17,7 +18,7 @@ public class HydraImageValidatorTests
     public void MediaType_NullOrEmpty_OnCreate(string mediaType)
     {
         var model = new Image { MediaType = mediaType };
-        var result = sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(a => a.MediaType);
     }
     
@@ -25,7 +26,7 @@ public class HydraImageValidatorTests
     public void Batch_Provided()
     {
         var model = new Image { Batch = "10" };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Batch);
     }
     
@@ -33,7 +34,7 @@ public class HydraImageValidatorTests
     public void Width_Provided()
     {
         var model = new Image { Width = 10 };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(a => a.Width)
             .WithErrorMessage("Should not include width");
@@ -43,7 +44,7 @@ public class HydraImageValidatorTests
     public void Height_Provided()
     {
         var model = new Image { Height = 10 };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(a => a.Height)
             .WithErrorMessage("Should not include height");
@@ -53,7 +54,7 @@ public class HydraImageValidatorTests
     public void Duration_Provided()
     {
         var model = new Image { Duration = 10 };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(a => a.Duration)
             .WithErrorMessage("Should not include duration");
@@ -63,7 +64,7 @@ public class HydraImageValidatorTests
     public void Finished_Provided()
     {
         var model = new Image { Finished = DateTime.Today };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Finished);
     }
     
@@ -71,7 +72,7 @@ public class HydraImageValidatorTests
     public void Created_Provided()
     {
         var model = new Image { Created = DateTime.Today };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Created);
     }
     
@@ -89,7 +90,7 @@ public class HydraImageValidatorTests
                 Channel = "file"
             }
         } };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
@@ -107,7 +108,7 @@ public class HydraImageValidatorTests
                 Channel = "file"
             }
         } };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
@@ -125,7 +126,7 @@ public class HydraImageValidatorTests
                 Channel = "file"
             }
         } };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
@@ -143,7 +144,7 @@ public class HydraImageValidatorTests
                 Channel = "file"
             }
         } };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
@@ -157,7 +158,7 @@ public class HydraImageValidatorTests
                 Channel = "none"
             }
         } };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
@@ -185,7 +186,7 @@ public class HydraImageValidatorTests
                     Channel = channel,
                 }
             } };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
@@ -207,7 +208,7 @@ public class HydraImageValidatorTests
                 Channel = channel,
             }
         } };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
 
@@ -218,7 +219,7 @@ public class HydraImageValidatorTests
         {
             DeliveryChannels = Array.Empty<DeliveryChannel>()
         };
-        var result = sut.TestValidate(model, options => 
+        var result = Sut.TestValidate(model, options => 
             options.IncludeRuleSets("default", "patch"));
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
@@ -230,7 +231,7 @@ public class HydraImageValidatorTests
         {
             ImageOptimisationPolicy = "some-iop-policy"
         };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.ImageOptimisationPolicy);
     }
     
@@ -241,7 +242,18 @@ public class HydraImageValidatorTests
         {
             ThumbnailPolicy = "some-tp-policy"
         };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.ThumbnailPolicy);
+    }
+    
+    [Fact]
+    public void MaxWidth_TooLarge()
+    {
+        var model = new Image
+        {
+            MaxWidth = new ApiSettings().MaxWidth + 1
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.MaxWidth);
     }
 }

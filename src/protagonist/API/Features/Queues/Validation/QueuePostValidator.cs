@@ -33,7 +33,7 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
             .Must(m => (m?.Length ?? 0) <= maxBatch)
             .WithMessage($"Maximum assets in single batch is {maxBatch}");
 
-        RuleForEach(c => c.Members).SetValidator(new HydraImageValidator(),
+        RuleForEach(c => c.Members).SetValidator(new HydraImageValidator(apiSettings),
             "default", "create");
         
         // In addition to above validation, batched updates must have ModelId + Space as this can't be taken from

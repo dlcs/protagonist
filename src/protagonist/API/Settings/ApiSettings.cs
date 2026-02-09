@@ -8,19 +8,21 @@ public class ApiSettings
 {
     private char[] restrictedResourceIdCharacters = [];
     private string restrictedResourceIdCharacterString = string.Empty;
-    
-    /// <summary>
-    /// The base URI of DLCS to hand-off requests to.
-    /// </summary>
-    public DlcsSettings DLCS { get; set; }
-    
-    public AWSSettings AWS { get; set; }
 
-    public string PathBase { get; set; }
+    public DlcsSettings DLCS { get; set; } = null!;
     
-    public string ApiSalt { get; set; }
-    
-    public string LoginSalt { get; set; }
+    public AWSSettings AWS { get; set; } = null!;
+
+    public string? PathBase { get; set; }
+
+    public string ApiSalt { get; set; } = null!;
+
+    public string LoginSalt { get; set; } = null!;
+
+    /// <summary>
+    /// The system maximum width value. Images cannot be registered with a maxWidth that exceeds this.
+    /// </summary>
+    public int MaxWidth { get; set; } = SystemDefaults.MaxWidth;
     
     /// <summary>
     /// The default PageSize for endpoints that support paging 
