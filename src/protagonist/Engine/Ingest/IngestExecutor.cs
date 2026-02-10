@@ -32,6 +32,12 @@ public class IngestExecutor
         this.storageRepository = storageRepository;
     }
 
+    public async Task<IngestResult> IngestAdjunct(Adjunct asset, CustomerOriginStrategy customerOriginStrategy,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {

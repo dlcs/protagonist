@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -65,6 +66,20 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
         
         logger.LogTrace("Using strategy: {Strategy} ('{StrategyId}') for handling asset '{AssetId}'",
             matching.Strategy, matching.Id, asset.Id);
+        
+        return matching;
+    }
+    
+    public async Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Adjunct adjunct, int customerId)
+    {
+        // Ones without origin would not have been sent for ingestion, this is part of the API processing
+        Debug.Assert(adjunct.Origin != null,  nameof(adjunct.Origin) + " != null");
+        
+        var customerStrategies = await GetCustomerOriginStrategies(customerId);
+        var matching = FindMatchingStrategy(adjunct.Origin, customerStrategies) ?? DefaultStrategy;
+        
+        logger.LogTrace("Using strategy: {Strategy} ('{StrategyId}') for handling adjunct '{AdjunctId}', asset {AssetId}",
+            matching.Strategy, matching.Id, adjunct.Id, adjunct.AssetId);
         
         return matching;
     }

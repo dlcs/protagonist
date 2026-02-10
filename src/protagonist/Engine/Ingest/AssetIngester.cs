@@ -59,14 +59,8 @@ public class AssetIngester : IAssetIngester
     }
 }
 
-public class IngestResult
+public class IngestResult(AssetId? assetId, IngestResultStatus ingestResult)
 {
-    public AssetId? AssetId { get; }
-    public IngestResultStatus Status { get; }
-
-    public IngestResult(AssetId? assetId, IngestResultStatus ingestResult)
-    {
-        AssetId = assetId;
-        Status = ingestResult;
-    }
+    public AssetId? AssetId { get; } = assetId;
+    public IngestResultStatus Status { get; } = ingestResult;
 }

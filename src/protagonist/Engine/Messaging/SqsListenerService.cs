@@ -38,6 +38,7 @@ public class SqsListenerService : BackgroundService
             sqsListenerManager.AddQueueListener(sqsSettings.PriorityImageQueueName, EngineMessageType.Ingest),
             sqsListenerManager.AddQueueListener(sqsSettings.TimebasedQueueName, EngineMessageType.Ingest),
             sqsListenerManager.AddQueueListener(sqsSettings.FileQueueName, EngineMessageType.Ingest),
+            sqsListenerManager.AddQueueListener(sqsSettings.AdjunctQueueName, EngineMessageType.Ingest),
             sqsListenerManager.AddQueueListener(sqsSettings.TranscodeCompleteQueueName,
                 EngineMessageType.TranscodeComplete)
         };

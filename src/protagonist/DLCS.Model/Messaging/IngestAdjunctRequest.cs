@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 
 namespace DLCS.Model.Messaging;
@@ -21,6 +22,11 @@ public class IngestAdjunctRequest(Adjunct adjunct, DateTime? created)
     /// Get the id of the adjunct that has to be ingested
     /// </summary>
     public string Id { get; } = adjunct.Id;
+
+    /// <summary>
+    /// AssetId of the asset owning the adjunct 
+    /// </summary>
+    public AssetId AssetId { get; } = adjunct.AssetId;
     
-    private string DebuggerDisplay => $"{nameof(IngestAdjunctRequest)} at {Created} for Adjunct {Id}";
+    private string DebuggerDisplay => $"{nameof(IngestAdjunctRequest)} at {Created} for Adjunct {Id}, AssetId {AssetId}";
 }

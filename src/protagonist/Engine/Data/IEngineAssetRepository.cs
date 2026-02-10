@@ -25,6 +25,15 @@ public interface IEngineAssetRepository
     /// Engine to work on it (DeliveryChannels + policies, specified Batch, AssetApplicationMetadata)
     /// </summary>
     ValueTask<Asset?> GetAsset(AssetId assetId, int? batchId, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Get the adjunct with the id, for the specified asset.
+    /// </summary>
+    /// <param name="id">Adjunct id - unique only within asset</param>
+    /// <param name="assetId">Asset that owns the adjunct</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns></returns>
+    ValueTask<Adjunct?> GetAdjunct(string id, AssetId assetId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the size of an image from the database, or null if the image is not found

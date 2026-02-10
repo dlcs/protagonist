@@ -95,6 +95,9 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
         return new ValueTask<Asset?>(images.SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
     }
 
+    public ValueTask<Adjunct?> GetAdjunct(string id, AssetId assetId, CancellationToken cancellationToken = default)
+        => new(DlcsContext.Adjuncts.SingleOrDefaultAsync(a => a.Id == id && a.AssetId == assetId, cancellationToken));
+
     public async Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default)
     {
         var imageSize = await DlcsContext.ImageStorages.AsNoTracking()

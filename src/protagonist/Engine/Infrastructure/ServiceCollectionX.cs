@@ -86,6 +86,7 @@ public static class ServiceCollectionX
         services
             .AddSingleton<IAssetIngestorSizeCheck, AppSettingsAssetIngestorSizeCheck>()
             .AddScoped<IAssetIngester, AssetIngester>()
+            .AddScoped<IAdjunctIngester, AdjunctIngester>()
             .AddScoped<TimebasedIngesterWorker>()
             .AddScoped<FileChannelWorker>()
             .AddScoped<ImageIngesterWorker>()

@@ -12,14 +12,16 @@ namespace Engine.Tests.Ingest.Handlers;
 public class IngestHandlerTests
 {
     private readonly IAssetIngester assetIngester;
+    private readonly IAdjunctIngester adjunctIngester;
     private readonly IngestHandler sut;
     private readonly ICustomerQueueRepository customerQueueRepository;
 
     public IngestHandlerTests()
     {
         assetIngester = A.Fake<IAssetIngester>();
+        adjunctIngester = A.Fake<IAdjunctIngester>();
         customerQueueRepository = A.Fake<ICustomerQueueRepository>();
-        sut = new IngestHandler(assetIngester, customerQueueRepository, new NullLogger<IngestHandler>());
+        sut = new IngestHandler(assetIngester, adjunctIngester, customerQueueRepository, new NullLogger<IngestHandler>());
     }
     
     [Fact]
