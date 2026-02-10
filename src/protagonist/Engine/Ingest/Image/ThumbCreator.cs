@@ -6,7 +6,6 @@ using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
 using Engine.Data;
 using IIIF;
-using IIIF.ImageApi;
 using Newtonsoft.Json;
 
 namespace Engine.Ingest.Image;
@@ -35,6 +34,7 @@ public class ThumbCreator(
         var orderedThumbs = thumbsToProcess.OrderByDescending(i => Math.Max(i.Height, i.Width)).ToList();
 
         var maxAvailableThumb = GetMaxOpenThumbnailSize(asset, orderedThumbs);
+        logger.LogTrace("Max available thumbnail size for {AssetId} is {MaxAvailableThumb}", assetId, maxAvailableThumb);
         var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
         var processedWidths = new List<int>(thumbsToProcess.Count);
         
@@ -73,14 +73,40 @@ public class ThumbCreator(
         return thumbnailSizes.Count;
     }
     
-    private static Size GetMaxOpenThumbnailSize(Asset asset, List<ImageOnDisk> orderedThumbsToProcess)
+    private Size GetMaxOpenThumbnailSize(Asset asset, IReadOnlyList<ImageOnDisk> orderedThumbsToProcess)
     {
-        if (asset.MaxUnauthorised == 0) return new Size(0, 0);
-        if ((asset.MaxUnauthorised ?? -1) == -1) return new Size(orderedThumbsToProcess[0].Width, orderedThumbsToProcess[0].Height);
+        // The effective max dimension for open thumbnails
+        var effectiveMax = GetEffectiveOpenMaxDimension(asset);
+        logger.LogTrace("Effective max open dimension for {AssetId} is {MaxDimension}", asset.Id, effectiveMax);
 
-        var thumb = orderedThumbsToProcess.FirstOrDefault(thumb =>
-            asset.MaxUnauthorised >= Math.Max(thumb.Width, thumb.Height));
+        // 0 with roles means "no open", without roles means "all open"
+        if (effectiveMax == 0)
+        {
+            if (asset.HasRoles)
+            {
+                return new Size(0, 0);
+            }
+
+            var largestImageOnDisk = orderedThumbsToProcess[0];
+            return new Size(largestImageOnDisk.Width, largestImageOnDisk.Height);
+        }
+
+        var thumb = orderedThumbsToProcess.FirstOrDefault(thumb => effectiveMax >= Math.Max(thumb.Width, thumb.Height));
         return thumb == null ? new Size(0, 0) : new Size(thumb.Width, thumb.Height);
+    }
+    
+    private static int GetEffectiveOpenMaxDimension(Asset asset)
+    {
+        // If no role, only maxWidth can restrict (openFullMax is ignored)
+        if (!asset.HasRoles) return asset.MaxWidth ?? 0;
+            
+        // If OpenFullMax == 0 then there are no "open" thumbs, return 0
+        if ((asset.OpenFullMax ?? 0) == 0) return 0;
+
+        // We have an OpenFullMax value, if we also have MaxWidth return the smallest of that an OpenFullMax
+        return asset.MaxWidth > 0
+            ? Math.Min(asset.MaxWidth.Value, asset.OpenFullMax!.Value)
+            : asset.OpenFullMax ?? 0;
     }
 
     private async Task UploadThumbs(AssetId assetId, ImageOnDisk thumbCandidate, Size thumb, bool isOpen)

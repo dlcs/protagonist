@@ -113,6 +113,11 @@ public class Asset : ICloneable, IDeliverable
     /// OR MaxUnauthorised >= 0
     /// </summary>
     public bool RequiresAuth => !string.IsNullOrWhiteSpace(Roles) || MaxUnauthorised >= 0;
+    
+    /// <summary>
+    /// Indicates whether this asset has any roles assigned to it.
+    /// </summary>
+    public bool HasRoles => !string.IsNullOrWhiteSpace(Roles);
 
     /// <summary>
     /// A list of image delivery channels attached to this asset
