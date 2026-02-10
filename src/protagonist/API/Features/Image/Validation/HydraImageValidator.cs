@@ -25,6 +25,11 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         
         When(a => !a.DeliveryChannels.IsNullOrEmpty(), ImageDeliveryChannelDependantValidation);
         
+        RuleFor(a => a.MaxUnauthorised)
+            .Must(ma => !ma.HasValue)
+            .When(a => a.MaxWidth.HasValue || a.OpenFullMax.HasValue)
+            .WithMessage("'maxUnauthorised' cannot be set when 'maxWidth' or 'openFullMax' is set");
+        
         RuleFor(a => a.MaxWidth)
             .Must(mw => (mw ?? 0) <= apiSettings.Value.MaxWidth)
             .WithMessage($"'maxWidth' cannot exceed system-default {apiSettings.Value.MaxWidth}.");

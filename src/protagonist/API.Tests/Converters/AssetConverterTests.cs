@@ -95,23 +95,6 @@ public class AssetConverterTests
         var asset = hydraImage.ToDlcsModel(99, 55, "model-id");
         asset.ImageOptimisationPolicy.Should().Be("super-max");
     }
-    
-    [Theory]
-    [MemberData(nameof(MaxUnauthorisedData.Invalid), MemberType = typeof(MaxUnauthorisedData))]
-    public void ToDlcsModel_MaxUnauthorised_Invalid(int? maxUnauthorised, string[] roles, int? maxWidth,
-        int? openFullMax)
-    {
-        var hydraImage = new Image
-        {
-            MaxUnauthorised = maxUnauthorised,
-            Roles = roles,
-            MaxWidth = maxWidth,
-            OpenFullMax = openFullMax,
-        };
-        
-        Action action = () => hydraImage.ToDlcsModel(0, 0);
-        action.Should().ThrowExactly<BadRequestException>();
-    }
 
     [Theory]
     [MemberData(nameof(MaxUnauthorisedData.Valid), MemberType = typeof(MaxUnauthorisedData))]
@@ -313,28 +296,6 @@ public class AssetConverterTests
 
     private class MaxUnauthorisedData
     {
-        /// <summary>
-        /// Data expected to cause exceptions due to maxUnauthorised being supplied alongside other size restriction
-        /// values.
-        /// Values are all for incoming values: maxUnauthorised, roles, maxWidth, openFullMax
-        /// </summary>
-        public static TheoryData<int?, string[], int?, int?> Invalid =>
-            new()
-            {
-                { -1, null, 1, null },
-                { 0, null, 1, null },
-                { 1000, null, 1, null },
-                { -1, null, null, 1 },
-                { 0, null, null, 1 },
-                { 1000, null, null, 1 },
-                { -1, ["https://example.role"], 1, null },
-                { 0, ["https://example.role"], 1, null },
-                { 1000, ["https://example.role"], 1, null },
-                { -1, ["https://example.role"], null, 1 },
-                { 0, ["https://example.role"], null, 1 },
-                { 1000, ["https://example.role"], null, 1 },
-            };
-
         /// <summary>
         /// Data expected to be mapped from maxUnauthorised to maxWidth or roles.
         /// Values are: maxUnauthorised, roles, expectedOpenFullMax, expectedRoles, reason

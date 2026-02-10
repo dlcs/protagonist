@@ -332,14 +332,6 @@ public static class AssetConverter
             // Save the provided value, it won't be used in any logic but is a marker that we received a val
             var maxUnauth = hydraImage.MaxUnauthorised.Value;
             targetAsset.MaxUnauthorised = maxUnauth;
-
-            // Providing maxUnauthorised and either of the replacement properties is not allowed
-            if (hydraImage.MaxWidth.HasValue || hydraImage.OpenFullMax.HasValue)
-            {
-                throw new BadRequestException(
-                    "'maxUnauthorised' is deprecated, superseded by 'maxWidth' and 'openFullMax'. "
-                    + "It can be supplied on it's own but not alongside 'maxWidth' or 'openFullMax'");
-            }
             
             if (!hydraImage.Roles.IsNullOrEmpty())
             {
@@ -356,7 +348,6 @@ public static class AssetConverter
             }
             
             targetAsset.OpenFullMax = GetUsableValue(maxUnauth);
-            
             return;
         }
         

@@ -246,6 +246,23 @@ public class HydraImageValidatorTests
         result.ShouldHaveValidationErrorFor(a => a.ThumbnailPolicy);
     }
     
+    [Theory]
+    [InlineData(10, null)]
+    [InlineData(null, 10)]
+    [InlineData(20, 10)]
+    public void MaxUnauthorised_WithReplacementProps(int? maxWidth, int? openFullMax)
+    {
+        // MaxUnauthorised is not allowed when maxWidth or openFullMax props are set as these replace it
+        var model = new Image
+        {
+            MaxUnauthorised = -1,
+            MaxWidth = maxWidth,
+            OpenFullMax = openFullMax
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.MaxUnauthorised);
+    }
+    
     [Fact]
     public void MaxWidth_TooLarge()
     {
