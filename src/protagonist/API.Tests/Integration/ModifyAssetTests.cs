@@ -121,8 +121,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
             .Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
-        asset.MaxWidth.Should().BeNull();
-        asset.OpenFullMax.Should().BeNull();
+        asset.MaxWidth.Should().Be(0);
+        asset.OpenFullMax.Should().Be(0);
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img");
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
@@ -192,8 +192,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
-        asset.MaxWidth.Should().BeNull();
-        asset.OpenFullMax.Should().BeNull();
+        asset.MaxWidth.Should().Be(0);
+        asset.OpenFullMax.Should().Be(0);
         asset.ImageDeliveryChannels
             .Should().HaveCount(1).And.Subject
             .Should().Satisfy(
@@ -233,8 +233,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
-        asset.MaxWidth.Should().BeNull();
-        asset.OpenFullMax.Should().BeNull();
+        asset.MaxWidth.Should().Be(0);
+        asset.OpenFullMax.Should().Be(0);
         asset.ImageDeliveryChannels
             .Should().HaveCount(2).And.Contain(i =>
                 i.Channel == AssetDeliveryChannels.Image &&
@@ -347,8 +347,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Location!.PathAndQuery.Should().Be(assetId.ToApiResourcePath());
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
-        asset.MaxWidth.Should().BeNull();
-        asset.OpenFullMax.Should().BeNull();
+        asset.MaxWidth.Should().Be(0);
+        asset.OpenFullMax.Should().Be(0);
         asset.ImageDeliveryChannels.Count.Should().Be(2);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-img" &&
                                                                 x.DeliveryChannelPolicyId == newPolicy.Entity.Id);
@@ -767,6 +767,104 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         testAsset.Entity.ImageDeliveryChannels.Should().BeEquivalentTo(expectedDeliveryChannels); // Should be unchanged
     }
     
+    [Fact]
+    public async Task Put_ExistingAsset_IgnoresNullMaxWidthAndOpenFullMax()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        var testAsset = await dbContext.Images.AddTestAsset(assetId, maxWidth: 512, openFullMax: 2400);
+        
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""mediaType"": ""image/tiff"",
+            ""maxWidth"": null,
+        }}";
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
+       
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        await dbContext.Entry(testAsset.Entity).ReloadAsync();
+        testAsset.Entity.MaxWidth.Should().Be(512, "Unchanged in DB because explicit null");
+        testAsset.Entity.OpenFullMax.Should().Be(2400, "Unchanged in DB because missing from payload");
+    }
+    
+    [Fact]
+    public async Task Put_ExistingAsset_ResetsMaxWidthAndOpenFullMax_IfLessThan1()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        var testAsset = await dbContext.Images.AddTestAsset(assetId, maxWidth: 512, openFullMax: 2400);
+        
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""mediaType"": ""image/tiff"",
+            ""maxWidth"": 0,
+            ""openFullMax"": -1,
+        }}";
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
+       
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        await dbContext.Entry(testAsset.Entity).ReloadAsync();
+        testAsset.Entity.MaxWidth.Should().Be(0, "Value of 0 means unset");
+        testAsset.Entity.OpenFullMax.Should().Be(0, "Value of -1 means unset");
+    }
+    
+    [Fact]
+    public async Task Put_ExistingAsset_CanUpdateMaxWidthAndOpenFullMax()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        var testAsset = await dbContext.Images.AddTestAsset(assetId, maxWidth: 512);
+        
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""mediaType"": ""image/tiff"",
+            ""maxWidth"": 1024,
+            ""openFullMax"": 1200,
+        }}";
+        
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+        
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
+       
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        await dbContext.Entry(testAsset.Entity).ReloadAsync();
+        testAsset.Entity.MaxWidth.Should().Be(1024, "Explicit value set");
+        testAsset.Entity.OpenFullMax.Should().Be(1200, "Explicit value set");
+    }
+    
     [Theory]
     [InlineData("audio/mp3", AssetFamily.Timebased)]
     [InlineData("video/mp4", AssetFamily.Timebased)]
@@ -984,8 +1082,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = dbContext.Images.Include(a => a.BatchAssets).Include(i => i.ImageDeliveryChannels)
             .Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
-        asset.MaxWidth.Should().BeNull();
-        asset.OpenFullMax.Should().BeNull();
+        asset.MaxWidth.Should().Be(0);
+        asset.OpenFullMax.Should().Be(0);
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultAudio);
@@ -1025,8 +1123,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Include(i => i.BatchAssets)
             .Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
-        asset.MaxWidth.Should().BeNull();
-        asset.OpenFullMax.Should().BeNull();
+        asset.MaxWidth.Should().Be(0);
+        asset.OpenFullMax.Should().Be(0);
         asset.ImageDeliveryChannels.Count.Should().Be(1);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultVideo);
@@ -1336,8 +1434,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
-        asset.MaxWidth.Should().BeNull();
-        asset.OpenFullMax.Should().BeNull();
+        asset.MaxWidth.Should().Be(0);
+        asset.OpenFullMax.Should().Be(0);
         asset.ImageDeliveryChannels.Should().BeEquivalentTo(deliveryChannels);
     }
     
@@ -2439,6 +2537,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("origin","https://example.com/images/example-image.jpg")]
     [InlineData("imageOptimisationPolicy","example-policy")]
     [InlineData("maxUnauthorised","200")]
+    [InlineData("maxWidth","200")]
+    [InlineData("openFullMax","200")]
     [InlineData("deliveryChannel","[\"iiif-img\",\"thumbs\"]")]
     public async Task Patch_Images_Returns400_IfReingestRequired(string field, string value)
     {

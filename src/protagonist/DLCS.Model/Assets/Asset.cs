@@ -33,13 +33,16 @@ public class Asset : ICloneable, IDeliverable
 
     /// <summary>
     /// Restricts the maximum permitted pixel response as defined in the IIIF Image API.
+    /// A value of 0 is unset, so system default will be applied
     /// </summary>
     public int? MaxWidth { get; set; }
 
     /// <summary>
     /// The maximum longest dimension size that is viewable by unauthorised users.
+    /// Only applies when an image has roles, and the image request region is /full/
+    ///
+    /// A value of 0 is unset
     /// </summary>
-    /// <remarks>Only applies when an image has roles, and the image request region is /full/.</remarks>
     public int? OpenFullMax { get; set; }
 
     /// <summary>

@@ -334,7 +334,6 @@ public static class AssetConverter
             targetAsset.MaxUnauthorised = maxUnauth;
 
             // Providing maxUnauthorised and either of the replacement properties is not allowed
-            // TODO - confirm this - should we reject?
             if (hydraImage.MaxWidth.HasValue || hydraImage.OpenFullMax.HasValue)
             {
                 throw new BadRequestException(
@@ -366,7 +365,6 @@ public static class AssetConverter
             targetAsset.RolesList = hydraImage.Roles;
         }
         
-        // TODO - defend against sizes larger than allowed
         if (hydraImage.MaxWidth != null)
         {
             targetAsset.MaxWidth = GetUsableValue(hydraImage.MaxWidth.Value);
@@ -379,8 +377,8 @@ public static class AssetConverter
 
         return;
         
-        // A value of <= 0 is unset, so save as null to model
-        int? GetUsableValue(int providedValue) => providedValue <= 0 ? null : providedValue;
+        // A value of <= 0 is 'unset', meaning we store 0
+        int GetUsableValue(int providedValue) => Math.Max(0, providedValue);
     }
 
     /// <summary>
@@ -388,8 +386,6 @@ public static class AssetConverter
     /// So we convert to a very similar object.
     /// Other code might reference the Hydra class to build clients but won't reference this.
     /// </summary>
-    /// <param name="imageQuery"></param>
-    /// <returns></returns>
     private static AssetFilter ToAssetFilter(this ImageQuery imageQuery)
     {
         return new AssetFilter

@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
@@ -133,8 +132,8 @@ public class AssetConverterTests
 
     [Theory]
     [InlineData(null, null, null, null)]
-    [InlineData(-1, -10, null, null)]
-    [InlineData(0, 0, null, null)]
+    [InlineData(-1, -10, 0, 0)]
+    [InlineData(0, 0, 0, 0)]
     [InlineData(256, 2500, 256, 2500)]
     public void ToDlcsModel_DefaultsMaxWidth_OpenFullMax_IfNotNull(int? maxWidth, int? openFullMax, int? expectedMaxWidth,
         int? expectedOpenFullMax)
@@ -343,10 +342,10 @@ public class AssetConverterTests
         public static TheoryData<int?, string[], int?, string[], string> Valid =>
             new()
             {
-                { -1, null, null, [], "All sizes/regions available" },
-                { -1, ["https://example.role"], null, ["https://example.role"], "Nothing for anonymous" },
-                { 0, null, null, ["https://dlcs.io/roles/unobtainable"], "No sizes/regions available" },
-                { 0, ["https://example.role"], null, ["https://example.role"], "Nothing for anonymous" },
+                { -1, null, 0, [], "All sizes/regions available" },
+                { -1, ["https://example.role"], 0, ["https://example.role"], "Nothing for anonymous" },
+                { 0, null, 0, ["https://dlcs.io/roles/unobtainable"], "No sizes/regions available" },
+                { 0, ["https://example.role"], 0, ["https://example.role"], "Nothing for anonymous" },
                 { 1000, null, 1000, ["https://dlcs.io/roles/unobtainable"], "Full to 1000 for anonymous, no tile requests" },
                 { 1000, ["https://example.role"], 1000, ["https://example.role"], "Full to 1000 for anonymous, tiles if have role" },
             };
