@@ -4,8 +4,10 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using Engine.Ingest.Image;
+using Engine.Settings;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Test.Helpers.Storage;
 
 namespace Engine.Tests.Ingest.Image;
@@ -14,18 +16,23 @@ public class ThumbCreatorTests
 {
     private readonly TestBucketWriter bucketWriter;
     private readonly ThumbCreator sut;
-    private readonly List<ImageDeliveryChannel> thumbsDeliveryChannel = new()
-    {
-        new ImageDeliveryChannel
+    private readonly List<ImageDeliveryChannel> thumbsDeliveryChannel =
+    [
+        new()
         {
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault,
             Channel = AssetDeliveryChannels.Thumbnails
         }
-    };
+    ];
     
     public ThumbCreatorTests()
     {
         bucketWriter = new TestBucketWriter();
+        sut = GetSut();
+    }
+
+    private ThumbCreator GetSut(int maxWidth = 5000)
+    {
         var storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         
         A.CallTo(() => storageKeyGenerator.GetThumbsSizesJsonLocation(A<AssetId>._))
@@ -36,8 +43,8 @@ public class ThumbCreatorTests
                 var authSlug = open ? "o" : "a";
                 return new ObjectInBucket("thumbs-bucket", $"{assetId}/{authSlug}/{size}.jpg");
             });
-
-        sut = new ThumbCreator(bucketWriter, storageKeyGenerator, new NullLogger<ThumbCreator>());
+        var options = Options.Create(new EngineSettings { MaxWidth = maxWidth });
+        return new ThumbCreator(bucketWriter, storageKeyGenerator, options, new NullLogger<ThumbCreator>());
     }
 
     [Fact]
@@ -170,6 +177,49 @@ public class ThumbCreatorTests
         
         // Act
         var thumbsCreated = await sut.CreateNewThumbs(asset, imagesOnDisk);
+        
+        // Assert
+        thumbsCreated.Should().Be(3);
+        
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/a/1000.jpg")
+            .WithFilePath("1000.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/o/500.jpg")
+            .WithFilePath("500.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/o/100.jpg")
+            .WithFilePath("100.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/s.json")
+            .WithContents(thumbSizes);
+        
+        bucketWriter.ShouldHaveNoUnverifiedPaths();
+        asset.AssetApplicationMetadata.Should()
+            .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
+    }
+    
+    [Fact]
+    public async Task CreateNewThumbs_UploadsExpected_Restriction_FromSystemMaxWidth()
+    {
+        // Effective MaxWidth is 700 but this is set at the system, not asset, level
+        var assetId = new AssetId(10, 20, "foo");
+        var asset = new Asset(assetId)
+        {
+            Width = 3030, Height = 5000, ImageDeliveryChannels = thumbsDeliveryChannel
+        };
+
+        var imagesOnDisk = new List<ImageOnDisk>
+        {
+            new() { Width = 606, Height = 1000, Path = "1000.jpg" },
+            new() { Width = 302, Height = 500, Path = "500.jpg" },
+            new() { Width = 60, Height = 100, Path = "100.jpg" }
+        };
+        
+        const string thumbSizes = "{\"o\":[[302,500],[60,100]],\"a\":[[606,1000]]}";
+        
+        // Act
+        var thumbsCreated = await GetSut(700).CreateNewThumbs(asset, imagesOnDisk);
         
         // Assert
         thumbsCreated.Should().Be(3);

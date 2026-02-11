@@ -81,6 +81,32 @@ public static class AssetX
         asset.Ingesting = false;
         asset.Finished = DateTime.UtcNow;
     }
+
+    /// <summary>
+    /// Calculates the longest edge value for an open /full/ region request, based on maxWidth, openFullMax and Roles.
+    /// </summary>
+    /// <param name="asset">The asset for which to determine the longest edge of the open full region.</param>
+    /// <param name="systemMaxWidth">The system default maxWidth.</param>
+    /// <returns>The longest edge value for the open full region, or 0 if no open thumbnails are available.</returns>
+    /// <remarks>
+    /// This is used to determine the largest size available for Orchestrator requests and thumb generation
+    /// </remarks>
+    public static int GetLargestOpenFullSize(this Asset asset, int systemMaxWidth)
+    {
+        // The effective MaxWidth value can be from the Asset or the system-wide default
+        var effectiveMaxWidth = (asset.MaxWidth ?? 0) == 0
+            ? systemMaxWidth
+            : Math.Min(asset.MaxWidth!.Value, systemMaxWidth);
+        
+        // If no role, the only restriction is maxWidth (openFullMax is ignored)
+        if (!asset.HasRoles) return effectiveMaxWidth;
+
+        // If OpenFullMax == 0 then there are no "open" full sizes, because we have role(s)
+        if ((asset.OpenFullMax ?? 0) == 0) return 0;
+
+        // We have an OpenFullMax value, if we also have MaxWidth return the smallest of that an OpenFullMax
+        return Math.Min(effectiveMaxWidth, asset.OpenFullMax!.Value);
+    }
     
     private static bool AssetIsUnavailableForSize(Asset asset, int boundingSize)
         => asset.RequiresAuth && boundingSize > asset.MaxUnauthorised;
