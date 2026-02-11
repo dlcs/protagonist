@@ -812,7 +812,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.Origin.Should().Be("https://some-location.com/an-adjunct");
         adjunct.PublicId.Should().Be("https://dlcs.digirati.io/adjuncts/99/1/PostAdjunct_CreatesHostedAdjunct/someAdjunctId");
-        
+        adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
+        adjunct.Error.Should().BeNullOrEmpty("no errors yet");
         response.Headers.Location.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");

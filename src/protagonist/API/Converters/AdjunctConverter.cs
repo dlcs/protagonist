@@ -84,5 +84,7 @@ public static class AdjunctConverter
             Created = adjunct.Created,
             Finished = adjunct.Finished,
             Size = adjunct.Size,
+            Error = adjunct.Error,
+            Ingesting = adjunct.Ingesting
         };
 }
