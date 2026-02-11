@@ -21,12 +21,12 @@ public static class AssetConverter
     /// </summary>
     /// <param name="dbAsset"></param>
     /// <param name="urlRoots">The domain name of the API and orchestrator applications</param>
-    /// <returns></returns>
+    /// <returns><see cref="Image"/> hydra model</returns>
     public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots)
     {
         if (dbAsset.Id.Customer != dbAsset.Customer || dbAsset.Id.Space != dbAsset.Space)
         {
-            throw new APIException(
+            throw new BadRequestException(
                 $"Asset {dbAsset.Id} does not start with expected prefix {dbAsset.Customer}/{dbAsset.Space}/");
         }
 
@@ -41,6 +41,8 @@ public static class AssetConverter
             Created = dbAsset.Created,
             Origin = dbAsset.Origin,
             MaxUnauthorised = dbAsset.MaxUnauthorised,
+            MaxWidth = dbAsset.MaxWidth,
+            OpenFullMax = dbAsset.OpenFullMax,
             Finished = dbAsset.Finished,
             Ingesting = dbAsset.Ingesting,
             Error = dbAsset.Error,
@@ -79,8 +81,8 @@ public static class AssetConverter
         
         if (!dbAsset.ImageDeliveryChannels.IsNullOrEmpty())
         {
-            image.DeliveryChannels = dbAsset.ImageDeliveryChannels.Select(c => new DeliveryChannel()
-                {
+            image.DeliveryChannels = dbAsset.ImageDeliveryChannels.Select(c => new DeliveryChannel
+            {
                     Channel = c.Channel,
                     Policy = c.DeliveryChannelPolicy.System 
                         ? c.DeliveryChannelPolicy.Name
@@ -89,14 +91,14 @@ public static class AssetConverter
         }
         else
         {
-            image.DeliveryChannels = Array.Empty<DeliveryChannel>();
+            image.DeliveryChannels = [];
         }
 
         return image;
     }
 
     /// <summary>
-    /// This will create a DLCS.Model.Assets.Asset with the correct Id, Customer and Space.
+    /// This will create a <see cref="Asset"/> with the correct Id, Customer and Space.
     /// It will still have null fields, if the incoming Hydra object doesn't supply them.
     ///
     /// So it's not yet ready to be inserted or updated in the DB; it needs further
@@ -112,85 +114,8 @@ public static class AssetConverter
     /// <exception cref="APIException"></exception>
     public static Asset ToDlcsModel(this Image hydraImage, int customerId, int? spaceId = null, string? modelId = null)
     {
-        if (customerId <= 0)
-        {
-            throw new APIException("Caller must assert which customer this Asset belongs to.");
-        }
-        
-        hydraImage.CustomerId = customerId;
+        var asset = GetAssetWithIdentifiers(hydraImage, customerId, spaceId, modelId);
 
-        if (hydraImage.Space > 0 && spaceId.HasValue && spaceId.Value != hydraImage.Space)
-        {
-            throw new APIException("Asserted space does not agree with supplied space.");
-        }
-        
-        if (hydraImage.Space <= 0)
-        {
-            if (spaceId.HasValue)
-            {
-                hydraImage.Space = spaceId.Value;
-            }
-            else
-            {
-                throw new APIException("No Space provided for this Asset.");
-            }
-        }
-        
-        if (modelId.IsNullOrEmpty())
-        {
-            modelId = hydraImage.ModelId;
-        }
-        
-        if (modelId.IsNullOrEmpty() && hydraImage.Id.HasText())
-        {
-            modelId = hydraImage.Id.GetLastPathElement();
-        }
-
-        if (!modelId.HasText())
-        {
-            throw new APIException("Hydra Image does not have a ModelId, and no ModelId could be inferred.");
-        }
-        
-        // This is a silent test for backwards compatibility with Deliverator.
-        // DDS sends Patch ModelIDs in full ID form:
-        var testPrefix = $"{hydraImage.CustomerId}/{hydraImage.Space}/";
-        if (modelId.StartsWith(testPrefix))
-        {
-            modelId = modelId.Substring(testPrefix.Length);
-        }
-
-        var assetId = new AssetId(hydraImage.CustomerId, hydraImage.Space, modelId);
-        if (hydraImage.Id.HasText())
-        {
-            var idParts = hydraImage.Id.Split("/");
-            if (idParts.Length < 6)
-            {
-                throw new APIException("Caller supplied an ID that is not in the correct form");
-            }
-            idParts = idParts[^6..];
-            if (idParts[0] != "customers" || idParts[2] != "spaces" || idParts[4] != "images")
-            {
-                throw new APIException("Caller supplied an ID that is not in the correct form");
-            }
-
-            var assetIdFromHydraId = AssetId.FromString($"{idParts[1]}/{idParts[3]}/{idParts[5]}");
-            if (assetIdFromHydraId != assetId)
-            {
-                throw new APIException("Caller supplied an ID that is not supported by the request URL");
-            }
-            // it's OK if the caller didn't explicitly provide an Id in the JSON body - but it's an error
-            // if they supply one that disagrees with the assertions provided in the method call.
-            // e.g., used for PUT to a URL, the route params are passed to this method.
-        }
-        var asset = new Asset
-        {
-            Id = assetId,
-            Customer = hydraImage.CustomerId,
-            Space = hydraImage.Space
-        };
-        
-        // NOTE(DG) - would the below be better suited to AutoMapper? Would mean any new fields would auto-map
-        
         // This conversion should not be supported?
         if (hydraImage.Batch != null)
         {
@@ -266,20 +191,13 @@ public static class AssetConverter
         {
             asset.NumberReference3 = hydraImage.Number3.Value;
         }
-
-        if (hydraImage.Roles != null)
-        {
-            asset.RolesList = hydraImage.Roles;
-        }
+        
         if (hydraImage.Tags != null)
         {
             asset.TagsList = hydraImage.Tags;
         }
 
-        if (hydraImage.MaxUnauthorised != null)
-        {
-            asset.MaxUnauthorised = hydraImage.MaxUnauthorised.Value;
-        }
+        SetSizeRestriction(hydraImage, asset);
 
         if (hydraImage.MediaType != null)
         {
@@ -312,13 +230,154 @@ public static class AssetConverter
     }
 
     /// <summary>
+    /// Safely built a basic <see cref="Asset"/> with Id, Customer and Space set.
+    /// </summary>
+    /// <exception cref="BadRequestException">Thrown if identity or space cannot be determined</exception>
+    private static Asset GetAssetWithIdentifiers(Image hydraImage, int customerId, int? spaceId, string? modelId)
+    {
+        if (customerId <= 0)
+        {
+            throw new BadRequestException("Caller must assert which customer this Asset belongs to.");
+        }
+        
+        hydraImage.CustomerId = customerId;
+
+        if (hydraImage.Space > 0 && spaceId.HasValue && spaceId.Value != hydraImage.Space)
+        {
+            throw new BadRequestException("Asserted space does not agree with supplied space.");
+        }
+        
+        if (hydraImage.Space <= 0)
+        {
+            if (spaceId.HasValue)
+            {
+                hydraImage.Space = spaceId.Value;
+            }
+            else
+            {
+                throw new BadRequestException("No Space provided for this Asset.");
+            }
+        }
+        
+        if (modelId.IsNullOrEmpty())
+        {
+            modelId = hydraImage.ModelId;
+        }
+        
+        if (modelId.IsNullOrEmpty() && hydraImage.Id.HasText())
+        {
+            modelId = hydraImage.Id.GetLastPathElement();
+        }
+
+        if (!modelId.HasText())
+        {
+            throw new BadRequestException("Hydra Image does not have a ModelId, and no ModelId could be inferred.");
+        }
+        
+        // This is a silent test for backwards compatibility with Deliverator.
+        // DDS sends Patch ModelIDs in full ID form:
+        var testPrefix = $"{hydraImage.CustomerId}/{hydraImage.Space}/";
+        if (modelId.StartsWith(testPrefix))
+        {
+            modelId = modelId.Substring(testPrefix.Length);
+        }
+
+        var assetId = GetValidAssetId(hydraImage, modelId);
+        var asset = new Asset
+        {
+            Id = assetId,
+            Customer = hydraImage.CustomerId,
+            Space = hydraImage.Space
+        };
+        return asset;
+    }
+    
+    private static AssetId GetValidAssetId(Image hydraImage, string modelId)
+    {
+        var assetId = new AssetId(hydraImage.CustomerId, hydraImage.Space, modelId);
+        if (!hydraImage.Id.HasText()) return assetId;
+
+        var idParts = hydraImage.Id.Split("/");
+        if (idParts.Length < 6)
+        {
+            throw new BadRequestException($"Caller supplied an ID that is not in the correct form ({hydraImage.Id})");
+        }
+        idParts = idParts[^6..];
+        if (idParts[0] != "customers" || idParts[2] != "spaces" || idParts[4] != "images")
+        {
+            throw new BadRequestException($"Caller supplied an ID that is not in the correct form ({hydraImage.Id})");
+        }
+
+        var assetIdFromHydraId = AssetId.FromString($"{idParts[1]}/{idParts[3]}/{idParts[5]}");
+        if (assetIdFromHydraId != assetId)
+        {
+            throw new BadRequestException("Caller supplied an ID that is not supported by the request URL");
+        }
+        // it's OK if the caller didn't explicitly provide an Id in the JSON body - but it's an error
+        // if they supply one that disagrees with the assertions provided in the method call.
+        // e.g., used for PUT to a URL, the route params are passed to this method.
+
+        return assetId;
+    }
+    
+    /// <summary>
+    /// Set fields that can control access restrictions: maxWidth, openFullMax and roles
+    /// Also handles maxUnauthorised value, which is deprecated but will be supported for a short period 
+    /// </summary>
+    private static void SetSizeRestriction(Image hydraImage, Asset targetAsset)
+    {
+        // maxUnauthorised is superseded but we support mapping from this to new values for a period
+        if (hydraImage.MaxUnauthorised != null)
+        {
+            // Save the provided value, it won't be used in any logic but is a marker that we received a val
+            var maxUnauth = hydraImage.MaxUnauthorised.Value;
+            targetAsset.MaxUnauthorised = maxUnauth;
+            
+            if (!hydraImage.Roles.IsNullOrEmpty())
+            {
+                // If roles have been provided, use them
+                targetAsset.RolesList = hydraImage.Roles!;
+            }
+            else
+            {
+                // No roles provided but we may need to assign an unobtainable role to simulate behaviour
+                if (maxUnauth >= 0)
+                {
+                    targetAsset.RolesList = [Asset.UnobtainableRole];
+                }
+            }
+            
+            targetAsset.OpenFullMax = GetUsableValue(maxUnauth);
+            return;
+        }
+        
+        if (hydraImage.Roles != null)
+        {
+            targetAsset.RolesList = hydraImage.Roles;
+        }
+        
+        if (hydraImage.MaxWidth != null)
+        {
+            targetAsset.MaxWidth = GetUsableValue(hydraImage.MaxWidth.Value);
+        }
+        
+        if (hydraImage.OpenFullMax != null)
+        {
+            targetAsset.OpenFullMax = GetUsableValue(hydraImage.OpenFullMax.Value);
+        }
+
+        return;
+        
+        // A value of <= 0 is 'unset', meaning we store 0
+        int GetUsableValue(int providedValue) => Math.Max(0, providedValue);
+    }
+
+    /// <summary>
     /// We don't want to use the Hydra ImageQuery class inside the DLCS business logic, it's an HTTP layer JSON construct.
     /// So we convert to a very similar object.
     /// Other code might reference the Hydra class to build clients but won't reference this.
     /// </summary>
-    /// <param name="imageQuery"></param>
-    /// <returns></returns>
-    public static AssetFilter ToAssetFilter(this ImageQuery imageQuery)
+    private static AssetFilter ToAssetFilter(this ImageQuery imageQuery)
     {
         return new AssetFilter
         {

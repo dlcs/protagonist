@@ -1,6 +1,8 @@
-﻿using DLCS.Core.Collections;
+﻿using API.Settings;
+using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using FluentValidation;
+using Microsoft.Extensions.Options;
 
 namespace API.Features.Image.Validation;
 
@@ -9,7 +11,7 @@ namespace API.Features.Image.Validation;
 /// </summary>
 public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 {
-    public HydraImageValidator()
+    public HydraImageValidator(IOptions<ApiSettings> apiSettings)
     {
         RuleFor(p => p.DeliveryChannels)
             .Must(a => a!.Any())
@@ -22,6 +24,15 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         });
         
         When(a => !a.DeliveryChannels.IsNullOrEmpty(), ImageDeliveryChannelDependantValidation);
+        
+        RuleFor(a => a.MaxUnauthorised)
+            .Must(ma => !ma.HasValue)
+            .When(a => a.MaxWidth.HasValue || a.OpenFullMax.HasValue)
+            .WithMessage("'maxUnauthorised' cannot be set when 'maxWidth' or 'openFullMax' is set");
+        
+        RuleFor(a => a.MaxWidth)
+            .Must(mw => (mw ?? 0) <= apiSettings.Value.MaxWidth)
+            .WithMessage($"'maxWidth' cannot exceed system-default {apiSettings.Value.MaxWidth}.");
         
         // Legacy policy fields
         RuleFor(a => a.ImageOptimisationPolicy).Null()

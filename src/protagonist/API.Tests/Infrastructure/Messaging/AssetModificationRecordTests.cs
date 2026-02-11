@@ -44,7 +44,7 @@ public class AssetModificationRecordTests
     {
         // Arrange
         var before = new Asset { Id = new AssetId(1, 2, "foo") };
-        var after = new Asset { Id = new AssetId(1, 2, "foo"), MaxUnauthorised = 10 };
+        var after = new Asset { Id = new AssetId(1, 2, "foo"), OpenFullMax = 10 };
         
         // Act
         var notification = AssetModificationRecord.Update(before, after, engineNotified);

@@ -59,6 +59,8 @@ public class DapperAssetRepository(
             Tags = firstAsset.Tags,
             Width = firstAsset.Width,
             MaxUnauthorised = firstAsset.MaxUnauthorised,
+            MaxWidth = firstAsset.MaxWidth,
+            OpenFullMax = firstAsset.OpenFullMax,
             MediaType = firstAsset.MediaType,
             NumberReference1 = firstAsset.NumberReference1,
             NumberReference2 = firstAsset.NumberReference2,
@@ -93,7 +95,7 @@ public class DapperAssetRepository(
 
     private const string AssetSql = @"
 SELECT ""Images"".""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Roles"", 
-""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", 
+""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", ""MaxWidth"", ""OpenFullMax"",
 ""NumberReference1"", ""NumberReference2"", ""NumberReference3"", ""Width"", 
 ""Height"", ""Error"", ""Batch"", ""Finished"", ""Ingesting"", ""ImageOptimisationPolicy"", 
 ""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels"", ""Manifests"",

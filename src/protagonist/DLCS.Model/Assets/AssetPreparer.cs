@@ -100,13 +100,14 @@ public static class AssetPreparer
                 requiresReingest = true;
             }
 
-            if (updateAsset.ImageDeliveryChannels != null && !updateAsset.ImageDeliveryChannels.SequenceEqual(existingAsset.ImageDeliveryChannels))
+            if (updateAsset.ImageDeliveryChannels != null &&
+                !updateAsset.ImageDeliveryChannels.SequenceEqual(existingAsset.ImageDeliveryChannels))
             {
                 // Changing ImageDeliveryChannel can alter how the image should be processed
                 requiresReingest = true;
                 reCalculateFamily = true;
             }
-            
+
             if (updateAsset.ThumbnailPolicy.HasText() && updateAsset.ThumbnailPolicy != existingAsset.ThumbnailPolicy)
             {
                 requiresReingest = true;
@@ -117,8 +118,13 @@ public static class AssetPreparer
             {
                 requiresReingest = true; // YES, because we've changed the way this image should be processed
             }
+            
+            if (updateAsset.MaxWidth.HasValue && updateAsset.MaxWidth != existingAsset.MaxWidth)
+            {
+                requiresReingest = true;
+            }
 
-            if (updateAsset.MaxUnauthorised.HasValue && updateAsset.MaxUnauthorised != existingAsset.MaxUnauthorised)
+            if (updateAsset.OpenFullMax.HasValue && updateAsset.OpenFullMax != existingAsset.OpenFullMax)
             {
                 requiresReingest = true;
             }
@@ -194,7 +200,7 @@ public static class AssetPreparer
             }
         }
         
-        if (allowNonApiUpdates == false)
+        if (!allowNonApiUpdates)
         {
             // These cannot be created or modified via the API
             if (updateAsset.Finished.HasValue)
@@ -222,7 +228,7 @@ public static class AssetPreparer
         }
 
         // If we have an existing Asset and we are not allowed nonApiUpdates
-        if (existingAsset != null && allowNonApiUpdates == false)
+        if (existingAsset != null && !allowNonApiUpdates)
         {
             // Allow updating dimensions if _existing_ channel is "file" only as these won't have been set by
             // an automated process
@@ -339,6 +345,8 @@ public static class AssetPreparer
             NumberReference2 = 0,
             NumberReference3 = 0,
             MaxUnauthorised = -1,
+            MaxWidth = 0,
+            OpenFullMax = 0,
             Width = 0,
             Height = 0,
             Duration = 0,

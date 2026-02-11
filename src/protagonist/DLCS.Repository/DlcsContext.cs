@@ -391,6 +391,8 @@ public partial class DlcsContext : DbContext
             entity.HasIndex(e => e.Manifests)
                 .HasMethod("gin");
 
+            entity.Property(e => e.MaxWidth).IsRequired();
+            entity.Property(e => e.OpenFullMax).IsRequired();
             entity.Property(e => e.MaxUnauthorised).IsRequired();
             entity.Property(e => e.Width).IsRequired();
             entity.Property(e => e.Height).IsRequired();

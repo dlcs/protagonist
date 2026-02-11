@@ -13,6 +13,8 @@ namespace DLCS.Model.Assets;
 /// </summary>
 public class Asset : ICloneable, IDeliverable
 {
+    public const string UnobtainableRole = "https://dlcs.io/roles/unobtainable";
+    
     public AssetId Id { get; set; }
     public int Customer { get; set; }
     public int Space { get; set; }
@@ -28,11 +30,26 @@ public class Asset : ICloneable, IDeliverable
     public int? NumberReference1 { get; set; }
     public int? NumberReference2 { get; set; }
     public int? NumberReference3 { get; set; }
-    
+
+    /// <summary>
+    /// Restricts the maximum permitted pixel response as defined in the IIIF Image API.
+    /// A value of 0 is unset, so system default will be applied
+    /// </summary>
+    public int? MaxWidth { get; set; }
+
+    /// <summary>
+    /// The maximum longest dimension size that is viewable by unauthorised users.
+    /// Only applies when an image has roles, and the image request region is /full/
+    ///
+    /// A value of 0 is unset
+    /// </summary>
+    public int? OpenFullMax { get; set; }
+
     /// <summary>
     /// The maximum size of longest dimension that is viewable by unauthorised users.
     /// -1 = null (all open), 0 = no allowed size without being auth 
     /// </summary>
+    [Obsolete("Replaced by maxWidth and openFullMax")]
     public int? MaxUnauthorised { get; set; }
     public int? Width { get; set; }
     public int? Height { get; set; }

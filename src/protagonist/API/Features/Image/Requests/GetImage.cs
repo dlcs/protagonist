@@ -1,4 +1,5 @@
 using API.Features.Assets;
+using API.Infrastructure.Requests;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using MediatR;
@@ -8,30 +9,19 @@ namespace API.Features.Image.Requests;
 /// <summary>
 /// Get asset with provided Id
 /// </summary>
-public class GetImage : IRequest<Asset?>
+public class GetImage(AssetId assetId, bool noCache) : IRequest<FetchEntityResult<Asset>>
 {
-    public GetImage(AssetId assetId, bool noCache)
-    {
-        AssetId = assetId;
-        NoCache = noCache;
-    }
-    
-    public AssetId AssetId { get; }
-    public bool NoCache { get; }
+    public AssetId AssetId { get; } = assetId;
+    public bool NoCache { get; } = noCache;
 }
 
-public class GetImageHandler : IRequestHandler<GetImage, Asset?>
+public class GetImageHandler(IApiAssetRepository assetRepository) : IRequestHandler<GetImage, FetchEntityResult<Asset>>
 {
-    private readonly IApiAssetRepository assetRepository;
-
-    public GetImageHandler(IApiAssetRepository assetRepository)
+    public async Task<FetchEntityResult<Asset>> Handle(GetImage request, CancellationToken cancellationToken)
     {
-        this.assetRepository = assetRepository;
-    }
-    
-    public async Task<Asset?> Handle(GetImage request, CancellationToken cancellationToken)
-    {
-        var image = await assetRepository.GetAsset(request.AssetId, noCache: request.NoCache);
-        return image;
+        var asset = await assetRepository.GetAsset(request.AssetId, noCache: request.NoCache);
+        return asset == null
+            ? FetchEntityResult<Asset>.NotFound()
+            : FetchEntityResult<Asset>.Success(asset);
     }
 }
