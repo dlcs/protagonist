@@ -580,7 +580,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", maxUnauthorised: 400,
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "clickthrough", openFullMax: 400,
             imageDeliveryChannels: imageDeliveryChannels);
         await dbFixture.DbContext.SaveChangesAsync();
 

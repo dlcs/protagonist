@@ -18,6 +18,11 @@ public class OrchestratorSettings
     /// Regex for S3-origin, for objects uploaded directly to DLCS.
     /// </summary>
     public string S3OriginRegex { get; set; }
+    
+    /// <summary>
+    /// The system maximum width value. Images will not be generated that exceed this.
+    /// </summary>
+    public int MaxWidth { get; set; } = SystemDefaults.MaxWidth;
 
     /// <summary>
     /// Which image-server is handling downstream tile requests

@@ -16,13 +16,13 @@ public class AssetXTests
     ];
     
     [Fact]
-    public void GetAvailableThumbSizes_Correct_MaxUnauthorisedNoRoles()
+    public void GetAvailableThumbSizes_Correct_MaxWidthNoRoles()
     {
-        // Arrange
-        var asset = new Asset { Width = 5000, Height = 2500, MaxUnauthorised = 500 };
+        // Thumbs of 500 or less are open
+        var asset = new Asset { Width = 5000, Height = 2500, MaxWidth = 500 };
 
         // Act
-        var sizes = asset.GetAvailableThumbSizes(sizeParameters);
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters, 5000);
         
         // Assert
         sizes.Open.Should().BeEquivalentTo(new List<int[]>
@@ -38,15 +38,15 @@ public class AssetXTests
     }
     
     [Theory]
-    [InlineData(-1)]
+    [InlineData(null)]
     [InlineData(0)]
-    public void GetAvailableThumbSizes_Correct_IfRolesNoMaxUnauthorised(int maxUnauthorised)
+    public void GetAvailableThumbSizes_Correct_IfRolesNoOpenFullMax(int? openFullMax)
     {
-        // Arrange
-        var asset = new Asset { Width = 5000, Height = 2500, Roles = "GoodGuys", MaxUnauthorised = maxUnauthorised };
+        // No thumb sizes are open
+        var asset = new Asset { Width = 5000, Height = 2500, Roles = "GoodGuys", OpenFullMax = openFullMax };
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(sizeParameters);
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters, 5000);
         
         // Assert
         sizes.Open.Should().BeEmpty();
@@ -60,13 +60,13 @@ public class AssetXTests
     }
     
     [Fact]
-    public void GetAvailableThumbSizes_Correct_IfRolesMaxUnauthorised()
+    public void GetAvailableThumbSizes_Correct_IfRolesOpenFullMax()
     {
-        // Arrange
-        var asset = new Asset { Width = 2500, Height = 5000, Roles = "GoodGuys", MaxUnauthorised = 399 };
+        // Only thumbs 399px and below are available
+        var asset = new Asset { Width = 2500, Height = 5000, Roles = "GoodGuys", OpenFullMax = 399 };
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(sizeParameters);
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters, 5000);
         
         // Assert
         sizes.Open.Should().BeEquivalentTo(new List<int[]>
@@ -88,7 +88,7 @@ public class AssetXTests
         var asset = new Asset { Width = 300, Height = 150 };
         
         // Act
-        var sizes = asset.GetAvailableThumbSizes(sizeParameters);
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters, 5000);
         
         // Assert
         sizes.Open.Should().BeEquivalentTo(new List<int[]>
@@ -104,7 +104,7 @@ public class AssetXTests
     public void GetAvailableThumbSizes_HandlesNonConfinedSizeParameters_ExcludingDuplicates()
     {
         // Arrange
-        var asset = new Asset { Width = 5000, Height = 2500, MaxUnauthorised = 500 };
+        var asset = new Asset { Width = 5000, Height = 2500, MaxWidth = 500 };
         var sizeParametersWithNotConfined = new List<SizeParameter>
         {
             SizeParameter.Parse("800,"), // == 800,400
@@ -114,12 +114,34 @@ public class AssetXTests
         };
 
         // Act
-        var sizes = asset.GetAvailableThumbSizes(sizeParametersWithNotConfined);
+        var sizes = asset.GetAvailableThumbSizes(sizeParametersWithNotConfined, 5000);
         
         // Assert
         sizes.Open.Should().BeEquivalentTo(new List<int[]>
         {
             new[] { 400, 200 },
+        });
+        sizes.Auth.Should().BeEquivalentTo(new List<int[]>
+        {
+            new[] { 800, 400 },
+        });
+    }
+    
+    [Fact]
+    public void GetAvailableThumbSizes_ObeySystemMaxWidth()
+    {
+        // Thumbs of 500 or less are open as maxWidth is smaller than asset maxWidth
+        var asset = new Asset { Width = 5000, Height = 2500, MaxWidth = 5000 };
+
+        // Act
+        var sizes = asset.GetAvailableThumbSizes(sizeParameters, 500);
+        
+        // Assert
+        sizes.Open.Should().BeEquivalentTo(new List<int[]>
+        {
+            new[] { 400, 200 },
+            new[] { 200, 100 },
+            new[] { 100, 50 },
         });
         sizes.Auth.Should().BeEquivalentTo(new List<int[]>
         {
@@ -156,7 +178,7 @@ public class AssetXTests
         };
 
         // Act
-        var sizes = asset.GetAvailableThumbSizes(sizeParametersWithNotConfined);
+        var sizes = asset.GetAvailableThumbSizes(sizeParametersWithNotConfined, 4000);
         
         // Assert
         sizes.IsEmpty().Should().Be(ignored, reason);

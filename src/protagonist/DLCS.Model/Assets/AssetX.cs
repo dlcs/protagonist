@@ -17,8 +17,10 @@ public static class AssetX
     /// </summary>
     /// <param name="asset">Asset to extract thumbnails sizes for.</param>
     /// <param name="sizeParameters">List of thumbnail policy sizes used to calculate thumb sizes.</param>
+    /// <param name="systemMaxWidth">The system default maxWidth.</param>
     /// <returns>List of available thumbnail <see cref="Size"/></returns>
-    public static ThumbnailSizes GetAvailableThumbSizes(this Asset asset, List<SizeParameter> sizeParameters)
+    public static ThumbnailSizes GetAvailableThumbSizes(this Asset asset, List<SizeParameter> sizeParameters, 
+        int systemMaxWidth)
     {
         asset.ThrowIfNull(nameof(asset));
         sizeParameters.ThrowIfNull(nameof(sizeParameters));
@@ -29,6 +31,9 @@ public static class AssetX
             asset.Height.ThrowIfNull(nameof(asset.Height)));
 
         var thumbnailSizes = new ThumbnailSizes(sizeParameters.Count);
+        
+        // Get the largest possible open size, this is the maximum thumbnail size
+        var largestThumbnailSize = asset.GetLargestOpenFullSize(systemMaxWidth);
 
         foreach (var sizeParameter in sizeParameters)
         {
@@ -42,8 +47,7 @@ public static class AssetX
             if (generatedMax.Contains(maxDimension)) continue;
             generatedMax.Add(maxDimension);
             
-            var assetIsUnavailableForSize = AssetIsUnavailableForSize(asset, maxDimension);
-            if (assetIsUnavailableForSize)
+            if (maxDimension > largestThumbnailSize)
             {
                 thumbnailSizes.AddAuth(resized);
             }
@@ -107,7 +111,4 @@ public static class AssetX
         // We have an OpenFullMax value, if we also have MaxWidth return the smallest of that an OpenFullMax
         return Math.Min(effectiveMaxWidth, asset.OpenFullMax!.Value);
     }
-    
-    private static bool AssetIsUnavailableForSize(Asset asset, int boundingSize)
-        => asset.RequiresAuth && boundingSize > asset.MaxUnauthorised;
 }
