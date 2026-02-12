@@ -29,6 +29,9 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
     {
         var adjunct = request.Adjunct;
         var isCreate = true;
+
+        // We can determine that immediately, remember for multiple uses below
+        var toBeIngested = adjunct.IsToBeIngested();
         
         Adjunct? dbAdjunct = null;
         if (!request.CreateOnly)
@@ -50,7 +53,6 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
             dbAdjunct.ExternalId = adjunct.ExternalId;
             dbAdjunct.Origin = adjunct.Origin;
             dbAdjunct.Error = adjunct.Error;
-            dbAdjunct.Finished = DateTime.UtcNow;
             dbAdjunct.Size = adjunct.Size;
             dbAdjunct.Type = adjunct.Type;
         }
@@ -58,9 +60,18 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
         {
             dbAdjunct = adjunct;
             dbAdjunct.Created = DateTime.UtcNow;
-            dbAdjunct.Finished = DateTime.UtcNow;
             
             await dbContext.Adjuncts.AddAsync(dbAdjunct, cancellationToken);
+        }
+
+        if (!toBeIngested)
+        {
+            // It is either creation of new external, or updating external->external, or updating hosted->external
+            // In those cases we don't send to Engine for ingestion and finalizing is done in-API, so we set now()
+            dbAdjunct.Finished = DateTime.UtcNow;
+            
+            // otherwise we leave it as either `null` for create or existing as "last finished" - in both cases
+            // Engine will set the property when done ingesting
         }
 
         try
@@ -82,7 +93,7 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
         
         dbAdjunct = dbContext.Adjuncts.Include(a=>a.Asset).Single(a=>a.Id == dbAdjunct.Id);
 
-        if (dbAdjunct.IsToBeIngested())
+        if (toBeIngested)
         {
             var success = await notificationSender.SendIngestAdjunctRequest(dbAdjunct, cancellationToken);
             if (!success)

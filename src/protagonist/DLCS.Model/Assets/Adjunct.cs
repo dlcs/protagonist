@@ -70,7 +70,7 @@ public class Adjunct : IDeliverable
     /// <summary>
     /// When the adjunct last finished processing
     /// </summary>
-    public DateTime Finished { get; set; }
+    public DateTime? Finished { get; set; }
     
     /// <summary>
     /// The size in bytes of the adjunct
