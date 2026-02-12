@@ -98,9 +98,7 @@ public static class AssetX
     public static int GetLargestOpenFullSize(this Asset asset, int systemMaxWidth)
     {
         // The effective MaxWidth value can be from the Asset or the system-wide default
-        var effectiveMaxWidth = (asset.MaxWidth ?? 0) == 0
-            ? systemMaxWidth
-            : Math.Min(asset.MaxWidth!.Value, systemMaxWidth);
+        var effectiveMaxWidth = asset.GetEffectiveMaxWidth(systemMaxWidth);
         
         // If no role, the only restriction is maxWidth (openFullMax is ignored)
         if (!asset.HasRoles) return effectiveMaxWidth;
@@ -111,4 +109,12 @@ public static class AssetX
         // We have an OpenFullMax value, if we also have MaxWidth return the smallest of that an OpenFullMax
         return Math.Min(effectiveMaxWidth, asset.OpenFullMax!.Value);
     }
+
+    /// <summary>
+    /// Get the effective maxWidth value for asset, taking into account the system default maxWidth
+    /// </summary>
+    public static int GetEffectiveMaxWidth(this Asset asset, int systemMaxWidth)
+        => (asset.MaxWidth ?? 0) == 0
+            ? systemMaxWidth
+            : Math.Min(asset.MaxWidth!.Value, systemMaxWidth);
 }

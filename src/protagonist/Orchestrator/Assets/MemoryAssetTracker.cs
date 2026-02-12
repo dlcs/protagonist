@@ -18,36 +18,22 @@ namespace Orchestrator.Assets;
 /// <summary>
 /// <see cref="IAssetTracker"/> implementation using in-memory tracking
 /// </summary>
-public class MemoryAssetTracker : IAssetTracker
+public class MemoryAssetTracker(
+    IAssetRepository assetRepository,
+    IAppCache appCache,
+    IThumbRepository thumbRepository,
+    ICustomerOriginStrategyRepository customerOriginStrategyRepository,
+    IOptions<OrchestratorSettings> orchestratorOptions,
+    ILogger<MemoryAssetTracker> logger)
+    : IAssetTracker
 {
-    private readonly IAssetRepository assetRepository;
-    private readonly IAppCache appCache;
-    private readonly CacheSettings cacheSettings;
-    private readonly IThumbRepository thumbRepository;
-    private readonly ICustomerOriginStrategyRepository customerOriginStrategyRepository;
-    private readonly ILogger<MemoryAssetTracker> logger;
-    private readonly ReingestOnOrchestrationSettings reingestSettings;
+    private readonly CacheSettings cacheSettings = orchestratorOptions.Value.Caching;
+    private readonly ReingestOnOrchestrationSettings reingestSettings = orchestratorOptions.Value.ReingestOnOrchestration;
+    private readonly int systemMaxWidth = orchestratorOptions.Value.MaxWidth;
 
     // Null object to store in cache for short duration
     private static readonly OrchestrationAsset NullOrchestrationAsset =
         new() { AssetId = new AssetId(-1, -1, "__notfound__") };
-    
-    public MemoryAssetTracker(
-        IAssetRepository assetRepository,
-        IAppCache appCache,
-        IThumbRepository thumbRepository,
-        ICustomerOriginStrategyRepository customerOriginStrategyRepository,
-        IOptions<OrchestratorSettings> orchestratorOptions,
-        ILogger<MemoryAssetTracker> logger)
-    {
-        this.assetRepository = assetRepository;
-        this.appCache = appCache;
-        this.thumbRepository = thumbRepository;
-        this.customerOriginStrategyRepository = customerOriginStrategyRepository;
-        this.logger = logger;
-        cacheSettings = orchestratorOptions.Value.Caching;
-        reingestSettings = orchestratorOptions.Value.ReingestOnOrchestration;
-    }
 
     public async Task<OrchestrationAsset?> GetOrchestrationAsset(AssetId assetId)
     {
@@ -113,27 +99,11 @@ public class MemoryAssetTracker : IAssetTracker
 
     private static string GetCacheKey(AssetId assetId) => $"Track:{assetId}";
 
-    private bool IsNullAsset(OrchestrationAsset orchestrationAsset)
+    private static bool IsNullAsset(OrchestrationAsset orchestrationAsset)
         => orchestrationAsset.AssetId == NullOrchestrationAsset.AssetId;
 
     private async Task<OrchestrationAsset> ConvertAssetToTrackedAsset(AssetId assetId, Asset asset)
     {
-        T SetDefaults<T>(T orchestrationAsset)
-            where T : OrchestrationAsset
-        {
-            if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
-                orchestrationAsset.Channels |= AvailableDeliveryChannel.File;
-            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
-                orchestrationAsset.Channels |= AvailableDeliveryChannel.Image;
-            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
-                orchestrationAsset.Channels |= AvailableDeliveryChannel.Timebased;
-            
-            orchestrationAsset.AssetId = assetId;
-            orchestrationAsset.Roles = asset.RolesList.ToList();
-            orchestrationAsset.RequiresAuth = asset.RequiresAuth;
-            return orchestrationAsset;
-        }
-
         OrchestrationAsset orchestrationAsset;
         
         if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
@@ -150,8 +120,10 @@ public class MemoryAssetTracker : IAssetTracker
                 S3Location = imageLocation?.S3,
                 Width = asset.Width ?? 0,
                 Height = asset.Height ?? 0,
+                MaxWidth = asset.GetEffectiveMaxWidth(systemMaxWidth),
+                OpenFullMax = asset.HasRoles ? asset.OpenFullMax : null,
                 MaxUnauthorised = asset.MaxUnauthorised ?? 0,
-                OpenThumbs = getOpenThumbs.Result ?? new List<int[]>(),
+                OpenThumbs = getOpenThumbs.Result ?? [],
                 Reingest = GetReingestFlag(asset, imageLocation),
             };
         }
@@ -169,7 +141,22 @@ public class MemoryAssetTracker : IAssetTracker
             orchestrationAsset.MediaType = new StringValues(asset.MediaType ?? "application/octet-stream");
         }
         
-        return SetDefaults(orchestrationAsset);
+        return SetDefaults();
+
+        OrchestrationAsset SetDefaults()
+        {
+            if (asset.HasDeliveryChannel(AssetDeliveryChannels.File))
+                orchestrationAsset.Channels |= AvailableDeliveryChannel.File;
+            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image))
+                orchestrationAsset.Channels |= AvailableDeliveryChannel.Image;
+            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Timebased))
+                orchestrationAsset.Channels |= AvailableDeliveryChannel.Timebased;
+            
+            orchestrationAsset.AssetId = assetId;
+            orchestrationAsset.Roles = asset.RolesList.ToList();
+            orchestrationAsset.RequiresAuth = asset.HasRoles;
+            return orchestrationAsset;
+        }
     }
     
     private bool GetReingestFlag(Asset asset, ImageLocation? imageLocation)

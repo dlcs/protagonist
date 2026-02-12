@@ -31,10 +31,11 @@ public class MemoryAssetTrackerTests
         sut = GetSut();
     }
 
-    private MemoryAssetTracker GetSut(DateTime? emptyImageLocationCreatedDate = null)
+    private MemoryAssetTracker GetSut(DateTime? emptyImageLocationCreatedDate = null, int maxWidth = 5000)
     {
         var orchestratorSettings = new OrchestratorSettings
         {
+            MaxWidth = maxWidth,
             Caching = new CacheSettings(),
             ReingestOnOrchestration = new ReingestOnOrchestrationSettings
             {
@@ -79,7 +80,7 @@ public class MemoryAssetTrackerTests
         var result = await sut.GetOrchestrationAsset(assetId);
 
         // Assert
-        result.AssetId.Should().Be(assetId);
+        result!.AssetId.Should().Be(assetId);
         result.Channels.Should().Be(channel);
         result.Should().BeOfType(expectedType);
     }
@@ -165,7 +166,7 @@ public class MemoryAssetTrackerTests
         var result = await sut.GetOrchestrationAsset<OrchestrationAsset>(assetId);
         
         // Assert
-        result.AssetId.Should().Be(assetId);
+        result!.AssetId.Should().Be(assetId);
         result.Origin.Should().Be(expectedOrigin);
         A.CallTo(() => thumbRepository.GetOpenSizes(A<AssetId>._)).MustHaveHappened();
     }
@@ -189,7 +190,7 @@ public class MemoryAssetTrackerTests
         var result = await sut.GetOrchestrationAsset<OrchestrationAsset>(assetId);
         
         // Assert
-        result.AssetId.Should().Be(assetId);
+        result!.AssetId.Should().Be(assetId);
         result.Origin.Should().Be(expectedOrigin);
         A.CallTo(() => thumbRepository.GetOpenSizes(A<AssetId>._)).MustNotHaveHappened();
     }
@@ -208,8 +209,7 @@ public class MemoryAssetTrackerTests
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
             ImageDeliveryChannels = imageDeliveryChannels,
-            Height = 10, Width = 50, MaxUnauthorised = -1,
-            Origin = "test"
+            Height = 10, Width = 50, Origin = "test"
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns(sizes);
 
@@ -217,12 +217,56 @@ public class MemoryAssetTrackerTests
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
         
         // Assert
-        result.AssetId.Should().Be(assetId);
+        result!.AssetId.Should().Be(assetId);
         result.Height.Should().Be(10);
         result.Width.Should().Be(50);
-        result.MaxUnauthorised.Should().Be(-1);
         result.OpenThumbs.Should().BeEquivalentTo(sizes);
         result.Reingest.Should().BeFalse();
+    }
+    
+    [Theory]
+    [InlineData("", 0, null)]
+    [InlineData("", 100, null)]
+    [InlineData("role", 0, 0)]
+    [InlineData("role", 100, 100)]
+    public async Task GetOrchestrationAsset_SetsOpenFullMax_IfHasRole(string roles, int openFullMax, int? expected)
+    {
+        // Arrange
+        var imageDeliveryChannels = "iiif-img".GenerateDeliveryChannels();
+        var assetId = new AssetId(1, 1, "go!");
+        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        {
+            ImageDeliveryChannels = imageDeliveryChannels, Roles = roles, OpenFullMax = openFullMax
+        });
+        
+        // Act
+        var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
+        
+        // Assert
+        result!.OpenFullMax.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData(250, 250, 250)]
+    [InlineData(0, 100, 100)]
+    [InlineData(5000, 250, 250)]
+    [InlineData(250, 5000, 250)]
+    public async Task GetOrchestrationAsset_SetsMaxWidth(int assetMaxWidth, int systemMaxWidth, int expected)
+    {
+        // Arrange
+        var imageDeliveryChannels = "iiif-img".GenerateDeliveryChannels();
+        var assetId = new AssetId(1, 1, "go!");
+        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        {
+            ImageDeliveryChannels = imageDeliveryChannels, MaxWidth = assetMaxWidth
+        });
+        
+        // Act
+        var localSut = GetSut(maxWidth: systemMaxWidth);
+        var result = await localSut.GetOrchestrationAsset<OrchestrationImage>(assetId);
+        
+        // Assert
+        result!.MaxWidth.Should().Be(expected);
     }
     
     [Theory]
@@ -235,7 +279,7 @@ public class MemoryAssetTrackerTests
         var assetId = new AssetId(1, 1, "otis");
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-            ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50, MaxUnauthorised = -1,
+            ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50,
             Origin = "test", Created = DateTime.Today
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
@@ -244,7 +288,7 @@ public class MemoryAssetTrackerTests
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
 
         // Assert
-        result.OpenThumbs.Should().BeEmpty();
+        result!.OpenThumbs.Should().BeEmpty();
     }
 
     [Theory]
@@ -257,7 +301,7 @@ public class MemoryAssetTrackerTests
         var assetId = new AssetId(1, 1, "otis");
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-            ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50, MaxUnauthorised = -1,
+            ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50,
             Origin = "test", Created = DateTime.Today.AddDays(-1)
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
@@ -267,7 +311,7 @@ public class MemoryAssetTrackerTests
         var result = await localSut.GetOrchestrationAsset<OrchestrationImage>(assetId);
         
         // Assert
-        result.Reingest.Should().BeTrue();
+        result!.Reingest.Should().BeTrue();
     }
     
     [Theory]
@@ -280,7 +324,7 @@ public class MemoryAssetTrackerTests
         var assetId = new AssetId(1, 1, "otis");
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-            ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50, MaxUnauthorised = -1,
+            ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50,
             Origin = "test", Created = DateTime.Today.AddDays(1)
         });
         A.CallTo(() => thumbRepository.GetOpenSizes(assetId)).Returns<List<int[]>>(null);
@@ -290,7 +334,7 @@ public class MemoryAssetTrackerTests
         var result = await localSut.GetOrchestrationAsset<OrchestrationImage>(assetId);
         
         // Assert
-        result.Reingest.Should().BeFalse();
+        result!.Reingest.Should().BeFalse();
     }
     
     [Theory]
@@ -313,27 +357,23 @@ public class MemoryAssetTrackerTests
     }
 
     [Theory]
-    [InlineData("", -1, false)]
-    [InlineData("", 0, true)]
-    [InlineData("", 10, true)]
-    [InlineData("role", -1, true)]
-    [InlineData("role", 0, true)]
-    [InlineData("role", 10, true)]
-    public async Task GetOrchestrationAsset_SetsRequiresAuthCorrectly(string roles, int maxUnauth, bool requiresAuth)
+    [InlineData("", false)]
+    [InlineData("role", true)]
+    public async Task GetOrchestrationAsset_SetsRequiresAuth_BaseOnRoles(string roles, bool requiresAuth)
     {
         // Arrange
         var imageDeliveryChannels = "iiif-img".GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "go!");
         A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
         {
-            ImageDeliveryChannels = imageDeliveryChannels, MaxUnauthorised = maxUnauth, Roles = roles
+            ImageDeliveryChannels = imageDeliveryChannels, Roles = roles
         });
         
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
         
         // Assert
-        result.RequiresAuth.Should().Be(requiresAuth);
+        result!.RequiresAuth.Should().Be(requiresAuth);
     }
     
     [Theory]
@@ -382,7 +422,7 @@ public class MemoryAssetTrackerTests
         var result = await sut.GetOrchestrationAsset<OrchestrationAsset>(assetId);
         
         // Assert
-        result.OptimisedOrigin.Should().Be(optimised);
+        result!.OptimisedOrigin.Should().Be(optimised);
         result.MediaType.ToString().Should().Be("audio/mpeg");
     }
 }

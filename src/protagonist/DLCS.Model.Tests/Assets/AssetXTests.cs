@@ -230,4 +230,14 @@ public class AssetXTests
         var asset = new Asset { MaxWidth = maxWidth, OpenFullMax = openFullMax, Roles = "https://test.role" };
         asset.GetLargestOpenFullSize(systemMaxWidth).Should().Be(expected, because);
     }
+
+    [Theory]
+    [InlineData(0, 5000, 5000)]
+    [InlineData(5000, 5000, 5000)]
+    [InlineData(50000, 5000, 5000)]
+    public void GetEffectiveMaxWidth_Correct(int assetMaxWidth, int systemMaxWidth, int expected)
+    {
+        var asset = new Asset { MaxWidth = assetMaxWidth };
+        asset.GetEffectiveMaxWidth(systemMaxWidth).Should().Be(expected);
+    }
 }
