@@ -23,3 +23,11 @@ This contains external dependencies for debugging the Engine.
 ## `docker-compose.orchestrator.yml`
 
 This contains external dependencies for debugging Orchestrator.
+
+## Volumes
+
+Services via docker-compose and via the IDE need to share a common directory (e.g. Orchestrator needs to place file in same folder that image-server reads from).
+
+For this the `$HOME` envvar is used in a few volume definitions. This serves as a central place where the current user has read/write access to, the intention being that it points to the current users home-directory.
+
+This may need to be setup on current system.
