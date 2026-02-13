@@ -1,9 +1,16 @@
 ﻿
+using DLCS.Core.Settings;
+
 namespace Engine.Settings;
 
 public class EngineSettings
 {
     public ImageIngestSettings? ImageIngest { get; set; }
+    
+    /// <summary>
+    /// The system maximum width value. Thumbnails will not be generated that exceed this.
+    /// </summary>
+    public int MaxWidth { get; set; } = SystemDefaults.MaxWidth;
 
     /// <summary>
     /// A collection of customer-specific overrides, keyed by customerId.

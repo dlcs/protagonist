@@ -5,8 +5,9 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
 using Engine.Data;
+using Engine.Settings;
 using IIIF;
-using IIIF.ImageApi;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Engine.Ingest.Image;
@@ -14,9 +15,11 @@ namespace Engine.Ingest.Image;
 public class ThumbCreator(
     IBucketWriter bucketWriter,
     IStorageKeyGenerator storageKeyGenerator,
+    IOptions<EngineSettings> engineOptions,
     ILogger<ThumbCreator> logger)
     : IThumbCreator
 {
+    private readonly EngineSettings engineSettings = engineOptions.Value;
     private readonly AsyncKeyedLock asyncLocker = new();
 
     public async Task<int> CreateNewThumbs(Asset asset, IReadOnlyList<ImageOnDisk> thumbsToProcess)
@@ -35,6 +38,7 @@ public class ThumbCreator(
         var orderedThumbs = thumbsToProcess.OrderByDescending(i => Math.Max(i.Height, i.Width)).ToList();
 
         var maxAvailableThumb = GetMaxOpenThumbnailSize(asset, orderedThumbs);
+        logger.LogTrace("Max available thumbnail size for {AssetId} is {MaxAvailableThumb}", assetId, maxAvailableThumb);
         var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
         var processedWidths = new List<int>(thumbsToProcess.Count);
         
@@ -73,13 +77,17 @@ public class ThumbCreator(
         return thumbnailSizes.Count;
     }
     
-    private static Size GetMaxOpenThumbnailSize(Asset asset, List<ImageOnDisk> orderedThumbsToProcess)
+    private Size GetMaxOpenThumbnailSize(Asset asset, IReadOnlyList<ImageOnDisk> orderedThumbsToProcess)
     {
-        if (asset.MaxUnauthorised == 0) return new Size(0, 0);
-        if ((asset.MaxUnauthorised ?? -1) == -1) return new Size(orderedThumbsToProcess[0].Width, orderedThumbsToProcess[0].Height);
+        // The max dimension for open thumbnails
+        var largestOpenDimension = asset.GetLargestOpenFullSize(engineSettings.MaxWidth);
+        logger.LogTrace("Max open dimension for {AssetId} is {MaxDimension}", asset.Id, largestOpenDimension);
+        
+        if (largestOpenDimension == 0) return new Size(0, 0);
 
+        // Find the largest thumbnail that fits within the max open dimension
         var thumb = orderedThumbsToProcess.FirstOrDefault(thumb =>
-            asset.MaxUnauthorised >= Math.Max(thumb.Width, thumb.Height));
+            largestOpenDimension >= Math.Max(thumb.Width, thumb.Height));
         return thumb == null ? new Size(0, 0) : new Size(thumb.Width, thumb.Height);
     }
 

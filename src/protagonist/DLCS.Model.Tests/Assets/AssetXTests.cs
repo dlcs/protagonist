@@ -7,13 +7,13 @@ namespace DLCS.Model.Tests.Assets;
 
 public class AssetXTests
 {
-    private readonly List<SizeParameter> sizeParameters = new()
-    {
+    private readonly List<SizeParameter> sizeParameters =
+    [
         SizeParameter.Parse("!800,800"),
         SizeParameter.Parse("!400,400"),
         SizeParameter.Parse("!200,200"),
         SizeParameter.Parse("!100,100"),
-    };
+    ];
     
     [Fact]
     public void GetAvailableThumbSizes_Correct_MaxUnauthorisedNoRoles()
@@ -174,5 +174,38 @@ public class AssetXTests
         // Assert
         asset.Ingesting.Should().BeFalse();
         asset.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(10));
+    }
+
+    [Theory]
+    [InlineData(null, 5000, 5000, "MaxWidth null (unset), fallback to system default")]
+    [InlineData(0, 5000, 5000, "MaxWidth 0 (unset), fallback to system default")]
+    [InlineData(512, 5000, 512, "MaxWidth as smaller than system default")]
+    [InlineData(8000, 5000, 5000, "System default as smaller than maxWidth")]
+    public void GetLargestOpenFullSize_ReturnsMaxWidth_IfNoRoles(int? maxWidth, int systemMaxWidth, int expected,
+        string because)
+    {
+        var asset = new Asset { MaxWidth = maxWidth };
+        asset.GetLargestOpenFullSize(systemMaxWidth).Should().Be(expected, because);
+    }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    public void GetLargestOpenFullSize_Returns0_IfOpenFullMaxUnset_AndHasRoles(int? openFullMax)
+    {
+        var asset = new Asset { OpenFullMax = openFullMax, Roles = "https://test.role" };
+        asset.GetLargestOpenFullSize(1000).Should().Be(0);
+    }
+    
+    [Theory]
+    [InlineData(1000, null, 5000, 1000, "OpenFullMax as smallest (MaxWidth null = unset)")]
+    [InlineData(1000, 0, 5000, 1000, "OpenFullMax as smallest (MaxWidth 0 = unset)")]
+    [InlineData(1000, 512, 5000, 512, "MaxWidth as smallest")]
+    [InlineData(1000, 8000, 500, 500, "System default as smallest")]
+    public void GetLargestOpenFullSize_ReturnsSmallestOfAvailableValues_IfHasRoles(int? openFullMax, int? maxWidth, int systemMaxWidth, int expected,
+        string because)
+    {
+        var asset = new Asset { MaxWidth = maxWidth, OpenFullMax = openFullMax, Roles = "https://test.role" };
+        asset.GetLargestOpenFullSize(systemMaxWidth).Should().Be(expected, because);
     }
 }
