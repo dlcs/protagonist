@@ -14,31 +14,22 @@ public interface IWorkerBuilder
 /// <summary>
 /// Class responsible for generating a list of workers required to ingest asset 
 /// </summary>
-public class WorkerBuilder : IWorkerBuilder
+public class WorkerBuilder(IServiceProvider serviceProvider, ILogger<WorkerBuilder> logger)
+    : IWorkerBuilder
 {
-    private readonly IServiceProvider serviceProvider;
-    private readonly ILogger<WorkerBuilder> logger;
-
-    public WorkerBuilder(IServiceProvider serviceProvider, ILogger<WorkerBuilder> logger)
+    public IReadOnlyCollection<IAdjunctIngesterWorker> GetWorkers(Adjunct adjunct)
     {
-        this.serviceProvider = serviceProvider;
-        this.logger = logger;
+        // Currently we will only be using the `file` worker - this can be expanded as needed
+        return [serviceProvider.GetRequiredService<FileChannelWorker>()];
     }
-    
+
     public IReadOnlyCollection<IAssetIngesterWorker> GetWorkers(Asset asset)
     {
         var workers = new List<IAssetIngesterWorker>();
 
-        void AddProcessor(IAssetIngesterWorker worker)
-        {
-            if (workers.Any(p => p.GetType() == worker.GetType())) return;
-        
-            workers.Add(worker);
-        }
-
         /*
          * NOTE: Ordering of handlers is important - File should run first.
-         * 
+         *
          * - "file" may upload origin to DLCS. If that's the case then further handlers may not need to, or can use
          * that info in their processing
          * - "images" can need to store origin file, but this may have been done by File so results in no-op
@@ -48,10 +39,11 @@ public class WorkerBuilder : IWorkerBuilder
         {
             AddProcessor(serviceProvider.GetRequiredService<FileChannelWorker>());
         }
-        
+
         if (MIMEHelper.IsImage(asset.MediaType))
         {
-            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image) || asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails))
+            if (asset.HasDeliveryChannel(AssetDeliveryChannels.Image) ||
+                asset.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails))
             {
                 AddProcessor(serviceProvider.GetRequiredService<ImageIngesterWorker>());
             }
@@ -72,5 +64,15 @@ public class WorkerBuilder : IWorkerBuilder
         }
 
         return workers;
+
+        void AddProcessor(IAssetIngesterWorker worker)
+        {
+            if (workers.Any(p => p.GetType() == worker.GetType()))
+            {
+                return;
+            }
+
+            workers.Add(worker);
+        }
     }
 }

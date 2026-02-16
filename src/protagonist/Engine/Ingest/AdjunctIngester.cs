@@ -39,7 +39,7 @@ public class AdjunctIngester(
             await customerOriginRepository.GetCustomerOriginStrategy(adjunct, asset.Customer);
 
         // now ingest the adjunct
-        var status = await executor.IngestAdjunct(adjunct, customerOriginStrategy, cancellationToken);
+        var status = await executor.IngestAdjunct(asset, adjunct, customerOriginStrategy, cancellationToken);
         return status;
     }
 }

@@ -35,7 +35,7 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
 
         try
         {
-            UpdateAsset(asset, ingestFinished);
+            UpdateItem(asset, ingestFinished);
 
             if (imageLocation != null)
             {
@@ -50,18 +50,7 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
                 }
             }
 
-            if (imageStorage != null)
-            {
-                if (await DlcsContext.ImageStorages.AnyAsync(l => l.Id == asset.Id, cancellationToken))
-                {
-                    DlcsContext.ImageStorages.Attach(imageStorage);
-                    DlcsContext.Entry(imageStorage).State = EntityState.Modified;
-                }
-                else
-                {
-                    DlcsContext.ImageStorages.Add(imageStorage);
-                }
-            }
+            await UpsertImageStorage(asset.Id, imageStorage, cancellationToken);
             
             var updatedRows = hasBatch
                 ? await BatchSave(asset, ingestFinished, cancellationToken)
@@ -72,11 +61,37 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
                 await IncreaseCustomerStorage(imageStorage, cancellationToken);
             }
             
-            return updatedRows || !ingestFinished; // if the ingest hasn't finished, rows can be not updated - meaning success
+            return updatedRows || !ingestFinished; // if the ingestion hasn't finished, rows can be not updated - meaning success
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error finalising Asset {AssetId} in DB", asset.Id);
+            return false;
+        }
+    }
+
+    public async Task<bool> UpdateIngestedAdjunct(Adjunct adjunct, ImageStorage? imageStorage, bool ingestFinished,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            UpdateItem(adjunct, ingestFinished);
+            
+            await UpsertImageStorage(adjunct.AssetId, imageStorage, cancellationToken);
+            
+            var updatedRow = await NonBatchedSave(cancellationToken);
+            
+            if (updatedRow && imageStorage != null)
+            {
+                await IncreaseCustomerStorage(imageStorage, cancellationToken);
+            }
+            
+            return updatedRow || !ingestFinished;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error finalising adjunct for asset id {AssetId}, adjunct id {AdjunctId} in DB",
+                adjunct.AssetId, adjunct.Id);
             return false;
         }
     }
@@ -106,6 +121,23 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
         return imageSize;
+    }
+    
+    private async Task UpsertImageStorage(AssetId assetId, ImageStorage? imageStorage,
+        CancellationToken cancellationToken)
+    {
+        if (imageStorage != null)
+        {
+            if (await DlcsContext.ImageStorages.AnyAsync(l => l.Id == assetId, cancellationToken))
+            {
+                DlcsContext.ImageStorages.Attach(imageStorage);
+                DlcsContext.Entry(imageStorage).State = EntityState.Modified;
+            }
+            else
+            {
+                DlcsContext.ImageStorages.Add(imageStorage);
+            }
+        }
     }
     
     private async Task<bool> NonBatchedSave(CancellationToken cancellationToken)
@@ -150,7 +182,7 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
         batchAsset.Finished = DateTime.UtcNow;
     }
 
-    private static void UpdateAsset(Asset asset, bool ingestFinished)
+    private static void UpdateItem(IDeliverable asset, bool ingestFinished)
     {
         if (ingestFinished)
         {

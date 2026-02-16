@@ -32,9 +32,31 @@ public class IngestExecutor
         this.storageRepository = storageRepository;
     }
 
-    public async Task<IngestResult> IngestAdjunct(Adjunct asset, CustomerOriginStrategy customerOriginStrategy,
+    public async Task<IngestResult> IngestAdjunct(Asset asset, Adjunct adjunct, CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
+        var sw = Stopwatch.StartNew();
+        var context = new AdjunctIngestionContext(asset, adjunct);
+        
+        if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
+        {
+            var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
+            
+            if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
+            {
+                logger.LogDebug(
+                    "Storage policy exceeded for customer {CustomerId} with asset id {AssetId}, adjunct id {AdjunctId}",
+                    asset.Customer, asset.Id, adjunct.Id);
+                
+                adjunct.Error = IngestErrors.StoragePolicyExceeded;
+                var dbResponse = await CompleteAssetInDatabase(context, true, cancellationToken);
+                return new IngestResult(asset.Id, dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
+            }
+            
+            var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
+            context.WithPreIngestionAssetSize(preIngestionAssetSize);
+        }
+        
         throw new NotImplementedException();
     }
 
@@ -110,6 +132,14 @@ public class IngestExecutor
         return new IngestResult(asset.Id, dbSuccess ? overallStatus : IngestResultStatus.Failed);
     }
 
+    private async Task<bool> CompleteAdjunctInDatabase(AdjunctIngestionContext context, bool ingestFinished,
+        CancellationToken cancellationToken)
+    {
+        var dbUpdateSuccess = await assetRepository.UpdateIngestedAdjunct(context.Adjunct, context.ImageStorage,
+            ingestFinished, cancellationToken);
+        return dbUpdateSuccess;
+    }
+    
     private async Task<bool> CompleteAssetInDatabase(IngestionContext context, bool ingestFinished, CancellationToken cancellationToken)
     {
         var dbUpdateSuccess = await assetRepository.UpdateIngestedAsset(context.Asset, context.ImageLocation,

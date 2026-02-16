@@ -8,6 +8,11 @@ using Engine.Ingest.Persistence;
 
 namespace Engine.Ingest;
 
+public class AdjunctIngestionContext(Asset asset, Adjunct adjunct) : IngestionContext(asset)
+{
+    public Adjunct Adjunct { get; } = adjunct;
+}
+
 /// <summary>
 /// Context for an in-flight ingestion request.
 /// </summary>

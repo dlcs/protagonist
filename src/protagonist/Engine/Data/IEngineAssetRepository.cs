@@ -12,12 +12,27 @@ public interface IEngineAssetRepository
     /// <param name="imageLocation">ImageLocation, optional as may have exited prior to creation</param>
     /// <param name="imageStorage">ImageStorage, optional as may have exited prior to creation</param>
     /// <param name="ingestFinished">
-    /// If true then the ingest is done, no further processing required. Else it's an async ingest
+    /// If true then the ingestion is done, no further processing required. Else it's an async ingest
     /// and there will be further work required.
     /// </param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>True if successful</returns>
     Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage,
+        bool ingestFinished, CancellationToken cancellationToken = default);
+
+    
+    /// <summary>
+    /// Update database with ingested adjunct.
+    /// </summary>
+    /// <param name="adjunct">Adjunct to update</param>
+    /// <param name="imageStorage">ImageStorage, optional as may have exited prior to creation</param>
+    /// <param name="ingestFinished">
+    /// If true then the ingestion is done, no further processing required. Else it's an async ingest
+    /// and there will be further work required.
+    /// </param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>True if successful</returns>
+    Task<bool> UpdateIngestedAdjunct(Adjunct adjunct, ImageStorage? imageStorage,
         bool ingestFinished, CancellationToken cancellationToken = default);
 
     /// <summary>

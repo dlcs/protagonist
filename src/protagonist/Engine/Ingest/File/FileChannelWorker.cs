@@ -8,7 +8,7 @@ namespace Engine.Ingest.File;
 /// <summary>
 /// <see cref="IAssetIngester"/> implementation for handling "file" delivery-channel
 /// </summary>
-public class FileChannelWorker : IAssetIngesterWorker
+public class FileChannelWorker : IAssetIngesterWorker, IAdjunctIngesterWorker
 {
     private readonly IAssetToS3 assetToS3;
     private readonly IAssetIngestorSizeCheck assetIngestorSizeCheck;
@@ -70,5 +70,11 @@ public class FileChannelWorker : IAssetIngesterWorker
     {
         ingestionContext.StoredObjects[targetStorageLocation] = assetInBucket.AssetSize;
         ingestionContext.WithStorage(assetSize: assetInBucket.AssetSize);
+    }
+
+    public Task<IngestResultStatus> Ingest(AdjunctIngestionContext ingestionContext, CustomerOriginStrategy customerOriginStrategy,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 }
