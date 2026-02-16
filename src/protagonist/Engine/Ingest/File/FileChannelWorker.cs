@@ -26,7 +26,7 @@ public class FileChannelWorker : IAssetIngesterWorker, IAdjunctIngesterWorker
         this.storageKeyGenerator = storageKeyGenerator;
         this.logger = logger;
     }
-    
+
     public async Task<IngestResultStatus> Ingest(IngestionContext ingestionContext,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
@@ -42,13 +42,15 @@ public class FileChannelWorker : IAssetIngesterWorker, IAdjunctIngesterWorker
             }
 
             var targetStorageLocation = storageKeyGenerator.GetStoredOriginalLocation(ingestionContext.AssetId);
+
             var assetInBucket = await assetToS3.CopyOriginToStorage(targetStorageLocation,
                 ingestionContext,
                 !assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer),
                 customerOriginStrategy,
                 cancellationToken);
+
             ingestionContext.WithAssetFromOrigin(assetInBucket);
-            
+
             if (assetIngestorSizeCheck.DoesAssetFromOriginExceedAllowance(assetInBucket, asset))
             {
                 return IngestResultStatus.StorageLimitExceeded;
@@ -72,9 +74,38 @@ public class FileChannelWorker : IAssetIngesterWorker, IAdjunctIngesterWorker
         ingestionContext.WithStorage(assetSize: assetInBucket.AssetSize);
     }
 
-    public Task<IngestResultStatus> Ingest(AdjunctIngestionContext ingestionContext, CustomerOriginStrategy customerOriginStrategy,
+    public async Task<IngestResultStatus> Ingest(AdjunctIngestionContext ingestionContext,
+        CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
+        var adjunct = ingestionContext.Adjunct;
+
+        try
+        {
+            if (customerOriginStrategy.Optimised)
+            {
+                logger.LogDebug(
+                    "Adjunct {AdjunctId} for Asset {Asset} is at optimised origin, no 'file' handling required",
+                    adjunct.Id, ingestionContext.AssetId);
+                return IngestResultStatus.Success;
+            }
+
+            var targetStorageLocation = storageKeyGenerator.GetStoredAdjunctLocation(ingestionContext.AssetId, adjunct);
+
+            var assetInBucket = await assetToS3.CopyOriginToStorage(targetStorageLocation,
+                ingestionContext,
+                !assetIngestorSizeCheck.CustomerHasNoStorageCheck(ingestionContext.Asset.Customer),
+                customerOriginStrategy,
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error ingesting asset Adjunct {AdjunctId} for Asset {Asset} for file channel",
+                adjunct.Id, ingestionContext.AssetId);
+            adjunct.Error = ex.Message;
+            return IngestResultStatus.Failed;
+        }
+
         throw new NotImplementedException();
     }
 }

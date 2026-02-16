@@ -23,7 +23,21 @@ public interface IAssetToDisk
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>Current cancellation token</param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    Task<AssetFromOrigin> CopyAssetToLocalDisk(IngestionContext context, string destinationTemplate, bool verifySize, 
+    Task<AssetFromOrigin> CopyAssetToLocalDisk(IngestionContext context, string destinationTemplate, bool verifySize,
+        CustomerOriginStrategy customerOriginStrategy,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Copy adjunct from Origin to local disk.
+    /// </summary>
+    /// <param name="context">Ingestion context containing the <see cref="Asset"/> to be copied.</param>
+    /// <param name="destinationTemplate">String representing destinations folder to copy to.</param>
+    /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
+    /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>Current cancellation token</param>
+    /// <returns><see cref="AdjunctFromOrigin"/> containing new location, size etc</returns>
+    Task<AdjunctFromOrigin> CopyAdjunctToLocalDisk(AdjunctIngestionContext context,
+        string destinationTemplate, bool verifySize,
         CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default);
 }
@@ -31,26 +45,17 @@ public interface IAssetToDisk
 /// <summary>
 /// Class for copying asset from origin to local disk.
 /// </summary>
-public class AssetToDisk : AssetMoverBase, IAssetToDisk
+public class AssetToDisk(
+    OriginFetcher originFetcher,
+    IStorageRepository storageRepository,
+    IFileSaver fileSaver,
+    IOptionsMonitor<EngineSettings> engineOptions,
+    ILogger<AssetToDisk> logger)
+    : AssetMoverBase(storageRepository), IAssetToDisk
 {
-    private readonly OriginFetcher originFetcher;
-    private readonly IFileSaver fileSaver;
-    private readonly EngineSettings engineSettings;
-    private readonly ILogger<AssetToDisk> logger;
-
-    public AssetToDisk(
-        OriginFetcher originFetcher,
-        IStorageRepository storageRepository,
-        IFileSaver fileSaver,
-        IOptionsMonitor<EngineSettings> engineOptions,
-        ILogger<AssetToDisk> logger) : base(storageRepository)
-    {
-        this.originFetcher = originFetcher;
-        this.fileSaver = fileSaver;
-        this.logger = logger;
-        this.engineSettings = engineOptions.CurrentValue;
-    }
+    private readonly EngineSettings engineSettings = engineOptions.CurrentValue;
     
+     
     /// <summary>
     /// Copy asset from Origin to local disk.
     /// </summary>
@@ -60,26 +65,28 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>Current cancellation token</param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    public async Task<AssetFromOrigin> CopyAssetToLocalDisk(IngestionContext context, string destinationTemplate, bool verifySize, 
+    public async Task<AssetFromOrigin> CopyAssetToLocalDisk(IngestionContext context, string destinationTemplate,
+        bool verifySize,
         CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
         destinationTemplate.ThrowIfNullOrWhiteSpace(nameof(destinationTemplate));
 
         await using var originResponse =
-            await originFetcher.LoadAssetFromLocation(context.Asset.Id, context.Asset.Origin,
+            await originFetcher.LoadAssetFromLocation(context.Asset.Id.ToString(), context.Asset.Origin,
                 customerOriginStrategy, cancellationToken);
 
-        if (originResponse == null || originResponse.Stream.IsNull())
+        if (originResponse.Stream.IsNull())
         {
             logger.LogWarning("Unable to fetch asset {AssetId} from {Origin}, using {OriginStrategy}", context.Asset.Id,
                 context.Asset.Origin, customerOriginStrategy.Strategy);
             throw new ApplicationException(
                 $"Unable to get asset '{context.Asset.Id}' from origin '{context.Asset.Origin}' using {customerOriginStrategy.Strategy}");
         }
-        
+
         cancellationToken.ThrowIfCancellationRequested();
-        var assetFromOrigin = await CopyAssetToDisk(context.Asset, destinationTemplate, originResponse, cancellationToken);
+        var assetFromOrigin =
+            await CopyAssetToDisk(context.Asset, destinationTemplate, originResponse, cancellationToken);
         assetFromOrigin.CustomerOriginStrategy = customerOriginStrategy;
 
         if (verifySize)
@@ -90,6 +97,69 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
         return assetFromOrigin;
     }
 
+    /// <summary>
+    /// Copy adjunct from Origin to local disk.
+    /// </summary>
+    /// <param name="context">Ingestion context containing the <see cref="Adjunct"/> to be copied.</param>
+    /// <param name="destinationTemplate">String representing destinations folder to copy to.</param>
+    /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
+    /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
+    /// <param name="cancellationToken"><see cref="CancellationToken"/>Current cancellation token</param>
+    /// <returns><see cref="AdjunctFromOrigin"/> containing new location, size etc</returns>
+    public async Task<AdjunctFromOrigin> CopyAdjunctToLocalDisk(AdjunctIngestionContext context,
+        string destinationTemplate, bool verifySize,
+        CustomerOriginStrategy customerOriginStrategy,
+        CancellationToken cancellationToken = default)
+    {
+        destinationTemplate.ThrowIfNullOrWhiteSpace(nameof(destinationTemplate));
+
+        var itemDesc = $"Adjunct {context.Adjunct.Id} for Asset {context.Asset.Id}";
+        
+        await using var originResponse =
+            await originFetcher.LoadAssetFromLocation(itemDesc, context.Adjunct.Origin,
+                customerOriginStrategy, cancellationToken);
+
+        if (originResponse.Stream.IsNull())
+        {
+            logger.LogWarning("Unable to fetch asset {AssetId} from {Origin}, using {OriginStrategy}", context.Asset.Id,
+                context.Asset.Origin, customerOriginStrategy.Strategy);
+            throw new ApplicationException(
+                $"Unable to get asset '{context.Asset.Id}' from origin '{context.Asset.Origin}' using {customerOriginStrategy.Strategy}");
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        
+        var assetFromOrigin =
+            await CopyAdjunctToDisk(context.Adjunct.Id, context.Asset, destinationTemplate, originResponse,
+                cancellationToken);
+        
+        assetFromOrigin.CustomerOriginStrategy = customerOriginStrategy;
+
+        if (verifySize)
+        {
+            await VerifyFileSize(context, assetFromOrigin);
+        }
+
+        return assetFromOrigin;
+    }
+
+    private async Task<AdjunctFromOrigin> CopyAdjunctToDisk(string adjunctId, Asset asset, string destinationTemplate,
+        OriginResponse originResponse, CancellationToken cancellationToken)
+    {
+        TrySetContentTypeForBinary(originResponse, asset);
+        var extension = GetFileExtension(originResponse);
+
+        var path = Path.Join(destinationTemplate, asset.Id.GetDiskSafeAssetId(engineSettings.ImageIngest), "adjuncts",
+            adjunctId.GetDiskSafeFileId(engineSettings.ImageIngest));
+
+        var targetPath = $"{path}.{extension}";
+
+        var received = await fileSaver.SaveResponseToDisk(asset.Id.ToString(), originResponse, targetPath,
+            cancellationToken);
+
+        return new AdjunctFromOrigin(adjunctId, asset.Id, received, targetPath, originResponse.ContentType);
+    }
+    
     private async Task<AssetFromOrigin> CopyAssetToDisk(Asset asset, string destinationTemplate,
         OriginResponse originResponse, CancellationToken cancellationToken)
     {
@@ -100,12 +170,12 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
 
         var targetPath = $"{path}.{extension}";
 
-        var received = await fileSaver.SaveResponseToDisk(asset.Id, originResponse, targetPath,
+        var received = await fileSaver.SaveResponseToDisk(asset.Id.ToString(), originResponse, targetPath,
             cancellationToken);
-        
+
         return new AssetFromOrigin(asset.Id, received, targetPath, originResponse.ContentType);
     }
-    
+
     // TODO - this may need refined depending on whether it's 'I' or 'T' ingest
     private void TrySetContentTypeForBinary(OriginResponse originResponse, Asset asset)
     {
@@ -115,13 +185,13 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
             var guess = MIMEHelper.GetContentTypeForExtension(extension);
             return guess;
         }
-        
+
         // If the content type is binary, attempt to determine via file extension on name
         var contentType = originResponse.ContentType;
         if (string.IsNullOrWhiteSpace(contentType) || IsBinaryContent(contentType))
         {
             var uniqueName = asset.Id.Asset;
-            
+
             var guess = GuessContentType(asset.Origin);
             if (string.IsNullOrEmpty(guess))
             {
@@ -141,7 +211,7 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
 
     private static bool IsBinaryContent(string contentType) =>
         contentType is MIMEHelper.ApplicationOctet or MIMEHelper.BinaryOctet;
-    
+
     private string GetFileExtension(OriginResponse originResponse)
     {
         var extension = MIMEHelper.GetExtensionForContentType(originResponse.ContentType);
@@ -154,10 +224,11 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
 
         return extension;
     }
-    
+
     private async Task VerifyFileSize(IngestionContext context, AssetFromOrigin assetFromOrigin)
     {
-        var customerHasEnoughSize = await VerifyFileSize(context.Asset.Id, assetFromOrigin.AssetSize, context.PreIngestionAssetSize);
+        var customerHasEnoughSize = await VerifyFileSize(context.Asset.Customer, assetFromOrigin.AssetSize,
+            context.PreIngestionAssetSize);
 
         if (!customerHasEnoughSize)
         {
