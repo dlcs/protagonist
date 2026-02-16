@@ -1,4 +1,6 @@
-﻿namespace DLCS.Model.Assets;
+﻿using System;
+
+namespace DLCS.Model.Assets;
 
 public static class DeliverableX
 {
@@ -9,5 +11,14 @@ public static class DeliverableX
     {
         asset.Error = string.Empty;
         asset.Ingesting = true;
+    }
+    
+    /// <summary>
+    /// Mark asset as finished, setting "Finished" and "Ingesting" = false 
+    /// </summary>
+    public static void MarkAsFinished(this IDeliverable asset)
+    {
+        asset.Ingesting = false;
+        asset.Finished = DateTime.UtcNow;
     }
 }

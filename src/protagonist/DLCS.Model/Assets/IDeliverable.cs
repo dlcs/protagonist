@@ -1,4 +1,6 @@
-﻿namespace DLCS.Model.Assets;
+﻿using System;
+
+namespace DLCS.Model.Assets;
 
 public interface IDeliverable
 {
@@ -16,4 +18,9 @@ public interface IDeliverable
     /// Contains source to ingest from
     /// </summary>
     string? Origin { get; set; }
+    
+    /// <summary>
+    /// When the item has last finished processing
+    /// </summary>
+    public DateTime? Finished { get; set; }
 }
