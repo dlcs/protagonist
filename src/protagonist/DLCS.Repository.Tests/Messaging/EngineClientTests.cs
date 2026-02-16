@@ -104,7 +104,7 @@ public class EngineClientTests
         A.CallTo(() => queueLookup.GetQueueNameForFamily(AssetFamily.Image, false)).Returns("test-queue");
         A.CallTo(() => queueSender.QueueMessage("test-queue", A<string>._,
                 A<Dictionary<string, string>>._, A<CancellationToken>._))
-            .Invokes((string _, string message, CancellationToken _) => jsonString = message)
+            .Invokes((string _, string message, IDictionary<string,string> _, CancellationToken _) => jsonString = message)
             .Returns(true);
 
         // Act

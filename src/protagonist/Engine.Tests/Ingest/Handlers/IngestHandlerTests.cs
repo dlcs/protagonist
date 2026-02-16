@@ -32,7 +32,7 @@ public class IngestHandlerTests
         {
             ["created"] = "not-a-date"
         };
-        var queueMessage = new QueueMessage { Body = body };
+        var queueMessage = new QueueMessage { Body = body, MessageAttributes = []};
 
         // Act
         var success = await sut.HandleMessage(queueMessage, CancellationToken.None);
@@ -52,7 +52,7 @@ public class IngestHandlerTests
         {
             ["created"] = "1985-10-26T09:00:00"
         };
-        var queueMessage = new QueueMessage { Body = body, QueueName = "test" };
+        var queueMessage = new QueueMessage { Body = body, QueueName = "test", MessageAttributes = new(){{SqsQueueUtilities.Constants.MessageAttributeNames.IngestType, IngestAssetRequest.IngestType}} };
         A.CallTo(() => assetIngester.Ingest(A<IngestAssetRequest>._, A<CancellationToken>._))
             .Returns(new IngestResult(new AssetId(1 , 2, "fake"), result));
         
@@ -76,7 +76,7 @@ public class IngestHandlerTests
         {
             ["created"] = "1985-10-26T09:00:00"
         };
-        var queueMessage = new QueueMessage { Body = body, QueueName = "test" };
+        var queueMessage = new QueueMessage { Body = body, QueueName = "test", MessageAttributes = new(){{SqsQueueUtilities.Constants.MessageAttributeNames.IngestType, IngestAssetRequest.IngestType}} };
         A.CallTo(() => assetIngester.Ingest(A<IngestAssetRequest>._, A<CancellationToken>._))
             .Returns(new IngestResult(new AssetId(1 , 2, "fake"), result));
         
