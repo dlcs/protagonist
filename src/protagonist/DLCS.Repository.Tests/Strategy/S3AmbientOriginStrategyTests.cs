@@ -44,7 +44,7 @@ public class S3AmbientOriginStrategyTests
                 ContentLength = contentLength
             }
         );
-        
+
         const string originUri = "s3://eu-west-1/test-storage/2/1/ratts-of-the-capital";
         var objectInBucket =
             new RegionalisedObjectInBucket("test-storage", "2/1/ratts-of-the-capital", "eu-west-1");
@@ -56,8 +56,8 @@ public class S3AmbientOriginStrategyTests
             .Returns(response);
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
-        
+        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+
         // Assert
         A.CallTo(() =>
                 bucketReader.GetObjectFromBucket(
@@ -68,7 +68,7 @@ public class S3AmbientOriginStrategyTests
         result.ContentLength.Should().Be(contentLength);
         result.ContentType.Should().Be(contentType);
     }
-    
+
     [Fact]
     public async Task LoadAssetFromOrigin_HandlesNoContentLengthAndType()
     {
@@ -77,20 +77,20 @@ public class S3AmbientOriginStrategyTests
             "this is a test".ToMemoryStream(),
             new ObjectInBucketHeaders()
         );
-        
+
         const string originUri = "s3://eu-west-1/test-storage/2/1/repelish";
         A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._, A<CancellationToken>._))
             .Returns(response);
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
-        
+        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+
         // Assert
         result.Stream.Should().NotBeNull().And.Subject.Should().NotBeSameAs(Stream.Null);
         result.ContentLength.Should().BeNull();
         result.ContentType.Should().BeNull();
     }
-    
+
     [Fact]
     public async Task LoadAssetFromOrigin_ReturnsNull_IfCallFails()
     {
@@ -98,10 +98,10 @@ public class S3AmbientOriginStrategyTests
         const string originUri = "s3://eu-west-1/test-storage/2/1/repelish";
         A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._, A<CancellationToken>._))
             .ThrowsAsync(new Exception());
-        
+
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
-        
+        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+
         // Assert
         result.Stream.Should().BeSameAs(Stream.Null);
         result.IsEmpty.Should().BeTrue();

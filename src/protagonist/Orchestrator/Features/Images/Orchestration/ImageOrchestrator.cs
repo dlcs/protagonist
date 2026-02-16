@@ -29,17 +29,17 @@ public enum OrchestrationResult
     /// Asset was already orchestrated to fask-disk
     /// </summary>
     AlreadyOrchestrated,
-    
+
     /// <summary>
     /// Asset was moved from slow storage -> fast-disk
     /// </summary>
     Orchestrated,
-    
+
     /// <summary>
     /// Asset could not be found for serving. E.g. could be a new asset queued for ingestion but not yet complete
     /// </summary>
     NotFound,
-    
+
     /// <summary>
     /// An error was encountered orchestrating asset
     /// </summary>
@@ -109,7 +109,8 @@ public class ImageOrchestrator : IImageOrchestrator
         return orchestrationResult;
     }
 
-    private async Task<OrchestrationResult> OrchestrateImageInternal(OrchestrationImage orchestrationImage, AssetId assetId, 
+    private async Task<OrchestrationResult> OrchestrateImageInternal(OrchestrationImage orchestrationImage,
+        AssetId assetId,
         CancellationToken cancellationToken)
     {
         logger.LogTrace("Populating orchestration cache for '{AssetId}'", assetId);
@@ -120,7 +121,7 @@ public class ImageOrchestrator : IImageOrchestrator
             logger.LogTrace("File for '{AssetId}' already on disk. no-op", assetId);
             return OrchestrationResult.AlreadyOrchestrated;
         }
-        
+
         if (orchestrationImage.Reingest)
         {
             orchestrationImage = await ReingestImage(assetId, cancellationToken);
@@ -128,13 +129,13 @@ public class ImageOrchestrator : IImageOrchestrator
 
         if (string.IsNullOrEmpty(orchestrationImage.S3Location))
         {
-             return OrchestrationResult.NotFound;
+            return OrchestrationResult.NotFound;
         }
-        
+
         await SaveImageToFastDisk(orchestrationImage, targetPath, cancellationToken);
         return OrchestrationResult.Orchestrated;
     }
-    
+
     private bool DoesFileForAssetExist(string targetPath)
     {
         if (fileSystem.FileExists(targetPath))
@@ -172,7 +173,8 @@ public class ImageOrchestrator : IImageOrchestrator
     {
         // Get bytes from origin (S3)
         await using var originResponse =
-            await originStrategy.LoadAssetFromOrigin(image.AssetId, image.S3Location, null, cancellationToken);
+            await originStrategy.LoadAssetFromOrigin(image.AssetId.ToString(), image.S3Location, null,
+                cancellationToken);
         if (originResponse == null || originResponse.Stream.IsNull())
         {
             // TODO correct type of exception? Custom type?
@@ -181,6 +183,6 @@ public class ImageOrchestrator : IImageOrchestrator
         }
 
         // Save bytes to disk
-        await fileSaver.SaveResponseToDisk(image.AssetId, originResponse, filePath, cancellationToken);
+        await fileSaver.SaveResponseToDisk(image.AssetId.ToString(), originResponse, filePath, cancellationToken);
     }
 }

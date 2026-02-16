@@ -21,10 +21,10 @@ public class BasicHttpAuthOriginStrategy(
     ILogger<BasicHttpAuthOriginStrategy> logger)
     : IOriginStrategy
 {
-    public async Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
+    public async Task<OriginResponse> LoadAssetFromOrigin(string itemDesc, string origin,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("Fetching {Asset} from Origin: {Url}", assetId, origin);
+        logger.LogDebug("Fetching {ItemDesc} from Origin: {Url}", itemDesc, origin);
         customerOriginStrategy = customerOriginStrategy.ThrowIfNull(nameof(customerOriginStrategy));
 
         try
@@ -35,7 +35,7 @@ public class BasicHttpAuthOriginStrategy(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error fetching {Asset} from Origin: {Url}", assetId, origin);
+            logger.LogError(ex, "Error fetching {ItemDesc} from Origin: {Url}", itemDesc, origin);
             return OriginResponse.Empty;
         }
     }

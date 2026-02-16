@@ -23,11 +23,11 @@ public class S3AmbientOriginStrategy : IOriginStrategy
         this.bucketReader = bucketReader;
         this.logger = logger;
     }
-    
-    public async Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
+
+    public async Task<OriginResponse> LoadAssetFromOrigin(string itemDesc, string origin,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("Fetching {Asset} from Origin: {Origin}", assetId, origin);
+        logger.LogDebug("Fetching {ItemDesc} from Origin: {Origin}", itemDesc, origin);
 
         try
         {
@@ -38,7 +38,7 @@ public class S3AmbientOriginStrategy : IOriginStrategy
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error fetching {Asset} from Origin: {Origin}", assetId, origin);
+            logger.LogError(ex, "Error fetching {ItemDesc} from Origin: {Origin}", itemDesc, origin);
             return OriginResponse.Empty;
         }
     }
