@@ -101,6 +101,27 @@ public static class IIIFX
         }
 
         return true;
+    }
 
+    private const string FullToken = "full";
+    private const string UpscaleFullToken = "^full";
+
+    /// <summary>
+    /// Check if the provided <see cref="ImageRequest"/> is for "full" size parameter. This returns true for full or
+    /// ^full, despite the latter being invalid.
+    /// </summary>
+    /// <remarks>
+    /// For backwards compatibility, <see cref="ImageRequest"/> parsing does not differentiate between "full" and "max"
+    /// size parameter - it marks both as "Max"=true.
+    /// </remarks>
+    public static bool IsExplicitFullSize(this ImageRequest imageRequest)
+    {
+        if (imageRequest.IsBase || imageRequest.IsInformationRequest) return false;
+        
+        var path = imageRequest.ImageRequestPath;
+        if (string.IsNullOrWhiteSpace(path)) return false;
+
+        var pathSegments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return pathSegments is [.., FullToken or UpscaleFullToken, _, _];
     }
 }
