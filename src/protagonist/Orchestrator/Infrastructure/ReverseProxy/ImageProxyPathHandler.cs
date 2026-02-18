@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using DLCS.Model.IIIF;
 using IIIF;
 using IIIF.Exceptions;
@@ -13,15 +14,16 @@ namespace Orchestrator.Infrastructure.ReverseProxy;
 public static class ImageProxyPathHandler
 {
     /// <summary>
-    /// Get the proposed final size and <see cref="SizeParameter"/> image request based on incoming imageRequest and maxWidth.
+    /// Get the proposed final size and <see cref="SizeParameter"/> for image requests based on incoming imageRequest
+    /// and effective maxWidth. The returned result may be invalid if request cannot be fulfilled.
     /// </summary>
     /// <param name="imageRequest">Incoming <see cref="ImageRequest"/></param>
     /// <param name="imageSize">The <see cref="Size"/> of source image</param>
     /// <param name="maxWidth">The effective maxWidth value for image</param>
     /// <returns>
-    /// <see cref="ProxySizeResult"/> containing effective size, validity and proxy <see cref="SizeParameter"/>
+    /// <see cref="ProxyImageRequest"/> containing effective size, validity and proxy <see cref="SizeParameter"/>
     /// </returns>
-    public static ProxySizeResult GetProposedFinalSize(this ImageRequest imageRequest, Size imageSize, int maxWidth)
+    public static ProxyImageRequest GetProxyImageRequest(this ImageRequest imageRequest, Size imageSize, int maxWidth)
     {
         try
         {
@@ -34,8 +36,9 @@ public static class ImageProxyPathHandler
             {
                 var requestedSize = sizeParameter.Resize(extractedRegionSize, InvalidUpscaleBehaviour.Throw);
                 return requestedSize.MaxDimension > maxWidth
-                    ? ProxySizeResult.Invalid($"Requested size '{sizeParameter}' exceeds maxWidth of {maxWidth}")
-                    : ProxySizeResult.Valid(sizeParameter, requestedSize);
+                    ? ProxyImageRequest.Invalid($"Requested size '{sizeParameter}' exceeds maxWidth of {maxWidth}",
+                        HttpStatusCode.Forbidden)
+                    : ProxyImageRequest.Valid(sizeParameter, requestedSize);
             }
 
             // If /full/ or /max/ then we will change size-parameter to be explicit requested size
@@ -44,33 +47,34 @@ public static class ImageProxyPathHandler
                 // ^full isn't valid
                 if (imageRequest.IsExplicitFullSize())
                 {
-                    return ProxySizeResult.Invalid("'^full' size is invalid. Use 'full' or '^max' instead.");
+                    return ProxyImageRequest.Invalid("'^full' size is invalid. Use 'full' or '^max' instead.",
+                        HttpStatusCode.BadRequest);
                 }
                     
                 // Work out the final size - this will be the largest that fits withing maxWidth confinement, possibly
                 // growing
                 var finalSize = Size.FitWithin(Size.Square(maxWidth), extractedRegionSize);
-                return GetProxySizeResult(finalSize, maxWidth > extractedRegionSize.MaxDimension);
+                return GetProxyImageRequest(finalSize, maxWidth > extractedRegionSize.MaxDimension);
             }
             else
             {
                 // Work out the final size - this will be the extracted region size or that size confined to maxWidth 
                 var finalSize = Size.Confine(maxWidth, extractedRegionSize);
-                return GetProxySizeResult(finalSize);
+                return GetProxyImageRequest(finalSize);
             }
         }
         catch (RegionException ex)
         {
-            return ProxySizeResult.Invalid(ex.Message); // TODO - differentiate between 400/403/401?
+            return ProxyImageRequest.Invalid(ex.Message, HttpStatusCode.BadRequest);
         }
         catch (InvalidOperationException ex)
         {
-            return ProxySizeResult.Invalid(ex.Message);
+            return ProxyImageRequest.Invalid(ex.Message, HttpStatusCode.NotImplemented);
         }
     }
 
-    private static ProxySizeResult GetProxySizeResult(Size finalSize, bool upscaled = false)
-        => ProxySizeResult.Valid(new SizeParameter
+    private static ProxyImageRequest GetProxyImageRequest(Size finalSize, bool upscaled = false)
+        => ProxyImageRequest.Valid(new SizeParameter
         {
             Width = finalSize.Width,
             Height = finalSize.Height,
@@ -79,36 +83,44 @@ public static class ImageProxyPathHandler
 }
 
 /// <summary>
-/// Class represents 
+/// Class represents validated image proxy destination
 /// </summary>
-public class ProxySizeResult
+public class ProxyImageRequest
 {
     /// <summary>
     /// <see cref="SizeParameter"/> that should be used to proxy image request.
     /// </summary>
-    [MemberNotNullWhen(true, nameof(IsValid))]
     public SizeParameter? ProxySizeParameter { get; private init; }
         
     /// <summary>
     /// <see cref="Size"/> that represents the final size.
     /// </summary>
-    [MemberNotNullWhen(true, nameof(IsValid))]
     public Size? RequestedSize { get; private init; }
     
     /// <summary>
     /// Whether the proxy request is valid.
     /// </summary>
+    [MemberNotNullWhen(true, nameof(ProxySizeParameter))]
+    [MemberNotNullWhen(true, nameof(RequestedSize))]
+    [MemberNotNullWhen(false, nameof(ErrorMessage))]
+    [MemberNotNullWhen(false, nameof(ErrorStatusCode))]
     public bool IsValid { get; private init; }
+    
+    /// <summary>
+    /// HTTP status code representing why request is invalid.
+    /// </summary>
+    public HttpStatusCode? ErrorStatusCode { get; private init; }
     
     /// <summary>
     /// Error message representing why request is invalid.
     /// </summary>
-    [MemberNotNullWhen(false, nameof(IsValid))]
+    
     public string? ErrorMessage { get; private init; }
 
-    public static ProxySizeResult Invalid(string message) => new() { IsValid = false, ErrorMessage = message };
+    public static ProxyImageRequest Invalid(string message, HttpStatusCode statusCode)
+        => new() { IsValid = false, ErrorMessage = message, ErrorStatusCode = statusCode };
 
-    public static ProxySizeResult Valid(SizeParameter sizeParameter, Size proposedSize) => new()
+    public static ProxyImageRequest Valid(SizeParameter sizeParameter, Size proposedSize) => new()
     {
         RequestedSize = proposedSize,
         ProxySizeParameter = sizeParameter,

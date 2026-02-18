@@ -1,4 +1,5 @@
-﻿using IIIF;
+﻿using System.Net;
+using IIIF;
 using IIIF.ImageApi;
 using Orchestrator.Infrastructure.ReverseProxy;
 
@@ -11,12 +12,27 @@ public class ImageProxyPathHandlerTests
     [InlineData("square/^full")]
     [InlineData("0,0,512,512/^full")]
     [InlineData("pct:41.6,7.5,40,70/^full")]
-    public void GetProposedFinalSize_Invalid_UpscaleFull(string imageRequest)
+    public void GetProxyImageRequest_Invalid_UpscaleFull(string imageRequest)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.jpg", "");
-        var result = parsed.GetProposedFinalSize(new Size(100, 100), 500);
+        var result = parsed.GetProxyImageRequest(new Size(100, 100), 500);
         result.IsValid.Should().BeFalse();
         result.ErrorMessage.Should().Be("'^full' size is invalid. Use 'full' or '^max' instead.");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Theory]
+    [InlineData("full/101,")]
+    [InlineData("square/,101")]
+    [InlineData("0,0,512,512/101,101")]
+    [InlineData("pct:41.6,7.5,40,70/!101,101")]
+    public void GetProxyImageRequest_Invalid_WouldRequireUpscale(string imageRequest)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(new Size(100, 100), 500);
+        result.IsValid.Should().BeFalse();
+        result.ErrorMessage.Should().MatchEquivalentOf("SizeParameter * cannot upscale image size '*'");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.NotImplemented);
     }
     
     [Theory]
@@ -26,12 +42,13 @@ public class ImageProxyPathHandlerTests
     [InlineData("pct:101,0,10,10/full")]
     [InlineData("pct:101,101,10,10/!10,10")]
     [InlineData("pct:10,101,10,10/full")]
-    public void GetProposedFinalSize_Invalid_RegionOutOfBounds(string imageRequest)
+    public void GetProxyImageRequest_Invalid_RegionOutOfBounds(string imageRequest)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        var result = parsed.GetProposedFinalSize(new Size(100, 100), 500);
+        var result = parsed.GetProxyImageRequest(new Size(100, 100), 500);
         result.IsValid.Should().BeFalse();
         result.ErrorMessage.Should().Be("Region is outside image bounds");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
     [Theory]
@@ -42,21 +59,22 @@ public class ImageProxyPathHandlerTests
     [InlineData("full/11,11", 100, 100, 10)]
     [InlineData("full/,11", 100, 100, 10)]
     [InlineData("full/pct:15", 100, 100, 10)]
-    public void GetProposedFinalSize_Invalid_TooLarge(string imageRequest, int w, int h, int maxWidth)
+    public void GetProxyImageRequest_Invalid_TooLarge(string imageRequest, int w, int h, int maxWidth)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        var result = parsed.GetProposedFinalSize(new Size(w, h), maxWidth);
+        var result = parsed.GetProxyImageRequest(new Size(w, h), maxWidth);
         result.IsValid.Should().BeFalse();
         result.ErrorMessage.Should().MatchEquivalentOf("Requested size '*' exceeds maxWidth of *");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Theory]
     [MemberData(nameof(ValidSizeData.Portrait), MemberType = typeof(ValidSizeData))]
-    public void GetProposedFinalSize_Valid_Portrait(string imageRequest, Size imageSize, Size expectedSize,
+    public void GetProxyImageRequest_Valid_Portrait(string imageRequest, Size imageSize, Size expectedSize,
         string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        var result = parsed.GetProposedFinalSize(imageSize, 5000);
+        var result = parsed.GetProxyImageRequest(imageSize, 5000);
         result.IsValid.Should().BeTrue(imageRequest);
         result.ErrorMessage.Should().BeNull(imageRequest);
         result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
@@ -65,11 +83,11 @@ public class ImageProxyPathHandlerTests
     
     [Theory]
     [MemberData(nameof(ValidSizeData.PortraitRestrictedMaxWidth), MemberType = typeof(ValidSizeData))]
-    public void GetProposedFinalSize_Valid_Portrait_Restricted(string imageRequest, Size imageSize, Size expectedSize,
+    public void GetProxyImageRequest_Valid_Portrait_Restricted(string imageRequest, Size imageSize, Size expectedSize,
         string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        var result = parsed.GetProposedFinalSize(imageSize, 500);
+        var result = parsed.GetProxyImageRequest(imageSize, 500);
         result.IsValid.Should().BeTrue(imageRequest);
         result.ErrorMessage.Should().BeNull(imageRequest);
         result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
@@ -78,11 +96,11 @@ public class ImageProxyPathHandlerTests
     
     [Theory]
     [MemberData(nameof(ValidSizeData.Landscape), MemberType = typeof(ValidSizeData))]
-    public void GetProposedFinalSize_Valid_Landscape(string imageRequest, Size imageSize, Size expectedSize,
+    public void GetProxyImageRequest_Valid_Landscape(string imageRequest, Size imageSize, Size expectedSize,
         string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/180/bitonal.jpg", "");
-        var result = parsed.GetProposedFinalSize(imageSize, 5000);
+        var result = parsed.GetProxyImageRequest(imageSize, 5000);
         result.IsValid.Should().BeTrue(imageRequest);
         result.ErrorMessage.Should().BeNull(imageRequest);
         result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
@@ -91,11 +109,11 @@ public class ImageProxyPathHandlerTests
     
     [Theory]
     [MemberData(nameof(ValidSizeData.LandscapeRestrictedMaxWidth), MemberType = typeof(ValidSizeData))]
-    public void GetProposedFinalSize_Valid_Landscape_Restricted(string imageRequest, Size imageSize, Size expectedSize,
+    public void GetProxyImageRequest_Valid_Landscape_Restricted(string imageRequest, Size imageSize, Size expectedSize,
         string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        var result = parsed.GetProposedFinalSize(imageSize, 500);
+        var result = parsed.GetProxyImageRequest(imageSize, 500);
         result.IsValid.Should().BeTrue(imageRequest);
         result.ErrorMessage.Should().BeNull(imageRequest);
         result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
