@@ -99,6 +99,7 @@ public static class ServiceCollectionX
             .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<IAssetToS3, AssetToS3>()
+            .AddScoped<IAdjunctToS3, AssetToS3>()
             .AddOriginStrategies();
 
         if (engineSettings.ImageIngest != null)

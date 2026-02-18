@@ -60,7 +60,7 @@ public class IngestionContext(Asset asset)
         return this;
     }
     
-    public IngestionContext WithStorage(long? assetSize = null, long? thumbnailSize = null)
+    public IngestionContext WithStorage(long? assetSize = null, long? thumbnailSize = null, long? adjunctSize = null)
     {
         ImageStorage ??= new ImageStorage
         {
@@ -70,6 +70,7 @@ public class IngestionContext(Asset asset)
         };
 
         ImageStorage.Size += assetSize ?? 0;
+        ImageStorage.AdjunctSize += adjunctSize ?? 0;
         ImageStorage.ThumbnailSize += thumbnailSize ?? 0;
         ImageStorage.LastChecked = DateTime.UtcNow;
         

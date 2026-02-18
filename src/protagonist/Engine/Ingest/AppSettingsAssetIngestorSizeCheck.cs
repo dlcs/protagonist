@@ -14,20 +14,21 @@ public interface IAssetIngestorSizeCheck
     bool CustomerHasNoStorageCheck(int customerId);
     
     /// <summary>
-    /// Check if <see cref="AssetFromOrigin"/> exceeds storage allowance, if so set appropriate error on asset
+    /// Check if <see cref="AssetFromOrigin"/> (can be also <see cref="AdjunctFromOrigin"/>) exceeds storage allowance, if so set appropriate error on the <see cref="IDeliverable"/>
     /// </summary>
-    bool DoesAssetFromOriginExceedAllowance(AssetFromOrigin assetFromOrigin, Asset asset);
+    bool DoesAssetFromOriginExceedAllowance(AssetFromOrigin assetFromOrigin, IDeliverable item);
+    
 }
 
 public abstract class AssetIngestorSizeCheckBase : IAssetIngestorSizeCheck
 {
     public abstract bool CustomerHasNoStorageCheck(int customerId);
 
-    public bool DoesAssetFromOriginExceedAllowance(AssetFromOrigin assetFromOrigin, Asset asset)
+    public bool DoesAssetFromOriginExceedAllowance(AssetFromOrigin assetFromOrigin, IDeliverable item)
     {
         if (assetFromOrigin.FileExceedsAllowance)
         {
-            asset.Error = IngestErrors.StoragePolicyExceeded;
+            item.Error = IngestErrors.StoragePolicyExceeded;
             return true;
         }
 

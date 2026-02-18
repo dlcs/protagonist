@@ -12,6 +12,7 @@ public class ImageStorage
     public int Space { get; set; }
     public long ThumbnailSize { get; set; }
     public long Size { get; set; }
+    public long AdjunctSize { get; set; }
     public DateTime LastChecked { get; set; }
     public bool CheckingInProgress { get; set; }
 }

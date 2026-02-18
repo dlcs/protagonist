@@ -8,25 +8,14 @@ namespace Engine.Ingest.File;
 /// <summary>
 /// <see cref="IAssetIngester"/> implementation for handling "file" delivery-channel
 /// </summary>
-public class FileChannelWorker : IAssetIngesterWorker, IAdjunctIngesterWorker
+public class FileChannelWorker(
+    IAssetToS3 assetToS3,
+    IAdjunctToS3 adjunctToS3,
+    IAssetIngestorSizeCheck assetIngestorSizeCheck,
+    IStorageKeyGenerator storageKeyGenerator,
+    ILogger<FileChannelWorker> logger)
+    : IAssetIngesterWorker, IAdjunctIngesterWorker
 {
-    private readonly IAssetToS3 assetToS3;
-    private readonly IAssetIngestorSizeCheck assetIngestorSizeCheck;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly ILogger<FileChannelWorker> logger;
-
-    public FileChannelWorker(
-        IAssetToS3 assetToS3,
-        IAssetIngestorSizeCheck assetIngestorSizeCheck,
-        IStorageKeyGenerator storageKeyGenerator,
-        ILogger<FileChannelWorker> logger)
-    {
-        this.assetToS3 = assetToS3;
-        this.assetIngestorSizeCheck = assetIngestorSizeCheck;
-        this.storageKeyGenerator = storageKeyGenerator;
-        this.logger = logger;
-    }
-
     public async Task<IngestResultStatus> Ingest(IngestionContext ingestionContext,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
@@ -66,12 +55,19 @@ public class FileChannelWorker : IAssetIngesterWorker, IAdjunctIngesterWorker
             return IngestResultStatus.Failed;
         }
     }
-
-    private static void UpdateIngestionContext(IngestionContext ingestionContext, AssetFromOrigin assetInBucket,
+    
+    private static void UpdateIngestionContext(IngestionContext ingestionContext, AssetFromOrigin itemInBucket,
         RegionalisedObjectInBucket targetStorageLocation)
     {
-        ingestionContext.StoredObjects[targetStorageLocation] = assetInBucket.AssetSize;
-        ingestionContext.WithStorage(assetSize: assetInBucket.AssetSize);
+        ingestionContext.StoredObjects[targetStorageLocation] = itemInBucket.AssetSize;
+        ingestionContext.WithStorage(assetSize: itemInBucket.AssetSize);
+    }
+    
+    private static void UpdateIngestionContext(AdjunctIngestionContext ingestionContext, AdjunctFromOrigin itemInBucket,
+        RegionalisedObjectInBucket targetStorageLocation)
+    {
+        ingestionContext.StoredObjects[targetStorageLocation] = itemInBucket.AssetSize;
+        ingestionContext.WithStorage(adjunctSize: itemInBucket.AssetSize);
     }
 
     public async Task<IngestResultStatus> Ingest(AdjunctIngestionContext ingestionContext,
@@ -92,11 +88,19 @@ public class FileChannelWorker : IAssetIngesterWorker, IAdjunctIngesterWorker
 
             var targetStorageLocation = storageKeyGenerator.GetStoredAdjunctLocation(ingestionContext.AssetId, adjunct);
 
-            var assetInBucket = await assetToS3.CopyOriginToStorage(targetStorageLocation,
+            var adjunctInBucket = await adjunctToS3.CopyAdjunctToStorage(targetStorageLocation,
                 ingestionContext,
                 !assetIngestorSizeCheck.CustomerHasNoStorageCheck(ingestionContext.Asset.Customer),
                 customerOriginStrategy,
                 cancellationToken);
+            
+            if (assetIngestorSizeCheck.DoesAssetFromOriginExceedAllowance(adjunctInBucket, adjunct))
+            {
+                return IngestResultStatus.StorageLimitExceeded;
+            }
+
+            UpdateIngestionContext(ingestionContext, adjunctInBucket, targetStorageLocation);
+            return IngestResultStatus.Success;
         }
         catch (Exception ex)
         {
@@ -105,7 +109,5 @@ public class FileChannelWorker : IAssetIngesterWorker, IAdjunctIngesterWorker
             adjunct.Error = ex.Message;
             return IngestResultStatus.Failed;
         }
-
-        throw new NotImplementedException();
     }
 }

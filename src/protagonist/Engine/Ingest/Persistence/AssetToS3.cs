@@ -40,7 +40,7 @@ public interface IAdjunctToS3
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    Task<AssetFromOrigin> CopyAdjunctToStorage(ObjectInBucket destination, AdjunctIngestionContext context,
+    Task<AdjunctFromOrigin> CopyAdjunctToStorage(ObjectInBucket destination, AdjunctIngestionContext context,
         bool verifySize,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default);
 }
@@ -72,7 +72,7 @@ public class AssetToS3(
         return copyResult;
     }
 
-    public async Task<AssetFromOrigin> CopyAdjunctToStorage(ObjectInBucket destination, AdjunctIngestionContext context,
+    public async Task<AdjunctFromOrigin> CopyAdjunctToStorage(ObjectInBucket destination, AdjunctIngestionContext context,
         bool verifySize,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
@@ -86,7 +86,7 @@ public class AssetToS3(
         return copyResult;
     }
 
-    private async Task<AssetFromOrigin> DoAdjunctCopy(ObjectInBucket destination, AdjunctIngestionContext context,
+    private async Task<AdjunctFromOrigin> DoAdjunctCopy(ObjectInBucket destination, AdjunctIngestionContext context,
         bool verifySize, CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
     {
         if (ShouldCopyBucketToBucket(customerOriginStrategy))
@@ -118,7 +118,7 @@ public class AssetToS3(
     private static bool ShouldCopyBucketToBucket(CustomerOriginStrategy customerOriginStrategy)
         => customerOriginStrategy is { Strategy: OriginStrategyType.S3Ambient };
 
-    private async Task<AssetFromOrigin> CopyAdjunctBucketToBucket(AdjunctIngestionContext context,
+    private async Task<AdjunctFromOrigin> CopyAdjunctBucketToBucket(AdjunctIngestionContext context,
         ObjectInBucket destination,
         bool verifySize, CancellationToken cancellationToken)
     {
@@ -195,7 +195,7 @@ public class AssetToS3(
         return copyResult;
     }
 
-    private async Task<AssetFromOrigin> IndirectAdjunctCopyBucketToBucket(AdjunctIngestionContext context,
+    private async Task<AdjunctFromOrigin> IndirectAdjunctCopyBucketToBucket(AdjunctIngestionContext context,
         ObjectInBucket destination, bool verifySize, CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken)
     {
@@ -226,7 +226,7 @@ public class AssetToS3(
                     $"Failed to copy adjunct {context.Adjunct.Id} for asset {context.Asset.Id} indirectly from '{context.Asset.Origin}' to {destination}");
             }
 
-            return new AssetFromOrigin(context.Asset.Id, adjunctOnDisk.AssetSize, destination.GetS3Uri().ToString(),
+            return new AdjunctFromOrigin(context.Adjunct.Id, context.Asset.Id, adjunctOnDisk.AssetSize, destination.GetS3Uri().ToString(),
                 adjunctOnDisk.ContentType);
         }
         finally

@@ -14,6 +14,7 @@ namespace Engine.Tests.Ingest.File;
 public class FileChannelWorkerTests
 {
     private readonly IAssetToS3 assetToS3;
+    private readonly IAdjunctToS3 adjunctToS3;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly FileChannelWorker sut;
 
@@ -21,9 +22,10 @@ public class FileChannelWorkerTests
     {
         var assetIngestorSizeCheck = new HardcodedAssetIngestorSizeCheckBase(10);
         assetToS3 = A.Fake<IAssetToS3>();
+        adjunctToS3 = A.Fake<IAdjunctToS3>();
         storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
 
-        sut = new FileChannelWorker(assetToS3, assetIngestorSizeCheck, storageKeyGenerator,
+        sut = new FileChannelWorker(assetToS3, adjunctToS3, assetIngestorSizeCheck, storageKeyGenerator,
             new NullLogger<FileChannelWorker>());
     }
 
