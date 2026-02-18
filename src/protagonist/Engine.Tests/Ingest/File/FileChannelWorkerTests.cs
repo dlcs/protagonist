@@ -228,6 +228,75 @@ public class FileChannelWorkerTests
         result.Should().Be(IngestResultStatus.Success);
     }
     
+    [Fact]
+    public async Task IngestAdjunct_ReturnsErrorIfCopyExceedStorageLimit()
+    {
+        // Arrange
+        var context = GetAdjunctIngestionContext();
+        
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = false };
+        var destination = new RegionalisedObjectInBucket("test-bucket", "origin-key", "eu-west-1");
+        A.CallTo(() => storageKeyGenerator.GetStoredAdjunctLocation(context.AssetId, context.Adjunct))
+            .Returns(destination);
+
+        var assetFromOrigin = new AdjunctFromOrigin(context.Adjunct.Id, context.AssetId, 1234L, "anywhere", "application/docx");
+        assetFromOrigin.FileTooLarge();
+        
+        A.CallTo(() =>
+            adjunctToS3.CopyAdjunctToStorage(destination, context, true, cos, A<CancellationToken>._))
+            .Returns(assetFromOrigin);
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+        
+        // Assert
+        context.ImageStorage.Should().BeNull();
+        context.Adjunct.Error.Should().Be("StoragePolicy size limit exceeded");
+        result.Should().Be(IngestResultStatus.StorageLimitExceeded);
+    }
+    
+    [Fact]
+    public async Task IngestAdjunct_CopiesFileToStorage_PassesVerifySizeFalse_IfCustomerExcluded()
+    {
+        // Arrange
+        var context = GetAdjunctIngestionContext("/10/2/something");
+
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = false };
+        var destination = new RegionalisedObjectInBucket("test-bucket", "origin-key", "eu-west-1");
+        A.CallTo(() => storageKeyGenerator.GetStoredAdjunctLocation(context.AssetId, context.Adjunct))
+            .Returns(destination);
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+        
+        // Assert
+        A.CallTo(() =>
+                adjunctToS3.CopyAdjunctToStorage(destination, context, false, cos, A<CancellationToken>._))
+            .MustHaveHappened();
+        result.Should().Be(IngestResultStatus.Success);
+    }
+    
+    [Fact]
+    public async Task IngestAdjunct_ReturnsFailedState_IfErrorThrown()
+    {
+        // Arrange
+        var context = GetAdjunctIngestionContext("/10/2/something");
+
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = false };
+        A.CallTo(() => storageKeyGenerator.GetStoredAdjunctLocation(context.AssetId, context.Adjunct))
+            .Throws(new ApplicationException("I am an error"));
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+        
+        // Assert
+        context.Adjunct.Error.Should().Be("I am an error");
+        result.Should().Be(IngestResultStatus.Failed);
+    }
+    
+    
+    // Helpers
+    
     private static AdjunctIngestionContext GetAdjunctIngestionContext(string assetId = "/1/2/something", string adjunctId = "someAdjunct")
     {
         var id = AssetId.FromString(assetId);
