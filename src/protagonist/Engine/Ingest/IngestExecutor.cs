@@ -10,54 +10,89 @@ namespace Engine.Ingest;
 /// <summary>
 /// Class to take asset, and execute workers in order, handling success/failure result and updating DB
 /// </summary>
-public class IngestExecutor
+public class IngestExecutor(
+    IWorkerBuilder workerBuilder,
+    IEngineAssetRepository assetRepository,
+    IAssetIngestorSizeCheck assetIngestorSizeCheck,
+    IStorageRepository storageRepository,
+    ILogger<IngestExecutor> logger)
 {
-    private readonly IWorkerBuilder workerBuilder;
-    private readonly IEngineAssetRepository assetRepository;
-    private readonly ILogger<IngestExecutor> logger;
-    private readonly IAssetIngestorSizeCheck assetIngestorSizeCheck;
-    private readonly IStorageRepository storageRepository;
     private const int MinimumAssetSize = 100;
 
-    public IngestExecutor(IWorkerBuilder workerBuilder, 
-        IEngineAssetRepository assetRepository,
-        IAssetIngestorSizeCheck assetIngestorSizeCheck,
-        IStorageRepository storageRepository,
-        ILogger<IngestExecutor> logger)
-    {
-        this.workerBuilder = workerBuilder;
-        this.assetRepository = assetRepository;
-        this.logger = logger;
-        this.assetIngestorSizeCheck = assetIngestorSizeCheck;
-        this.storageRepository = storageRepository;
-    }
-
-    public async Task<IngestResult> IngestAdjunct(Asset asset, Adjunct adjunct, CustomerOriginStrategy customerOriginStrategy,
+    public async Task<AdjunctIngestResult> IngestAdjunct(Adjunct adjunct, CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
         var sw = Stopwatch.StartNew();
-        var context = new AdjunctIngestionContext(asset, adjunct);
-        
-        if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
+        var context = new AdjunctIngestionContext(adjunct);
+
+        var customerId = adjunct.Asset.Customer;
+        var assetId = adjunct.Asset.Id;
+
+        if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(customerId))
         {
-            var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
-            
+            var counts = await storageRepository.GetStorageMetrics(customerId, cancellationToken);
+
             if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
             {
                 logger.LogDebug(
                     "Storage policy exceeded for customer {CustomerId} with asset id {AssetId}, adjunct id {AdjunctId}",
-                    asset.Customer, asset.Id, adjunct.Id);
-                
+                    customerId, assetId, adjunct.Id);
+
                 adjunct.Error = IngestErrors.StoragePolicyExceeded;
                 var dbResponse = await CompleteAssetInDatabase(context, true, cancellationToken);
-                return new IngestResult(asset.Id, dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
+                return new AdjunctIngestResult(adjunct.Id, adjunct.AssetId,
+                    dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
             }
-            
-            var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
+
+            var preIngestionAssetSize = adjunct.Size;
             context.WithPreIngestionAssetSize(preIngestionAssetSize);
         }
-        
-        throw new NotImplementedException();
+
+        var workers = workerBuilder.GetWorkers(adjunct);
+        var overallStatus = IngestResultStatus.Unknown;
+        var postProcessors = new List<IAdjunctIngesterPostProcess>(workers.Count);
+
+        foreach (var worker in workers)
+        {
+            // ReSharper disable once SuspiciousTypeConversion.Global - hook for future impl
+            if (worker is IAdjunctIngesterPostProcess process)
+            {
+                postProcessors.Add(process);
+            }
+
+            logger.LogDebug("Calling {Worker} for adjunct {AdjunctId}, asset {AssetId}", worker.GetType(), adjunct.Id,
+                adjunct.AssetId);
+            var result = await worker.Ingest(context, customerOriginStrategy, cancellationToken);
+            if (result is IngestResultStatus.Failed or IngestResultStatus.StorageLimitExceeded)
+            {
+                overallStatus = result;
+                break;
+            }
+
+            // Don't overwrite a QueuedForProcessing result - this wins
+            if (overallStatus != IngestResultStatus.QueuedForProcessing)
+            {
+                overallStatus = result;
+            }
+        }
+
+        var dbSuccess = await CompleteAdjunctInDatabase(context,
+            overallStatus != IngestResultStatus.QueuedForProcessing,
+            cancellationToken);
+
+        foreach (var postProcessor in postProcessors)
+        {
+            logger.LogDebug("Calling {Worker} post-process for adjunct {AdjunctId}, asset {AssetId}",
+                postProcessor.GetType(), adjunct.Id, adjunct.AssetId);
+            await postProcessor.PostIngest(context,
+                dbSuccess && overallStatus is IngestResultStatus.Success or IngestResultStatus.QueuedForProcessing);
+        }
+
+        sw.Stop();
+        logger.LogDebug("Processed {AdjunctId}, asset {AssetId} in {Elapsed}ms", adjunct.Id, adjunct.AssetId,
+            sw.ElapsedMilliseconds);
+        return new AdjunctIngestResult(adjunct.Id, adjunct.AssetId,
+            dbSuccess ? overallStatus : IngestResultStatus.Failed);
     }
 
     public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy customerOriginStrategy,

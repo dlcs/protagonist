@@ -70,11 +70,11 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
         return matching;
     }
     
-    public async Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Adjunct adjunct, int customerId)
+    public async Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Adjunct adjunct)
     {
         // Ones without origin would not have been sent for ingestion, this is part of the API processing
         Debug.Assert(adjunct.Origin != null,  nameof(adjunct.Origin) + " != null");
-        
+        var customerId = adjunct.Asset.Customer;
         var customerStrategies = await GetCustomerOriginStrategies(customerId);
         var matching = FindMatchingStrategy(adjunct.Origin, customerStrategies) ?? DefaultStrategy;
         

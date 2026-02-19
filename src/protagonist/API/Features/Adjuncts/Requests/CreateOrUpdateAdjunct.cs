@@ -53,13 +53,39 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
             dbAdjunct.ExternalId = adjunct.ExternalId;
             dbAdjunct.Origin = adjunct.Origin;
             dbAdjunct.Error = adjunct.Error;
-            dbAdjunct.Size = adjunct.Size;
             dbAdjunct.Type = adjunct.Type;
+
+            if (toBeIngested)
+            {
+                // For hosted (ingested) adjuncts we let Engine handle this property
+                // as it becomes relevant to storage limits. However, if the pre-existing
+                // adjunct was EXTERNAL, the size doesn't count toward those limits.
+                
+                // To ensure correct calculations in the engine, we will set Size to null.
+                // This will allow Engine to increase the total adjunct size by the size
+                // of new version of the adjunct, regardless what size the external one had.
+
+                dbAdjunct.Size = null;
+            } else {
+                
+                // Otherwise, this is external adjunct, and the size is irrelevant for size calculations,
+                // as this adjunct will not hit Engine - we copy whatever was submitted
+                
+                dbAdjunct.Size = adjunct.Size;
+            }
         }
         else
         {
             dbAdjunct = adjunct;
             dbAdjunct.Created = DateTime.UtcNow;
+
+            if (toBeIngested)
+            {
+                // Will be set by the Engine, disregard any submitted value
+                // See comments above for more details
+                dbAdjunct.Size = null; 
+            }
+            // else it's external, and we don't care about the Size property in the context of processing - leave as is 
             
             await dbContext.Adjuncts.AddAsync(dbAdjunct, cancellationToken);
         }

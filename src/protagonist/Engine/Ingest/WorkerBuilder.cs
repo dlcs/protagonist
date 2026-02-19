@@ -9,6 +9,7 @@ namespace Engine.Ingest;
 public interface IWorkerBuilder
 {
     IReadOnlyCollection<IAssetIngesterWorker> GetWorkers(Asset asset);
+    IReadOnlyCollection<IAdjunctIngesterWorker> GetWorkers(Adjunct adjunct);
 }
 
 /// <summary>

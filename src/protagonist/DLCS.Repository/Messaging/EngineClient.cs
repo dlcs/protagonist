@@ -212,7 +212,7 @@ public class EngineClient : IEngineClient
 
     private static string GetJsonString(Adjunct adjunct)
     {
-        var ingestAdjunctRequest = new IngestAdjunctRequest(adjunct, DateTime.UtcNow);
+        var ingestAdjunctRequest = new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow);
         return JsonSerializer.Serialize(ingestAdjunctRequest, SerializerOptions);
     }
 }

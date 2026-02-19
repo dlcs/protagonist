@@ -8,7 +8,7 @@ using Engine.Ingest.Persistence;
 
 namespace Engine.Ingest;
 
-public class AdjunctIngestionContext(Asset asset, Adjunct adjunct) : IngestionContext(asset)
+public class AdjunctIngestionContext(Adjunct adjunct) : IngestionContext(adjunct.Asset)
 {
     public Adjunct Adjunct { get; } = adjunct;
 }

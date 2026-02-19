@@ -36,5 +36,5 @@ public interface ICustomerOriginStrategyRepository
     /// <param name="adjunct">Adjunct to get <see cref="CustomerOriginStrategy"/> for.</param>
     /// <param name="customerId">Customer which has submitted the adjunct</param>
     /// <returns><see cref="CustomerOriginStrategy"/> to use for <see cref="Asset"/>.</returns>
-    Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Adjunct adjunct, int customerId);
+    Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Adjunct adjunct);
 }

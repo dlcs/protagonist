@@ -9,21 +9,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Engine.Data;
 
-public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepository
+public class EngineAssetRepository(
+    DlcsContext dlcsContext,
+    IBatchCompletedNotificationSender batchCompletedNotificationSender,
+    ILogger<EngineAssetRepository> logger)
+    : IEngineAssetRepository, IDapperContextRepository
 {
-    private readonly ILogger<EngineAssetRepository> logger;
-    public DlcsContext DlcsContext { get; }
-    private readonly IBatchCompletedNotificationSender batchCompletedNotificationSender;
-
-    public EngineAssetRepository(
-        DlcsContext dlcsContext, 
-        IBatchCompletedNotificationSender batchCompletedNotificationSender, 
-        ILogger<EngineAssetRepository> logger)
-    {
-        DlcsContext = dlcsContext;
-        this.logger = logger;
-        this.batchCompletedNotificationSender = batchCompletedNotificationSender;
-    }
+    public DlcsContext DlcsContext { get; } = dlcsContext;
 
     public async Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage,
         bool ingestFinished, CancellationToken cancellationToken = default)
@@ -111,7 +103,11 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
     }
 
     public ValueTask<Adjunct?> GetAdjunct(string id, AssetId assetId, CancellationToken cancellationToken = default)
-        => new(DlcsContext.Adjuncts.SingleOrDefaultAsync(a => a.Id == id && a.AssetId == assetId, cancellationToken));
+        => new(
+            DlcsContext.Adjuncts
+            .Include(a => a.Asset)
+            .SingleOrDefaultAsync(a => a.Id == id && a.AssetId == assetId, cancellationToken)
+        );
 
     public async Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default)
     {
@@ -122,6 +118,7 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
 
         return imageSize;
     }
+    
     
     private async Task UpsertImageStorage(AssetId assetId, ImageStorage? imageStorage,
         CancellationToken cancellationToken)
