@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Strategy.Utils;
@@ -13,12 +14,12 @@ public interface IFileSaver
     /// <summary>
     /// Save asset from <see cref="OriginResponse"/> to specified file location.
     /// </summary>
-    /// <param name="itemDesc"></param>
+    /// <param name="originItem">Item that has an origin, used to fetch it</param>
     /// <param name="originResponse"><see cref="OriginResponse"/> object containing data stream</param>
     /// <param name="destination">Location to store binary to, will be deleted if already exists</param>
     /// <param name="cancellationToken">Async cancellationToken</param>
     /// <returns>ContentLength</returns>
-    Task<long> SaveResponseToDisk(string itemDesc, OriginResponse originResponse, string destination,
+    Task<long> SaveResponseToDisk(IOriginItem originItem, OriginResponse originResponse, string destination,
         CancellationToken cancellationToken = default);
 }
 
@@ -34,12 +35,13 @@ public class FileSaver : IFileSaver
     /// <summary>
     /// Save asset from <see cref="OriginResponse"/> to specified file location.
     /// </summary>
-    /// <param name="itemDesc">used for logging - should allow identifying the asset/adjunct/other item (future)</param>
+    /// <param name="originItem"></param>
     /// <param name="originResponse"><see cref="OriginResponse"/> object containing data stream</param>
     /// <param name="destination">Location to store binary to, will be deleted if already exists</param>
     /// <param name="cancellationToken">Async cancellationToken</param>
     /// <returns>ContentLength</returns>
-    public async Task<long> SaveResponseToDisk(string itemDesc, OriginResponse originResponse, string destination,
+    public async Task<long> SaveResponseToDisk(IOriginItem originItem, OriginResponse originResponse,
+        string destination,
         CancellationToken cancellationToken = default)
     {
         if (File.Exists(destination))
@@ -76,7 +78,7 @@ public class FileSaver : IFileSaver
 
             logger.LogDebug(
                 "Download {ItemDesc} to '{TargetPath}': done ({Bytes} bytes, {Elapsed}ms) using {CopyType}",
-                itemDesc, destination, received, sw.ElapsedMilliseconds,
+                originItem, destination, received, sw.ElapsedMilliseconds,
                 knownFileSize ? "framework-copy" : "manual-copy");
 
             return received;

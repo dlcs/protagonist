@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Repository.SFTP;
@@ -29,10 +30,10 @@ public class SftpOriginStrategy : IOriginStrategy
         this.sftpReader = sftpReader;
     }
 
-    public async Task<OriginResponse> LoadAssetFromOrigin(string itemDesc, string origin,
+    public async Task<OriginResponse> LoadFromOrigin(IOriginItem originItem,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("Fetching {ItemDesc} from Origin: {Origin}", itemDesc, origin);
+        logger.LogDebug("Fetching {ItemDesc} from Origin: {Origin}", originItem.Identifier(), originItem.Origin);
 
         var basicCredentials =
             await credentialsRepository.GetBasicCredentialsForOriginStrategy(customerOriginStrategy!);
@@ -43,7 +44,7 @@ public class SftpOriginStrategy : IOriginStrategy
                 $"Could not find credentials for customerOriginStrategy {customerOriginStrategy?.Id}");
         }
 
-        var originUri = new Uri(origin);
+        var originUri = new Uri(originItem.Origin!);
 
         // The URI class doesn't know what the default port is for SFTP, so defaults to -1
         var port = originUri.IsDefaultPort ? DefaultPort : originUri.Port;
@@ -57,7 +58,7 @@ public class SftpOriginStrategy : IOriginStrategy
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error fetching {ItemDesc} from Origin: {Origin}", itemDesc, origin);
+            logger.LogError(ex, "Error fetching {ItemDesc} from Origin: {Origin}", originItem.Identifier(), originItem.Origin);
             return OriginResponse.Empty;
         }
     }

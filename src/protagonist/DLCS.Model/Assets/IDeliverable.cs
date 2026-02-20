@@ -2,7 +2,7 @@
 
 namespace DLCS.Model.Assets;
 
-public interface IDeliverable
+public interface IDeliverable : IOriginItem
 {
     /// <summary>
     /// Marks this object as being currently ingested
@@ -15,12 +15,7 @@ public interface IDeliverable
     string? Error { get; set; }
     
     /// <summary>
-    /// Contains source to ingest from
-    /// </summary>
-    string? Origin { get; set; }
-    
-    /// <summary>
     /// When the item has last finished processing
     /// </summary>
-    public DateTime? Finished { get; set; }
+    DateTime? Finished { get; set; }
 }

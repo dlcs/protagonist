@@ -429,19 +429,20 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 }
 
-/// <remarks>
-/// Don't use for adjuncts
-/// </remarks>
 public class FakeFileSaver : IFileSaver
 {
     private readonly List<string> createdFiles = new();
     private readonly List<AssetId> savedAssets = new();
 
-    public Task<long> SaveResponseToDisk(string itemDesc, OriginResponse originResponse, string destination,
+    public Task<long> SaveResponseToDisk(IOriginItem originItem, OriginResponse originResponse, string destination,
         CancellationToken cancellationToken = default)
     {
         createdFiles.Add(destination);
-        savedAssets.Add(AssetId.FromString(itemDesc));
+        if(originItem is Asset asset)
+        {
+            savedAssets.Add(asset.Id);
+        }
+
         return Task.FromResult(1000L);
     }
 }

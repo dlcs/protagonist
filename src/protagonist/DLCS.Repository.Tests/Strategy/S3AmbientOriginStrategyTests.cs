@@ -4,6 +4,7 @@ using System.Threading;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy;
 using FakeItEasy;
@@ -56,7 +57,7 @@ public class S3AmbientOriginStrategyTests
             .Returns(response);
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         A.CallTo(() =>
@@ -83,7 +84,7 @@ public class S3AmbientOriginStrategyTests
             .Returns(response);
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         result.Stream.Should().NotBeNull().And.Subject.Should().NotBeSameAs(Stream.Null);
@@ -100,7 +101,7 @@ public class S3AmbientOriginStrategyTests
             .ThrowsAsync(new Exception());
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         result.Stream.Should().BeSameAs(Stream.Null);

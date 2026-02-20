@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy;
 using FakeItEasy;
@@ -43,7 +44,7 @@ public class DefaultOriginStrategyTests
         const string originUri = "https://test.example.com/string";
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, new CustomerOriginStrategy());
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, new CustomerOriginStrategy());
 
         // Assert
         httpHandler.CallsMade.Should().Contain(originUri);
@@ -61,7 +62,7 @@ public class DefaultOriginStrategyTests
         const string originUri = "https://test.example.com/string";
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, new CustomerOriginStrategy());
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, new CustomerOriginStrategy());
 
         // Assert
         httpHandler.CallsMade.Should().Contain(originUri);
@@ -81,7 +82,7 @@ public class DefaultOriginStrategyTests
         const string originUri = "https://test.example.com/string";
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, new CustomerOriginStrategy());
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, new CustomerOriginStrategy());
 
         // Assert
         httpHandler.CallsMade.Should().Contain(originUri);

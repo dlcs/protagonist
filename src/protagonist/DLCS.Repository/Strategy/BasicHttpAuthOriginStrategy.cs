@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using Microsoft.Extensions.Logging;
@@ -21,21 +22,21 @@ public class BasicHttpAuthOriginStrategy(
     ILogger<BasicHttpAuthOriginStrategy> logger)
     : IOriginStrategy
 {
-    public async Task<OriginResponse> LoadAssetFromOrigin(string itemDesc, string origin,
+    public async Task<OriginResponse> LoadFromOrigin(IOriginItem originItem,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("Fetching {ItemDesc} from Origin: {Url}", itemDesc, origin);
+        logger.LogDebug("Fetching {ItemDesc} from Origin: {Url}", originItem.Identifier(), originItem.Origin);
         customerOriginStrategy = customerOriginStrategy.ThrowIfNull(nameof(customerOriginStrategy));
 
         try
         {
-            var response = await GetHttpResponse(customerOriginStrategy, origin, cancellationToken);
+            var response = await GetHttpResponse(customerOriginStrategy, originItem.Origin!, cancellationToken);
             var originResponse = await response.CreateOriginResponse(cancellationToken);
             return originResponse;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error fetching {ItemDesc} from Origin: {Url}", itemDesc, origin);
+            logger.LogError(ex, "Error fetching {ItemDesc} from Origin: {Url}", originItem.Identifier(), originItem.Origin);
             return OriginResponse.Empty;
         }
     }

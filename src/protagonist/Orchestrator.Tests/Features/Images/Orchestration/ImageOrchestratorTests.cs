@@ -4,6 +4,7 @@ using System.Threading;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.Utils;
 using LazyCache;
@@ -81,7 +82,7 @@ public class ImageOrchestratorTests
         // Assert
         A.CallTo(() => fileSystem.SetLastWriteTimeUtc(A<string>._, A<DateTime>._)).MustHaveHappened();
         A.CallTo(() =>
-                originStrategy.LoadAssetFromOrigin(orchestrationImage.AssetId.ToString(), A<string>._, null,
+                originStrategy.LoadFromOrigin(new Asset{ Id = orchestrationImage.AssetId }, null,
                     CancellationToken.None))
             .MustNotHaveHappened();
         result.Should().Be(OrchestrationResult.AlreadyOrchestrated);
@@ -93,7 +94,7 @@ public class ImageOrchestratorTests
         // Arrange
         var originResponse = new OriginResponse("test".ToMemoryStream());
         A.CallTo(() =>
-                originStrategy.LoadAssetFromOrigin(orchestrationImage.AssetId.ToString(), A<string>._, null,
+                originStrategy.LoadFromOrigin(orchestrationImage, null,
                     CancellationToken.None))
             .Returns(originResponse);
         var sut = GetSystemUnderTest();
@@ -103,7 +104,7 @@ public class ImageOrchestratorTests
 
         // Assert
         A.CallTo(() =>
-                fileSaver.SaveResponseToDisk(orchestrationImage.AssetId.ToString(), originResponse, A<string>._,
+                fileSaver.SaveResponseToDisk(orchestrationImage, originResponse, A<string>._,
                     CancellationToken.None))
             .MustHaveHappened();
         result.Should().Be(OrchestrationResult.Orchestrated);
@@ -114,7 +115,7 @@ public class ImageOrchestratorTests
     {
         // Arrange
         A.CallTo(() =>
-                originStrategy.LoadAssetFromOrigin(orchestrationImage.AssetId.ToString(), A<string>._, null,
+                originStrategy.LoadFromOrigin(orchestrationImage, null,
                     CancellationToken.None))
             .Returns(new OriginResponse(Stream.Null));
         var sut = GetSystemUnderTest();

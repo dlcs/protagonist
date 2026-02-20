@@ -73,7 +73,7 @@ public class AssetToDisk(
         destinationTemplate.ThrowIfNullOrWhiteSpace(nameof(destinationTemplate));
 
         await using var originResponse =
-            await originFetcher.LoadAssetFromLocation(context.Asset.Id.ToString(), context.Asset.Origin,
+            await originFetcher.LoadFromOrigin(context.Asset,
                 customerOriginStrategy, cancellationToken);
 
         if (originResponse.Stream.IsNull())
@@ -112,11 +112,9 @@ public class AssetToDisk(
         CancellationToken cancellationToken = default)
     {
         destinationTemplate.ThrowIfNullOrWhiteSpace(nameof(destinationTemplate));
-
-        var itemDesc = $"Adjunct {context.Adjunct.Id} for Asset {context.Asset.Id}";
         
         await using var originResponse =
-            await originFetcher.LoadAssetFromLocation(itemDesc, context.Adjunct.Origin,
+            await originFetcher.LoadFromOrigin(context.Adjunct,
                 customerOriginStrategy, cancellationToken);
 
         if (originResponse.Stream.IsNull())
@@ -154,7 +152,7 @@ public class AssetToDisk(
 
         var targetPath = $"{path}.{extension}";
 
-        var received = await fileSaver.SaveResponseToDisk(asset.Id.ToString(), originResponse, targetPath,
+        var received = await fileSaver.SaveResponseToDisk(asset, originResponse, targetPath,
             cancellationToken);
 
         return new AdjunctFromOrigin(adjunctId, asset.Id, received, targetPath, originResponse.ContentType);
@@ -170,7 +168,7 @@ public class AssetToDisk(
 
         var targetPath = $"{path}.{extension}";
 
-        var received = await fileSaver.SaveResponseToDisk(asset.Id.ToString(), originResponse, targetPath,
+        var received = await fileSaver.SaveResponseToDisk(asset, originResponse, targetPath,
             cancellationToken);
 
         return new AssetFromOrigin(asset.Id, received, targetPath, originResponse.ContentType);

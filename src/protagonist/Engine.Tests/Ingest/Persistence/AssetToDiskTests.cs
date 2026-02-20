@@ -69,7 +69,7 @@ public class AssetToDiskTests
         var context = new IngestionContext(asset);
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient };
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.Id.ToString(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadFromOrigin(asset, cos, A<CancellationToken>._))
             .Returns<OriginResponse?>(null);
 
         // Act
@@ -88,7 +88,7 @@ public class AssetToDiskTests
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient };
         var context = new IngestionContext(asset);
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.Id.ToString(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadFromOrigin(asset, cos, A<CancellationToken>._))
             .Returns(new OriginResponse(Stream.Null));
 
         // Act
@@ -112,10 +112,10 @@ public class AssetToDiskTests
         var responseStream = "{\"foo\":\"bar\"}".ToMemoryStream();
         var originResponse = new OriginResponse(responseStream).WithContentType("applicatiosan/jasawson");
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.Id.ToString(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadFromOrigin(asset, cos, A<CancellationToken>._))
             .Returns(originResponse);
         const long fileLength = 224L;
-        A.CallTo(() => fileSaver.SaveResponseToDisk(A<string>._, originResponse, A<string>._, A<CancellationToken>._))
+        A.CallTo(() => fileSaver.SaveResponseToDisk(A<IOriginItem>._, originResponse, A<string>._, A<CancellationToken>._))
             .Returns(fileLength);
 
         var expectedOutput = Path.Join(".", "2", "1", "godzilla", "godzilla.file");
@@ -124,7 +124,7 @@ public class AssetToDiskTests
         var response = await sut.CopyAssetToLocalDisk(context, destination, false, cos);
 
         // Assert
-        A.CallTo(() => fileSaver.SaveResponseToDisk(A<string>.That.Matches(a => a == assetId.ToString()),
+        A.CallTo(() => fileSaver.SaveResponseToDisk(A<IOriginItem>.That.Matches(a => a.Identifier() == assetId.ToString()),
             originResponse, A<string>._, A<CancellationToken>._)).MustHaveHappened();
         response.Location.Should().Be(expectedOutput);
         response.ContentType.Should().Be("applicatiosan/jasawson");
@@ -150,10 +150,10 @@ public class AssetToDiskTests
             .WithContentType("application/json")
             .WithContentLength(8);
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.Id.ToString(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadFromOrigin(asset, cos, A<CancellationToken>._))
             .Returns(originResponse);
         const long fileLength = 224L;
-        A.CallTo(() => fileSaver.SaveResponseToDisk(A<string>._, originResponse, A<string>._, A<CancellationToken>._))
+        A.CallTo(() => fileSaver.SaveResponseToDisk(A<IOriginItem>._, originResponse, A<string>._, A<CancellationToken>._))
             .Returns(fileLength);
 
         var expectedOutput = Path.Join(".", "2", "1", "godzilla1", "godzilla1.json");
@@ -162,7 +162,7 @@ public class AssetToDiskTests
         var response = await sut.CopyAssetToLocalDisk(context, destination, false, cos);
 
         // Assert
-        A.CallTo(() => fileSaver.SaveResponseToDisk(A<string>.That.Matches(a => a == assetId.ToString()),
+        A.CallTo(() => fileSaver.SaveResponseToDisk(A<IOriginItem>.That.Matches(a => a.Identifier() == assetId.ToString()),
             originResponse, A<string>._, A<CancellationToken>._)).MustHaveHappened();
         response.Location.Should().Be(expectedOutput);
         response.ContentType.Should().Be("application/json");
@@ -190,7 +190,7 @@ public class AssetToDiskTests
             .WithContentType(contentType)
             .WithContentLength(8);
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.Id.ToString(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadFromOrigin(asset, cos, A<CancellationToken>._))
             .Returns(originResponse);
 
         // Act
@@ -219,7 +219,7 @@ public class AssetToDiskTests
             .WithContentType(contentType)
             .WithContentLength(8);
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.Id.ToString(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadFromOrigin(asset, cos, A<CancellationToken>._))
             .Returns(originResponse);
 
         // Act
@@ -244,7 +244,7 @@ public class AssetToDiskTests
         var responseStream = "{\"foo\":\"bar\"}".ToMemoryStream();
         var originResponse = new OriginResponse(responseStream).WithContentType("application/json");
         A.CallTo(() =>
-                customerOriginStrategy.LoadAssetFromOrigin(asset.Id.ToString(), origin, cos, A<CancellationToken>._))
+                customerOriginStrategy.LoadFromOrigin(asset, cos, A<CancellationToken>._))
             .Returns(originResponse);
 
         A.CallTo(() => customerStorageRepository.GetStorageMetrics(2, A<CancellationToken>._))

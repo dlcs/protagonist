@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using IIIF;
 using Microsoft.Extensions.Primitives;
 
@@ -9,7 +10,7 @@ namespace Orchestrator.Assets;
 /// <summary>
 /// Represents an asset during orchestration.
 /// </summary>
-public class OrchestrationAsset
+public class OrchestrationAsset : IOriginItem
 {
     /// <summary>
     /// Get or set the AssetId for tracked Asset
@@ -31,7 +32,10 @@ public class OrchestrationAsset
     /// </summary>
     /// <remarks>This is currently only used when "File" channel is available</remarks>
     public string? Origin { get; set; }
-    
+
+    /// <inheritdoc/>
+    public string Identifier() => AssetId.ToString();
+
     /// <summary>
     /// Get or set whether this asset has an optimised origin 
     /// </summary>

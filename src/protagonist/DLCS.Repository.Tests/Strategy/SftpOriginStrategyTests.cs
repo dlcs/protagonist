@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Repository.SFTP;
@@ -64,7 +65,7 @@ public class SftpOriginStrategyTests
             .Returns(stream);
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         A.CallTo(() =>
@@ -116,7 +117,7 @@ public class SftpOriginStrategyTests
             .Returns(stream);
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         result.Stream.Should().NotBeNull().And.Subject.Should().NotBeSameAs(Stream.Null);
@@ -158,7 +159,7 @@ public class SftpOriginStrategyTests
             .Returns(stream);
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         A.CallTo(() =>
@@ -196,7 +197,7 @@ public class SftpOriginStrategyTests
 
         // Act
         Func<Task> action = async () =>
-            await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+            await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         await action.Should().ThrowAsync<ApplicationException>();
@@ -233,7 +234,7 @@ public class SftpOriginStrategyTests
             .Throws<SftpPathNotFoundException>();
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         result.Stream.Should().BeSameAs(Stream.Null);

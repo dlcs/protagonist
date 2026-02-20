@@ -125,9 +125,9 @@ public class AssetToS3(
         // Origin being null should prevent flow from reaching this
         Debug.Assert(context.Adjunct.Origin != null, "context.Adjunct.Origin != null");
 
-        var copyResult = await CopyBucketToBucket(context.Adjunct.Origin, destination, context.Asset.Customer,
+        var copyResult = await CopyBucketToBucket(context.Adjunct, destination, context.Asset.Customer,
             verifySize,
-            context.PreIngestionAssetSize, $"Adjunct {context.Adjunct.Id} for asset with id {context.Asset.Id}",
+            context.PreIngestionAssetSize,
             cancellationToken);
 
         var adjunctFromOrigin = new AdjunctFromOrigin(context.Adjunct.Id, context.AssetId, copyResult.Size ?? 0,
@@ -150,8 +150,8 @@ public class AssetToS3(
         // Origin being null should prevent flow from reaching this
         Debug.Assert(context.Asset.Origin != null, "context.Asset.Origin != null");
 
-        var copyResult = await CopyBucketToBucket(context.Asset.Origin, destination, context.Asset.Customer, verifySize,
-            context.PreIngestionAssetSize, $"Asset with id {context.Asset.Id}", cancellationToken);
+        var copyResult = await CopyBucketToBucket(context.Asset, destination, context.Asset.Customer, verifySize,
+            context.PreIngestionAssetSize, cancellationToken);
 
         var assetFromOrigin = new AssetFromOrigin(assetId, copyResult.Size ?? 0, destination.GetS3Uri().ToString(),
             context.Asset.MediaType);
@@ -164,20 +164,20 @@ public class AssetToS3(
         return assetFromOrigin;
     }
 
-    private async Task<LargeObjectCopyResult> CopyBucketToBucket(string origin, ObjectInBucket destination,
-        int customerId, bool verifySize, long preIngestionSize, string itemDescription,
+    private async Task<LargeObjectCopyResult> CopyBucketToBucket(IOriginItem originItem, ObjectInBucket destination,
+        int customerId, bool verifySize, long preIngestionSize,
         CancellationToken cancellationToken)
     {
-        var source = RegionalisedObjectInBucket.Parse(origin);
+        var source = RegionalisedObjectInBucket.Parse(originItem.Origin!);
         if (source == null)
         {
             // TODO - better error type
-            logger.LogError("Unable to parse ingest origin {Origin} to ObjectInBucket", origin);
+            logger.LogError("Unable to parse ingest origin {Origin} to ObjectInBucket", originItem.Origin);
             throw new InvalidOperationException(
-                $"Unable to parse ingest origin {origin} to ObjectInBucket");
+                $"Unable to parse ingest origin {originItem.Origin} to ObjectInBucket");
         }
 
-        logger.LogDebug("Copying {Item} directly from bucket to bucket. {Source} - {Dest}", itemDescription,
+        logger.LogDebug("Copying {Item} directly from bucket to bucket. {Source} - {Dest}", originItem.Identifier(),
             source.GetS3Uri(), destination.GetS3Uri());
 
         // copy S3-S3
@@ -189,7 +189,7 @@ public class AssetToS3(
         if (copyResult.Result is not LargeObjectStatus.Success and not LargeObjectStatus.FileTooLarge)
         {
             throw new ApplicationException(
-                $"Failed to copy {itemDescription} directly from '{origin}' to {destination.GetS3Uri()}. Result: {copyResult.Result}");
+                $"Failed to copy {originItem.Identifier()} directly from '{originItem.Origin}' to {destination.GetS3Uri()}. Result: {copyResult.Result}");
         }
 
         return copyResult;

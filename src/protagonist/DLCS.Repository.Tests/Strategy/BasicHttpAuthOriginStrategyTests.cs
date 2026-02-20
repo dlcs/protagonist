@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy;
@@ -58,7 +59,7 @@ public class BasicHttpAuthOriginStrategyTests
         httpHandler.RegisterCallback(message => actualAuthHeader = message.Headers.Authorization.ToString());
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         httpHandler.CallsMade.Should().Contain(originUri);
@@ -81,7 +82,7 @@ public class BasicHttpAuthOriginStrategyTests
         const string originUri = "https://test.example.com/string";
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         httpHandler.CallsMade.Should().Contain(originUri);
@@ -102,7 +103,7 @@ public class BasicHttpAuthOriginStrategyTests
         const string originUri = "https://test.example.com/string";
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         httpHandler.CallsMade.Should().BeNullOrEmpty();
@@ -124,7 +125,7 @@ public class BasicHttpAuthOriginStrategyTests
         const string originUri = "https://test.example.com/string";
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId.ToString(), originUri, customerOriginStrategy);
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
 
         // Assert
         httpHandler.CallsMade.Should().Contain(originUri);

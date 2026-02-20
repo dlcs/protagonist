@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy.DependencyInjection;
 
@@ -14,36 +14,18 @@ public class OriginFetcher(
     OriginStrategyResolver originStrategyResolver)
 {
     /// <summary>
-    /// Get <see cref="OriginResponse"/> object for provided asset, loading from origin using relevant origin
-    /// strategy for customer
-    /// </summary>
-    /// <param name="assetId">Asset to load</param>
-    /// <param name="location">Location to load asset from</param>
-    /// <param name="cancellationToken">Current cancellation token</param>
-    /// <returns><see cref="OriginResponse"/></returns>
-    public async Task<OriginResponse> LoadAssetFromLocation(AssetId assetId, string location,
-        CancellationToken cancellationToken)
-    {
-        var customerOriginStrategy =
-            await customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, location);
-
-        return await LoadAssetFromLocation(assetId.ToString(), location, customerOriginStrategy, cancellationToken);
-    }
-
-    /// <summary>
     /// Get <see cref="OriginResponse"/> object for provided asset, loading from origin passed origin strategy
     /// </summary>
-    /// <param name="itemDesc">used for logging - should allow identifying the asset/adjunct/other item (future)</param>
-    /// <param name="location">Location to load asset from</param>
+    /// <param name="originItem"></param>
     /// <param name="customerOriginStrategy">OriginStrategy to use</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns><see cref="OriginResponse"/></returns>
-    public async Task<OriginResponse> LoadAssetFromLocation(string itemDesc, string location,
+    public async Task<OriginResponse> LoadFromOrigin(IOriginItem originItem,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
     {
         var originStrategy = originStrategyResolver(customerOriginStrategy.Strategy);
 
-        return await originStrategy.LoadAssetFromOrigin(itemDesc, location, customerOriginStrategy,
+        return await originStrategy.LoadFromOrigin(originItem, customerOriginStrategy,
             cancellationToken);
     }
 }

@@ -60,6 +60,10 @@ public class Asset : ICloneable, IDeliverable
     public string? Error { get; set; }
     public int? Batch { get; set; }
     public DateTime? Finished { get; set; }
+
+    /// <inheritdoc/>
+    public string Identifier() => Id.ToString();
+
     public bool? Ingesting { get; set; }
     public string? ImageOptimisationPolicy { get; set; }
     public string? ThumbnailPolicy { get; set; }

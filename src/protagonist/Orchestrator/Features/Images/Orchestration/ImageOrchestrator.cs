@@ -173,7 +173,7 @@ public class ImageOrchestrator : IImageOrchestrator
     {
         // Get bytes from origin (S3)
         await using var originResponse =
-            await originStrategy.LoadAssetFromOrigin(image.AssetId.ToString(), image.S3Location, null,
+            await originStrategy.LoadFromOrigin(image, null,
                 cancellationToken);
         if (originResponse == null || originResponse.Stream.IsNull())
         {
@@ -183,6 +183,6 @@ public class ImageOrchestrator : IImageOrchestrator
         }
 
         // Save bytes to disk
-        await fileSaver.SaveResponseToDisk(image.AssetId.ToString(), originResponse, filePath, cancellationToken);
+        await fileSaver.SaveResponseToDisk(image, originResponse, filePath, cancellationToken);
     }
 }
