@@ -11,3 +11,4 @@
 9. [ElasticTranscoder Replacement](0008-et-replacement.md)
 10. [Engine Use Appetiser for Thumbs](0009-engine-appetiser-thumbs.md)
 11. [Replace `maxUnauthorised`](0010-replace-maxunauthorised.md)
+12. [Orchestrator Proxy Rules](0011-orchestrator-proxy.md)
