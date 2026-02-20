@@ -113,7 +113,7 @@ public class EngineAssetRepositoryTests
         var newAsset = new Asset(assetId);
         
         // Act
-        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
+        var success = await sut.UpdateIngestedDeliverable(newAsset, null, null, true);
         
         // Assert
         success.Should().BeFalse("No rows were updated but ingest is finished");
@@ -137,7 +137,7 @@ public class EngineAssetRepositoryTests
         contextForTests.Images.Attach(existingAsset);
         
         // Act
-        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
+        var success = await sut.UpdateIngestedDeliverable(existingAsset, null, null, true);
         
         existingAsset.Width = 999;
         existingAsset.Height = 1000;
@@ -178,7 +178,7 @@ public class EngineAssetRepositoryTests
         trackedAsset.Error = "broken state";
 
         // Act
-        var success = await sut.UpdateIngestedAsset(trackedAsset, null, null, true);
+        var success = await sut.UpdateIngestedDeliverable(trackedAsset, null, null, true);
         
         // Assert
         trackedAsset.Should().NotBeNull();
@@ -216,7 +216,7 @@ public class EngineAssetRepositoryTests
         };
         
         // Act
-        var success = await sut.UpdateIngestedAsset(existingAsset, imageLocation, imageStorage, true);
+        var success = await sut.UpdateIngestedDeliverable(existingAsset, imageLocation, imageStorage, true);
         
         // Assert
         success.Should().BeTrue();
@@ -253,7 +253,7 @@ public class EngineAssetRepositoryTests
         };
 
         // Act
-        var success = await sut.UpdateIngestedAsset(existingAsset, imageLocation, imageStorage, true);
+        var success = await sut.UpdateIngestedDeliverable(existingAsset, imageLocation, imageStorage, true);
 
         // Assert
         success.Should().BeTrue();
@@ -309,7 +309,7 @@ public class EngineAssetRepositoryTests
         contextForTests.BatchAssets.Attach(batchAsset);
 
         // Act
-        var success = await sut.UpdateIngestedAsset(newAsset, null, null, true);
+        var success = await sut.UpdateIngestedDeliverable(newAsset, null, null, true);
 
         // Assert
         success.Should().BeTrue();
@@ -360,7 +360,7 @@ public class EngineAssetRepositoryTests
         contextForTests.Images.Attach(existingAsset);
 
         // Act
-        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
+        var success = await sut.UpdateIngestedDeliverable(existingAsset, null, null, true);
 
         // Assert
         success.Should().BeTrue();
@@ -407,7 +407,7 @@ public class EngineAssetRepositoryTests
         existingAsset.Ingesting = true;
 
         // Act
-        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, false);
+        var success = await sut.UpdateIngestedDeliverable(existingAsset, null, null, false);
 
         // Assert
         success.Should().BeTrue();
@@ -462,7 +462,7 @@ public class EngineAssetRepositoryTests
         existingAsset.Error = error;
 
         // Act
-        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
+        var success = await sut.UpdateIngestedDeliverable(existingAsset, null, null, true);
 
         // Assert
         success.Should().BeTrue();
@@ -505,7 +505,7 @@ public class EngineAssetRepositoryTests
         existingAsset.Error = error;
 
         // Act
-        var success = await sut.UpdateIngestedAsset(existingAsset, null, null, true);
+        var success = await sut.UpdateIngestedDeliverable(existingAsset, null, null, true);
 
         // Assert
         success.Should().BeTrue();

@@ -17,21 +17,23 @@ public class EngineAssetRepository(
 {
     public DlcsContext DlcsContext { get; } = dlcsContext;
 
-    public async Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage,
+    public async Task<bool> UpdateIngestedDeliverable(IDeliverable deliverable, ImageLocation? imageLocation, ImageStorage? imageStorage,
         bool ingestFinished, CancellationToken cancellationToken = default)
     {
-        var hasBatch = !asset.BatchAssets.IsNullOrEmpty();
+        var hasBatch = deliverable is Asset { BatchAssets.Count: > 0 };
 
-        logger.LogDebug("Updating ingested asset {AssetId}. HasBatch:{HasBatch}, Finished:{Finished}", asset.Id,
+        logger.LogDebug("Updating ingested item {Item}. HasBatch:{HasBatch}, Finished:{Finished}", deliverable.Identifier(),
             hasBatch, ingestFinished);
 
+        var assetId = deliverable.GetAssetId();
+        
         try
         {
-            UpdateDeliverable(asset, ingestFinished);
+            UpdateDeliverable(deliverable, ingestFinished);
 
             if (imageLocation != null)
             {
-                if (await DlcsContext.ImageLocations.AnyAsync(l => l.Id == asset.Id, cancellationToken))
+                if (await DlcsContext.ImageLocations.AnyAsync(l => l.Id == assetId, cancellationToken))
                 {
                     DlcsContext.ImageLocations.Attach(imageLocation);
                     DlcsContext.Entry(imageLocation).State = EntityState.Modified;
@@ -42,9 +44,9 @@ public class EngineAssetRepository(
                 }
             }
 
-            await UpsertImageStorage(asset.Id, imageStorage, cancellationToken);
+            await UpsertImageStorage(assetId, imageStorage, cancellationToken);
             
-            var updatedRows = hasBatch
+            var updatedRows = hasBatch && deliverable is Asset asset
                 ? await BatchSave(asset, ingestFinished, cancellationToken)
                 : await NonBatchedSave(cancellationToken);
 
@@ -57,33 +59,7 @@ public class EngineAssetRepository(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error finalising Asset {AssetId} in DB", asset.Id);
-            return false;
-        }
-    }
-
-    public async Task<bool> UpdateIngestedAdjunct(Adjunct adjunct, ImageStorage? imageStorage, bool ingestFinished,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            UpdateDeliverable(adjunct, ingestFinished);
-            
-            await UpsertImageStorage(adjunct.AssetId, imageStorage, cancellationToken);
-            
-            var updatedRow = await NonBatchedSave(cancellationToken);
-            
-            if (updatedRow && imageStorage != null)
-            {
-                await IncreaseCustomerStorage(imageStorage, cancellationToken);
-            }
-            
-            return updatedRow || !ingestFinished;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error finalising adjunct for asset id {AssetId}, adjunct id {AdjunctId} in DB",
-                adjunct.AssetId, adjunct.Id);
+            logger.LogError(ex, "Error finalising item {AssetId} in DB", deliverable.Identifier());
             return false;
         }
     }
@@ -118,7 +94,6 @@ public class EngineAssetRepository(
 
         return imageSize;
     }
-    
     
     private async Task UpsertImageStorage(AssetId assetId, ImageStorage? imageStorage,
         CancellationToken cancellationToken)

@@ -66,6 +66,9 @@ public class Asset : ICloneable, IDeliverable
     
     /// <inheritdoc/>
     public string ItemId => Id.Asset;
+    
+    /// <inheritdoc/>
+    public AssetId GetAssetId() => Id;
 
     public bool? Ingesting { get; set; }
     public string? ImageOptimisationPolicy { get; set; }

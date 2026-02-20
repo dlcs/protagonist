@@ -45,7 +45,7 @@ public class IngestExecutorTests
         
         // Assert
         A.CallTo(() =>
-                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, true, A<CancellationToken>._))
+                repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, true, A<CancellationToken>._))
             .MustHaveHappened();
     }
     
@@ -65,7 +65,7 @@ public class IngestExecutorTests
         
         // Assert
         A.CallTo(() =>
-                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, true, A<CancellationToken>._))
+                repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, true, A<CancellationToken>._))
             .MustHaveHappened();
     }
 
@@ -86,7 +86,7 @@ public class IngestExecutorTests
             .Returns(new[] { new FakeWorker(first), new FakeWorker(second) });
 
         A.CallTo(() =>
-                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
+                repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
                     A<CancellationToken>._))
             .Returns(true);
 
@@ -114,7 +114,7 @@ public class IngestExecutorTests
 
         // Assert
         A.CallTo(() => 
-                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, ingestFinished, 
+                repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, ingestFinished, 
                     A<CancellationToken>._))
             .MustHaveHappened();
     }
@@ -132,7 +132,7 @@ public class IngestExecutorTests
             .Returns(new[] { new FakeWorker(status) });
 
         A.CallTo(() =>
-                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
+                repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
                     A<CancellationToken>._))
             .Returns(false);
 
@@ -141,7 +141,7 @@ public class IngestExecutorTests
 
         // Assert
         A.CallTo(() => 
-                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._, 
+                repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._, 
                     A<CancellationToken>._))
             .MustHaveHappened();
         result.Status.Should().Be(IngestResultStatus.Failed);
@@ -159,7 +159,7 @@ public class IngestExecutorTests
             .Returns(new[] { first, second, third });
 
         A.CallTo(() =>
-                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
+                repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
                     A<CancellationToken>._))
             .Returns(false);
 
@@ -168,7 +168,7 @@ public class IngestExecutorTests
 
         // Assert
         A.CallTo(() => 
-                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
+                repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
                     A<CancellationToken>._))
             .MustHaveHappened();
         result.Status.Should().Be(IngestResultStatus.Failed);
@@ -193,7 +193,7 @@ public class IngestExecutorTests
         A.CallTo(() => workerBuilder.GetWorkers(asset)).Returns(new[] { new FakeWorker(status), secondWorker });
 
         A.CallTo(() =>
-                repo.UpdateIngestedAsset(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
+                repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, A<bool>._,
                     A<CancellationToken>._))
             .Returns(true);
 
@@ -226,7 +226,7 @@ public class IngestExecutorTests
 
         // Assert we receive success and an empty ImageStorage record is created
         result.Status.Should().Be(IngestResultStatus.Success);
-        A.CallTo(() => repo.UpdateIngestedAsset(asset, null,
+        A.CallTo(() => repo.UpdateIngestedDeliverable(asset, null,
                 A<ImageStorage?>.That.Matches(s => s!.ThumbnailSize == 0L && s.Size == 0L), true,
                 A<CancellationToken>._))
             .MustHaveHappened();

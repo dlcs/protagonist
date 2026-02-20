@@ -78,6 +78,9 @@ public class Adjunct : IDeliverable
     /// <inheritdoc/>
     public string Identifier() => $"adjunct '{Id}' for asset '{AssetId}'";
 
+    /// <inheritdoc/>
+    public AssetId GetAssetId() => AssetId;
+    
     /// <summary>
     /// The size in bytes of the adjunct
     /// </summary>

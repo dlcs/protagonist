@@ -168,7 +168,7 @@ public class TimebasedIngestorCompletion(
             }
 
             var success =
-                await assetRepository.UpdateIngestedAsset(asset, imageLocation, imageStore, true, cancellationToken);
+                await assetRepository.UpdateIngestedDeliverable(asset, imageLocation, imageStore, true, cancellationToken);
             return success;
         }
         catch (Exception e)

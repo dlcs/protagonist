@@ -1,4 +1,5 @@
 ﻿using System;
+using DLCS.Core.Types;
 
 namespace DLCS.Model.Assets;
 
@@ -18,4 +19,9 @@ public interface IDeliverable : IOriginItem
     /// When the item has last finished processing
     /// </summary>
     DateTime? Finished { get; set; }
+
+    /// <summary>
+    /// Returns <see cref="AssetId"/> that is or is parent to this deliverable
+    /// </summary>
+    AssetId GetAssetId();
 }

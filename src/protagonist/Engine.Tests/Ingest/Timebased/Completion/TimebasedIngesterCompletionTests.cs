@@ -237,9 +237,9 @@ public class TimebasedIngesterCompletionTests
             });
 
         ImageStorage imageStorage = new();
-        A.CallTo(() => engineAssetRepository.UpdateIngestedAsset(A<Asset>._, A<ImageLocation?>._, A<ImageStorage?>._,
+        A.CallTo(() => engineAssetRepository.UpdateIngestedDeliverable(A<Asset>._, A<ImageLocation?>._, A<ImageStorage?>._,
                 true, A<CancellationToken>._))
-            .Invokes((Asset _, ImageLocation? _, ImageStorage? storage, bool _, CancellationToken _) =>
+            .Invokes((IDeliverable _, ImageLocation? _, ImageStorage? storage, bool _, CancellationToken _) =>
                 imageStorage = storage!);
         
         var sut = GetSut();
@@ -283,9 +283,9 @@ public class TimebasedIngesterCompletionTests
             .Returns(new ObjectInBucket("outputbucket", "output.mp4"));
 
         ImageStorage imageStorage = new();
-        A.CallTo(() => engineAssetRepository.UpdateIngestedAsset(A<Asset>._, A<ImageLocation?>._, A<ImageStorage?>._,
+        A.CallTo(() => engineAssetRepository.UpdateIngestedDeliverable(A<Asset>._, A<ImageLocation?>._, A<ImageStorage?>._,
                 true, A<CancellationToken>._))
-            .Invokes((Asset _, ImageLocation? _, ImageStorage? storage, bool _, CancellationToken _) =>
+            .Invokes((IDeliverable _, ImageLocation? _, ImageStorage? storage, bool _, CancellationToken _) =>
                 imageStorage = storage!);
         
         var sut = GetSut();
