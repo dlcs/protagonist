@@ -44,19 +44,18 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
         {
             // existing is not null => it is not create scenario
             isCreate = false;
-            
-            dbAdjunct.MediaType = adjunct.MediaType;
-            dbAdjunct.IIIFLink = adjunct.IIIFLink;
-            dbAdjunct.Profile = adjunct.Profile;
-            dbAdjunct.Label = adjunct.Label;
-            dbAdjunct.Language = adjunct.Language;
-            dbAdjunct.ExternalId = adjunct.ExternalId;
-            dbAdjunct.Origin = adjunct.Origin;
-            dbAdjunct.Error = adjunct.Error;
-            dbAdjunct.Type = adjunct.Type;
 
-            if (toBeIngested)
+            if (!toBeIngested)
             {
+                // This is external adjunct, and the size is irrelevant for size calculations,
+                // as this adjunct will not hit Engine - we copy whatever was submitted
+
+                dbAdjunct.Size = adjunct.Size;
+            }
+            else if(!dbAdjunct.IsToBeIngested())
+            {
+                // was external, now is hosted
+                
                 // For hosted (ingested) adjuncts we let Engine handle this property
                 // as it becomes relevant to storage limits. However, if the pre-existing
                 // adjunct was EXTERNAL, the size doesn't count toward those limits.
@@ -67,13 +66,16 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
 
                 dbAdjunct.Size = null;
             }
-            else
-            {
-                // Otherwise, this is external adjunct, and the size is irrelevant for size calculations,
-                // as this adjunct will not hit Engine - we copy whatever was submitted
-
-                dbAdjunct.Size = adjunct.Size;
-            }
+            
+            dbAdjunct.MediaType = adjunct.MediaType;
+            dbAdjunct.IIIFLink = adjunct.IIIFLink;
+            dbAdjunct.Profile = adjunct.Profile;
+            dbAdjunct.Label = adjunct.Label;
+            dbAdjunct.Language = adjunct.Language;
+            dbAdjunct.ExternalId = adjunct.ExternalId;
+            dbAdjunct.Origin = adjunct.Origin;
+            dbAdjunct.Error = adjunct.Error;
+            dbAdjunct.Type = adjunct.Type;
         }
         else
         {
