@@ -34,6 +34,9 @@ public class OrchestrationAsset : IOriginItem
     public string? Origin { get; set; }
 
     /// <inheritdoc/>
+    public string ItemId => AssetId.Asset;
+
+    /// <inheritdoc/>
     public string Identifier() => AssetId.ToString();
 
     /// <summary>

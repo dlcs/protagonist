@@ -63,6 +63,9 @@ public class Asset : ICloneable, IDeliverable
 
     /// <inheritdoc/>
     public string Identifier() => Id.ToString();
+    
+    /// <inheritdoc/>
+    public string ItemId => Id.Asset;
 
     public bool? Ingesting { get; set; }
     public string? ImageOptimisationPolicy { get; set; }

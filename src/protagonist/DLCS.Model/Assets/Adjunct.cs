@@ -73,6 +73,9 @@ public class Adjunct : IDeliverable
     public DateTime? Finished { get; set; }
 
     /// <inheritdoc/>
+    public string ItemId => Id;
+    
+    /// <inheritdoc/>
     public string Identifier() => $"adjunct '{Id}' for asset '{AssetId}'";
 
     /// <summary>

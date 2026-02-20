@@ -14,7 +14,6 @@ namespace Engine.Tests.Ingest.File;
 public class FileChannelWorkerTests
 {
     private readonly IAssetToS3 assetToS3;
-    private readonly IAdjunctToS3 adjunctToS3;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly FileChannelWorker sut;
 
@@ -22,10 +21,9 @@ public class FileChannelWorkerTests
     {
         var assetIngestorSizeCheck = new HardcodedAssetIngestorSizeCheckBase(10);
         assetToS3 = A.Fake<IAssetToS3>();
-        adjunctToS3 = A.Fake<IAdjunctToS3>();
         storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
 
-        sut = new FileChannelWorker(assetToS3, adjunctToS3, assetIngestorSizeCheck, storageKeyGenerator,
+        sut = new FileChannelWorker(assetToS3, assetIngestorSizeCheck, storageKeyGenerator,
             new NullLogger<FileChannelWorker>());
     }
 
@@ -175,7 +173,7 @@ public class FileChannelWorkerTests
         // Assert
         result.Should().Be(IngestResultStatus.Success);
         A.CallTo(() =>
-                adjunctToS3.CopyAdjunctToStorage(A<ObjectInBucket>._, A<AdjunctIngestionContext>._, A<bool>._, cos, A<CancellationToken>._))
+                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, cos, A<CancellationToken>._))
             .MustNotHaveHappened();
     }
 
@@ -191,7 +189,7 @@ public class FileChannelWorkerTests
             .Returns(destination);
 
         A.CallTo(() =>
-                adjunctToS3.CopyAdjunctToStorage(destination, context, true, cos, A<CancellationToken>._))
+                assetToS3.CopyOriginToStorage(destination, context, true, cos, A<CancellationToken>._))
             .Returns(new AdjunctFromOrigin(context.Adjunct.Id, context.AssetId, 1234L, "anywhere", "application/docx"));
 
         // Act
@@ -216,7 +214,7 @@ public class FileChannelWorkerTests
             .Returns(destination);
 
         A.CallTo(() =>
-                adjunctToS3.CopyAdjunctToStorage(destination, context, true, cos, A<CancellationToken>._))
+                assetToS3.CopyOriginToStorage(destination, context, true, cos, A<CancellationToken>._))
             .Returns(new AdjunctFromOrigin(context.Adjunct.Id, context.AssetId, 1234L, "anywhere", "application/docx"));
 
         // Act
@@ -243,7 +241,7 @@ public class FileChannelWorkerTests
         assetFromOrigin.FileTooLarge();
         
         A.CallTo(() =>
-            adjunctToS3.CopyAdjunctToStorage(destination, context, true, cos, A<CancellationToken>._))
+                assetToS3.CopyOriginToStorage(destination, context, true, cos, A<CancellationToken>._))
             .Returns(assetFromOrigin);
 
         // Act
@@ -271,7 +269,7 @@ public class FileChannelWorkerTests
         
         // Assert
         A.CallTo(() =>
-                adjunctToS3.CopyAdjunctToStorage(destination, context, false, cos, A<CancellationToken>._))
+                assetToS3.CopyOriginToStorage(destination, context, false, cos, A<CancellationToken>._))
             .MustHaveHappened();
         result.Should().Be(IngestResultStatus.Success);
     }

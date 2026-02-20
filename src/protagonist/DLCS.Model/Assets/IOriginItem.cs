@@ -8,6 +8,11 @@ public interface IOriginItem
     string? Origin { get; set; }
     
     /// <summary>
+    /// When implemented in a class, returns the specific item's identifier (e.g. some_file.xml or picture.tif)
+    /// </summary>
+    string ItemId { get; }
+    
+    /// <summary>
     /// Returns a human-readable identifier used in logging
     /// </summary>
     string Identifier();
