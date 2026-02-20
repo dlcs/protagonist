@@ -48,11 +48,11 @@ public class SqsQueueSender(IAmazonSQS client, SqsQueueUtilities queueUtilities,
     {
         const int batchSize = 10;
         var queueUrl = await QueueLookup.GetQueueUrl(queueUtilities, queueName, cancellationToken);
-        int successCount = 0;
+        var successCount = 0;
         try
         {
-            int batchCount = 0;
-            int count = 0;
+            var batchCount = 0;
+            var count = 0;
             foreach (var batch in messageContents.Chunk(batchSize))
             {
                 var batchPrefix = $"{batchIdentifier}_{++batchCount}";

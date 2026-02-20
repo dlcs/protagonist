@@ -27,7 +27,7 @@ public class EngineAssetRepository(
 
         try
         {
-            UpdateItem(asset, ingestFinished);
+            UpdateDeliverable(asset, ingestFinished);
 
             if (imageLocation != null)
             {
@@ -67,7 +67,7 @@ public class EngineAssetRepository(
     {
         try
         {
-            UpdateItem(adjunct, ingestFinished);
+            UpdateDeliverable(adjunct, ingestFinished);
             
             await UpsertImageStorage(adjunct.AssetId, imageStorage, cancellationToken);
             
@@ -179,11 +179,11 @@ public class EngineAssetRepository(
         batchAsset.Finished = DateTime.UtcNow;
     }
 
-    private static void UpdateItem(IDeliverable asset, bool ingestFinished)
+    private static void UpdateDeliverable(IDeliverable deliverable, bool ingestFinished)
     {
         if (ingestFinished)
         {
-            asset.MarkAsFinished();
+            deliverable.MarkAsFinished();
         }
     }
 

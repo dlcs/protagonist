@@ -16,7 +16,7 @@ public class OriginFetcher(
     /// <summary>
     /// Get <see cref="OriginResponse"/> object for provided asset, loading from origin passed origin strategy
     /// </summary>
-    /// <param name="originItem"></param>
+    /// <param name="originItem">Item that has an origin, used to fetch it</param>
     /// <param name="customerOriginStrategy">OriginStrategy to use</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns><see cref="OriginResponse"/></returns>

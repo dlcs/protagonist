@@ -54,7 +54,11 @@ public class IngestExecutor(
 
         foreach (var worker in workers)
         {
-            // ReSharper disable once SuspiciousTypeConversion.Global - hook for future impl
+            // NOTE: currently there is no implementer of this interface, and it's marked as potential issue,
+            // hence the disable below. The analogous flow to Assets was implemented for Adjuncts so that when
+            // any Adjunct post-processing is to be added, it can avoid having to find and modify this bit.
+            // The 'disable' can be removed once that happens.
+            // ReSharper disable once SuspiciousTypeConversion.Global
             if (worker is IAdjunctIngesterPostProcess process)
             {
                 postProcessors.Add(process);

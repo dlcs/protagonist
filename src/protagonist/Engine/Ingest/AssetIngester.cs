@@ -52,9 +52,3 @@ public class IngestResult(AssetId? assetId, IngestResultStatus ingestResult)
     public AssetId? AssetId { get; } = assetId;
     public IngestResultStatus Status { get; } = ingestResult;
 }
-
-public class AdjunctIngestResult(string adjunctId, AssetId? assetId, IngestResultStatus ingestResult)
-    : IngestResult(assetId, ingestResult)
-{
-    public string AdjunctId  { get; } = adjunctId;
-}

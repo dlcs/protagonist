@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Customers;
+﻿using DLCS.Core.Types;
+using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using Engine.Data;
 
@@ -49,4 +50,10 @@ public class AdjunctIngester(
         var status = await executor.IngestAdjunct(adjunct, customerOriginStrategy, cancellationToken);
         return status;
     }
+}
+
+public class AdjunctIngestResult(string adjunctId, AssetId? assetId, IngestResultStatus ingestResult)
+    : IngestResult(assetId, ingestResult)
+{
+    public string AdjunctId  { get; } = adjunctId;
 }

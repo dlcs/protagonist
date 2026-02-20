@@ -60,17 +60,18 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
                 // For hosted (ingested) adjuncts we let Engine handle this property
                 // as it becomes relevant to storage limits. However, if the pre-existing
                 // adjunct was EXTERNAL, the size doesn't count toward those limits.
-                
+
                 // To ensure correct calculations in the engine, we will set Size to null.
                 // This will allow Engine to increase the total adjunct size by the size
                 // of new version of the adjunct, regardless what size the external one had.
 
                 dbAdjunct.Size = null;
-            } else {
-                
+            }
+            else
+            {
                 // Otherwise, this is external adjunct, and the size is irrelevant for size calculations,
                 // as this adjunct will not hit Engine - we copy whatever was submitted
-                
+
                 dbAdjunct.Size = adjunct.Size;
             }
         }
