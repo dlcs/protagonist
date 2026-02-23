@@ -61,13 +61,7 @@ public class OrchestrationImage : OrchestrationAsset
     public int Height { get; set; }
     
     /// <summary>
-    /// Get maximum dimension available for unauthorised user
-    /// </summary>
-    [Obsolete("Use MaxWidth and OpenFullMax instead")]
-    public int MaxUnauthorised { get; set; }
-    
-    /// <summary>
-    /// The maximum size available for any user. This will be asset MaxWidth, falling back to system-default 
+    /// The maximum size available for any user. This will be asset MaxWidth, falling back to system default 
     /// </summary>
     public int MaxWidth { get; set; }
     

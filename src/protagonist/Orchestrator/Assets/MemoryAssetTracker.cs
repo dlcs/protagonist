@@ -122,7 +122,6 @@ public class MemoryAssetTracker(
                 Height = asset.Height ?? 0,
                 MaxWidth = asset.GetEffectiveMaxWidth(systemMaxWidth),
                 OpenFullMax = asset.HasRoles ? asset.OpenFullMax : null,
-                MaxUnauthorised = asset.MaxUnauthorised ?? 0,
                 OpenThumbs = getOpenThumbs.Result ?? [],
                 Reingest = GetReingestFlag(asset, imageLocation),
             };

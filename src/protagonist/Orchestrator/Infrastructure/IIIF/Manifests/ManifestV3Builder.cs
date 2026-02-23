@@ -441,7 +441,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     private async Task<Dictionary<AssetId, AuthProbeService2>?> GetProbeServices(IReadOnlyCollection<Asset> assets,
         CancellationToken cancellationToken)
     {
-        var assetsRequiringAuth = assets.Where(a => a.RequiresAuth && !string.IsNullOrEmpty(a.Roles)).ToList();
+        var assetsRequiringAuth = assets.Where(a => a.HasRoles).ToList();
 
         var assetsRequiringAuthCount = assetsRequiringAuth.Count;
         if (assetsRequiringAuthCount == 0) return null;
