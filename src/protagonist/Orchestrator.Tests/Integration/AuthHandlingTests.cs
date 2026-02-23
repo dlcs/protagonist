@@ -463,7 +463,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(
             id, 
-            maxUnauthorised: 100, 
+            openFullMax: 100, 
             roles: "test-role");
         await dbFixture.DbContext.SaveChangesAsync();
 

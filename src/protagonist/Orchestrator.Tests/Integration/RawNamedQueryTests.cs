@@ -42,7 +42,7 @@ public class RawNamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-1"), num1: 2, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-2"), num1: 1, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-nothumbs"), num1: 3, ref1: "my-ref",
-            maxUnauthorised: 10, roles: "default");
+            openFullMax: 10, roles: "default");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/not-for-delivery"), num1: 4, ref1: "my-ref",
             notForDelivery: true);
         
