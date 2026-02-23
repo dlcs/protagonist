@@ -100,4 +100,33 @@ public class ImageRequestXTests
         canHandle.Should().BeFalse();
         message.Should().Be("Requested pct: size value not supported");
     }
+
+    [Fact]
+    public void GetImageRequestOnly_Incorrect_IfInfoJson()
+    {
+        // This is obviously not a great behaviour but documents the lack of support for info.json etc
+        var imageRequest = ImageRequest.Parse("image/info.json", "");
+        imageRequest.GetImageRequestOnly().Should().Be("///.", "There are no safety checks");
+    }
+    
+    [Fact]
+    public void GetImageRequestOnly_Correct_AfterParse()
+    {
+        var imageRequest = ImageRequest.Parse("iiif-img/27/1/my-asset/full/800,/0/default.jpg", "iiif-img/27/1/");
+        imageRequest.GetImageRequestOnly().Should().Be("full/800,/0/default.jpg");
+    }
+    
+    [Fact]
+    public void GetImageRequestOnly_Correct_AfterAlteringParsedObject()
+    {
+        var imageRequest = ImageRequest.Parse("iiif-img/27/1/my-asset/full/800,/0/default.jpg", "iiif-img/27/1/");
+        
+        imageRequest.Size = SizeParameter.Parse("pct:24");
+        imageRequest.Quality = "bitonal";
+        imageRequest.Format = "tif";
+        imageRequest.Rotation = new RotationParameter { Angle = 90, Mirror = true };
+        imageRequest.Region = new RegionParameter { Square = true };
+        imageRequest.GetImageRequestOnly().Should().Be("square/pct:24/!90/bitonal.tif",
+            "Value reflects current state of ImageRequest");
+    }
 }

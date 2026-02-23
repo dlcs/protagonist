@@ -22,6 +22,7 @@ using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
+using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Features.Images;
 
@@ -112,17 +113,39 @@ public class ImageRequestHandler
         return proxyActionResult;
     }
 
-    private bool IsSizeValid(SizeParameter size) => (size.Width ?? 1) > 0 && (size.Height ?? 1) > 0;
+    private static bool IsSizeValid(SizeParameter size) => (size.Width ?? 1) > 0 && (size.Height ?? 1) > 0;
 
     private async Task<IProxyActionResult> HandleRequestInternal(HttpContext httpContext,
         OrchestrationImage orchestrationImage, ImageAssetDeliveryRequest assetRequest)
     {
+        // Get the requested version
+        var imageApiVersion = GetImageApiVersion(assetRequest);
+        if (imageApiVersion == null)
+        {
+            logger.LogDebug("Unable to fulfil image request: {Path}. Could not parse ImageVersion",
+                assetRequest.NormalisedFullPath);
+            return new StatusCodeResult(HttpStatusCode.BadRequest);
+        }
+        
+        var imageSize = new Size(orchestrationImage.Width, orchestrationImage.Height);
+        
+        // Get the proposed image size - this is required to determine if we will exceed this
+        var incomingImageRequest = assetRequest.IIIFImageRequest;
+        var proxyRequest =
+            incomingImageRequest.GetProxyImageRequest(imageApiVersion.Value, imageSize, orchestrationImage.MaxWidth);
+        if (!proxyRequest.IsValid)
+        {
+            return new StatusCodeResult(proxyRequest.ErrorStatusCode.Value);
+        }
+        
         var requestedFullRegion =
-            assetRequest.IIIFImageRequest.Region.IsFullOrEquivalent(orchestrationImage.Width,
+            incomingImageRequest.Region.IsFullOrEquivalent(orchestrationImage.Width,
                 orchestrationImage.Height);
+        
+        // If there are roles, we may have restricted access..
         if (orchestrationImage.RequiresAuth)
         {
-            if (await IsRequestUnauthorised(assetRequest, orchestrationImage, requestedFullRegion))
+            if (await IsRequestUnauthorised(assetRequest, orchestrationImage, requestedFullRegion, proxyRequest))
             {
                 return new StatusCodeResult(HttpStatusCode.Unauthorized);
             }
@@ -131,7 +154,7 @@ public class ImageRequestHandler
         if (requestedFullRegion)
         {
             // /full/ or equiv region but not /max/ size - can it be handled by thumbnail service?
-            if (!assetRequest.IIIFImageRequest.Size.Max)
+            if (!incomingImageRequest.Size.Max)
             {
                 var canHandleByThumbResponse = CanRequestBeHandledByThumb(assetRequest, orchestrationImage);
                 if (canHandleByThumbResponse.CanHandle)
@@ -160,36 +183,36 @@ public class ImageRequestHandler
             }
             else
             {
-                return GenerateImageServerProxyResult(orchestrationImage, assetRequest, specialServer: true);
+                return GetImageServerProxyResult(true);
             }
         }
         
         // Fallback to image-server, with orchestration if required
-        return GenerateImageServerProxyResult(orchestrationImage, assetRequest, specialServer: false);
+        return GetImageServerProxyResult(false);
+
+        IProxyActionResult GetImageServerProxyResult(bool specialServer) =>
+            GenerateImageServerProxyResult(orchestrationImage, assetRequest, proxyRequest, imageApiVersion.Value,
+                specialServer);
     }
-    
+
     private async Task<bool> IsRequestUnauthorised(ImageAssetDeliveryRequest assetRequest,
-        OrchestrationImage orchestrationImage, bool requestedFullRegion)
+        OrchestrationImage orchestrationImage, bool requestedFullRegion, ProxyImageRequest proxyRequest)
     {
-        // If the image has a maxUnauthorised, and the region is /full/ then user may be able to see requested
+        // If the image has an openFullMax, and the region is /full/ then user may be able to see requested
         // size without doing auth check
-        var imageRequest = assetRequest.IIIFImageRequest;
-        if (requestedFullRegion && orchestrationImage.MaxUnauthorised > 0)
+        if (requestedFullRegion && orchestrationImage.OpenFullMax > 0)
         {
-            var imageSize = new Size(orchestrationImage.Width, orchestrationImage.Height);
-            var proposedSize = imageRequest.Size.GetResultingSize(imageSize);
-            
-            // If resulting maxDimension < maxUnauthorised then anyone can view
-            if (proposedSize.MaxDimension <= orchestrationImage.MaxUnauthorised)
+            // If requested maxDimension < openFullMax then anyone can view as this is a /full/ region
+            if (proxyRequest.RequestedSize!.MaxDimension <= orchestrationImage.OpenFullMax)
             {
                 logger.LogDebug(
-                    "Request for {ImageRequest} requires auth but viewable due to maxUnauthorised size of {MaxUnauth}",
-                    imageRequest.OriginalPath, orchestrationImage.MaxUnauthorised);
+                    "Request for {ImageRequest} requires auth but viewable due to openFullMax size of {OpenFullMax}",
+                    assetRequest.IIIFImageRequest.OriginalPath, orchestrationImage.OpenFullMax);
                 return false;
             }
         }
-
-        // IAssetAccessValidator is in container with a Lifetime.Scope
+        
+        // IAssetAccessValidator is in container with ServiceLifetime.Scoped
         using var scope = scopeFactory.CreateScope();
         var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
         var authResult = await assetAccessValidator.TryValidate(assetRequest.GetAssetId(), orchestrationImage.Roles,
@@ -198,7 +221,6 @@ public class ImageRequestHandler
         return authResult == AssetAccessResult.Unauthorized;
     }
 
-    // TODO handle known thumb size that doesn't exist yet - call image-server and save to s3 on way back
     private (bool CanHandle, bool IsResize) CanRequestBeHandledByThumb(ImageAssetDeliveryRequest requestModel,
         OrchestrationImage orchestrationImage)
     {
@@ -246,21 +268,14 @@ public class ImageRequestHandler
     }
 
     private IProxyActionResult GenerateImageServerProxyResult(OrchestrationImage orchestrationImage,
-        ImageAssetDeliveryRequest requestModel, bool specialServer)
+        ImageAssetDeliveryRequest requestModel, ProxyImageRequest proxyRequest, Version imageApiVersion, 
+        bool specialServer)
     {
-        var imageApiVersion = GetImageApiVersion(requestModel);
-        if (imageApiVersion == null)
-        {
-            logger.LogDebug("Unable to fulfil image request: {Path}. Could not parse ImageVersion",
-                requestModel.NormalisedFullPath);
-            return new StatusCodeResult(HttpStatusCode.BadRequest);
-        }
-        
         // get the redirect path - S3:// path for special-server or /path/on/disk for image-server
         var settings = orchestratorSettings.Value;
         var downstreamPath = specialServer
-            ? settings.GetSpecialServerPath(orchestrationImage.S3Location, imageApiVersion.Value)
-            : settings.GetImageServerPath(orchestrationImage.AssetId, imageApiVersion.Value);
+            ? settings.GetSpecialServerPath(orchestrationImage.S3Location ?? string.Empty, imageApiVersion)
+            : settings.GetImageServerPath(orchestrationImage.AssetId, imageApiVersion);
 
         if (string.IsNullOrEmpty(downstreamPath))
         {
@@ -268,8 +283,10 @@ public class ImageRequestHandler
                 requestModel.NormalisedFullPath);
             return new StatusCodeResult(HttpStatusCode.BadRequest);
         }
-        
-        var imageServerPath = $"{downstreamPath}{requestModel.IIIFImageRequest.ImageRequestPath}";
+
+        // Update the SizeParameter as it may have altered during parsing
+        requestModel.IIIFImageRequest.Size = proxyRequest.ProxySizeParameter!;
+        var imageServerPath = downstreamPath.ToConcatenated('/', requestModel.IIIFImageRequest.GetImageRequestOnly());
         IProxyActionResult proxyActionResult = specialServer
             ? new ProxyActionResult(ProxyDestination.SpecialServer, orchestrationImage.RequiresAuth, imageServerPath)
             : new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth, imageServerPath);
@@ -282,7 +299,7 @@ public class ImageRequestHandler
     /// - Null if a specific version requested in path but it cannot be handled
     /// - Default version from appconfig
     /// </summary>
-    private IIIF.ImageApi.Version? GetImageApiVersion(ImageAssetDeliveryRequest requestModel) 
+    private Version? GetImageApiVersion(ImageAssetDeliveryRequest requestModel) 
         => requestModel.VersionPathValue.HasText()
             ? requestModel.VersionPathValue.ParseToIIIFImageApiVersion()
             : orchestratorSettings.Value.DefaultIIIFImageVersion;

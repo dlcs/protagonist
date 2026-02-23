@@ -49,7 +49,7 @@ public static class ImageApiVersionHelpers
     {
         if (!version.IsNullOrEmpty())
         {
-            switch (version![1])
+            switch (version[1])
             {
                 case '2':
                     return Version.V2;

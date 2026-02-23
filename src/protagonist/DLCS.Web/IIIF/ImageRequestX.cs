@@ -46,4 +46,14 @@ public static class ImageRequestX
 
         return true;
     }
+
+    /// <summary>
+    /// For the given <see cref="ImageRequest"/>, get the {region}/{size}/{rotation}/{quality}.{format} only (ie no
+    /// identifier or prefix etc).
+    /// </summary>
+    /// <remarks>
+    /// This doesn't make any checks on whether the request has all required properties, or is for info.json etc
+    /// </remarks>
+    public static string GetImageRequestOnly(this ImageRequest request)
+        => $"{request.Region}/{request.Size}/{request.Rotation}/{request.Quality}.{request.Format}";
 }
