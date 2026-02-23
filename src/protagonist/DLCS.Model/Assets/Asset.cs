@@ -113,13 +113,6 @@ public class Asset : ICloneable, IDeliverable
     }
     
     /// <summary>
-    /// Indicates whether this asset requires authentication to view . This is required if either Roles are assigned
-    /// OR MaxUnauthorised >= 0
-    /// </summary>
-    [Obsolete("Use HasRoles instead")]
-    public bool RequiresAuth => !string.IsNullOrWhiteSpace(Roles) || MaxUnauthorised >= 0;
-    
-    /// <summary>
     /// Indicates whether this asset has any roles assigned to it.
     /// </summary>
     public bool HasRoles => !string.IsNullOrWhiteSpace(Roles);

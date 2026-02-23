@@ -91,7 +91,7 @@ public class FireballPdfCreator(
         foreach (var i in NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery))
         {
             Logger.LogTrace("Adding PDF page {PdfPage} to {PdfS3Key} for {Image}", pageNumber++, pdfKey, i.Id);
-            if (i.RequiresAuth && !RolesAreOnWhitelist(i, overrides))
+            if (i.HasRoles && !RolesAreOnWhitelist(i, overrides))
             {
                 Logger.LogDebug("Image {Image} on page {PdfPage} of {PdfS3Key} requires auth, redacting", i.Id,
                     pageNumber++, pdfKey);

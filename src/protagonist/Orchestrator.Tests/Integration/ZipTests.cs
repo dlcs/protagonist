@@ -52,7 +52,7 @@ public class ZipTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-zip-1"), num1: 2, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-zip-2"), num1: 1, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-zip-3-auth"), num1: 3, ref1: "my-ref",
-            maxUnauthorised: 10, roles: "default");
+            roles: "default");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-zip-4"), num1: 4, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-zip-5"), num1: 5, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/not-for-delivery"), num1: 6, ref1: "my-ref",
