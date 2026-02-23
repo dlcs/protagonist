@@ -38,6 +38,7 @@ public class ImageRequestHandler
     private readonly IOptions<OrchestratorSettings> orchestratorSettings;
     private readonly Dictionary<string, CompiledRegexThumbUpscaleConfig> upscaleConfig;
     private readonly bool haveUpscaleRules;
+    private readonly bool strictImageRequests;
 
     public ImageRequestHandler(
         ILogger<ImageRequestHandler> logger,
@@ -57,6 +58,7 @@ public class ImageRequestHandler
                             .ToDictionary(kvp => kvp.Key, kvp => new CompiledRegexThumbUpscaleConfig(kvp.Value)) ??
                         new Dictionary<string, CompiledRegexThumbUpscaleConfig>();
         haveUpscaleRules = upscaleConfig.Count > 0;
+        strictImageRequests = orchestratorSettings.Value.StrictImageRequestParsing;
     }
 
     /// <summary>
@@ -131,8 +133,8 @@ public class ImageRequestHandler
         
         // Get the proposed image size - this is required to determine if we will exceed this
         var incomingImageRequest = assetRequest.IIIFImageRequest;
-        var proxyRequest =
-            incomingImageRequest.GetProxyImageRequest(imageApiVersion.Value, imageSize, orchestrationImage.MaxWidth);
+        var proxyRequest = incomingImageRequest.GetProxyImageRequest(imageApiVersion.Value, imageSize,
+            orchestrationImage.MaxWidth, strictImageRequests);
         if (!proxyRequest.IsValid)
         {
             return new StatusCodeResult(proxyRequest.ErrorStatusCode.Value);

@@ -23,6 +23,13 @@ public class OrchestratorSettings
     /// The system maximum width value. Images will not be generated that exceed this.
     /// </summary>
     public int MaxWidth { get; set; } = SystemDefaults.MaxWidth;
+    
+    /// <summary>
+    /// Whether to enforce strict image request validation, rejecting requests that are not in the expected format for
+    /// IIIF ImageApi version.
+    /// </summary>
+    /// <summary>See ADR 0011 for more details</summary>
+    public bool StrictImageRequestParsing { get; set; } = true;
 
     /// <summary>
     /// Which image-server is handling downstream tile requests

@@ -545,7 +545,7 @@ public class ImageRequestHandlerTests
         result.Target.Should().Be(ProxyDestination.SpecialServer);
         result.Path.Should().Be(expected);
     }
-        
+    
     [Theory]
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/90,/0/default.jpg", false, "0,0,512,512/90,/0/default.jpg", false)] // UV without ?t=
     [InlineData("/iiif-img/v2/2/2/test-image/0,0,512,512/full/0/default.jpg", true, "0,0,512,512/512,512/0/default.jpg", true)] // /full
@@ -747,6 +747,70 @@ public class ImageRequestHandlerTests
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+    
+    # region Strict/Lax mode handling
+    [Theory]
+    [InlineData("/iiif-img/2/2/test-image/full/full/0/default.jpg")]
+    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/full/0/default.jpg")]
+    [InlineData("/iiif-img/2/2/test-image/square/full/0/default.jpg")]
+    [InlineData("/iiif-img/2/2/test-image/pct:0,0,50,50/full/0/default.jpg")]
+    public async Task HandleRequest_StrictMode_RejectsV3FullSize(string path)
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = path;
+
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var assetId = new AssetId(2, 2, "test-image");
+            
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Height = 1000,
+                Width = 1000, S3Location = "s3://storage/2/2/test-image",
+            });
+        
+        // Act
+        var result = (StatusCodeResult)await sut.HandleRequest(context);
+            
+        // Assert
+        result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Theory]
+    [InlineData("/iiif-img/2/2/test-image/full/full/0/default.jpg", "full/1000,1000/0/default.jpg")]
+    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/full/0/default.jpg", "0,0,512,512/512,512/0/default.jpg")]
+    [InlineData("/iiif-img/2/2/test-image/square/full/0/default.jpg", "square/1000,1000/0/default.jpg")]
+    [InlineData("/iiif-img/2/2/test-image/pct:0,0,50,50/full/0/default.jpg", "pct:0,0,50,50/500,500/0/default.jpg")]
+    public async Task HandleRequest_LaxMode_TreatsV3FullSizeAsMax(string path, string expectedProxyPath)
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = path;
+
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var assetId = new AssetId(2, 2, "test-image");
+            
+        var settings = CreateOrchestratorSettings();
+        settings.StrictImageRequestParsing = false;
+        var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: settings);
+
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Height = 1000,
+                Width = 1000, S3Location = "s3://storage/2/2/test-image",
+            });
+        
+        // Act
+        var result = (ProxyActionResult)await sut.HandleRequest(context);
+            
+        // Assert
+        result.Path.Should().Contain(expectedProxyPath);
+    }
+    # endregion
 
     private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,
         OrchestratorSettings orchestratorSettings = null)
