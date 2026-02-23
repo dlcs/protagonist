@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using IIIF;
 using IIIF.Auth.V2;
 using IIIF.Serialisation;
@@ -19,7 +19,6 @@ namespace Orchestrator.Tests.Infrastructure.Auth.V2;
 public class IIIFAuth2ClientTests
 {
     private readonly ControllableHttpMessageHandler httpHandler;
-    private static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.Web);
     private readonly IIIFAuth2Client sut;
 
     public IIIFAuth2ClientTests()
@@ -32,12 +31,29 @@ public class IIIFAuth2ClientTests
     }
 
     [Fact]
+    public async Task GetAuthServicesForAsset_NoOp_IfUnobtainableRoleOnly()
+    {
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = [Asset.UnobtainableRole]
+        };
+        
+        // Act
+        var result = await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
+            CancellationToken.None);
+        
+        // Assert
+        httpHandler.CallsMade.Should().HaveCount(0);
+        result.Should().BeNull();
+    }
+
+    [Fact]
     public async Task GetAuthServicesForAsset_CallsCorrectPath_SingleRole()
     {
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"]
         };
         
         // Act
@@ -46,14 +62,30 @@ public class IIIFAuth2ClientTests
         // Assert
         httpHandler.CallsMade.Should().ContainSingle(s => s == "http://auth-2/services/99/100/foo?roles=role1");
     }
-    
+
+    [Fact]
+    public async Task GetAuthServicesForAsset_CallsCorrectPath_IgnoringUnobtainableRole()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", Asset.UnobtainableRole]
+        };
+
+        // Act
+        await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle(s => s == "http://auth-2/services/99/100/foo?roles=role1");
+    }
+
     [Fact]
     public async Task GetAuthServicesForAsset_CallsCorrectPath_MultipleRoles()
     {
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", "role2", "role3"]
         };
         
         // Act
@@ -72,7 +104,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", "role2", "role3"]
         };
 
         httpHandler.SetResponse(new HttpResponseMessage(status));
@@ -91,7 +123,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", "role2", "role3"]
         };
 
         var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK);
@@ -112,7 +144,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", "role2", "role3"]
         };
 
         var probeService = new AuthProbeService2
@@ -138,7 +170,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"]
         };
         
         // Act
@@ -155,7 +187,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", "role2", "role3"]
         };
         
         // Act
@@ -173,7 +205,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", "role2", "role3"]
         };
 
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
@@ -192,7 +224,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", "role2", "role3"]
         };
 
         var probeServiceResult = new AuthProbeResult2 { Status = 200 };
@@ -214,7 +246,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"]
         };
         
         // Act
@@ -230,7 +262,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", "role2", "role3"]
         };
         
         // Act
@@ -251,7 +283,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", "role2", "role3"]
         };
 
         httpHandler.SetResponse(new HttpResponseMessage(statusCode));
@@ -270,7 +302,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         var orchestrationImage = new OrchestrationImage
         {
-            AssetId = AssetId.FromString("99/100/foo"), Roles = new List<string> { "role1", "role2", "role3" }
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", "role2", "role3"]
         };
 
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));

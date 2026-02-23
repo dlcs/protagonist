@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
 using IIIF;
@@ -19,28 +21,20 @@ namespace Orchestrator.Infrastructure.IIIF;
 /// Implementation of <see cref="IIIIFAuthBuilder"/> for IIIF Auth 0.9 and 1.0
 /// </summary>
 /// <remarks>This is legacy and will be retired in the future</remarks>
-public class IIIFAuth1Builder : IIIIFAuthBuilder
+public class IIIFAuth1Builder(
+    IAuthServicesRepository authServicesRepository,
+    IOptions<AuthSettings> authOptions,
+    ILogger<IIIFAuth1Builder> logger)
+    : IIIIFAuthBuilder
 {
-    private readonly IAuthServicesRepository authServicesRepository;
-    private readonly AuthSettings authSettings;
-    private readonly ILogger<IIIFAuth1Builder> logger;
-
-    public IIIFAuth1Builder(
-        IAuthServicesRepository authServicesRepository,
-        IOptions<AuthSettings> authOptions,
-        ILogger<IIIFAuth1Builder> logger)
-    {
-        this.authServicesRepository = authServicesRepository;
-        authSettings = authOptions.Value;
-        this.logger = logger;
-    }
+    private readonly AuthSettings authSettings = authOptions.Value;
 
     /// <summary>
     /// Generate a IIIF <see cref="IService"/> for specified asset.
     /// The 'id'/'@id' parameters will the the name of the auth service only
     /// </summary>
     /// <returns><see cref="IService"/> if found, else null</returns>
-    public async Task<IService?> GetAuthServicesForAsset(AssetId assetId, List<string> roles, CancellationToken cancellationToken = default)
+    public async Task<IService?> GetAuthServicesForAsset(AssetId assetId, IReadOnlyList<string> roles, CancellationToken cancellationToken = default)
     {
         var authServices = await GetAuthServices(assetId, roles, cancellationToken);
 
@@ -95,7 +89,9 @@ public class IIIFAuth1Builder : IIIIFAuthBuilder
         CancellationToken cancellationToken)
     {
         var authServices = new List<AuthService>();
-        foreach (var role in rolesList)
+        var obtainableRoles =
+            rolesList.Where(r => !r.Equals(Asset.UnobtainableRole, StringComparison.OrdinalIgnoreCase));
+        foreach (var role in obtainableRoles)
         {
             cancellationToken.ThrowIfCancellationRequested();
             authServices.AddRange(await authServicesRepository.GetAuthServicesForRole(assetId.Customer, role));

@@ -15,6 +15,6 @@ public interface IIIIFAuthBuilder
     /// Generate a IIIF <see cref="IService"/> for authorisation services for specified asset.
     /// </summary>
     /// <returns><see cref="IService"/> if found, else null</returns>
-    Task<IService?> GetAuthServicesForAsset(AssetId assetId, List<string> roles,
+    Task<IService?> GetAuthServicesForAsset(AssetId assetId, IReadOnlyList<string> roles,
         CancellationToken cancellationToken = default);
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Auth.Entities;
 using IIIF.Auth.V1;
@@ -50,6 +51,21 @@ public class IIIFAuth1BuilderTests
         result.Should().BeNull();
     }
     
+    [Fact]
+    public async Task GetAuthServicesForAsset_Null_IfUnobtainableRole_Only()
+    {
+        // Arrange
+        var asset = GetAsset();
+        asset.Roles = [Asset.UnobtainableRole];
+        var sut = GetSut();
+        
+        // Act 
+        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
+        
+        // Assert
+        result.Should().BeNull();
+    }
+    
     [Theory]
     [InlineData("http://iiif.io/api/auth/1/login/clickthrough")]
     [InlineData("http://iiif.io/api/auth/3/clickthrough")]
@@ -58,7 +74,7 @@ public class IIIFAuth1BuilderTests
         // Arrange
         var asset = GetAsset();
         const string roleName = "secret";
-        asset.Roles = new List<string> { roleName };
+        asset.Roles = [roleName];
         A.CallTo(() => authServicesRepository.GetAuthServicesForRole(99, roleName))
             .Returns(new List<AuthService>
             {
@@ -81,7 +97,7 @@ public class IIIFAuth1BuilderTests
         // Arrange
         var asset = GetAsset();
         const string roleName = "secret";
-        asset.Roles = new List<string> { roleName };
+        asset.Roles = [roleName];
         A.CallTo(() => authServicesRepository.GetAuthServicesForRole(99, roleName))
             .Returns(new List<AuthService>
             {
@@ -108,7 +124,40 @@ public class IIIFAuth1BuilderTests
         // Arrange
         var asset = GetAsset();
         const string roleName = "secret";
-        asset.Roles = new List<string> { roleName };
+        asset.Roles = [roleName];
+        A.CallTo(() => authServicesRepository.GetAuthServicesForRole(99, roleName))
+            .Returns(new List<AuthService>
+            {
+                new() { Name = "The-Parent", Label = "Parent", Description = "Parent Description", Profile = profile }
+            });
+        var sut = GetSut();
+        
+        // Act 
+        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
+        
+        // Assert
+        result.Id.Should().Be("The-Parent");
+        var authCookieSvc = result as AuthCookieService;
+        authCookieSvc.Label.LanguageValues
+            .Should().HaveCount(1)
+            .And.Subject.Should().OnlyContain(v => v.Value == "Parent");
+        authCookieSvc.Description.LanguageValues
+            .Should().HaveCount(1)
+            .And.Subject.Should().OnlyContain(v => v.Value == "Parent Description");
+        authCookieSvc.Service.Should().BeNullOrEmpty();
+    }
+    
+    [Theory]
+    [InlineData("http://iiif.io/api/auth/1/login")]
+    [InlineData("http://iiif.io/api/auth/1/clickthrough")]
+    [InlineData("http://iiif.io/api/auth/1/kiosk")]
+    [InlineData("http://iiif.io/api/auth/1/external")]
+    public async Task GetAuthServicesForAsset_ReturnsCookieServiceWithNoChildren_IfNoChildServices_AuthCookie1_IfAccompaniedByUnobtainable(string profile)
+    {
+        // Arrange
+        var asset = GetAsset();
+        const string roleName = "secret";
+        asset.Roles = [roleName, Asset.UnobtainableRole];
         A.CallTo(() => authServicesRepository.GetAuthServicesForRole(99, roleName))
             .Returns(new List<AuthService>
             {
@@ -142,7 +191,7 @@ public class IIIFAuth1BuilderTests
         // Arrange
         var asset = GetAsset();
         const string roleName = "secret";
-        asset.Roles = new List<string> { roleName };
+        asset.Roles = [roleName];
         A.CallTo(() => authServicesRepository.GetAuthServicesForRole(99, roleName))
             .Returns(new List<AuthService>
             {
@@ -172,7 +221,7 @@ public class IIIFAuth1BuilderTests
         // Arrange
         var asset = GetAsset();
         const string roleName = "secret";
-        asset.Roles = new List<string> { roleName };
+        asset.Roles = [roleName];
         A.CallTo(() => authServicesRepository.GetAuthServicesForRole(99, roleName))
             .Returns(new List<AuthService>
             {
@@ -228,7 +277,7 @@ public class IIIFAuth1BuilderTests
         // Arrange
         var asset = GetAsset();
         const string roleName = "secret";
-        asset.Roles = new List<string> { roleName };
+        asset.Roles = [roleName];
         A.CallTo(() => authServicesRepository.GetAuthServicesForRole(99, roleName))
             .Returns(new List<AuthService>
             {
