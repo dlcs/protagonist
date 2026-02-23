@@ -91,9 +91,8 @@ public static class ImageProxyPathHandler
                 return ProxyImageRequest.Valid(sizeParameter, requestedSize);
             }
             
-            // If here, it's /full/ or /max/ size. In which case we will change size parameter in proxy request  to be
+            // If here, it's /full/ or /max/ size. In which case we will change size parameter in proxy request to be
             // the explicitly requested size (e.g. /full/ or /max/ => /1049,2033/ or /^1049,2033/)
-
             if (!IsUpscalingAllowed(isV2, isExplicitFull, sizeParameter))
             {
                 // If no upscaling then we can just confine the size to maxWidth without attempting to grow

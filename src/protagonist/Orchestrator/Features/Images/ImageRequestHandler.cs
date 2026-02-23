@@ -131,7 +131,7 @@ public class ImageRequestHandler
         
         var imageSize = new Size(orchestrationImage.Width, orchestrationImage.Height);
         
-        // Get the proposed image size - this is required to determine if we will exceed this
+        // Parse the incoming request to get proxy result, based in image + requested size only
         var incomingImageRequest = assetRequest.IIIFImageRequest;
         var proxyRequest = incomingImageRequest.GetProxyImageRequest(imageApiVersion.Value, imageSize,
             orchestrationImage.MaxWidth, strictImageRequests);

@@ -14,8 +14,8 @@ namespace Orchestrator.Features.Images.ImageServer;
 /// <summary>
 /// Implementation of <see cref="InfoJsonConstructorTemplate{T}"/> responsible for building IIIF ImageService3
 /// info.json.
-///  If Roles are present, Auth v2 services are added + context updated, unless it is 'unobtainable' role only
-///  The maxWidth property is set in all instances  
+/// If Roles are present, Auth v2 services are added + context updated, unless it is 'unobtainable' role only
+/// The maxWidth property is set in all instances  
 /// </summary>
 public class InfoJson3Constructor(
     IIIIFAuthBuilder iiifAuthBuilder,

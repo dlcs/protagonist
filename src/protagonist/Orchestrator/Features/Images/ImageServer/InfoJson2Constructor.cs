@@ -14,8 +14,8 @@ namespace Orchestrator.Features.Images.ImageServer;
 /// <summary>
 /// Implementation of <see cref="InfoJsonConstructorTemplate{T}"/> responsible for building IIIF ImageService2
 /// info.json. Assets requiring auth will have the following updates:
-///  If Roles are present, Auth v0/1 (dependant on DB profiles) and Auth v2 services are added. Only auth2 context added
-///  If no Roles (ie MaxUnauthorised only) the profile.maxWidth property is set  
+/// If Roles are present, Auth v0/1 (dependant on DB profiles) and Auth v2 services are added. Only auth2 context added
+/// The maxWidth property is set in all instances  
 /// </summary>
 public class InfoJson2Constructor(
     IIIIFAuthBuilder iiifAuthBuilder,
