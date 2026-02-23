@@ -15,6 +15,6 @@ public interface IAssetAccessValidator
     /// <param name="roles">Roles associated with Asset</param>
     /// <param name="mechanism">Which mechanism to use to authorize user</param>
     /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
-    Task<AssetAccessResult> TryValidate(AssetId assetId, List<string> roles, AuthMechanism mechanism,
+    Task<AssetAccessResult> TryValidate(AssetId assetId, IReadOnlyList<string> roles, AuthMechanism mechanism,
         CancellationToken cancellationToken = default);
 }

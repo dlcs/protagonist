@@ -1,8 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Web;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Http;
@@ -15,30 +17,22 @@ namespace Orchestrator.Infrastructure.Auth;
 /// Unified access validator that can check access via Auth v0/1 (ie Orchestrator managed) or Auth v2 (external
 /// services). This may result in multiple checks being made
 /// </summary>
-public class AssetAccessValidator : IAssetAccessValidator
+public class AssetAccessValidator(
+    Auth1AccessValidator auth1AccessValidator,
+    Auth2AccessValidator auth2AccessValidator,
+    AuthCookieManager authCookieManager,
+    IHttpContextAccessor httpContextAccessor,
+    ILogger<AssetAccessValidator> logger)
+    : IAssetAccessValidator
 {
-    private readonly Auth1AccessValidator auth1AccessValidator;
-    private readonly Auth2AccessValidator auth2AccessValidator;
-    private readonly AuthCookieManager authCookieManager;
-    private readonly IHttpContextAccessor httpContextAccessor;
-    private readonly ILogger<AssetAccessValidator> logger;
-
-    public AssetAccessValidator(
-        Auth1AccessValidator auth1AccessValidator, 
-        Auth2AccessValidator auth2AccessValidator,
-        AuthCookieManager authCookieManager,
-        IHttpContextAccessor httpContextAccessor,
-        ILogger<AssetAccessValidator> logger)
+    public async Task<AssetAccessResult> TryValidate(AssetId assetId, IReadOnlyList<string> roles, AuthMechanism mechanism, CancellationToken cancellationToken = default)
     {
-        this.auth1AccessValidator = auth1AccessValidator;
-        this.auth2AccessValidator = auth2AccessValidator;
-        this.authCookieManager = authCookieManager;
-        this.httpContextAccessor = httpContextAccessor;
-        this.logger = logger;
-    }
-
-    public async Task<AssetAccessResult> TryValidate(AssetId assetId, List<string> roles, AuthMechanism mechanism, CancellationToken cancellationToken = default)
-    {
+        if (roles.ContainsOnly(Asset.UnobtainableRole))
+        {
+            logger.LogTrace("{AssetId} only has unobtainable role, shortcutting check", assetId);
+            return AssetAccessResult.Unauthorized;
+        }
+        
         if (ShouldAttemptAuth1(assetId.Customer, mechanism))
         {
             var auth1Status = await auth1AccessValidator.TryValidate(assetId, roles, mechanism, cancellationToken);
@@ -78,7 +72,6 @@ public class AssetAccessValidator : IAssetAccessValidator
     private bool HasBearerToken()
         => httpContextAccessor.SafeHttpContext().Request
             .GetAuthHeaderValue(AuthenticationHeaderUtils.BearerTokenScheme) != null;
-
 }
 
 /// <summary>
