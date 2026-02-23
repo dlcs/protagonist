@@ -12,151 +12,223 @@ public class ImageProxyPathHandlerTests
     #region Image V2
 
     [Theory]
-    [InlineData("full/^full")]
-    [InlineData("square/^!101,101")]
-    [InlineData("full/^max")]
-    [InlineData("0,0,512,512/^,123")]
-    [InlineData("pct:41.6,7.5,40,70/^pct:10")]
-    public void GetProxyImageRequest_V2_Invalid(string imageRequest)
+    [InlineData("full/^full", true)]
+    [InlineData("full/^full", false)]
+    [InlineData("square/^!101,101", true)]
+    [InlineData("square/^!101,101", false)]
+    [InlineData("full/^max", true)]
+    [InlineData("full/^max", false)]
+    [InlineData("0,0,512,512/^,123", true)]
+    [InlineData("0,0,512,512/^,123", false)]
+    [InlineData("pct:41.6,7.5,40,70/^pct:10", true)]
+    [InlineData("pct:41.6,7.5,40,70/^pct:10", false)]
+    public void GetProxyImageRequest_V2_Invalid(string imageRequest, bool strictMode)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.jpg", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V2, new Size(100, 100), 500, strictMode);
-            result.IsValid.Should().BeFalse();
-            result.ErrorMessage.Should().Be("Invalid size. '^' invalid for IIIF ImageApi 2.1");
-            result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V2, new Size(100, 100), 500, strictMode);
+        result.IsValid.Should().BeFalse();
+        result.ErrorMessage.Should().Be("Invalid size. '^' invalid for IIIF ImageApi 2.1");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.RequireUpscale), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V2_Valid_WouldRequireUpscale_IfStrictMode(string imageRequest, Size imageSize,
+        Size expectedSize, string sizeParameter)
+    {
+        // Asserts we pass V2 parameters unchanged, even though dimension is larger than required 
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 500);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.RequireUpscale), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V2_Valid_WouldRequireUpscale(string imageRequest, Size imageSize, Size expectedSize,
-        string sizeParameter)
+    public void GetProxyImageRequest_V2_Valid_WouldRequireUpscale_IfLaxMode(string imageRequest, Size imageSize,
+        Size expectedSize, string sizeParameter)
     {
         // Asserts we pass V2 parameters unchanged, even though dimension is larger than required 
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.jpg", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 500, false);
-            result.IsValid.Should().BeTrue(imageRequest);
-            result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
-            result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 500, false);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.RegionOutOfBounds), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V2_Invalid_RegionOutOfBounds_IfStrictMode(string imageRequest)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, Size.Square(100), 500);
+        result.IsValid.Should().BeFalse();
+        result.ErrorMessage.Should().Be("Region is outside image bounds");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.RegionOutOfBounds), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V2_Invalid_RegionOutOfBounds(string imageRequest)
+    public void GetProxyImageRequest_V2_Invalid_RegionOutOfBounds_IfLaxMode(string imageRequest)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V2, Size.Square(100), 500, strictMode);
-            result.IsValid.Should().BeFalse();
-            result.ErrorMessage.Should().Be("Region is outside image bounds");
-            result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V2, Size.Square(100), 500, false);
+        result.IsValid.Should().BeFalse();
+        result.ErrorMessage.Should().Be("Region is outside image bounds");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.ExceedMaxWidth), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V2_Invalid_ExceedMaxWidth_IfStrictMode(string imageRequest)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, Size.Square(100), 10);
+        result.IsValid.Should().BeFalse();
+        result.ErrorMessage.Should().Match("Requested size '*' exceeds maxWidth of *");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.ExceedMaxWidth), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V2_Invalid_ExceedMaxWidth(string imageRequest)
+    public void GetProxyImageRequest_V2_Invalid_ExceedMaxWidth_IfLaxMode(string imageRequest)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V2, Size.Square(100), 10, strictMode);
-            result.IsValid.Should().BeFalse();
-            result.ErrorMessage.Should().Match("Requested size '*' exceeds maxWidth of *");
-            result.ErrorStatusCode.Should().Be(HttpStatusCode.Forbidden);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V2, Size.Square(100), 10, false);
+        result.IsValid.Should().BeFalse();
+        result.ErrorMessage.Should().Match("Requested size '*' exceeds maxWidth of *");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.PortraitShared), MemberType = typeof(SizeData))]
+    [MemberData(nameof(SizeData.PortraitV2), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V2_Valid_Portrait_IfStrictMode(string imageRequest, Size imageSize, Size expectedSize,
+        string sizeParameter)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 5000);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.PortraitShared), MemberType = typeof(SizeData))]
     [MemberData(nameof(SizeData.PortraitV2), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V2_Valid_Portrait(string imageRequest, Size imageSize, Size expectedSize,
+    public void GetProxyImageRequest_V2_Valid_Portrait_IfLaxMode(string imageRequest, Size imageSize, Size expectedSize,
         string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 5000, strictMode);
-            result.IsValid.Should().BeTrue(imageRequest);
-            result.ErrorMessage.Should().BeNull(imageRequest);
-            result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
-            result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 5000, false);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.PortraitRestrictedMaxWidth), MemberType = typeof(SizeData))]
+    [MemberData(nameof(SizeData.PortraitRestrictedMaxWidthV2), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V2_Valid_Portrait_Restricted_IfStrictMode(string imageRequest, Size imageSize,
+        Size expectedSize, string sizeParameter)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 500);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.PortraitRestrictedMaxWidth), MemberType = typeof(SizeData))]
     [MemberData(nameof(SizeData.PortraitRestrictedMaxWidthV2), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V2_Valid_Portrait_Restricted(string imageRequest, Size imageSize, Size expectedSize,
-        string sizeParameter)
+    public void GetProxyImageRequest_V2_Valid_Portrait_Restricted_IfLaxMode(string imageRequest, Size imageSize,
+        Size expectedSize, string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 500, strictMode);
-            result.IsValid.Should().BeTrue(imageRequest);
-            result.ErrorMessage.Should().BeNull(imageRequest);
-            result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
-            result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 500, false);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.LandscapeShared), MemberType = typeof(SizeData))]
     [MemberData(nameof(SizeData.LandscapeV2), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V2_Valid_Landscape(string imageRequest, Size imageSize, Size expectedSize,
+    public void GetProxyImageRequest_V2_Valid_Landscape_IfStrictMode(string imageRequest, Size imageSize, Size expectedSize,
         string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/180/bitonal.jpg", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 5000, strictMode);
-            result.IsValid.Should().BeTrue(imageRequest);
-            result.ErrorMessage.Should().BeNull(imageRequest);
-            result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
-            result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 5000);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
+    }
+    
+    [Theory]
+    [MemberData(nameof(SizeData.LandscapeShared), MemberType = typeof(SizeData))]
+    [MemberData(nameof(SizeData.LandscapeV2), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V2_Valid_Landscape_IfLaxMode(string imageRequest, Size imageSize, Size expectedSize,
+        string sizeParameter)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/180/bitonal.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 5000, false);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.LandscapeRestrictedMaxWidth), MemberType = typeof(SizeData))]
+    [MemberData(nameof(SizeData.LandscapeRestrictedMaxWidthV2), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V2_Valid_Landscape_Restricted_IfStrictMode(string imageRequest, Size imageSize,
+        Size expectedSize, string sizeParameter)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 500);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.LandscapeRestrictedMaxWidth), MemberType = typeof(SizeData))]
     [MemberData(nameof(SizeData.LandscapeRestrictedMaxWidthV2), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V2_Valid_Landscape_Restricted(string imageRequest, Size imageSize, Size expectedSize,
-        string sizeParameter)
+    public void GetProxyImageRequest_V2_Valid_Landscape_Restricted_IfLaxMode(string imageRequest, Size imageSize,
+        Size expectedSize, string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 500, strictMode);
-            result.IsValid.Should().BeTrue(imageRequest);
-            result.ErrorMessage.Should().BeNull(imageRequest);
-            result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
-            result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V2, imageSize, 500, false);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
 
     #endregion
     
     #region Image V3
+
     [Theory]
-    [InlineData("full/^full")]
-    [InlineData("pct:0,0,10,50/^full")]
-    public void GetProxyImageRequest_V3_InvalidUpscaleFull(string imageRequest)
+    [InlineData("full/^full", true)]
+    [InlineData("full/^full", false)]
+    [InlineData("pct:0,0,10,50/^full", true)]
+    [InlineData("pct:0,0,10,50/^full", false)]
+    public void GetProxyImageRequest_V3_InvalidUpscaleFull(string imageRequest, bool strictMode)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.jpg", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V3, new Size(100, 100), 500, strictMode);
-            result.IsValid.Should().BeFalse();
-            result.ErrorMessage.Should().Be("Invalid size. 'full' invalid for IIIF ImageApi 3.0");
-            result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V3, new Size(100, 100), 500, strictMode);
+        result.IsValid.Should().BeFalse();
+        result.ErrorMessage.Should().Be("Invalid size. 'full' invalid for IIIF ImageApi 3.0");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Theory]
@@ -189,115 +261,186 @@ public class ImageProxyPathHandlerTests
 
     [Theory]
     [MemberData(nameof(SizeData.RequireUpscale), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V3_Invalid_WouldRequireUpscale_NoCaret(string imageRequest, Size imageSize, Size _,
+    public void GetProxyImageRequest_V3_Invalid_WouldRequireUpscale_NoCaret_IfStrictMode(string imageRequest, Size imageSize, Size _,
         string __)
     {
         // Asserts we pass V3 parameters unchanged, even though dimension is larger than required 
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.jpg", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 500, strictMode);
-            result.IsValid.Should().BeFalse(imageRequest);
-            result.ErrorMessage.Should().Match("SizeParameter /*/ cannot upscale image size '*'", imageRequest);
-            result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 500);
+        result.IsValid.Should().BeFalse(imageRequest);
+        result.ErrorMessage.Should().Match("SizeParameter /*/ cannot upscale image size '*'", imageRequest);
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Theory]
+    [MemberData(nameof(SizeData.RequireUpscale), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V3_Invalid_WouldRequireUpscale_NoCaret_IfLaxMode(string imageRequest, Size imageSize, Size _,
+        string __)
+    {
+        // Asserts we pass V3 parameters unchanged, even though dimension is larger than required 
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 500, false);
+        result.IsValid.Should().BeFalse(imageRequest);
+        result.ErrorMessage.Should().Match("SizeParameter /*/ cannot upscale image size '*'", imageRequest);
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.RegionOutOfBounds), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V3_Invalid_RegionOutOfBounds_IfStrictMode(string imageRequest)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, Size.Square(100), 500);
+        result.IsValid.Should().BeFalse();
+        result.ErrorMessage.Should().Be("Region is outside image bounds");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.RegionOutOfBounds), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V3_Invalid_RegionOutOfBounds(string imageRequest)
+    public void GetProxyImageRequest_V3_Invalid_RegionOutOfBounds_IfLaxMode(string imageRequest)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V3, Size.Square(100), 500, strictMode);
-            result.IsValid.Should().BeFalse();
-            result.ErrorMessage.Should().Be("Region is outside image bounds");
-            result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V3, Size.Square(100), 500, false);
+        result.IsValid.Should().BeFalse();
+        result.ErrorMessage.Should().Be("Region is outside image bounds");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.ExceedMaxWidth), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V3_Invalid_ExceedMaxWidth_IfStrictMode(string imageRequest)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, Size.Square(100), 10);
+        result.IsValid.Should().BeFalse();
+        result.ErrorMessage.Should().Match("Requested size '*' exceeds maxWidth of *");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.ExceedMaxWidth), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V3_Invalid_ExceedMaxWidth(string imageRequest)
+    public void GetProxyImageRequest_V3_Invalid_ExceedMaxWidth_IfLaxMode(string imageRequest)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V3, Size.Square(100), 10, strictMode);
-            result.IsValid.Should().BeFalse();
-            result.ErrorMessage.Should().Match("Requested size '*' exceeds maxWidth of *");
-            result.ErrorStatusCode.Should().Be(HttpStatusCode.Forbidden);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V3, Size.Square(100), 10, false);
+        result.IsValid.Should().BeFalse();
+        result.ErrorMessage.Should().Match("Requested size '*' exceeds maxWidth of *");
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.PortraitShared), MemberType = typeof(SizeData))]
+    [MemberData(nameof(SizeData.PortraitV3), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V3_Valid_Portrait_IfStrictMode(string imageRequest, Size imageSize, Size expectedSize,
+        string sizeParameter)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 5000);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.PortraitShared), MemberType = typeof(SizeData))]
     [MemberData(nameof(SizeData.PortraitV3), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V3_Valid_Portrait(string imageRequest, Size imageSize, Size expectedSize,
+    public void GetProxyImageRequest_V3_Valid_Portrait_IfLaxMode(string imageRequest, Size imageSize, Size expectedSize,
         string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 5000, strictMode);
-            result.IsValid.Should().BeTrue(imageRequest);
-            result.ErrorMessage.Should().BeNull(imageRequest);
-            result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
-            result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 5000, false);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.PortraitRestrictedMaxWidth), MemberType = typeof(SizeData))]
+    [MemberData(nameof(SizeData.PortraitRestrictedMaxWidthV3), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V3_Valid_Portrait_Restricted_IfStrictMode(string imageRequest, Size imageSize,
+        Size expectedSize, string sizeParameter)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 500);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.PortraitRestrictedMaxWidth), MemberType = typeof(SizeData))]
     [MemberData(nameof(SizeData.PortraitRestrictedMaxWidthV3), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V3_Valid_Portrait_Restricted(string imageRequest, Size imageSize, Size expectedSize,
-        string sizeParameter)
+    public void GetProxyImageRequest_V3_Valid_Portrait_Restricted_IfLaxMode(string imageRequest, Size imageSize,
+        Size expectedSize, string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 500, strictMode);
-            result.IsValid.Should().BeTrue(imageRequest);
-            result.ErrorMessage.Should().BeNull(imageRequest);
-            result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
-            result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 500, false);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.LandscapeShared), MemberType = typeof(SizeData))]
+    [MemberData(nameof(SizeData.LandscapeV3), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V3_Valid_Landscape_IfStrictMode(string imageRequest, Size imageSize, Size expectedSize,
+        string sizeParameter)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/180/bitonal.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 5000);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.LandscapeShared), MemberType = typeof(SizeData))]
     [MemberData(nameof(SizeData.LandscapeV3), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V3_Valid_Landscape(string imageRequest, Size imageSize, Size expectedSize,
+    public void GetProxyImageRequest_V3_Valid_Landscape_IfLaxMode(string imageRequest, Size imageSize, Size expectedSize,
         string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/180/bitonal.jpg", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 5000, strictMode);
-            result.IsValid.Should().BeTrue(imageRequest);
-            result.ErrorMessage.Should().BeNull(imageRequest);
-            result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
-            result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 5000, false);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.LandscapeRestrictedMaxWidth), MemberType = typeof(SizeData))]
+    [MemberData(nameof(SizeData.LandscapeRestrictedMaxWidthV3), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V3_Valid_Landscape_Restricted_IfStrictMode(string imageRequest, Size imageSize,
+        Size expectedSize, string sizeParameter)
+    {
+        var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 500);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
     
     [Theory]
     [MemberData(nameof(SizeData.LandscapeRestrictedMaxWidth), MemberType = typeof(SizeData))]
     [MemberData(nameof(SizeData.LandscapeRestrictedMaxWidthV3), MemberType = typeof(SizeData))]
-    public void GetProxyImageRequest_V3_Valid_Landscape_Restricted(string imageRequest, Size imageSize, Size expectedSize,
-        string sizeParameter)
+    public void GetProxyImageRequest_V3_Valid_Landscape_Restricted_IfLaxMode(string imageRequest, Size imageSize,
+        Size expectedSize, string sizeParameter)
     {
         var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.tif", "");
-        foreach (var strictMode in new[] { true, false })
-        {
-            var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 500, strictMode);
-            result.IsValid.Should().BeTrue(imageRequest);
-            result.ErrorMessage.Should().BeNull(imageRequest);
-            result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
-            result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
-        }
+        var result = parsed.GetProxyImageRequest(Version.V3, imageSize, 500, false);
+        result.IsValid.Should().BeTrue(imageRequest);
+        result.ErrorMessage.Should().BeNull(imageRequest);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
+
     #endregion
     
     private class SizeData
