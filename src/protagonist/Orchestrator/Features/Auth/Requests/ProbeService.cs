@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Web;
 using DLCS.Web.Auth;
 using MediatR;
@@ -16,35 +17,22 @@ namespace Orchestrator.Features.Auth.Requests;
 /// <summary>
 /// Handles IIIF Authorization Flow 2.0 ProbeService request
 /// </summary>
-public class ProbeService : IRequest<DescriptionResourceResponse>
+/// <remarks>
+/// Probe service will always return a 200 status code, the response will contain the status code the user will receive
+/// if they make a request for the associated asset.
+/// </remarks>
+public class ProbeService(int customer, int space, string asset) : IRequest<DescriptionResourceResponse>
 {
-    public AssetId AssetId { get; }
-
-    public ProbeService(int customer, int space, string asset)
-    {
-        AssetId = new AssetId(customer, space, asset);
-    }
+    public AssetId AssetId { get; } = new(customer, space, asset);
 }
 
-public class ProbeServiceHandler : IRequestHandler<ProbeService, DescriptionResourceResponse>
+public class ProbeServiceHandler(
+    IIIFAuth2Client iiifAuth2Client,
+    IAssetTracker assetTracker,
+    IHttpContextAccessor httpContextAccessor,
+    ILogger<ProbeServiceHandler> logger)
+    : IRequestHandler<ProbeService, DescriptionResourceResponse>
 {
-    private readonly IIIFAuth2Client iiifAuth2Client;
-    private readonly IAssetTracker assetTracker;
-    private readonly IHttpContextAccessor httpContextAccessor;
-    private readonly ILogger<ProbeServiceHandler> logger;
-
-    public ProbeServiceHandler(
-        IIIFAuth2Client iiifAuth2Client,
-        IAssetTracker assetTracker,
-        IHttpContextAccessor httpContextAccessor,
-        ILogger<ProbeServiceHandler> logger)
-    {
-        this.iiifAuth2Client = iiifAuth2Client;
-        this.assetTracker = assetTracker;
-        this.httpContextAccessor = httpContextAccessor;
-        this.logger = logger;
-    }
-    
     public async Task<DescriptionResourceResponse> Handle(ProbeService request, CancellationToken cancellationToken)
     {
         var assetId = request.AssetId;
@@ -73,6 +61,12 @@ public class ProbeServiceHandler : IRequestHandler<ProbeService, DescriptionReso
         {
             logger.LogInformation("ProbeService request for auth asset {AssetId} with no roles", assetId);
             return DescriptionResourceResponse.Restricted(AuthProbeResult2Builder.Okay);
+        }
+
+        if (asset.Roles.ContainsOnly(Asset.UnobtainableRole))
+        {
+            logger.LogInformation("ProbeService request for auth asset {AssetId} with unobtainable role", assetId);
+            return DescriptionResourceResponse.Restricted(AuthProbeResult2Builder.UnobtainableRole);
         }
 
         var authProbeResult =
