@@ -10,18 +10,12 @@ namespace DLCS.Repository.Assets;
 public static class ThumbnailCalculator
 {
     /// <summary>
-    /// Get a list of all 
+    /// Get a <see cref="SizeCandidate"/> for the given image request, from the list of available sizes.
     /// </summary>
-    /// <param name="sizes"></param>
-    /// <param name="imageRequest"></param>
-    /// <param name="allowResize"></param>
-    /// <returns></returns>
-    public static SizeCandidate GetCandidate(List<Size> sizes, ImageRequest imageRequest, bool allowResize)
-    {
-        return allowResize
+    public static SizeCandidate GetCandidate(List<Size> sizes, ImageRequest imageRequest, bool allowResize) =>
+        allowResize
             ? GetLongestEdgeAndSize(sizes, imageRequest)
             : GetLongestEdge(sizes, imageRequest);
-    }
 
     private static SizeCandidate GetLongestEdge(List<Size> sizes, ImageRequest imageRequest)
     {
