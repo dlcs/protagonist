@@ -25,16 +25,8 @@ public class AssetXTests
         var sizes = asset.GetAvailableThumbSizes(sizeParameters, 5000);
         
         // Assert
-        sizes.Open.Should().BeEquivalentTo(new List<int[]>
-        {
-            new[] { 400, 200 },
-            new[] { 200, 100 },
-            new[] { 100, 50 },
-        });
-        sizes.Auth.Should().BeEquivalentTo(new List<int[]>
-        {
-            new[] { 800, 400 },
-        });
+        sizes.Open.Should().BeEquivalentTo((List<int[]>)[[400, 200], [200, 100], [100, 50]]);
+        sizes.Auth.Should().BeEquivalentTo((List<int[]>)[[800, 400]]);
     }
     
     [Theory]
@@ -50,13 +42,7 @@ public class AssetXTests
         
         // Assert
         sizes.Open.Should().BeEmpty();
-        sizes.Auth.Should().BeEquivalentTo(new List<int[]>
-        {
-            new[] { 800, 400 },
-            new[] { 400, 200 },
-            new[] { 200, 100 },
-            new[] { 100, 50 },
-        });
+        sizes.Auth.Should().BeEquivalentTo((List<int[]>)[[800, 400], [400, 200], [200, 100], [100, 50]]);
     }
     
     [Fact]
@@ -69,16 +55,8 @@ public class AssetXTests
         var sizes = asset.GetAvailableThumbSizes(sizeParameters, 5000);
         
         // Assert
-        sizes.Open.Should().BeEquivalentTo(new List<int[]>
-        {
-            new[] { 200, 100 },
-            new[] { 100, 50 },
-        });
-        sizes.Auth.Should().BeEquivalentTo(new List<int[]>
-        {
-            new[] { 800, 400 },
-            new[] { 400, 200 },
-        });
+        sizes.Open.Should().BeEquivalentTo((List<int[]>)[[200, 100], [100, 50]]);
+        sizes.Auth.Should().BeEquivalentTo((List<int[]>)[[800, 400], [400, 200]]);
     }
     
     [Fact]
@@ -91,12 +69,7 @@ public class AssetXTests
         var sizes = asset.GetAvailableThumbSizes(sizeParameters, 5000);
         
         // Assert
-        sizes.Open.Should().BeEquivalentTo(new List<int[]>
-        {
-            new[] { 300, 150 },
-            new[] { 200, 100 },
-            new[] { 100, 50 },
-        });
+        sizes.Open.Should().BeEquivalentTo((List<int[]>)[[300, 150], [200, 100], [100, 50]]);
         sizes.Auth.Should().BeEmpty();
     }
     
@@ -117,16 +90,10 @@ public class AssetXTests
         var sizes = asset.GetAvailableThumbSizes(sizeParametersWithNotConfined, 5000);
         
         // Assert
-        sizes.Open.Should().BeEquivalentTo(new List<int[]>
-        {
-            new[] { 400, 200 },
-        });
-        sizes.Auth.Should().BeEquivalentTo(new List<int[]>
-        {
-            new[] { 800, 400 },
-        });
+        sizes.Open.Should().BeEquivalentTo((List<int[]>)[[400, 200]]);
+        sizes.Auth.Should().BeEquivalentTo((List<int[]>)[[800, 400]]);
     }
-    
+
     [Fact]
     public void GetAvailableThumbSizes_ObeySystemMaxWidth()
     {
@@ -135,20 +102,12 @@ public class AssetXTests
 
         // Act
         var sizes = asset.GetAvailableThumbSizes(sizeParameters, 500);
-        
+
         // Assert
-        sizes.Open.Should().BeEquivalentTo(new List<int[]>
-        {
-            new[] { 400, 200 },
-            new[] { 200, 100 },
-            new[] { 100, 50 },
-        });
-        sizes.Auth.Should().BeEquivalentTo(new List<int[]>
-        {
-            new[] { 800, 400 },
-        });
+        sizes.Open.Should().BeEquivalentTo((List<int[]>)[[400, 200], [200, 100], [100, 50]]);
+        sizes.Auth.Should().BeEquivalentTo((List<int[]>)[[800, 400]]);
     }
-    
+
     [Theory]
     [InlineData(250, 500, "100,", true, "Ignore width for portrait")]
     [InlineData(500, 250, "100,", false, "Width okay for landscape")]
