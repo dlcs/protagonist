@@ -7,6 +7,7 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets.CustomHeaders;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
+using IIIF;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -194,7 +195,7 @@ public class ImageRequestHandlerTests
         A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(new AssetId(2, 2, "test-image")))
             .Returns(new OrchestrationImage
             {
-                Width = 1000, Height = 1000, MaxWidth = 500, 
+                Size = new Size(1000, 1000), MaxWidth = 500, 
                 Channels = AvailableDeliveryChannel.Image, S3Location = "s3://"
             });
         var sut = GetImageRequestHandlerWithMockPathParser();
@@ -218,7 +219,7 @@ public class ImageRequestHandlerTests
         A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(new AssetId(2, 2, "test-image")))
             .Returns(new OrchestrationImage
             {
-                Width = 1000, Height = 1000, MaxWidth = 5000, Roles = roles, RequiresAuth = true, 
+                Size = new Size(1000, 1000), MaxWidth = 5000, Roles = roles, RequiresAuth = true, 
                 Channels = AvailableDeliveryChannel.Image, S3Location = "s3://"
             });
         A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
@@ -252,7 +253,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, Roles = roles, OpenThumbs = [[150, 150]], MaxWidth = 5000,
-                OpenFullMax = 900, Width = 1800, Height = 1800, RequiresAuth = true,
+                OpenFullMax = 900, Size = new Size(1800, 1800), RequiresAuth = true,
                 S3Location = "s3://storage/2/2/test-image", Channels = AvailableDeliveryChannel.Image
             });
         var sut = GetImageRequestHandlerWithMockPathParser();
@@ -290,7 +291,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, Roles = roles, OpenThumbs = [[150, 150]], MaxWidth = 5000,
-                OpenFullMax = 900, Width = 900, Height = 900, RequiresAuth = true,
+                OpenFullMax = 900, Size = new Size(900, 900), RequiresAuth = true,
                 S3Location = "s3://storage/2/2/test-image", Channels = AvailableDeliveryChannel.Image
             });
         var sut = GetImageRequestHandlerWithMockPathParser();
@@ -323,7 +324,7 @@ public class ImageRequestHandlerTests
         A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(new AssetId(2, 2, "test-image")))
             .Returns(new OrchestrationImage
             {
-                Roles = roles, OpenFullMax = 900, Width = 1800, Height = 1800, RequiresAuth = true,
+                Roles = roles, OpenFullMax = 900, Size = new Size(1800, 1800), RequiresAuth = true,
                 S3Location = "s3://storage/2/2/test-image", Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000
             });
         A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
@@ -349,7 +350,7 @@ public class ImageRequestHandlerTests
         A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
-                AssetId = assetId, OpenThumbs = [[150, 150]], Height = 1000, Width = 1000,
+                AssetId = assetId, OpenThumbs = [[150, 150]], Size = new Size(1000, 1000),
                 RequiresAuth = true, Roles = ["role"], OpenFullMax = 200, MaxWidth = 5000, 
                 S3Location = "s3://storage/2/2/test-image", Channels = AvailableDeliveryChannel.Image
             });
@@ -375,7 +376,7 @@ public class ImageRequestHandlerTests
         A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
-                AssetId = assetId, OpenThumbs = [[150, 150]], Height = 1000, Width = 1000, MaxWidth = 5000,
+                AssetId = assetId, OpenThumbs = [[150, 150]], Size = new Size(1000, 1000), MaxWidth = 5000,
                 S3Location = "s3://storage/2/2/test-image", Channels = AvailableDeliveryChannel.Image
             });
         var sut = GetImageRequestHandlerWithMockPathParser();
@@ -401,7 +402,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = [Item], MaxWidth = 5000,
-                Height = 512, Width = 512, S3Location = "s3://storage/2/2/test-image", 
+                Size = new Size(512, 512), S3Location = "s3://storage/2/2/test-image", 
                 Channels = AvailableDeliveryChannel.Image
             });
         var sut = GetImageRequestHandlerWithMockPathParser();
@@ -427,7 +428,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = [[256, 256]], MaxWidth = 5000,
-                Height = 512, Width = 512, S3Location = "s3://storage/2/2/test-image", 
+                Size = new Size(512, 512), S3Location = "s3://storage/2/2/test-image", 
                 Channels = AvailableDeliveryChannel.Image
             });
         var sut = GetImageRequestHandlerWithMockPathParser();
@@ -457,7 +458,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, Roles = roles, OpenThumbs = [[150, 150]], MaxWidth = 5000,
-                RequiresAuth = true, Height = 1000, Width = 1000, OpenFullMax = 300,
+                RequiresAuth = true, Size = new Size(1000, 1000), OpenFullMax = 300,
                 Channels = AvailableDeliveryChannel.Image, Reingest = true
             });
         A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
@@ -489,7 +490,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, Roles = roles, OpenThumbs = [[150, 150]], MaxWidth = 5000,
-                RequiresAuth = true, Height = 1000, Width = 1000, OpenFullMax = 300,
+                RequiresAuth = true, Size = new Size(1000, 1000), OpenFullMax = 300,
                 Channels = AvailableDeliveryChannel.Image, Reingest = false
             });
         A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
@@ -531,7 +532,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = [[150, 150]], S3Location = "s3://storage/2/2/test-image",
-                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Height = 1000, Width = 1000
+                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Size = new Size(1000, 1000),
             });
         
         var destination = version2 ? "cantaloupe-2" : "cantaloupe-3";
@@ -576,7 +577,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = openSizes, S3Location = "s3://storage/2/2/test-image",
-                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Height = 1000, Width = 1000
+                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Size = new Size(1000, 1000),
             });
         
         var destination = version2 ? "cantaloupe-2" : "cantaloupe-3";
@@ -614,7 +615,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = [], S3Location = "s3://storage/2/2/test-image",
-                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Height = 1000, Width = 1512
+                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Size = new Size(1000, 1000),
             });
 
         // Act
@@ -645,7 +646,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = [], S3Location = "s3://storage/2/2/test-image",
-                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Height = 1000, Width = 1512
+                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Size = new Size(1000, 1512),
             });
 
         // Act
@@ -671,7 +672,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = [], S3Location = "s3://storage/2/2/test-image",
-                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Height = 1000, Width = 1512
+                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Size = new Size(1000, 1512),
             });
 
         // Act
@@ -708,7 +709,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = openSizes, S3Location = "s3://storage/2/2/test-image",
-                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Height = 1000, Width = 1512
+                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Size = new Size(1000, 1512),
             });
 
         // Act
@@ -738,7 +739,7 @@ public class ImageRequestHandlerTests
             .Returns(new OrchestrationImage
             {
                 AssetId = assetId, OpenThumbs = [[150, 150]], S3Location = "", MaxWidth = 5000,
-                Channels = AvailableDeliveryChannel.Image, Reingest = false, Height = 1000, Width = 1512
+                Channels = AvailableDeliveryChannel.Image, Reingest = false, Size = new Size(1512, 1000)
             });
 
         // Act
@@ -768,8 +769,8 @@ public class ImageRequestHandlerTests
         A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
-                AssetId = assetId, Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Height = 1000,
-                Width = 1000, S3Location = "s3://storage/2/2/test-image",
+                AssetId = assetId, Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000,
+                Size = new Size(1000, 1000), S3Location = "s3://storage/2/2/test-image",
             });
         
         // Act
@@ -800,8 +801,8 @@ public class ImageRequestHandlerTests
         A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
             .Returns(new OrchestrationImage
             {
-                AssetId = assetId, Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Height = 1000,
-                Width = 1000, S3Location = "s3://storage/2/2/test-image",
+                AssetId = assetId, Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, 
+                Size = new Size(1000, 1000), S3Location = "s3://storage/2/2/test-image",
             });
         
         // Act

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Core.Types;
+using IIIF;
 using Microsoft.Extensions.Primitives;
 
 namespace Orchestrator.Assets;
@@ -51,14 +52,9 @@ public class OrchestrationAsset
 public class OrchestrationImage : OrchestrationAsset
 {
     /// <summary>
-    /// Get or set asset Width
+    /// Get or set the image dimensions
     /// </summary>
-    public int Width { get; set; }
-    
-    /// <summary>
-    /// Get or set asset Height
-    /// </summary>
-    public int Height { get; set; }
+    public Size Size { get; set; } = null!;
     
     /// <summary>
     /// The maximum size available for any user. This will be asset MaxWidth, falling back to system default 

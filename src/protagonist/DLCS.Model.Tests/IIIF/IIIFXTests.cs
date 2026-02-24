@@ -154,14 +154,21 @@ public class IIIFXTests
     public void IsFullOrEquivalent_True_IfFull()
     {
         var region = new RegionParameter { Full = true };
-        region.IsFullOrEquivalent(1, 1).Should().BeTrue("Explicitly requesting full image");
+        region.IsFullOrEquivalent(new Size(1, 1)).Should().BeTrue("Explicitly requesting full image");
     }
 
     [Fact]
     public void IsFullOrEquivalent_True_IfSquareRegion_AndImageSquare()
     {
         var region = new RegionParameter { Square = true };
-        region.IsFullOrEquivalent(100, 100).Should().BeTrue("Requesting square region for square image");
+        region.IsFullOrEquivalent(new Size(100, 100)).Should().BeTrue("Requesting square region for square image");
+    }
+    
+    [Fact]
+    public void IsFullOrEquivalent_True_IfPercentFullRegion()
+    {
+        var region = new RegionParameter { X = 0, Y = 0, W = 100, H = 100, Percent = true };
+        region.IsFullOrEquivalent(new Size(700, 200)).Should().BeTrue("Region is for full image");
     }
     
     [Theory]
@@ -171,17 +178,26 @@ public class IIIFXTests
     public void IsFullOrEquivalent_True_IfRequesting0XY_AndWHMatchImage(int w, int h)
     {
         var region = new RegionParameter { X = 0, Y = 0, W = w, H = h };
-        region.IsFullOrEquivalent(w, h).Should().BeTrue("Region is for full image");
+        region.IsFullOrEquivalent(new Size(w, h)).Should().BeTrue("Region is for full image");
     }
     
     [Theory]
-    [InlineData(100, 100)]
     [InlineData(200, 100)]
     [InlineData(100, 200)]
     public void IsFullOrEquivalent_False_IfRequesting0XY_AndWHMatchImage_ButPercent(int w, int h)
     {
         var region = new RegionParameter { X = 0, Y = 0, W = w, H = h, Percent = true };
-        region.IsFullOrEquivalent(w, h).Should().BeFalse("Percent region");
+        region.IsFullOrEquivalent(new Size(w, h)).Should().BeFalse("Percent region");
+    }
+    
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(1, 0)]
+    [InlineData(1, 1)]
+    public void IsFullOrEquivalent_False_IfPercentFullRegion_Not0XY(int x, int y)
+    {
+        var region = new RegionParameter { X = x, Y = y, W = 100, H = 100, Percent = true };
+        region.IsFullOrEquivalent(new Size(100, 100)).Should().BeFalse("Region is for full image");
     }
     
     [Theory]
@@ -194,7 +210,7 @@ public class IIIFXTests
     public void IsFullOrEquivalent_False_IfRequesting0XY_AndWHMatchImage(int x, int y, int w, int h)
     {
         var region = new RegionParameter { X = x, Y = y, W = w, H = h };
-        region.IsFullOrEquivalent(100, 100).Should().BeFalse();
+        region.IsFullOrEquivalent(new Size(100, 100)).Should().BeFalse();
     }
 
     [Theory]

@@ -218,8 +218,8 @@ public class MemoryAssetTrackerTests
         
         // Assert
         result!.AssetId.Should().Be(assetId);
-        result.Height.Should().Be(10);
-        result.Width.Should().Be(50);
+        result.Size.Height.Should().Be(10);
+        result.Size.Width.Should().Be(50);
         result.OpenThumbs.Should().BeEquivalentTo(sizes);
         result.Reingest.Should().BeFalse();
     }

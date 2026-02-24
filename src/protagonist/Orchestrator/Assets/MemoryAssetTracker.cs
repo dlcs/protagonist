@@ -6,6 +6,7 @@ using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
+using IIIF;
 using LazyCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -117,8 +118,7 @@ public class MemoryAssetTracker(
             orchestrationAsset = new OrchestrationImage
             {
                 S3Location = imageLocation?.S3,
-                Width = asset.Width ?? 0,
-                Height = asset.Height ?? 0,
+                Size = new Size(asset.Width ?? 0, asset.Height ?? 0),
                 MaxWidth = asset.GetEffectiveMaxWidth(systemMaxWidth),
                 OpenFullMax = asset.HasRoles ? asset.OpenFullMax : null,
                 OpenThumbs = getOpenThumbs.Result ?? [],

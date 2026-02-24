@@ -76,6 +76,7 @@ public static class ImageProxyPathHandler
             // Get the size of the extracted region - we need this regardless of version
             var sizeParameter = imageRequest.Size; 
             var extractedRegionSize = imageRequest.Region.GetExtractedRegionSize(imageSize);
+            var requestedFullRegion = imageRequest.Region.IsFullOrEquivalent(imageSize);
 
             // If this is not /full/ or /max/ then we won't change the size parameter, only need to check the size is valid
             if (!sizeParameter.Max)
@@ -88,7 +89,7 @@ public static class ImageProxyPathHandler
                         HttpStatusCode.Forbidden);
                 }
 
-                return ProxyImageRequest.Valid(sizeParameter, requestedSize);
+                return ProxyImageRequest.Valid(sizeParameter, requestedSize, requestedFullRegion);
             }
             
             // If here, it's /full/ or /max/ size. In which case we will change size parameter in proxy request to be
@@ -96,13 +97,13 @@ public static class ImageProxyPathHandler
             if (!IsUpscalingAllowed(isV2, isExplicitFull, sizeParameter))
             {
                 // If no upscaling then we can just confine the size to maxWidth without attempting to grow
-                return GetProxyImageRequest(Size.Confine(maxWidth, extractedRegionSize));
+                return GetProxyImageRequest(Size.Confine(maxWidth, extractedRegionSize), requestedFullRegion, false);
             }
 
             // If upscaling is allowed, work out the final size - the largest possible size that fits withing maxWidth
             var finalSize = Size.FitWithin(Size.Square(maxWidth), extractedRegionSize);
             var upscaleProxyRequest = maxWidth > extractedRegionSize.MaxDimension && !isV2;
-            return GetProxyImageRequest(finalSize, upscaleProxyRequest);
+            return GetProxyImageRequest(finalSize, requestedFullRegion, upscaleProxyRequest);
         }
         catch (RegionException ex)
         {
@@ -133,13 +134,13 @@ public static class ImageProxyPathHandler
         return requestedSize;
     }
 
-    private static ProxyImageRequest GetProxyImageRequest(Size finalSize, bool upscaled = false)
+    private static ProxyImageRequest GetProxyImageRequest(Size finalSize, bool requestedFullRegion, bool upscaled)
         => ProxyImageRequest.Valid(new SizeParameter
         {
             Width = finalSize.Width,
             Height = finalSize.Height,
             Upscaled = upscaled
-        }, finalSize);
+        }, finalSize, requestedFullRegion);
 }
 
 /// <summary>
@@ -175,18 +176,24 @@ public class ProxyImageRequest
     /// <summary>
     /// Error message representing why request is invalid.
     /// </summary>
-    
     public string? ErrorMessage { get; private init; }
-
+    
+    /// <summary>
+    /// True if the request region represents the full image size.
+    /// </summary>
+    public bool RepresentsFullRegion { get; private init; }
+    
     public static ProxyImageRequest Invalid(string message, HttpStatusCode statusCode)
         => new() { IsValid = false, ErrorMessage = message, ErrorStatusCode = statusCode };
 
-    public static ProxyImageRequest Valid(SizeParameter sizeParameter, Size proposedSize) => new()
-    {
-        RequestedSize = proposedSize,
-        ProxySizeParameter = sizeParameter,
-        IsValid = true
-    };
+    public static ProxyImageRequest Valid(SizeParameter sizeParameter, Size proposedSize, bool representsFullRegion) =>
+        new()
+        {
+            RequestedSize = proposedSize,
+            ProxySizeParameter = sizeParameter,
+            IsValid = true,
+            RepresentsFullRegion = representsFullRegion,
+        };
     
     private string DebuggerDisplay => IsValid 
         ? $"Valid: {ProxySizeParameter}, {RequestedSize}"

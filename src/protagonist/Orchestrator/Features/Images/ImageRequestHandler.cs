@@ -7,7 +7,6 @@ using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
-using DLCS.Model.IIIF;
 using DLCS.Repository.Assets;
 using DLCS.Web.IIIF;
 using DLCS.Web.Requests.AssetDelivery;
@@ -128,8 +127,8 @@ public class ImageRequestHandler
                 assetRequest.NormalisedFullPath);
             return new StatusCodeResult(HttpStatusCode.BadRequest);
         }
-        
-        var imageSize = new Size(orchestrationImage.Width, orchestrationImage.Height);
+
+        var imageSize = orchestrationImage.Size;
         
         // Parse the incoming request to get proxy result, based in image + requested size only
         var incomingImageRequest = assetRequest.IIIFImageRequest;
@@ -140,20 +139,16 @@ public class ImageRequestHandler
             return new StatusCodeResult(proxyRequest.ErrorStatusCode.Value);
         }
         
-        var requestedFullRegion =
-            incomingImageRequest.Region.IsFullOrEquivalent(orchestrationImage.Width,
-                orchestrationImage.Height);
-        
         // If there are roles, we may have restricted access..
         if (orchestrationImage.RequiresAuth)
         {
-            if (await IsRequestUnauthorised(assetRequest, orchestrationImage, requestedFullRegion, proxyRequest))
+            if (await IsRequestUnauthorised(assetRequest, orchestrationImage, proxyRequest))
             {
                 return new StatusCodeResult(HttpStatusCode.Unauthorized);
             }
         }
         
-        if (requestedFullRegion)
+        if (proxyRequest.RepresentsFullRegion)
         {
             // /full/ or equiv region but not /max/ size - can it be handled by thumbnail service?
             if (!incomingImageRequest.Size.Max)
@@ -198,11 +193,11 @@ public class ImageRequestHandler
     }
 
     private async Task<bool> IsRequestUnauthorised(ImageAssetDeliveryRequest assetRequest,
-        OrchestrationImage orchestrationImage, bool requestedFullRegion, ProxyImageRequest proxyRequest)
+        OrchestrationImage orchestrationImage, ProxyImageRequest proxyRequest)
     {
         // If the image has an openFullMax, and the region is /full/ then user may be able to see requested
         // size without doing auth check
-        if (requestedFullRegion && orchestrationImage.OpenFullMax > 0)
+        if (proxyRequest.RepresentsFullRegion && orchestrationImage.OpenFullMax > 0)
         {
             // If requested maxDimension < openFullMax then anyone can view as this is a /full/ region
             if (proxyRequest.RequestedSize!.MaxDimension <= orchestrationImage.OpenFullMax)

@@ -212,6 +212,22 @@ public class ImageProxyPathHandlerTests
         result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
         result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
+    
+    [Theory]
+    [InlineData("0,0,200,200", false)]
+    [InlineData("pct:0,0,100,100", false)]
+    [InlineData("full", false)]
+    [InlineData("square", false)]
+    [InlineData("0,0,200,200", true)]
+    [InlineData("pct:0,0,100,100", true)]
+    [InlineData("full", true)]
+    [InlineData("square", true)]
+    public void GetProxyImageRequest_V2_RepresentsFullRegion(string region, bool strict)
+    {
+        var parsed = ImageRequest.Parse($"asset/{region}/!10,10/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, Size.Square(200), 500, strict);
+        result.RepresentsFullRegion.Should().BeTrue();
+    }
 
     #endregion
     
@@ -440,6 +456,22 @@ public class ImageProxyPathHandlerTests
         result.RequestedSize.Should().BeEquivalentTo(expectedSize, imageRequest);
         result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
     }
+    
+    [Theory]
+    [InlineData("0,0,200,200", false)]
+    [InlineData("pct:0,0,100,100", false)]
+    [InlineData("full", false)]
+    [InlineData("square", false)]
+    [InlineData("0,0,200,200", true)]
+    [InlineData("pct:0,0,100,100", true)]
+    [InlineData("full", true)]
+    [InlineData("square", true)]
+    public void GetProxyImageRequest_V3_RepresentsFullRegion(string region, bool strict)
+    {
+        var parsed = ImageRequest.Parse($"asset/{region}/!10,10/0/default.tif", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, Size.Square(200), 500, strict);
+        result.RepresentsFullRegion.Should().BeTrue();
+    }
 
     #endregion
     
@@ -477,7 +509,7 @@ public class ImageProxyPathHandlerTests
             "square/11,11",
             "square/,11",
         ];
-
+        
         /// <summary>
         /// A series of valid image requests that would result in an upscaled image, without ^
         ///

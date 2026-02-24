@@ -154,7 +154,7 @@ public abstract class InfoJsonConstructorTemplate<T>(
         // for example, if maxWidth is 500, the tile size will be updated to 256
         var tileSize = Math.Pow(2, (int)Math.Log2(orchestrationImage.MaxWidth)); // Casting as it truncates
 
-        var tiles = InfoJsonBuilder.GetTiles(orchestrationImage.Width, orchestrationImage.Height,
+        var tiles = InfoJsonBuilder.GetTiles(orchestrationImage.Size.Width, orchestrationImage.Size.Height,
             (int)tileSize);
         return tiles;
     }
