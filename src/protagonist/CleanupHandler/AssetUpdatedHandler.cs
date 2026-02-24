@@ -101,9 +101,9 @@ public class AssetUpdatedHandler(
                 }
             }
 
-            if (!Equals(assetAfter.Roles ?? string.Empty, assetBefore.Roles ?? string.Empty))
+            if (ShouldRemoveInfoJson(assetAfter, assetBefore))
             {
-                CleanupRolesChanged(assetAfter, s3Objects.foldersToRemove);
+                RemoveInfoJson(assetAfter, s3Objects.foldersToRemove);
             }
 
             if (s3Objects.objectsToRemove.Count > 0)
@@ -118,6 +118,16 @@ public class AssetUpdatedHandler(
 
             return true;
         }
+    }
+
+    // If a value has changed that can affect info.json we need to replace it
+    private static bool ShouldRemoveInfoJson(Asset assetAfter, Asset assetBefore)
+    {
+        var rolesChanged = !string.Equals(assetAfter.Roles ?? string.Empty, assetBefore.Roles ?? string.Empty,
+            StringComparison.OrdinalIgnoreCase);
+
+        var maxWidthChanged = (assetAfter.MaxWidth ?? 0) != (assetBefore.MaxWidth ?? 0);
+        return rolesChanged || maxWidthChanged;
     }
 
     private AssetUpdatedNotificationRequest? TryParseMessage(QueueMessage message)
@@ -140,20 +150,18 @@ public class AssetUpdatedHandler(
         }
     }
 
-    private static bool AssetStillIngesting(Asset assetAfter, Asset assetBefore)
-    {
-        return assetAfter.Ingesting == true && assetBefore.Finished > assetAfter.Finished;
-    }
-    
+    private static bool AssetStillIngesting(Asset assetAfter, Asset assetBefore) =>
+        assetAfter.Ingesting == true && assetBefore.Finished > assetAfter.Finished;
+
     private static bool NoCleanupRequired(QueueMessage message, Asset assetAfter, Asset assetBefore)
     {
         return !message.MessageAttributes.ContainsKey("engineNotified") &&
             (assetBefore.Roles ?? string.Empty) == (assetAfter.Roles ?? string.Empty);
     }
 
-    private void CleanupRolesChanged(Asset assetAfter, HashSet<ObjectInBucket> foldersToRemove)
+    private void RemoveInfoJson(Asset assetAfter, HashSet<ObjectInBucket> foldersToRemove)
     {
-        logger.LogDebug("{AssetId} changed role", assetAfter.Id);
+        logger.LogDebug("Deleting info.json files for {AssetId}", assetAfter.Id);
         var infoJsonRoot = storageKeyGenerator.GetInfoJsonRoot(assetAfter.Id);
         foldersToRemove.Add(infoJsonRoot);
     }
@@ -339,7 +347,7 @@ public class AssetUpdatedHandler(
 
     private async Task<List<ObjectInBucket>> ThumbsToBeDeleted(Asset assetAfter)
     {
-        var thumbSizes = await thumbRepository.GetAllSizes(assetAfter.Id) ?? new List<int[]>();
+        var thumbSizes = await thumbRepository.GetAllSizes(assetAfter.Id) ?? [];
         var thumbsBucketKeys = await bucketReader.GetMatchingKeys(storageKeyGenerator.GetThumbnailsRoot(assetAfter.Id));
 
         var thumbsBucketSizes = GetThumbSizesFromKeys(thumbsBucketKeys);
