@@ -77,6 +77,7 @@ These are in strongly typed to `EngineSettings` object and are split by prefix b
 | Key                | Description                                                 | Default |
 | ------------------ | ----------------------------------------------------------- | ------- |
 | `DownloadTemplate` | Template for download location for temporary working assets |         |
+| `MaxWidth`         | System default `maxWidth` property                          | 5000    |
 
 ### `ImageIngest:`
 
