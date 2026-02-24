@@ -136,6 +136,9 @@ public class ImageRequestHandler
             orchestrationImage.MaxWidth, strictImageRequests);
         if (!proxyRequest.IsValid)
         {
+            logger.LogDebug(
+                "Unable to fulfil image request: {Path}. ProxyRequest invalid: {ErrorStatus} - {ErrorMessage}",
+                assetRequest.NormalisedFullPath, proxyRequest.ErrorStatusCode, proxyRequest.ErrorMessage);
             return new StatusCodeResult(proxyRequest.ErrorStatusCode.Value);
         }
         
@@ -148,29 +151,30 @@ public class ImageRequestHandler
             }
         }
         
+        // Update the SizeParameter as it may have altered during parsing
+        assetRequest.IIIFImageRequest.Size = proxyRequest.ProxySizeParameter;
+        
         if (proxyRequest.RepresentsFullRegion)
         {
-            // /full/ or equiv region but not /max/ size - can it be handled by thumbnail service?
-            if (!incomingImageRequest.Size.Max)
+            // /full/ or equiv region - can it be handled by thumbnail service?
+            var canHandleByThumbResponse = CanRequestBeHandledByThumb(assetRequest, orchestrationImage);
+            if (canHandleByThumbResponse.CanHandle)
             {
-                var canHandleByThumbResponse = CanRequestBeHandledByThumb(assetRequest, orchestrationImage);
-                if (canHandleByThumbResponse.CanHandle)
-                {
-                    logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs. IsResize: {IsResize}",
-                        httpContext.Request.Path, canHandleByThumbResponse.IsResize);
+                logger.LogDebug("'{Path}' can be handled by thumb, proxying to thumbs. IsResize: {IsResize}",
+                    httpContext.Request.Path, canHandleByThumbResponse.IsResize);
 
-                    var pathReplacement = canHandleByThumbResponse.IsResize
-                        ? orchestratorSettings.Value.Proxy.ThumbResizePath
-                        : orchestratorSettings.Value.Proxy.ThumbsPath;
-                    var proxyDestination = canHandleByThumbResponse.IsResize
-                        ? ProxyDestination.ResizeThumbs
-                        : ProxyDestination.Thumbs;
-                    var proxyResult = new ProxyActionResult(proxyDestination,
-                        orchestrationImage.RequiresAuth,
-                        httpContext.Request.Path.ToString().Replace("iiif-img", pathReplacement));
-                    return proxyResult;
-                } 
+                var pathReplacement = canHandleByThumbResponse.IsResize
+                    ? orchestratorSettings.Value.Proxy.ThumbResizePath
+                    : orchestratorSettings.Value.Proxy.ThumbsPath;
+                var proxyDestination = canHandleByThumbResponse.IsResize
+                    ? ProxyDestination.ResizeThumbs
+                    : ProxyDestination.Thumbs;
+                var proxyResult = new ProxyActionResult(proxyDestination,
+                    orchestrationImage.RequiresAuth,
+                    assetRequest.IIIFImageRequest.ToString().Replace("iiif-img", pathReplacement));
+                return proxyResult;
             }
+
             // /full/ that cannot be handled by thumbs (e.g. format, size, rotation, quality), handle with special-server
             if (orchestrationImage.S3Location.IsNullOrEmpty())
             {
@@ -188,7 +192,7 @@ public class ImageRequestHandler
         return GetImageServerProxyResult(false);
 
         IProxyActionResult GetImageServerProxyResult(bool specialServer) =>
-            GenerateImageServerProxyResult(orchestrationImage, assetRequest, proxyRequest, imageApiVersion.Value,
+            GenerateImageServerProxyResult(orchestrationImage, assetRequest, imageApiVersion.Value,
                 specialServer);
     }
 
@@ -225,7 +229,7 @@ public class ImageRequestHandler
         // Contains Image Request Parameters that thumbs can't handle, abort
         if (!imageRequest.IsCandidateForThumbHandling(out _)) return (false, false);
 
-        var openSizes = orchestrationImage.OpenThumbs.Select(wh => Size.FromArray(wh)).ToList();
+        var openSizes = orchestrationImage.OpenThumbs.Select(Size.FromArray).ToList();
 
         // No open thumbs so cannot handle by thumb, abort
         if (openSizes.IsNullOrEmpty()) return (false, false);
@@ -265,8 +269,7 @@ public class ImageRequestHandler
     }
 
     private IProxyActionResult GenerateImageServerProxyResult(OrchestrationImage orchestrationImage,
-        ImageAssetDeliveryRequest requestModel, ProxyImageRequest proxyRequest, Version imageApiVersion, 
-        bool specialServer)
+        ImageAssetDeliveryRequest requestModel, Version imageApiVersion, bool specialServer)
     {
         // get the redirect path - S3:// path for special-server or /path/on/disk for image-server
         var settings = orchestratorSettings.Value;
@@ -280,9 +283,7 @@ public class ImageRequestHandler
                 requestModel.NormalisedFullPath);
             return new StatusCodeResult(HttpStatusCode.BadRequest);
         }
-
-        // Update the SizeParameter as it may have altered during parsing
-        requestModel.IIIFImageRequest.Size = proxyRequest.ProxySizeParameter!;
+        
         var imageServerPath = downstreamPath.ToConcatenated('/', requestModel.IIIFImageRequest.GetImageRequestOnly());
         IProxyActionResult proxyActionResult = specialServer
             ? new ProxyActionResult(ProxyDestination.SpecialServer, orchestrationImage.RequiresAuth, imageServerPath)

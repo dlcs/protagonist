@@ -517,7 +517,7 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/bitonal.jpg", "full/!100,150/0/bitonal.jpg", false)] // bitonal
     [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/gray.jpg", "full/!100,150/0/gray.jpg", false)] // gray
     [InlineData("/iiif-img/2/2/test-image/square/!100,150/0/bitonal.tif", "square/!100,150/0/bitonal.tif", false)] // square
-    public async Task HandleRequest_ProxiesToSpecialServer_ForAllFull_RewritingIfRequired(string path, string expectedProxyPath, bool version2)
+    public async Task HandleRequest_ProxiesToSpecialServer_ForAllLargeFull_RewritingIfRequired(string path, string expectedProxyPath, bool version2)
     {
         // Arrange
         var context = new DefaultHttpContext();
@@ -544,6 +544,44 @@ public class ImageRequestHandlerTests
             
         // Assert
         result.Target.Should().Be(ProxyDestination.SpecialServer);
+        result.Path.Should().Be(expected);
+    }
+    
+    [Theory]
+    [InlineData("/iiif-img/2/2/test-image/full/90,/0/default.jpg", "/2/2/test-image/full/90,/0/default.jpg", ProxyDestination.ResizeThumbs)] // full/<size>
+    [InlineData("/iiif-img/v2/2/2/test-image/full/full/0/default.jpg", "/v2/2/2/test-image/full/400,400/0/default.jpg", ProxyDestination.Thumbs)] // /full/full - v2
+    [InlineData("/iiif-img/v2/2/2/test-image/full/max/0/default.jpg", "/v2/2/2/test-image/full/400,400/0/default.jpg", ProxyDestination.Thumbs)] // /full/max - v2
+    [InlineData("/iiif-img/2/2/test-image/full/max/0/default.jpg", "/2/2/test-image/full/400,400/0/default.jpg", ProxyDestination.Thumbs)] // /full/max - v3
+    [InlineData("/iiif-img/2/2/test-image/full/^max/0/default.jpg", "/2/2/test-image/full/400,400/0/default.jpg", ProxyDestination.Thumbs)] // /full/^max - v3
+    [InlineData("/iiif-img/2/2/test-image/square/!100,150/0/default.jpg", "/2/2/test-image/square/!100,150/0/default.jpg", ProxyDestination.ResizeThumbs)] // square
+    public async Task HandleRequest_ProxiesToThumbs_ForFullThatAreSmallEnough_RewritingIfRequired(string path, string expectedProxyPath, ProxyDestination destination)
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = path;
+
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var assetId = new AssetId(2, 2, "test-image");
+
+        var settings = CreateOrchestratorSettings();
+        settings.Proxy.CanResizeThumbs = true;
+        var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: settings);
+
+        // Image is 2000x2000 but only 400 maxWidth
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, OpenThumbs = [[400, 400], [150, 150]], S3Location = "s3://storage/2/2/test-image",
+                Channels = AvailableDeliveryChannel.Image, MaxWidth = 400, Size = Size.Square(2000),
+            });
+        
+        var expected = $"thumbs{expectedProxyPath}";
+
+        // Act
+        var result = (ProxyActionResult)await sut.HandleRequest(context);
+            
+        // Assert
+        result.Target.Should().Be(destination);
         result.Path.Should().Be(expected);
     }
     
