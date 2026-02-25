@@ -101,8 +101,8 @@ public class ThumbCreatorTests
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
             .WithContents(thumbSizes);
-        
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        
         asset.AssetApplicationMetadata.Should()
             .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
@@ -145,8 +145,8 @@ public class ThumbCreatorTests
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
             .WithContents(thumbSizes);
-        
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        
         asset.AssetApplicationMetadata.Should()
             .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
@@ -155,7 +155,7 @@ public class ThumbCreatorTests
     [InlineData(1000)]
     [InlineData(500)]
     [InlineData(0)]
-    public async Task CreateNewThumbs_UploadsExpected_LargestAuth_NoRoles(int openFullMax)
+    public async Task CreateNewThumbs_UploadsExpected_LargestExcluded_NoRoles(int openFullMax)
     {
         // MaxWidth is 700 and there are no roles so we won't create 'open' thumbs larger than 700
         // included OpenFullMax to show this has no effect as no roles 
@@ -173,17 +173,14 @@ public class ThumbCreatorTests
             new() { Width = 60, Height = 100, Path = "100.jpg" }
         };
         
-        const string thumbSizes = "{\"o\":[[302,500],[60,100]],\"a\":[[606,1000]]}";
+        const string thumbSizes = "{\"o\":[[302,500],[60,100]],\"a\":[]}";
         
         // Act
         var thumbsCreated = await sut.CreateNewThumbs(asset, imagesOnDisk);
         
         // Assert
-        thumbsCreated.Should().Be(3);
+        thumbsCreated.Should().Be(2);
         
-        bucketWriter
-            .ShouldHaveKey("10/20/foo/a/1000.jpg")
-            .WithFilePath("1000.jpg");
         bucketWriter
             .ShouldHaveKey("10/20/foo/o/500.jpg")
             .WithFilePath("500.jpg");
@@ -193,8 +190,8 @@ public class ThumbCreatorTests
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
             .WithContents(thumbSizes);
-        
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        
         asset.AssetApplicationMetadata.Should()
             .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
@@ -216,17 +213,14 @@ public class ThumbCreatorTests
             new() { Width = 60, Height = 100, Path = "100.jpg" }
         };
         
-        const string thumbSizes = "{\"o\":[[302,500],[60,100]],\"a\":[[606,1000]]}";
+        const string thumbSizes = "{\"o\":[[302,500],[60,100]],\"a\":[]}";
         
         // Act
         var thumbsCreated = await GetSut(700).CreateNewThumbs(asset, imagesOnDisk);
         
         // Assert
-        thumbsCreated.Should().Be(3);
+        thumbsCreated.Should().Be(2, "System maxWidth of 700 prevents largest thumb being saved");
         
-        bucketWriter
-            .ShouldHaveKey("10/20/foo/a/1000.jpg")
-            .WithFilePath("1000.jpg");
         bucketWriter
             .ShouldHaveKey("10/20/foo/o/500.jpg")
             .WithFilePath("500.jpg");
@@ -236,22 +230,18 @@ public class ThumbCreatorTests
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
             .WithContents(thumbSizes);
-        
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        
         asset.AssetApplicationMetadata.Should()
             .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
     
     [Theory]
     [InlineData(700, 0)] // ofm only
-    [InlineData(700, 700)] // both ofm and mw match
     [InlineData(700, 1024)] // mw is greater than ofm
-    [InlineData(1024, 700)] // ofm is greater than mw
     public async Task CreateNewThumbs_UploadsExpected_LargestAuth_Roles(int openFullMax, int maxWidth)
     {
-        // Asset has roles. In all cases the effective 'max' value is 700
-        // This will be OpenFullMax or MaxWidth if one provided.
-        // If both provided it is OpenFullMax unless that value is larger than MaxWidth 
+        // Asset has roles. In all cases the effective 'max' value is 700 from OpenFullMax so we do store
         var assetId = new AssetId(10, 20, "foo");
         var asset = new Asset(assetId)
         {
@@ -286,8 +276,51 @@ public class ThumbCreatorTests
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
             .WithContents(thumbSizes);
-        
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        
+        asset.AssetApplicationMetadata.Should()
+            .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
+    }
+    
+    [Theory]
+    [InlineData(700, 700)] // both ofm and mw match
+    [InlineData(1024, 700)] // ofm is greater than mw
+    public async Task CreateNewThumbs_UploadsExpected_LargestExcluded_Roles(int openFullMax, int maxWidth)
+    {
+        // Asset has roles and openFullMax. MaxWidth makes effective 'max' 700, regardless of OpenFullMax value
+        var assetId = new AssetId(10, 20, "foo");
+        var asset = new Asset(assetId)
+        {
+            Width = 3030, Height = 5000, MaxWidth = maxWidth, OpenFullMax = openFullMax,
+            ImageDeliveryChannels = thumbsDeliveryChannel, Roles = "https://test"
+        };
+
+        var imagesOnDisk = new List<ImageOnDisk>
+        {
+            new() { Width = 606, Height = 1000, Path = "1000.jpg" },
+            new() { Width = 302, Height = 500, Path = "500.jpg" },
+            new() { Width = 60, Height = 100, Path = "100.jpg" }
+        };
+        
+        const string thumbSizes = "{\"o\":[[302,500],[60,100]],\"a\":[]}";
+        
+        // Act
+        var thumbsCreated = await sut.CreateNewThumbs(asset, imagesOnDisk);
+        
+        // Assert
+        thumbsCreated.Should().Be(2);
+        
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/o/500.jpg")
+            .WithFilePath("500.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/o/100.jpg")
+            .WithFilePath("100.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/s.json")
+            .WithContents(thumbSizes);
+        bucketWriter.ShouldHaveNoUnverifiedPaths();
+        
         asset.AssetApplicationMetadata.Should()
             .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
@@ -331,8 +364,8 @@ public class ThumbCreatorTests
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
             .WithContents(thumbSizes);
-        
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        
         asset.AssetApplicationMetadata.Should()
             .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
@@ -372,8 +405,8 @@ public class ThumbCreatorTests
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
             .WithContents(thumbSizes);
-        
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        
         asset.AssetApplicationMetadata.Should()
             .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
@@ -416,24 +449,22 @@ public class ThumbCreatorTests
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
             .WithContents(thumbSizes);
-        
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        
         asset.AssetApplicationMetadata.Should()
             .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }
     
-    [Theory]
-    [InlineData(256)]
-    [InlineData(0)]
-    public async Task CreateNewThumbs_UploadsExpected_AllAuth(int maxWidth)
+    [Fact]
+    public async Task CreateNewThumbs_UploadsExpected_AllAuth()
     {
         // All cases have a role and no OpenFullMax (so none available as open)
-        // Value of MaxWidth doesn't matter as none are available anonymously
+        // Value of MaxWidth ignored as 0
         var assetId = new AssetId(10, 20, "foo");
         var asset = new Asset(assetId)
         {
             Width = 3030, Height = 5000, OpenFullMax = 0, Roles = "https://test",
-            ImageDeliveryChannels = thumbsDeliveryChannel, MaxWidth = maxWidth
+            ImageDeliveryChannels = thumbsDeliveryChannel, MaxWidth = 0
         };
 
         var imagesOnDisk = new List<ImageOnDisk>
@@ -462,8 +493,75 @@ public class ThumbCreatorTests
         bucketWriter
             .ShouldHaveKey("10/20/foo/s.json")
             .WithContents(thumbSizes);
-        
         bucketWriter.ShouldHaveNoUnverifiedPaths();
+        
+        asset.AssetApplicationMetadata.Should()
+            .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
+    }
+    
+    [Fact]
+    public async Task CreateNewThumbs_UploadsNone_IfMaxWidthSmallerThanSmallestThumb()
+    {
+        // MaxWidth is 1 so no thumbnails will be created as they all exceed this
+        var assetId = new AssetId(10, 20, "foo");
+        var asset = new Asset(assetId)
+        {
+            Width = 3030, Height = 5000, OpenFullMax = 0, Roles = "https://test",
+            ImageDeliveryChannels = thumbsDeliveryChannel, MaxWidth = 90
+        };
+
+        var imagesOnDisk = new List<ImageOnDisk>
+        {
+            new() { Width = 606, Height = 1000, Path = "1000.jpg" },
+            new() { Width = 302, Height = 500, Path = "500.jpg" },
+            new() { Width = 60, Height = 100, Path = "100.jpg" }
+        };
+        
+        // Act
+        var thumbsCreated = await sut.CreateNewThumbs(asset, imagesOnDisk);
+        
+        // Assert
+        thumbsCreated.Should().Be(0);
+        
+        bucketWriter.Operations.Should().BeEmpty();
+        asset.AssetApplicationMetadata.Should().BeNullOrEmpty();
+    }
+    
+    [Fact]
+    public async Task CreateNewThumbs_DoesNotSaveThumbs_IfLargerThanMaxWidth()
+    {
+        // MaxWidth of 800 controls the largest possible thumb size
+        var assetId = new AssetId(10, 20, "foo");
+        var asset = new Asset(assetId)
+        {
+            Width = 3030, Height = 5000, ImageDeliveryChannels = thumbsDeliveryChannel, MaxWidth = 800
+        };
+
+        var imagesOnDisk = new List<ImageOnDisk>
+        {
+            new() { Width = 606, Height = 1000, Path = "1000.jpg" },
+            new() { Width = 302, Height = 500, Path = "500.jpg" },
+            new() { Width = 60, Height = 100, Path = "100.jpg" }
+        };
+        const string thumbSizes = "{\"o\":[[302,500],[60,100]],\"a\":[]}";
+        
+        // Act
+        var thumbsCreated = await sut.CreateNewThumbs(asset, imagesOnDisk);
+        
+        // Assert
+        thumbsCreated.Should().Be(2, "Largest thumb exceeds MaxWidth so disregarded");
+        
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/o/500.jpg")
+            .WithFilePath("500.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/o/100.jpg")
+            .WithFilePath("100.jpg");
+        bucketWriter
+            .ShouldHaveKey("10/20/foo/s.json")
+            .WithContents(thumbSizes);
+        bucketWriter.ShouldHaveNoUnverifiedPaths();
+        
         asset.AssetApplicationMetadata.Should()
             .Contain(i => i.MetadataType == "ThumbSizes" && i.MetadataValue == thumbSizes);
     }

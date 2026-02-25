@@ -41,11 +41,21 @@ public class ThumbCreator(
         logger.LogTrace("Max available thumbnail size for {AssetId} is {MaxAvailableThumb}", assetId, maxAvailableThumb);
         var thumbnailSizes = new ThumbnailSizes(thumbsToProcess.Count);
         var processedWidths = new List<int>(thumbsToProcess.Count);
+        var effectiveMaxWidth = asset.GetEffectiveMaxWidth(engineSettings.MaxWidth);
         
         using var processLock = await asyncLocker.LockAsync($"create:{assetId}");
 
         foreach (var thumbCandidate in orderedThumbs)
         {
+            // If exceeds the effectiveMaxWidth for image, discard...
+            if (thumbCandidate.MaxDimension > effectiveMaxWidth)
+            {
+                logger.LogDebug(
+                    "Thumbnail {Width},{Height} exceeds effective maxWidth of {MaxWidth} for asset {AssetId}",
+                    thumbCandidate.Width, thumbCandidate.Height, effectiveMaxWidth, assetId);
+                continue;
+            }
+            
             // Safety check for duplicate
             if (processedWidths.Contains(thumbCandidate.Width))
             {
@@ -100,6 +110,8 @@ public class ThumbCreator(
     
     private async Task CreateSizesJson(Asset asset, ThumbnailSizes thumbnailSizes)
     {
+        if (thumbnailSizes.Count == 0) return;
+        
         // NOTE - this data is read via AssetApplicationMetadataX.GetThumbsMetadata
         var serializedThumbnailSizes = JsonConvert.SerializeObject(thumbnailSizes);
         var sizesDest = storageKeyGenerator.GetThumbsSizesJsonLocation(asset.Id);
