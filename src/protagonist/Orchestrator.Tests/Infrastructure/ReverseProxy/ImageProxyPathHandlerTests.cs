@@ -228,6 +228,46 @@ public class ImageProxyPathHandlerTests
         var result = parsed.GetProxyImageRequest(Version.V2, Size.Square(200), 500, strict);
         result.RepresentsFullRegion.Should().BeTrue();
     }
+    
+    [Theory]
+    [InlineData(5000, 1000, 1000, "1000,1000", 1000, 1000)]
+    [InlineData(500, 1000, 1000,"500,500", 500, 500)]
+    [InlineData(5000, 1000, 500, "1000,500",1000, 500)]
+    [InlineData(500, 1000, 500, "500,250",500, 250)]
+    [InlineData(5000, 500, 1000, "500,1000",500, 1000)]
+    [InlineData(500,  500, 1000, "250,500",250, 500)]
+    [InlineData(5000, 600, 600, "1000,1000", 1000, 1000)]
+    [InlineData(500, 600, 600,"500,500", 500, 500)]
+    public void GetProxyImageRequest_V2_Confined_ReturnsLargestPossible_IfStrictMode(int maxWidth, int w, int h, string sizeParameter, int expectedW, int expectedH)
+    {
+        // These all use /full/!1000,1000/ but leaving as this for simplicity
+        var parsed = ImageRequest.Parse("asset/full/!1000,1000/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, new Size(w, h), maxWidth);
+        result.IsValid.Should().BeTrue();
+        result.ErrorMessage.Should().BeNull();
+        result.RequestedSize.Should().BeEquivalentTo(new Size(expectedW, expectedH));
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter);
+    }
+    
+    [Theory]
+    [InlineData(5000, 1000, 1000, "1000,1000", 1000, 1000)]
+    [InlineData(500, 1000, 1000,"500,500", 500, 500)]
+    [InlineData(5000, 1000, 500, "1000,500",1000, 500)]
+    [InlineData(500, 1000, 500, "500,250",500, 250)]
+    [InlineData(5000, 500, 1000, "500,1000",500, 1000)]
+    [InlineData(500,  500, 1000, "250,500",250, 500)]
+    [InlineData(5000, 600, 600, "1000,1000", 1000, 1000)]
+    [InlineData(500, 600, 600,"500,500", 500, 500)]
+    public void GetProxyImageRequest_V2_Confined_ReturnsLargestPossible_IfLaxMode(int maxWidth, int w, int h, string sizeParameter, int expectedW, int expectedH)
+    {
+        // These all use /full/!1000,1000/ but leaving as this for simplicity
+        var parsed = ImageRequest.Parse("asset/full/!1000,1000/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, new Size(w, h), maxWidth, false);
+        result.IsValid.Should().BeTrue();
+        result.ErrorMessage.Should().BeNull();
+        result.RequestedSize.Should().BeEquivalentTo(new Size(expectedW, expectedH));
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter);
+    }
 
     #endregion
     
@@ -473,6 +513,45 @@ public class ImageProxyPathHandlerTests
         result.RepresentsFullRegion.Should().BeTrue();
     }
 
+    [Theory]
+    [InlineData("full/!1000,1000/", 5000, 1000, 1000, "1000,1000", 1000, 1000)]
+    [InlineData("full/!1000,1000/", 500, 1000, 1000,"500,500", 500, 500)]
+    [InlineData("full/!1000,1000/", 5000, 1000, 500, "1000,500",1000, 500)]
+    [InlineData("full/!1000,1000/", 500, 1000, 500, "500,250",500, 250)]
+    [InlineData("full/!1000,1000/", 5000, 500, 1000, "500,1000",500, 1000)]
+    [InlineData("full/!1000,1000/", 500,  500, 1000, "250,500",250, 500)]
+    [InlineData("full/^!1000,1000/", 5000, 600, 600, "^1000,1000", 1000, 1000)]
+    [InlineData("full/^!1000,1000/", 500, 600, 600,"^500,500", 500, 500)]
+    public void GetProxyImageRequest_V3_Confined_ReturnsLargestPossible_IfStrictMode(string request, int maxWidth, int w, int h, string sizeParameter, int expectedW, int expectedH)
+    {
+        // These all use /full/!1000,1000/ but leaving as this for simplicity
+        var parsed = ImageRequest.Parse($"asset/{request}0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, new Size(w, h), maxWidth);
+        result.IsValid.Should().BeTrue();
+        result.ErrorMessage.Should().BeNull();
+        result.RequestedSize.Should().BeEquivalentTo(new Size(expectedW, expectedH));
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter);
+    }
+    
+    [Theory]
+    [InlineData("full/!1000,1000/", 5000, 1000, 1000, "1000,1000", 1000, 1000)]
+    [InlineData("full/!1000,1000/", 500, 1000, 1000,"500,500", 500, 500)]
+    [InlineData("full/!1000,1000/", 5000, 1000, 500, "1000,500",1000, 500)]
+    [InlineData("full/!1000,1000/", 500, 1000, 500, "500,250",500, 250)]
+    [InlineData("full/!1000,1000/", 5000, 500, 1000, "500,1000",500, 1000)]
+    [InlineData("full/!1000,1000/", 500,  500, 1000, "250,500",250, 500)]
+    [InlineData("full/^!1000,1000/", 5000, 600, 600, "^1000,1000", 1000, 1000)]
+    [InlineData("full/^!1000,1000/", 500, 600, 600,"^500,500", 500, 500)]
+    public void GetProxyImageRequest_V3_Confined_ReturnsLargestPossible_IfLaxMode(string request, int maxWidth, int w, int h, string sizeParameter, int expectedW, int expectedH)
+    {
+        // These all use /full/!1000,1000/ but leaving as this for simplicity
+        var parsed = ImageRequest.Parse($"asset/{request}0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, new Size(w, h), maxWidth, false);
+        result.IsValid.Should().BeTrue();
+        result.ErrorMessage.Should().BeNull();
+        result.RequestedSize.Should().BeEquivalentTo(new Size(expectedW, expectedH));
+        result.ProxySizeParameter!.ToString().Should().Be(sizeParameter);
+    }
     #endregion
     
     private class SizeData
@@ -522,7 +601,6 @@ public class ImageProxyPathHandlerTests
                 { "full/101,", Size.Square(100), Size.Square(101), "101," },
                 { "square/,101,", Size.Square(100), Size.Square(101), ",101" },
                 { "0,0,512,512/101,101", Size.Square(100), Size.Square(101), "101,101" },
-                { "pct:41.6,7.5,40,70/!101,101", Size.Square(100), new Size(58, 101), "!101,101" },
             };
         
         /// <summary>
@@ -536,10 +614,10 @@ public class ImageProxyPathHandlerTests
                 { "100,100,512,512/512,", PortraitSize, Size.Square(512), "512," },
                 { "0,0,512,512/,256", PortraitSize, Size.Square(256), ",256" },
                 { "0,0,128,512/64,256", PortraitSize, new Size(64, 256), "64,256" },
-                { "0,0,512,256/!256,256", PortraitSize, new Size(256, 128), "!256,256" },
+                { "0,0,512,256/!256,256", PortraitSize, new Size(256, 128), "256,128" },
                 { "pct:10,10,25,50/,256", PortraitSize, new Size(64, 256), ",256" },
                 { "square/512,256", PortraitSize, new Size(512, 256), "512,256" },
-                { "square/!256,512", PortraitSize, Size.Square(256), "!256,512" },
+                { "square/!256,512", PortraitSize, Size.Square(256), "256,256" },
                 { "square/pct:50", PortraitSize, Size.Square(500), "pct:50" },
                 { "full/512,256", PortraitSize, new Size(512, 256), "512,256" },
             };
@@ -587,10 +665,10 @@ public class ImageProxyPathHandlerTests
                 { "100,100,512,512/512,", LandscapeSize, Size.Square(512), "512," },
                 { "0,0,512,512/,256", LandscapeSize, Size.Square(256), ",256" },
                 { "0,0,128,512/64,256", LandscapeSize, new Size(64, 256), "64,256" },
-                { "0,0,512,256/!256,256", LandscapeSize, new Size(256, 128), "!256,256" },
+                { "0,0,512,256/!256,256", LandscapeSize, new Size(256, 128), "256,128" },
                 { "pct:10,10,25,50/,256", LandscapeSize, new Size(256, 256), ",256" },
                 { "square/512,256", LandscapeSize, new Size(512, 256), "512,256" },
-                { "square/!256,512", LandscapeSize, Size.Square(256), "!256,512" },
+                { "square/!256,512", LandscapeSize, Size.Square(256), "256,256" },
                 { "square/pct:50", LandscapeSize, Size.Square(500), "pct:50" },
                 { "full/512,256", LandscapeSize, new Size(512, 256), "512,256" },
             };

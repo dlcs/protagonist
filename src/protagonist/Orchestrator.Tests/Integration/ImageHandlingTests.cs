@@ -1397,7 +1397,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
-        var expectedPath = new Uri("http://thumbs/thumbs/99/1/known-thumb/full/!200,200/0/default.jpg");
+        var expectedPath = new Uri("http://thumbs/thumbs/99/1/known-thumb/full/200,200/0/default.jpg");
         
         // Act
         var response = await httpClient.GetAsync("iiif-img/99/1/known-thumb/full/!200,200/0/default.jpg");
@@ -1424,7 +1424,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
-        var expectedPath = new Uri($"http://thumbresize/thumbs/{id}/full/!123,123/0/default.jpg");
+        var expectedPath = new Uri($"http://thumbresize/thumbs/{id}/full/123,123/0/default.jpg");
         
         // Act
         var response = await httpClient.GetAsync($"iiif-img/{id}/full/!123,123/0/default.jpg");
@@ -1533,7 +1533,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
             imageDeliveryChannels: deliveryChannelsForImage);
         await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
         await dbFixture.DbContext.SaveChangesAsync();
-        var expectedPath = new Uri($"http://thumbresize/thumbs/{id}/full/!600,600/0/default.jpg");
+        var expectedPath = new Uri($"http://thumbresize/thumbs/{id}/full/600,600/0/default.jpg");
         
         // Act
         var response = await httpClient.GetAsync($"iiif-img/{id}/full/!600,600/0/default.jpg");

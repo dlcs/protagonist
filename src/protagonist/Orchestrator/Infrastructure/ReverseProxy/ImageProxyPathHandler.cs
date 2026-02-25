@@ -81,7 +81,7 @@ public static class ImageProxyPathHandler
             // If this is not /full/ or /max/ then we won't change the size parameter, only need to check the size is valid
             if (!sizeParameter.Max)
             {
-                var requestedSize = GetRequestedSize(isV2, sizeParameter, extractedRegionSize);
+                var (requestedSize, proxySizeParameter) = GetRequestedSize(isV2, sizeParameter, extractedRegionSize, maxWidth);
                 if (requestedSize.MaxDimension > maxWidth)
                 {
                     return ProxyImageRequest.Invalid(
@@ -89,7 +89,7 @@ public static class ImageProxyPathHandler
                         HttpStatusCode.Forbidden);
                 }
 
-                return ProxyImageRequest.Valid(sizeParameter, requestedSize, requestedFullRegion);
+                return ProxyImageRequest.Valid(proxySizeParameter, requestedSize, requestedFullRegion);
             }
             
             // If here, it's /full/ or /max/ size. In which case we will change size parameter in proxy request to be
@@ -119,28 +119,50 @@ public static class ImageProxyPathHandler
     private static bool IsUpscalingAllowed(bool isVersion2, bool isExplicitFullSize, SizeParameter sizeParameter) =>
         sizeParameter.Upscaled && !isVersion2 || (!isExplicitFullSize && isVersion2);
 
-    private static Size GetRequestedSize(bool isVersion2, SizeParameter sizeParameter, Size extractedRegionSize)
+    private static (Size Size, SizeParameter SizeParameter) GetRequestedSize(bool isVersion2,
+        SizeParameter sizeParameter, Size extractedRegionSize, int maxWidth)
+    {
+        var workingSizeParam = GetWorkingSizeParam(isVersion2, sizeParameter);
+
+        // If it's not confined, return calculate final size and return
+        if (!sizeParameter.Confined)
+        {
+            return (workingSizeParam.Resize(extractedRegionSize), sizeParameter);
+        }
+
+        // If it's confined + would exceed the maxWidth then resize down to "as large as possible but not larger than
+        // server-imposed limits"
+        if (Math.Max(sizeParameter.Width ?? 0, sizeParameter.Height ?? 0) > maxWidth)
+        {
+            workingSizeParam.Width = maxWidth;
+            workingSizeParam.Height = maxWidth;
+        }
+
+        var requestedSize = workingSizeParam.Resize(extractedRegionSize, InvalidUpscaleBehaviour.ReturnOriginal);
+        return (requestedSize, CreateExactSizeParameter(requestedSize, sizeParameter.Upscaled));
+    }
+
+    private static SizeParameter GetWorkingSizeParam(bool isVersion2, SizeParameter sizeParameter)
     {
         // SizeParameter.Parse() works by V3 rules - so you need ^ to upscale. If we're version2, fake that briefly to
         // ease calculation. Create a new copy of SizeParameter to avoid mutating the original
-        var workingSizeParam = sizeParameter;
-        if (isVersion2)
-        {
-            workingSizeParam = SizeParameter.Parse(sizeParameter.ToString());
-            workingSizeParam.Upscaled = true;
-        }
+        if (!isVersion2) return sizeParameter;
 
-        var requestedSize = workingSizeParam.Resize(extractedRegionSize);
-        return requestedSize;
+        var workingSizeParam = SizeParameter.Parse(sizeParameter.ToString());
+        workingSizeParam.Upscaled = true;
+        return workingSizeParam;
     }
 
     private static ProxyImageRequest GetProxyImageRequest(Size finalSize, bool requestedFullRegion, bool upscaled)
-        => ProxyImageRequest.Valid(new SizeParameter
+        => ProxyImageRequest.Valid(CreateExactSizeParameter(finalSize, upscaled), finalSize, requestedFullRegion);
+
+    private static SizeParameter CreateExactSizeParameter(Size finalSize, bool upscaled) =>
+        new()
         {
             Width = finalSize.Width,
             Height = finalSize.Height,
             Upscaled = upscaled
-        }, finalSize, requestedFullRegion);
+        };
 }
 
 /// <summary>

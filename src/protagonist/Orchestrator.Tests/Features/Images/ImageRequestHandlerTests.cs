@@ -181,10 +181,8 @@ public class ImageRequestHandlerTests
     [Theory]
     [InlineData("full/501,")]
     [InlineData("full/,501")]
-    [InlineData("full/!501,501")]
     [InlineData("square/pct:51,")]
     [InlineData("0,0,512,512/512,")]
-    [InlineData("pct:0,0,52,52/!501,501")]
     public async Task HandleRequest_Returns403_IfRequestedExceedsMaxWidth(string sizeAndRegion)
     {
         // Arrange
@@ -361,7 +359,7 @@ public class ImageRequestHandlerTests
             
         // Assert
         result.Target.Should().Be(ProxyDestination.Thumbs);
-        result.Path.Should().Be("thumbs/2/2/test-image/full/!150,150/0/default.jpg");
+        result.Path.Should().Be("thumbs/2/2/test-image/full/150,150/0/default.jpg");
     }
 
     [Fact]
@@ -386,7 +384,7 @@ public class ImageRequestHandlerTests
             
         // Assert
         result.Target.Should().Be(ProxyDestination.Thumbs);
-        result.Path.Should().Be("thumbs/2/2/test-image/full/!150,150/0/default.jpg");
+        result.Path.Should().Be("thumbs/2/2/test-image/full/150,150/0/default.jpg");
     }
     
     [Fact]
@@ -510,13 +508,16 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/v2/2/2/test-image/full/max/0/default.jpg", "full/5000,5000/0/default.jpg", true)] // /full/max - v2
     [InlineData("/iiif-img/2/2/test-image/full/max/0/default.jpg", "full/1000,1000/0/default.jpg", false)] // /full/max - v3
     [InlineData("/iiif-img/2/2/test-image/full/^max/0/default.jpg", "full/^5000,5000/0/default.jpg", false)] // /full/^max - v3
-    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/default.png", "full/!100,150/0/default.png", false)] // png
-    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/default.tif", "full/!100,150/0/default.tif", false)] // tif
-    [InlineData("/iiif-img/2/2/test-image/full/!100,150/90/default.jpg", "full/!100,150/90/default.jpg", false)] // rotation
-    [InlineData("/iiif-img/2/2/test-image/full/!100,150/!0/default.jpg", "full/!100,150/!0/default.jpg", false)] // rotation / mirrored
-    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/bitonal.jpg", "full/!100,150/0/bitonal.jpg", false)] // bitonal
-    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/gray.jpg", "full/!100,150/0/gray.jpg", false)] // gray
-    [InlineData("/iiif-img/2/2/test-image/square/!100,150/0/bitonal.tif", "square/!100,150/0/bitonal.tif", false)] // square
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/default.png", "full/100,100/0/default.png", false)] // png
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/default.tif", "full/100,100/0/default.tif", false)] // tif
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/90/default.jpg", "full/100,100/90/default.jpg", false)] // rotation
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/!0/default.jpg", "full/100,100/!0/default.jpg", false)] // rotation / mirrored
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/bitonal.jpg", "full/100,100/0/bitonal.jpg", false)] // bitonal
+    [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/gray.jpg", "full/100,100/0/gray.jpg", false)] // gray
+    [InlineData("/iiif-img/2/2/test-image/square/!100,150/0/bitonal.tif", "square/100,100/0/bitonal.tif", false)] // square
+    [InlineData("/iiif-img/2/2/test-image/square/!5000,5000/0/bitonal.tif", "square/1000,1000/0/bitonal.tif", false)] // confined larger than maxWidth
+    [InlineData("/iiif-img/v2/2/2/test-image/square/!5000,5000/0/bitonal.tif", "square/5000,5000/0/bitonal.tif", true)] // confined larger than maxWidth v2
+    [InlineData("/iiif-img/2/2/test-image/square/^!6000,6000/0/bitonal.tif", "square/^5000,5000/0/bitonal.tif", false)] // confined larger than maxWidth v2
     public async Task HandleRequest_ProxiesToSpecialServer_ForAllLargeFull_RewritingIfRequired(string path, string expectedProxyPath, bool version2)
     {
         // Arrange
@@ -553,7 +554,7 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/v2/2/2/test-image/full/max/0/default.jpg", "/v2/2/2/test-image/full/400,400/0/default.jpg", ProxyDestination.Thumbs)] // /full/max - v2
     [InlineData("/iiif-img/2/2/test-image/full/max/0/default.jpg", "/2/2/test-image/full/400,400/0/default.jpg", ProxyDestination.Thumbs)] // /full/max - v3
     [InlineData("/iiif-img/2/2/test-image/full/^max/0/default.jpg", "/2/2/test-image/full/400,400/0/default.jpg", ProxyDestination.Thumbs)] // /full/^max - v3
-    [InlineData("/iiif-img/2/2/test-image/square/!100,150/0/default.jpg", "/2/2/test-image/square/!100,150/0/default.jpg", ProxyDestination.ResizeThumbs)] // square
+    [InlineData("/iiif-img/2/2/test-image/square/!100,150/0/default.jpg", "/2/2/test-image/square/100,100/0/default.jpg", ProxyDestination.ResizeThumbs)] // square
     public async Task HandleRequest_ProxiesToThumbs_ForFullThatAreSmallEnough_RewritingIfRequired(string path, string expectedProxyPath, ProxyDestination destination)
     {
         // Arrange
@@ -592,12 +593,14 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/max/0/default.jpg", true, "0,0,512,512/512,512/0/default.jpg", false)] // v3 /max
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/^max/0/default.jpg", true, "0,0,512,512/^5000,5000/0/default.jpg", false)] // v3 /^max
     [InlineData("/iiif-img/v2/2/2/test-image/pct:0,0,512,512/full/0/default.jpg", true, "pct:0,0,512,512/1000,1000/0/default.jpg", true)] // pct: full v2
-    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.png", false, "0,0,512,512/!100,150/0/default.png", false)] // png
-    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.tif", false, "0,0,512,512/!100,150/0/default.tif", false)] // tif
-    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/90/default.jpg", false, "0,0,512,512/!100,150/90/default.jpg", false)] // rotation
-    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/!0/default.jpg", false, "0,0,512,512/!100,150/!0/default.jpg", false)] // rotation / mirrored
-    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/bitonal.jpg", false, "0,0,512,512/!100,150/0/bitonal.jpg", false)] // bitonal
-    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/gray.jpg", false, "0,0,512,512/!100,150/0/gray.jpg", false)] // gray
+    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.png", false, "0,0,512,512/100,100/0/default.png", false)] // png
+    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.tif", false, "0,0,512,512/100,100/0/default.tif", false)] // tif
+    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/90/default.jpg", false, "0,0,512,512/100,100/90/default.jpg", false)] // rotation
+    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/!0/default.jpg", false, "0,0,512,512/100,100/!0/default.jpg", false)] // rotation / mirrored
+    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/bitonal.jpg", false, "0,0,512,512/100,100/0/bitonal.jpg", false)] // bitonal
+    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/gray.jpg", false, "0,0,512,512/100,100/0/gray.jpg", false)] // gray
+    [InlineData("/iiif-img/2/2/test-image/0,0,100,100/!512,512/0/gray.png", false, "0,0,100,100/100,100/0/gray.png", false)] // largest possible under maxWidth
+    [InlineData("/iiif-img/2/2/test-image/0,0,100,100/^!5120,5120/0/gray.png", false, "0,0,100,100/^5000,5000/0/gray.png", false)] // largest possible under maxWidth
     public async Task HandleRequest_ProxiesToImageServer_ForAllTileRequests(string path, bool knownThumb, string expectedProxyPath, bool version2)
     {
         // Arrange
@@ -721,7 +724,7 @@ public class ImageRequestHandlerTests
     }
 
     [Theory]
-    [InlineData("/iiif-img/2/2/test-image/full/!150,150/0/default.jpg", ProxyDestination.Thumbs)]
+    [InlineData("/iiif-img/2/2/test-image/full/150,150/0/default.jpg", ProxyDestination.Thumbs)]
     [InlineData("/iiif-img/2/2/test-image/5,5,90,90/90,/0/default.jpg", ProxyDestination.ImageServer)]
     [InlineData("/iiif-img/2/2/test-image/full/max/0/default.jpg", ProxyDestination.SpecialServer)] 
     public async Task HandleRequest_ProxiesAll_WithCustomHeaders(string path, ProxyDestination destination)

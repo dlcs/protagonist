@@ -21,7 +21,7 @@ Until now we have relied on the downstream image-service to apply size restricti
 
 ### Summary 
 
-Orchestrator will always rewrite the IIIF size parameter when proxying `/full/` or `/max/` size requests to specify the exact size. This will ensure we can consistently apply `maxWidth` behaviour without worrying about downstream image-server configuration (with the caveat that the image-server must be able to handle the potential `maxWidth` values).
+Orchestrator will always rewrite the IIIF size parameter when proxying `/full/`, `/max/` or `/!w,h/` size requests to specify the exact size. This will ensure we can consistently apply `maxWidth` behaviour without worrying about downstream image-server configuration (with the caveat that the image-server must be able to handle the potential `maxWidth` values).
 
 Orchestrator already interrogates all incoming image requests. To date it has checked incoming `full` region requests to see if they exceed `maxUnauthorised`, and all requests to determine which service to proxy them to (thumbs, special-server or image-server). This check is straightforward as we only need to know the incoming IIIF size parameter and image dimensions to make these decisions. However, we now need to calculate the size of the IIIF region parameter and include these in decision making. 
 
@@ -34,43 +34,47 @@ The rules for strict and lax are as below:
 
 **Strict**
 
-| ImageApiVersion | RequestSize  | Region         | ProxySize or Result                                               |
-| --------------- | ------------ | -------------- | ----------------------------------------------------------------- |
-| 2.1             | `/full/`     | lte `maxWidth` | `/w,h/` where w + h is extracted region                           |
-| 2.1             | `/full/`     | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth` |
-| 3.0             | `/full/`     | *              | 400 BadRequest - `/full/` not valid                               |
-| *               | `/^full/`    | *              | 400 BadRequest - `/^full/` never valid                            |
-| 2.1             | `/max/`      | lte `maxWidth` | `/w,h/` where w + h is extracted region scaled up to `maxWidth`   |
-| 2.1             | `/max/`      | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth` |
-| 3.0             | `/max/`      | lte `maxWidth` | `/w,h/` where w + h is extracted region                           |
-| 3.0             | `/max/`      | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth` |
-| 2.1             | `/^max/`     | *              | 400 BadRequest - `^` not valid                                    |
-| 3.0             | `/^max/`     | lte `maxWidth` | `/w,h/` where w + h is extracted region                           |
-| 3.0             | `/^max/`     | gt `maxWidth`  | `/^w,h/` where w + h is extracted region scaled up to `maxWidth`  |
-| 2.0             | Any with `^` | *              | 400 BadRequest - `^` not valid                                    |
-| *               | _other_      | lte `maxWidth` | Pass size through                                                 |
-| *               | _other_      | gt `maxWidth`  | 400 BadRequest - `^` not valid                                    |
+| ImageApiVersion | RequestSize                            | Region         | ProxySize or Result                                                |
+| --------------- | -------------------------------------- | -------------- | ------------------------------------------------------------------ |
+| 2.1             | `/full/`                               | lte `maxWidth` | `/w,h/` where w + h is extracted region                            |
+| 2.1             | `/full/`                               | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  |
+| 3.0             | `/full/`                               | *              | 400 BadRequest - `/full/` not valid                                |
+| *               | `/^full/`                              | *              | 400 BadRequest - `/^full/` never valid                             |
+| 2.1             | `/max/`                                | lte `maxWidth` | `/w,h/` where w + h is extracted region scaled up to `maxWidth`    |
+| 2.1             | `/max/`                                | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  |
+| 3.0             | `/max/`                                | lte `maxWidth` | `/w,h/` where w + h is extracted region                            |
+| 3.0             | `/max/`                                | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  |
+| 2.1             | `/^max/`                               | *              | 400 BadRequest - `^` not valid                                     |
+| 3.0             | `/^max/`                               | lte `maxWidth` | `/w,h/` where w + h is extracted region                            |
+| 3.0             | `/^max/`                               | gt `maxWidth`  | `/^w,h/` where w + h is extracted region scaled up to `maxWidth`   |
+| 2.0             | Any with `^`                           | *              | 400 BadRequest - `^` not valid                                     |
+| *               | `/!w,h/` where max(w,h) lte `maxWidth` | *              | `/w,h/` where w + h is calculated exact size                       |
+| *               | `/!w,h/` where max(w,h) gt `maxWidth`  | *              | `/w,h/` where w + h is the largest possible size within `maxWidth` |
+| *               | _other_                                | lte `maxWidth` | Pass size through                                                  |
+| *               | _other_                                | gt `maxWidth`  | 400 BadRequest - `^` not valid                                     |
 
 **Lax**
 
 The lax rules are identical to above, with the exception that we support `/full/` use for v3.0. i.e. we will still reject `^` for 2.0 requests.
 
-| ImageApiVersion | RequestSize  | Region         | ProxySize or Result                                               | Change from Strict   |
-| --------------- | ------------ | -------------- | ----------------------------------------------------------------- | -------------------- |
-| 2.1             | `/full/`     | lte `maxWidth` | `/w,h/` where w + h is extracted region                           |                      |
-| 2.1             | `/full/`     | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth` |                      |
-| 3.0             | `/full/`     | lte `maxWidth` | `/w,h/` where w + h is extracted region                           | Treated like `/max/` |
-| 3.0             | `/full/`     | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth` | Treated like `/max/` |
-| *               | `/^full/`    | *              | 400 BadRequest - `/^full/` never valid                            |                      |
-| 2.1             | `/max/`      | lte `maxWidth` | `/w,h/` where w + h is extracted region scaled up to `maxWidth`   |                      |
-| 2.1             | `/max/`      | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth` |                      |
-| 3.0             | `/max/`      | lte `maxWidth` | `/w,h/` where w + h is extracted region                           |                      |
-| 3.0             | `/max/`      | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth` |                      |
-| 3.0             | `/^max/`     | lte `maxWidth` | `/w,h/` where w + h is extracted region                           |                      |
-| 3.0             | `/^max/`     | gt `maxWidth`  | `/^w,h/` where w + h is extracted region scaled up to `maxWidth`  |                      |
-| 2.0             | Any with `^` | *              |                                                                   |                      |
-| *               | _other_      | lte `maxWidth` | Pass size through                                                 |                      |
-| *               | _other_      | gt `maxWidth`  | 400 BadRequest - `^` not valid                                    |                      |
+| ImageApiVersion | RequestSize                            | Region         | ProxySize or Result                                                | Change from Strict   |
+| --------------- | -------------------------------------- | -------------- | ------------------------------------------------------------------ | -------------------- |
+| 2.1             | `/full/`                               | lte `maxWidth` | `/w,h/` where w + h is extracted region                            |                      |
+| 2.1             | `/full/`                               | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  |                      |
+| 3.0             | `/full/`                               | lte `maxWidth` | `/w,h/` where w + h is extracted region                            | Treated like `/max/` |
+| 3.0             | `/full/`                               | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  | Treated like `/max/` |
+| *               | `/^full/`                              | *              | 400 BadRequest - `/^full/` never valid                             |                      |
+| 2.1             | `/max/`                                | lte `maxWidth` | `/w,h/` where w + h is extracted region scaled up to `maxWidth`    |                      |
+| 2.1             | `/max/`                                | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  |                      |
+| 3.0             | `/max/`                                | lte `maxWidth` | `/w,h/` where w + h is extracted region                            |                      |
+| 3.0             | `/max/`                                | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  |                      |
+| 3.0             | `/^max/`                               | lte `maxWidth` | `/w,h/` where w + h is extracted region                            |                      |
+| 3.0             | `/^max/`                               | gt `maxWidth`  | `/^w,h/` where w + h is extracted region scaled up to `maxWidth`   |                      |
+| 2.0             | Any with `^`                           | *              |                                                                    |                      |
+| *               | `/!w,h/` where max(w,h) lte `maxWidth` | *              | `/w,h/` where w + h is calculated exact size                       |
+| *               | `/!w,h/` where max(w,h) gt `maxWidth`  | *              | `/w,h/` where w + h is the largest possible size within `maxWidth` |
+| *               | _other_                                | lte `maxWidth` | Pass size through                                                  |                      |
+| *               | _other_                                | gt `maxWidth`  | 400 BadRequest - `^` not valid                                     |                      |
 
 ### Pros and Cons
 
