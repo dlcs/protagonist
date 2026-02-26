@@ -42,7 +42,7 @@ public class ImageRequestXTests
         canHandle.Should().BeFalse();
         message.Should().Be($"Requested quality '{quality}' not supported, use 'default' or 'color'");
     }
-    
+
     [Theory]
     [InlineData("90")]
     [InlineData("120")]
@@ -82,7 +82,7 @@ public class ImageRequestXTests
         canHandle.Should().BeTrue();
         message.Should().BeNull();
     }
-    
+
     [Fact]
     public void IsCandidateForThumbHandling_False_IfPercentSize()
     {
@@ -108,19 +108,19 @@ public class ImageRequestXTests
         var imageRequest = ImageRequest.Parse("image/info.json", "");
         imageRequest.GetImageRequestOnly().Should().Be("///.", "There are no safety checks");
     }
-    
+
     [Fact]
     public void GetImageRequestOnly_Correct_AfterParse()
     {
         var imageRequest = ImageRequest.Parse("iiif-img/27/1/my-asset/full/800,/0/default.jpg", "iiif-img/27/1/");
         imageRequest.GetImageRequestOnly().Should().Be("full/800,/0/default.jpg");
     }
-    
+
     [Fact]
     public void GetImageRequestOnly_Correct_AfterAlteringParsedObject()
     {
         var imageRequest = ImageRequest.Parse("iiif-img/27/1/my-asset/full/800,/0/default.jpg", "iiif-img/27/1/");
-        
+
         imageRequest.Size = SizeParameter.Parse("pct:24");
         imageRequest.Quality = "bitonal";
         imageRequest.Format = "tif";
@@ -128,5 +128,85 @@ public class ImageRequestXTests
         imageRequest.Region = new RegionParameter { Square = true };
         imageRequest.GetImageRequestOnly().Should().Be("square/pct:24/!90/bitonal.tif",
             "Value reflects current state of ImageRequest");
+    }
+
+    [Theory]
+    [InlineData("jpg")]
+    [InlineData("tif")]
+    [InlineData("gif")]
+    [InlineData("png")]
+    public void IsCandidateForImageHandling_True_IfAcceptedFormat(string format)
+    {
+        var imageRequest = new ImageRequest
+            { Format = format, Quality = "default", Size = new SizeParameter { Max = true } };
+        imageRequest.IsCandidateForImageHandling(out var message).Should().BeTrue($"{format} accepted");
+        message.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("webp")]
+    [InlineData("jp2")]
+    [InlineData("pdf")]
+    [InlineData("not-in-spec")]
+    public void IsCandidateForImageHandling_False_IfNotAcceptedFormat(string format)
+    {
+        var imageRequest = new ImageRequest
+            { Format = format, Quality = "default", Size = new SizeParameter { Max = true } };
+        imageRequest.IsCandidateForImageHandling(out var message).Should().BeFalse($"{format} not accepted");
+        message.Should().Match($"Requested format '{format}' not supported, must be one of '*'");
+    }
+
+    [Theory]
+    [InlineData("default")]
+    [InlineData("gray")]
+    [InlineData("bitonal")]
+    [InlineData("color")]
+    public void IsCandidateForImageHandling_True_IfAcceptedQuality(string quality)
+    {
+        var imageRequest = new ImageRequest
+            { Format = "jpg", Quality = quality, Size = new SizeParameter { Max = true } };
+        imageRequest.IsCandidateForImageHandling(out var message).Should().BeTrue($"{quality} accepted");
+        message.Should().BeNull();
+    }
+
+    [Fact]
+    public void IsCandidateForImageHandling_False_IfNotAcceptedQuality()
+    {
+        var imageRequest = new ImageRequest
+            { Format = "jpg", Quality = "translucent", Size = new SizeParameter { Max = true } };
+        imageRequest.IsCandidateForImageHandling(out var message).Should().BeFalse();
+        message.Should().Match("Requested format 'translucent' not supported, must be one of '*'");
+    }
+    
+    [Theory]
+    [InlineData("max")]
+    [InlineData("^max")]
+    [InlineData("full")]
+    [InlineData("!10,10")]
+    [InlineData("^!10,10")]
+    [InlineData("10,10")]
+    [InlineData("^10,10")]
+    [InlineData("20,")]
+    [InlineData("^20,")]
+    [InlineData(",20")]
+    [InlineData("^,20")]
+    public void IsCandidateForImageHandling_True_IfSizeValid(string size)
+    {
+        var imageRequest = new ImageRequest { Format = "jpg", Quality = "default", Size = SizeParameter.Parse(size) };
+        imageRequest.IsCandidateForImageHandling(out var message).Should().BeTrue();
+        message.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("0,")]
+    [InlineData(",0")]
+    [InlineData("!0,0")]
+    [InlineData("20,0")]
+    [InlineData("0,20")]
+    public void IsCandidateForImageHandling_False_IfZeroSize(string size)
+    {
+        var imageRequest = new ImageRequest { Format = "jpg", Quality = "default", Size = SizeParameter.Parse(size) };
+        imageRequest.IsCandidateForImageHandling(out var message).Should().BeFalse();
+        message.Should().Be("Requested size must be greater than 0");
     }
 }

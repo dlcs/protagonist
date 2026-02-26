@@ -135,19 +135,21 @@ public class ImageRequestHandlerTests
     }
     
     [Theory]
-    [InlineData("0,")]
-    [InlineData(",0")]
-    [InlineData("!0,0")]
-    [InlineData("20,0")]
-    [InlineData("0,20")]
-    public async Task HandleRequest_Returns400_IfInvalidSize(string size)
+    [InlineData("full/0,/0/default.jpg")] // size
+    [InlineData("0,0,512,512/,0/0/default.jpg")] // size
+    [InlineData("square/!0,0/0/default.jpg")] // size
+    [InlineData("full/20,0/0/default.jpg")] // size
+    [InlineData("full/0,20/0/default.jpg")] // size
+    [InlineData("full/max/0/vibrant.jpg")] // quality
+    [InlineData("full/max/0/default.pdf")] // format
+    public async Task HandleRequest_Returns400_IfInvalidRequest(string imageRequest)
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
 
         // Act
         var context = new DefaultHttpContext();
-        context.Request.Path = $"/iiif-img/{id}/full/{size}/0/default.jpg";
+        context.Request.Path = $"/iiif-img/{id}/{imageRequest}";
 
         var sut = GetImageRequestHandlerWithMockPathParser();
             

@@ -78,7 +78,7 @@ public static class ImageProxyPathHandler
             var extractedRegionSize = imageRequest.Region.GetExtractedRegionSize(imageSize);
             var requestedFullRegion = imageRequest.Region.IsFullOrEquivalent(imageSize);
 
-            // If this is not /full/ or /max/ then we won't change the size parameter, only need to check the size is valid
+            // If this is not /full/ or /max/ then need to check the size is valid. May rewrite confined size requests
             if (!sizeParameter.Max)
             {
                 var (requestedSize, proxySizeParameter) = GetRequestedSize(isV2, sizeParameter, extractedRegionSize, maxWidth);

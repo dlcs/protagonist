@@ -73,10 +73,10 @@ public class ImageRequestHandler
         {
             return new StatusCodeResult(statusCode ?? HttpStatusCode.InternalServerError);
         }
-
-        if (!IsSizeValid(assetRequest.IIIFImageRequest.Size))
+        
+        if (!assetRequest.IIIFImageRequest.IsCandidateForImageHandling(out var message))
         {
-            logger.LogDebug("Request for {Path}: invalid size", httpContext.Request.Path);
+            logger.LogDebug("Request for {Path}: invalid {Message}", httpContext.Request.Path, message);
             return new StatusCodeResult(HttpStatusCode.BadRequest);
         }
         
@@ -113,8 +113,6 @@ public class ImageRequestHandler
         await SetCustomHeaders(orchestrationImage, result);
         return proxyActionResult;
     }
-
-    private static bool IsSizeValid(SizeParameter size) => (size.Width ?? 1) > 0 && (size.Height ?? 1) > 0;
 
     private async Task<IProxyActionResult> HandleRequestInternal(HttpContext httpContext,
         OrchestrationImage orchestrationImage, ImageAssetDeliveryRequest assetRequest)

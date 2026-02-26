@@ -11,6 +11,7 @@ services:
       - PROCESSOR_SELECTION_STRATEGY=ManualSelectionStrategy
       - PROCESSOR_MANUALSELECTIONSTRATEGY_JP2=GrokProcessor
       - MAX_SCALE=0
+      - MAX_PIXELS=0
     volumes:
       - $HOME\Docker\scratch:/home/cantaloupe/images/
 
@@ -28,6 +29,7 @@ services:
       - AWS_ACCESS_KEY_ID=${SS_AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${SS_AWS_SECRET_ACCESS_KEY}
       - MAX_SCALE=0
+      - MAX_PIXELS=0
     env_file:
       - .env
 
