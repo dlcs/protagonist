@@ -49,6 +49,10 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
         RuleFor(a => a.Type)
             .NotEmpty()
             .WithMessage("'@type' is required");
+        
+        RuleFor(a => a.Motivation).Empty()
+            .When(a => a.Type != "AnnotationPage")
+            .WithMessage("'motivation' is not allowed when the '@type' is not 'AnnotationPage'");
 
         const int maximumLength = 10;
         RuleForEach(a => a.Language)

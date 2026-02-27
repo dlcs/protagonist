@@ -81,18 +81,23 @@ public class Adjunct : DlcsResource
     [JsonProperty(Order = 22, PropertyName = "finished")]
     public DateTime? Finished { get; set; }
     
-    [RdfProperty(Description = "Origin endpoint from where the original adjunct can be acquired (or was acquired)",
+    [RdfProperty(Description = "Origin endpoint from where the original adjunct can be acquired (or was acquired).",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 23, PropertyName = "origin")]
     public string? Origin { get; set; }
     
-    [RdfProperty(Description = "Is the adjunct currently being ingested?",
+    [RdfProperty(Description = "Why this adjunct exists.",
+        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 24, PropertyName = "motivation")]
+    public string? Motivation { get; set; }
+    
+    [RdfProperty(Description = "Whether the adjunct is currently being ingested.",
         Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 24, PropertyName = "ingesting")]
+    [JsonProperty(Order = 25, PropertyName = "ingesting")]
     public bool? Ingesting { get; set; }
     
-    [RdfProperty(Description = "Reported errors with this adjunct",
+    [RdfProperty(Description = "Reported errors with this adjunct.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 25, PropertyName = "error")]
+    [JsonProperty(Order = 26, PropertyName = "error")]
     public string? Error { get; set; }
 }

@@ -99,5 +99,7 @@ public enum IIIFLinkType
     [Description("annotations")]
     Annotations,
     [Description("rendering")]
-    Rendering
+    Rendering,
+    [Description("inlineAnnotation")]
+    InlineAnnotation
 }
