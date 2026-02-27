@@ -22,14 +22,17 @@ public class InfoJson2Constructor(
     IIIFAuth1Builder iiifAuth1Builder,
     IImageServerClient imageServerClient,
     IThumbRepository thumbRepository,
+    IAssetTracker assetTracker,
     ILogger<InfoJson2Constructor> logger)
-    : InfoJsonConstructorTemplate<ImageService2>(imageServerClient, thumbRepository, iiifAuthBuilder, logger)
+    : InfoJsonConstructorTemplate<ImageService2>(imageServerClient, thumbRepository, iiifAuthBuilder, assetTracker,
+        logger)
 {
     // We want to include both Auth1 + 2 on info.json to allow for transition to auth2
 
     protected override Version ImageApiVersion => Version.V2;
-    
-    protected override async Task SetImageServiceAuthServices(ImageService2 imageService, OrchestrationImage orchestrationImage,
+
+    protected override async Task SetImageServiceAuthServices(ImageService2 imageService,
+        OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken)
     {
         var authServices = await GetAuthAllServices(orchestrationImage, cancellationToken);
@@ -46,19 +49,20 @@ public class InfoJson2Constructor(
         imageService.ProfileDescription.MaxWidth = orchestrationImage.MaxWidth;
     }
 
-    protected override void SetImageServiceStubId(ImageService2 imageService, OrchestrationImage orchestrationImage) 
+    protected override void SetImageServiceStubId(ImageService2 imageService, OrchestrationImage orchestrationImage)
         => imageService.Id = $"v2/{orchestrationImage.AssetId}";
 
     protected override void SetImageServiceSizes(ImageService2 imageService, List<Size> sizes)
         => imageService.Sizes = sizes;
-    
+
     protected override void TrySetImageServiceTiles(ImageService2 imageService, OrchestrationImage orchestrationImage)
     {
         if (!ShouldUpdateTiles(imageService.Tiles, orchestrationImage)) return;
         imageService.Tiles = GetTiles(orchestrationImage);
     }
 
-    private async Task<List<IService>> GetAuthAllServices(OrchestrationImage orchestrationImage, CancellationToken cancellationToken)
+    private async Task<List<IService>> GetAuthAllServices(OrchestrationImage orchestrationImage,
+        CancellationToken cancellationToken)
     {
         var getAuthServicesForAsset = GetAuth2Service(orchestrationImage, cancellationToken);
         var getAuthCookieService = iiifAuth1Builder.GetAuthServicesForAsset(orchestrationImage.AssetId,

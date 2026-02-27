@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Core.Guard;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using IIIF;
 using IIIF.ImageApi;
@@ -21,14 +23,17 @@ public abstract class InfoJsonConstructorTemplate<T>(
     IImageServerClient imageServerClient,
     IThumbRepository thumbRepository,
     IIIIFAuthBuilder iiifAuthBuilder,
+    IAssetTracker assetTracker,
     ILogger logger) : IInfoJsonConstructor where T : JsonLdBase
 {
     protected abstract IIIF.ImageApi.Version ImageApiVersion { get; }
     protected readonly ILogger Logger = logger;
 
-    public async Task<JsonLdBase?> BuildInfoJsonFromImageServer(OrchestrationImage orchestrationImage,
+    public async Task<JsonLdBase?> BuildInfoJsonFromImageServer(AssetId assetId,
         CancellationToken cancellationToken = default)
     {
+        var orchestrationImage = await GetRefreshedOrchestrationImage(assetId);
+
         var getSizesTask = GetSizes(orchestrationImage);
 
         // Get info.json from downstream image server and add dlcs-known elements (services, thumbs) to it
@@ -45,6 +50,14 @@ public abstract class InfoJsonConstructorTemplate<T>(
         }
 
         return imageService;
+    }
+
+    // We always want to generate info.json using a fresh OrchestrationImage. If it's stale we could set an invalid
+    // property (e.g. maxWidth or roles that have very recently been updated in API)
+    private async Task<OrchestrationImage> GetRefreshedOrchestrationImage(AssetId assetId)
+    {
+        var orchestrationImage = await assetTracker.RefreshCachedAsset<OrchestrationImage>(assetId);
+        return orchestrationImage.ThrowIfNull(nameof(orchestrationImage));
     }
 
     private async Task UpdateImageService(T? imageService, OrchestrationImage orchestrationImage,
@@ -162,6 +175,6 @@ public abstract class InfoJsonConstructorTemplate<T>(
 
 public interface IInfoJsonConstructor
 {
-    public Task<JsonLdBase?> BuildInfoJsonFromImageServer(OrchestrationImage orchestrationImage,
+    public Task<JsonLdBase?> BuildInfoJsonFromImageServer(AssetId assetId,
         CancellationToken cancellationToken = default);
 }

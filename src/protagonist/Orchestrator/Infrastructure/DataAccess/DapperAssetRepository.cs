@@ -3,9 +3,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Repository;
+using DLCS.Repository.Assets;
 using Microsoft.Extensions.Configuration;
 
-namespace DLCS.Repository.Assets;
+namespace Orchestrator.Infrastructure.DataAccess;
 
 /// <summary>
 /// Implementation of <see cref="IAssetRepository"/> using Dapper for data access.
@@ -13,13 +15,23 @@ namespace DLCS.Repository.Assets;
 public class DapperAssetRepository(
     IConfiguration configuration,
     AssetCachingHelper assetCachingHelper)
-    : IAssetRepository, IDapperConfigRepository
+    : IOrchestratorAssetRepository, IDapperConfigRepository
 {
     public IConfiguration Configuration { get; } = configuration;
 
     public async Task<ImageLocation?> GetImageLocation(AssetId assetId)
         => await this.QuerySingleOrDefaultAsync<ImageLocation>(ImageLocationSql, new {Id = assetId.ToString()});
-    
+
+    public Task<Asset?> GetAsset(AssetId assetId, bool noCache)
+    {
+        if (noCache)
+        {
+            assetCachingHelper.RemoveAssetFromCache(assetId);
+        }
+        
+        return GetAsset(assetId);
+    }
+
     public async Task<Asset?> GetAsset(AssetId assetId)
     {
         var asset = await assetCachingHelper.GetCachedAsset(assetId, GetAssetInternal);
@@ -31,7 +43,7 @@ public class DapperAssetRepository(
         var id = assetId.ToString();
         IEnumerable<dynamic> rawAsset = await this.QueryAsync(AssetSql, new { Id = id });
         var convertedRawAsset = rawAsset.ToList();
-        if (!convertedRawAsset.Any())
+        if (convertedRawAsset.Count == 0)
         {
             return null;
         }

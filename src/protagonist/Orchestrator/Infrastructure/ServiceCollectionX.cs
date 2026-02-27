@@ -31,6 +31,7 @@ using Orchestrator.Features.Images.Orchestration;
 using Orchestrator.Infrastructure.API;
 using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Auth.V2;
+using Orchestrator.Infrastructure.DataAccess;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.IIIF.Manifests;
 using Orchestrator.Infrastructure.ReverseProxy;
@@ -56,7 +57,7 @@ public static class ServiceCollectionX
             .AddSingleton<ICustomerRepository, DapperCustomerRepository>()
             .AddSingleton<IPathCustomerRepository, GranularCustomerPathElementRepository>()
             .AddSingleton<AssetCachingHelper>()
-            .AddSingleton<IAssetRepository, DapperAssetRepository>()
+            .AddSingleton<IOrchestratorAssetRepository, DapperAssetRepository>()
             .AddSingleton<IThumbRepository, ThumbRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
