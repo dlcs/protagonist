@@ -175,7 +175,7 @@ public class ImageRequestXTests
         var imageRequest = new ImageRequest
             { Format = "jpg", Quality = "translucent", Size = new SizeParameter { Max = true } };
         imageRequest.IsCandidateForImageHandling(out var message).Should().BeFalse();
-        message.Should().Match("Requested format 'translucent' not supported, must be one of '*'");
+        message.Should().Match("Requested quality 'translucent' not supported, must be one of '*'");
     }
     
     [Theory]

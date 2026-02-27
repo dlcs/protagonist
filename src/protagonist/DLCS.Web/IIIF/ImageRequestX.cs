@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using IIIF.ImageApi;
 
@@ -45,7 +46,8 @@ public static class ImageRequestX
     /// <param name="invalidMessage">String detailing why object cannot be handled</param>
     /// <returns>True if object can be handled, else false</returns>
     /// <remarks>This is a quick check - request may fail later in processing chain</remarks>
-    public static bool IsCandidateForImageHandling(this ImageRequest request, out string? invalidMessage)
+    public static bool IsCandidateForImageHandling(this ImageRequest request,
+        [NotNullWhen(false)] out string? invalidMessage)
     {
         invalidMessage = null;
         if (!Formats.All.Contains(request.Format, StringComparer.OrdinalIgnoreCase))
@@ -53,13 +55,13 @@ public static class ImageRequestX
             invalidMessage = $"Requested format '{request.Format}' not supported, must be one of '{Formats.AllCsv}'";
             return false;
         }
-        
+
         if (!Qualities.All.Contains(request.Quality, StringComparer.OrdinalIgnoreCase))
         {
-            invalidMessage = $"Requested format '{request.Quality}' not supported, must be one of '{Formats.AllCsv}'";
+            invalidMessage = $"Requested quality '{request.Quality}' not supported, must be one of '{Qualities.AllCsv}'";
             return false;
         }
-        
+
         var size = request.Size;
         if (!((size.Width ?? 1) > 0 && (size.Height ?? 1) > 0))
         {
@@ -69,7 +71,7 @@ public static class ImageRequestX
 
         return true;
     }
-    
+
     /// <summary>
     /// Check if the IIIF ImageRequest has request parameter that are able to be handled by Thumbnail service.
     /// Note: This checks Format, Quality, Rotation etc - this check may pass but thumbs still cannot handle due to size

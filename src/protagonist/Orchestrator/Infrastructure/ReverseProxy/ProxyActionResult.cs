@@ -77,12 +77,17 @@ public class ProxyActionResult : IProxyActionResult
 /// <summary>
 /// Result for proxy actions that should be shortcut to return status code.
 /// </summary>
-public class StatusCodeResult(HttpStatusCode statusCode) : IProxyActionResult
+public class StatusCodeResult(HttpStatusCode statusCode, string? message = null) : IProxyActionResult
 {
     /// <summary>
     /// StatusCode to return
     /// </summary>
     public HttpStatusCode StatusCode { get; } = statusCode;
+    
+    /// <summary>
+    /// Optional message to return with status code
+    /// </summary>
+    public string? Message { get; } = message;
 
     /// <summary>
     /// A collection of any Headers to set on response object. 

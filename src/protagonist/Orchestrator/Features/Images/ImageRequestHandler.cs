@@ -77,7 +77,7 @@ public class ImageRequestHandler
         if (!assetRequest.IIIFImageRequest.IsCandidateForImageHandling(out var message))
         {
             logger.LogDebug("Request for {Path}: invalid {Message}", httpContext.Request.Path, message);
-            return new StatusCodeResult(HttpStatusCode.BadRequest);
+            return new StatusCodeResult(HttpStatusCode.BadRequest, message);
         }
         
         var orchestrationImage = await assetRequestProcessor.GetAsset<OrchestrationImage>(httpContext, assetRequest);
@@ -137,7 +137,7 @@ public class ImageRequestHandler
             logger.LogDebug(
                 "Unable to fulfil image request: {Path}. ProxyRequest invalid: {ErrorStatus} - {ErrorMessage}",
                 assetRequest.NormalisedFullPath, proxyRequest.ErrorStatusCode, proxyRequest.ErrorMessage);
-            return new StatusCodeResult(proxyRequest.ErrorStatusCode.Value);
+            return new StatusCodeResult(proxyRequest.ErrorStatusCode.Value, proxyRequest.ErrorMessage);
         }
         
         // If there are roles, we may have restricted access..

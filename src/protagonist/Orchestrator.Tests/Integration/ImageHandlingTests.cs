@@ -1237,6 +1237,28 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
     
+    [Fact]
+    public async Task Get_UnsupportedFormat_Returns400()
+    {
+        // Act
+        var response = await httpClient.GetAsync("iiif-img/99/1/my-image/full/full/0/default.pdf");
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("Requested format 'pdf' not supported, must be one of 'jpg,tif,gif,png'");
+    }
+    
+    [Fact]
+    public async Task Get_UnsupportedQuality_Returns400()
+    {
+        // Act
+        var response = await httpClient.GetAsync("iiif-img/99/1/my-image/full/full/0/transparent.jpg");
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("Requested quality 'transparent' not supported, must be one of 'color,gray,bitonal,default'");
+    }
+    
     [Theory]
     [InlineData("iiif-img/99/1/test-auth-nocookid/full/!200,200/0/default.jpg", "id")]
     [InlineData("iiif-img/test/1/test-auth-nocookdisplay/full/!200,200/0/default.jpg", "display")]
