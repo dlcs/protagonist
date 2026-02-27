@@ -13,6 +13,10 @@ namespace DLCS.Model.Assets;
 /// </summary>
 public class Asset : ICloneable, IDeliverable
 {
+    /// <summary>
+    /// A 'special' role that cannot be obtained by any user. AccessServices for this will not be advertised and Assets
+    /// that only have this role will have auth logic shortcut to reject access. 
+    /// </summary>
     public const string UnobtainableRole = "https://dlcs.io/roles/unobtainable";
     
     public AssetId Id { get; set; }
@@ -107,12 +111,6 @@ public class Asset : ICloneable, IDeliverable
         }
         set => Tags = value.IsNullOrEmpty() ? String.Empty : String.Join(',', value);
     }
-    
-    /// <summary>
-    /// Indicates whether this asset requires authentication to view. This is required if either Roles are assigned
-    /// OR MaxUnauthorised >= 0
-    /// </summary>
-    public bool RequiresAuth => !string.IsNullOrWhiteSpace(Roles) || MaxUnauthorised >= 0;
     
     /// <summary>
     /// Indicates whether this asset has any roles assigned to it.

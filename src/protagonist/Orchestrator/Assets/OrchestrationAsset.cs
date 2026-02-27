@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Core.Types;
+using IIIF;
 using Microsoft.Extensions.Primitives;
 
 namespace Orchestrator.Assets;
@@ -13,10 +14,10 @@ public class OrchestrationAsset
     /// <summary>
     /// Get or set the AssetId for tracked Asset
     /// </summary>
-    public AssetId AssetId { get; set; }
+    public AssetId AssetId { get; set; } = null!;
 
     /// <summary>
-    /// Get boolean indicating whether asset is restricted or not.
+    /// Get boolean indicating whether asset is restricted or not. 
     /// </summary>
     public bool RequiresAuth { get; set; }
 
@@ -51,24 +52,24 @@ public class OrchestrationAsset
 public class OrchestrationImage : OrchestrationAsset
 {
     /// <summary>
-    /// Get or set asset Width
+    /// Get or set the image dimensions
     /// </summary>
-    public int Width { get; set; }
+    public Size Size { get; set; } = null!;
     
     /// <summary>
-    /// Get or set asset Height
+    /// The maximum size available for any user. This will be asset MaxWidth, falling back to system default 
     /// </summary>
-    public int Height { get; set; }
+    public int MaxWidth { get; set; }
     
     /// <summary>
-    /// Get maximum dimension available for unauthorised user
+    /// The maximum dimension available for /full/ requests for an unauthorised user
     /// </summary>
-    public int MaxUnauthorised { get; set; }
+    public int? OpenFullMax { get; set; }
 
     /// <summary>
     /// Gets or sets list of thumbnail sizes
     /// </summary>
-    public List<int[]> OpenThumbs { get; set; } = new();
+    public List<int[]> OpenThumbs { get; set; } = [];
     
     /// <summary>
     /// Get or set location in S3 where image-server source is located 

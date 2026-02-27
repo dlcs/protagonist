@@ -1,4 +1,5 @@
-﻿using IIIF;
+﻿using System.Diagnostics.CodeAnalysis;
+using IIIF;
 
 namespace DLCS.Model.Assets;
 
@@ -9,6 +10,7 @@ public class SizeCandidate
 {
     public int? LongestEdge { get; }
     
+    [MemberNotNullWhen(true, nameof(LongestEdge))]
     public bool KnownSize { get; }
     
     public SizeCandidate(int? longestEdge)

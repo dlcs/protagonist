@@ -19,21 +19,16 @@ namespace Orchestrator.Infrastructure.NamedQueries.Zip;
 /// <summary>
 /// Project assets to Zip archive.
 /// </summary>
-public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
+public class ImageThumbZipCreator(
+    IBucketReader bucketReader,
+    IBucketWriter bucketWriter,
+    IThumbSizeProvider thumbSizeProvider,
+    IOptions<NamedQuerySettings> namedQuerySettings,
+    IStorageKeyGenerator storageKeyGenerator,
+    ILogger<ImageThumbZipCreator> logger)
+    : BaseProjectionCreator<ZipParsedNamedQuery>(bucketReader, bucketWriter, namedQuerySettings, storageKeyGenerator,
+        logger)
 {
-    private readonly IThumbSizeProvider thumbSizeProvider;
-    public ImageThumbZipCreator(
-        IBucketReader bucketReader, 
-        IBucketWriter bucketWriter,
-        IThumbSizeProvider thumbSizeProvider,
-        IOptions<NamedQuerySettings> namedQuerySettings, 
-        IStorageKeyGenerator storageKeyGenerator,
-        ILogger<ImageThumbZipCreator> logger) :
-        base(bucketReader, bucketWriter, namedQuerySettings, storageKeyGenerator, logger)
-    {
-        this.thumbSizeProvider = thumbSizeProvider;
-    }
-
     protected override async Task<CreateProjectionResult> CreateFile(ZipParsedNamedQuery parsedNamedQuery,
         List<Asset> assets, CancellationToken cancellationToken)
     {
@@ -93,6 +88,7 @@ public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
                 Logger.LogWarning("Creation of zip file at {LocalPath} cancelled, aborting", zipFilePath);
                 cancellationToken.ThrowIfCancellationRequested();
             }
+
             Logger.LogTrace("Adding image {Image} to {LocalPath}", ++imageCount, zipFilePath);
             await ProcessImage(i, storageKey, zipArchive);
         }
@@ -100,9 +96,9 @@ public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
 
     private async Task ProcessImage(Asset image, string? storageKey, ZipArchive zipArchive)
     {
-        if (image.RequiresAuth)
+        if (image.HasRoles)
         {
-            Logger.LogDebug("Image {Image} of {S3Key} requires auth, redacting", image.Id, storageKey);
+            Logger.LogDebug("Image {Image} of {S3Key} has roles, redacting", image.Id, storageKey);
             return;
         }
 
@@ -133,18 +129,18 @@ public class ImageThumbZipCreator : BaseProjectionCreator<ZipParsedNamedQuery>
             .Replace("{customer}", parsedNamedQuery.Customer.ToString())
             .Replace("{storage-key}", pathSafeStorageKey);
     }
-    
+
     private async Task<Stream?> GetThumbnailStream(Asset asset)
     {
         var availableSizes = await thumbSizeProvider.GetThumbSizesForImage(asset);
-        
+
         if (availableSizes.IsEmpty()) return null;
-        
+
         var selectedSize = availableSizes.SizeClosestTo(NamedQuerySettings.ProjectionThumbsize, out var isOpen);
         Logger.LogTrace("Using thumbnail {ThumbnailSize} for asset {AssetId}. IsOpen: {ThumbnailOpen}", selectedSize,
             asset.Id, isOpen);
         var thumbnailLocation = StorageKeyGenerator.GetThumbnailLocation(asset.Id, selectedSize.MaxDimension, isOpen);
-        
+
         var thumbStream = await BucketReader.GetObjectContentFromBucket(thumbnailLocation);
         return thumbStream;
     }

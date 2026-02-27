@@ -38,7 +38,7 @@ public class AssetUpdatedHandlerTests
     {
         Id = 567587,
         Channel = AssetDeliveryChannels.Image,
-        DeliveryChannelPolicy = new DeliveryChannelPolicy()
+        DeliveryChannelPolicy = new DeliveryChannelPolicy
         {
             Id = KnownDeliveryChannelPolicies.ImageUseOriginal,
             Channel = AssetDeliveryChannels.Image,
@@ -52,7 +52,7 @@ public class AssetUpdatedHandlerTests
     {
         Id = 58465678,
         Channel = AssetDeliveryChannels.Image,
-        DeliveryChannelPolicy = new DeliveryChannelPolicy()
+        DeliveryChannelPolicy = new DeliveryChannelPolicy
         {
             Id = KnownDeliveryChannelPolicies.ImageDefault,
             Channel = AssetDeliveryChannels.Image,
@@ -66,7 +66,7 @@ public class AssetUpdatedHandlerTests
     {
         Id = 56785678,
         Channel = AssetDeliveryChannels.File,
-        DeliveryChannelPolicy = new DeliveryChannelPolicy()
+        DeliveryChannelPolicy = new DeliveryChannelPolicy
         {
             Id = KnownDeliveryChannelPolicies.FileNone,
             Channel = AssetDeliveryChannels.File,
@@ -80,7 +80,7 @@ public class AssetUpdatedHandlerTests
     {
         Channel = AssetDeliveryChannels.Thumbnails,
         Id = 34256,
-        DeliveryChannelPolicy = new DeliveryChannelPolicy()
+        DeliveryChannelPolicy = new DeliveryChannelPolicy
         {
             Channel = AssetDeliveryChannels.Thumbnails,
             Id = KnownDeliveryChannelPolicies.ThumbsDefault,
@@ -94,7 +94,7 @@ public class AssetUpdatedHandlerTests
     {
         Channel = AssetDeliveryChannels.Timebased,
         Id = 356367,
-        DeliveryChannelPolicy = new DeliveryChannelPolicy()
+        DeliveryChannelPolicy = new DeliveryChannelPolicy
         {
             Channel = AssetDeliveryChannels.Timebased,
             Created = DateTime.MinValue,
@@ -117,10 +117,7 @@ public class AssetUpdatedHandlerTests
                 }
             },
             ImageFolderTemplate = "/nas/{customer}/{space}/{image-dir}/{image}.jp2",
-            AssetModifiedSettings = new AssetModifiedSettings()
-            {
-                DryRun = false
-            }
+            AssetModifiedSettings = new AssetModifiedSettings { DryRun = false }
         };
         storageKeyGenerator = new S3StorageKeyGenerator(Options.Create(handlerSettings.AWS));
         bucketWriter = A.Fake<IBucketWriter>();
@@ -129,26 +126,9 @@ public class AssetUpdatedHandlerTests
         assetMetadataRepository = A.Fake<IAssetApplicationMetadataRepository>();
         thumbRepository = A.Fake<IThumbRepository>();
         cleanupHandlerAssetRepository = A.Fake<ICleanupHandlerAssetRepository>();
-        
-        A.CallTo(() => thumbRepository.GetAllSizes(A<AssetId>._)).Returns(new List<int[]>()
-        {
-            new[]
-            {
-                50, 100
-            },
-            new[]
-            {
-                100, 200
-            },
-            new[]
-            {
-                200, 400
-            },
-            new[]
-            {
-                516, 1024
-            }
-        });
+
+        A.CallTo(() => thumbRepository.GetAllSizes(A<AssetId>._))
+            .Returns([[50, 100], [100, 200], [200, 400], [516, 1024]]);
     }
 
     private AssetUpdatedHandler GetSut()
@@ -181,9 +161,7 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DeletesOriginal_WhenFileChannelRemoved()
     {
         // Arrange
-        var requestDetails = CreateMinimalRequestDetails(new List<ImageDeliveryChannel>() { imageDeliveryChannelFile },
-            new List<ImageDeliveryChannel>(),
-            string.Empty, string.Empty);
+        var requestDetails = CreateMinimalRequestDetails([imageDeliveryChannelFile], []);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -211,8 +189,7 @@ public class AssetUpdatedHandlerTests
         };
 
         var requestDetails = CreateMinimalRequestDetails(imageDeliveryChannelsBefore,
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelUseOriginalImage },
-            string.Empty, string.Empty);
+            [imageDeliveryChannelUseOriginalImage]);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -231,15 +208,13 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DeletesTimebasedAssets_WhenTimebasedChannelRemoved()
     {
         // Arrange
-        var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased }, new List<ImageDeliveryChannel>(),
-            string.Empty, string.Empty, "video/mp3");
+        var requestDetails = CreateMinimalRequestDetails([imageDeliveryChannelTimebased], [], "video/mp3");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
         
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
-            .Returns(new []{ "1/99/foo/full/full/max/max/0/default.mp4", "1/99/foo/some/other/key" });
+            .Returns(["1/99/foo/full/full/max/max/0/default.mp4", "1/99/foo/some/other/key"]);
 
         // Act
         var sut = GetSut();
@@ -270,9 +245,7 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DeletesThumbnailAssets_WhenThumbnailChannelRemoved()
     {
         // Arrange
-        var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelThumbnail }, new List<ImageDeliveryChannel>(),
-            string.Empty, string.Empty);
+        var requestDetails = CreateMinimalRequestDetails([imageDeliveryChannelThumbnail], []);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -281,10 +254,9 @@ public class AssetUpdatedHandlerTests
                     A<CancellationToken>._))
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
-            .Returns(new[]
-            {
+            .Returns([
                 "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg"
-            });
+            ]);
 
         // Act
         var sut = GetSut();
@@ -311,8 +283,7 @@ public class AssetUpdatedHandlerTests
         };
 
         var requestDetails = CreateMinimalRequestDetails(imageDeliveryChannelsBefore,
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelUseOriginalImage },
-            string.Empty, string.Empty);
+            [imageDeliveryChannelUseOriginalImage]);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -321,11 +292,10 @@ public class AssetUpdatedHandlerTests
                     A<CancellationToken>._))
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
-            .Returns(new[]
-            {
+            .Returns([
                 "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg",
                 "1/99/foo/stuff/2048.jpg"
-            });
+            ]);
 
         // Act
         var sut = GetSut();
@@ -353,8 +323,7 @@ public class AssetUpdatedHandlerTests
         };
 
         var requestDetails = CreateMinimalRequestDetails(imageDeliveryChannelsBefore,
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelUseOriginalImage },
-            string.Empty, string.Empty);
+            [imageDeliveryChannelUseOriginalImage]);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -363,33 +332,14 @@ public class AssetUpdatedHandlerTests
                     A<CancellationToken>._))
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
-            .Returns(new[]
-            {
+            .Returns([
                 "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg",
                 "1/99/foo/stuff/2048.jpg"
-            });
-        
-        A.CallTo(() => thumbRepository.GetAllSizes(A<AssetId>._)).Returns(new List<int[]>()
-        {
-            new[]
-            {
-                100, 50
+            ]);
 
-            },
-            new[]
-            {
-                200, 100
-
-            },
-            new[]
-            {
-                400, 200
-            },
-            new[]
-            {
-                1024, 516
-            }
-        });
+        A.CallTo(() => thumbRepository.GetAllSizes(A<AssetId>._)).Returns([
+            [100, 50], [200, 100], [400, 200], [1024, 516]
+        ]);
 
         // Act
         var sut = GetSut();
@@ -410,9 +360,7 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DeletesValidPaths_WhenImageChannelRemoved()
     {
         // Arrange
-        var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelUseOriginalImage }, new List<ImageDeliveryChannel>(),
-            string.Empty, string.Empty);
+        var requestDetails = CreateMinimalRequestDetails([imageDeliveryChannelUseOriginalImage], []);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -442,9 +390,8 @@ public class AssetUpdatedHandlerTests
             imageDeliveryChannelUseOriginalImage,
             imageDeliveryChannelFile
         };
-        
-        var requestDetails = CreateMinimalRequestDetails(imageDeliveryChannelsBefore, new List<ImageDeliveryChannel>() { imageDeliveryChannelFile },
-            string.Empty, string.Empty);
+
+        var requestDetails = CreateMinimalRequestDetails(imageDeliveryChannelsBefore, [imageDeliveryChannelFile]);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -460,7 +407,7 @@ public class AssetUpdatedHandlerTests
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
-                    A<ObjectInBucket[]>.That.Matches(o => o.Any(o => o.Key == "1/99/foo/original"))))
+                    A<ObjectInBucket[]>.That.Matches(o => o.Any(b => b.Key == "1/99/foo/original"))))
             .MustNotHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
@@ -471,11 +418,11 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DoesNotRemoveAnything_WhenFileChannelModified()
     {
         // Arrange
-        var fileDeliveryChannelAfter = new ImageDeliveryChannel()
+        var fileDeliveryChannelAfter = new ImageDeliveryChannel
         {
             Id = 34512245,
             Channel = AssetDeliveryChannels.File,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
             {
                 Id = 34534,
                 Channel = AssetDeliveryChannels.File,
@@ -486,9 +433,7 @@ public class AssetUpdatedHandlerTests
             DeliveryChannelPolicyId = 34534
         };
 
-        var requestDetails = CreateMinimalRequestDetails(new List<ImageDeliveryChannel> { imageDeliveryChannelFile },
-            new List<ImageDeliveryChannel>() { fileDeliveryChannelAfter },
-            string.Empty, string.Empty);
+        var requestDetails = CreateMinimalRequestDetails([imageDeliveryChannelFile], [fileDeliveryChannelAfter]);
     
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -507,11 +452,11 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DeletesUnneededTimebasedAssets_WhenTimebasedChannelModified()
     {
         // Arrange
-        var imageDeliveryChannelAfter = new ImageDeliveryChannel()
+        var imageDeliveryChannelAfter = new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Timebased,
             Id = 152445,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
             {
                 Id = 8239,
                 Channel = AssetDeliveryChannels.Timebased,
@@ -522,10 +467,8 @@ public class AssetUpdatedHandlerTests
             DeliveryChannelPolicyId = 8239
         };
 
-        var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty, "video/*");
+        var requestDetails =
+            CreateMinimalRequestDetails([imageDeliveryChannelTimebased], [imageDeliveryChannelAfter], "video/*");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -535,9 +478,11 @@ public class AssetUpdatedHandlerTests
             { "webm-policy", new ("", "some-webm-preset", "oga") },
             { "oga-policy", new ("", "some-oga-preset", "webm") }
         });
-        
-        A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
-            .Returns(new []{ "1/99/foo/full/full/max/max/0/default.mp4", "1/99/foo/some/other/key", "1/99/foo/full/full/max/max/0/default.webm", "1/99/foo/full/full/max/max/0/default.oga" });
+
+        A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._)).Returns([
+            "1/99/foo/full/full/max/max/0/default.mp4", "1/99/foo/some/other/key",
+            "1/99/foo/full/full/max/max/0/default.webm", "1/99/foo/full/full/max/max/0/default.oga"
+        ]);
 
         // Act
         var sut = GetSut();
@@ -567,11 +512,11 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DoesNothing_WhenTimebasedChannelUpdatedWithInvalidPreset()
     {
         // Arrange
-        var imageDeliveryChannelAfter = new ImageDeliveryChannel()
+        var imageDeliveryChannelAfter = new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Timebased,
             Id = 23456,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
             {
                 Id = 8239,
                 Channel = AssetDeliveryChannels.Timebased,
@@ -589,9 +534,8 @@ public class AssetUpdatedHandlerTests
         });
 
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty, "video/*");
+            [imageDeliveryChannelTimebased],
+            [imageDeliveryChannelAfter], "video/*");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -610,11 +554,11 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_ReturnsFalse_WhenTimebasedChannelUpdatedWithNoAvPresets()
     {
         // Arrange
-        var imageDeliveryChannelAfter = new ImageDeliveryChannel()
+        var imageDeliveryChannelAfter = new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Timebased,
             Id = 23456,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
             {
                 Id = 8239,
                 Channel = AssetDeliveryChannels.Timebased,
@@ -626,9 +570,9 @@ public class AssetUpdatedHandlerTests
         };
         
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty, "video/*");
+            [imageDeliveryChannelTimebased],
+            [imageDeliveryChannelAfter],
+            "video/*");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -644,14 +588,14 @@ public class AssetUpdatedHandlerTests
     }
     
     [Fact]
-    public async Task Handle_DoesNothing_WhenTimebasedChannelModfiedWithInvalidPresetDetails()
+    public async Task Handle_DoesNothing_WhenTimebasedChannelModifiedWithInvalidPresetDetails()
     {
         // Arrange
-        var imageDeliveryChannelAfter = new ImageDeliveryChannel()
+        var imageDeliveryChannelAfter = new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Timebased,
             Id = 345634,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
             {
                 Channel = AssetDeliveryChannels.Timebased,
                 Id = 8239,
@@ -663,9 +607,9 @@ public class AssetUpdatedHandlerTests
         };
 
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty, "video/*");
+            [imageDeliveryChannelTimebased],
+            [imageDeliveryChannelAfter],
+            "video/*");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -686,16 +630,16 @@ public class AssetUpdatedHandlerTests
     }
     
         [Fact]
-    public async Task Handle_DeletesSomeThumbnailAssets_WhenThumbnailChannelModifed()
+    public async Task Handle_DeletesSomeThumbnailAssets_WhenThumbnailChannelModified()
     {
         // Arrange
         var imageDeliveryChannelsAfter = new List<ImageDeliveryChannel>
         {
-            new ()
+            new()
             {
                 Channel = AssetDeliveryChannels.Thumbnails,
                 Id = 42356,
-                DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                DeliveryChannelPolicy = new DeliveryChannelPolicy
                 {
                     Id = 35467,
                     Channel = AssetDeliveryChannels.Thumbnails,
@@ -707,8 +651,7 @@ public class AssetUpdatedHandlerTests
         };
 
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel> { imageDeliveryChannelThumbnail }, imageDeliveryChannelsAfter,
-            string.Empty, string.Empty);
+            [imageDeliveryChannelThumbnail], imageDeliveryChannelsAfter);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -717,11 +660,10 @@ public class AssetUpdatedHandlerTests
                     A<CancellationToken>._))
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
-            .Returns(new[]
-            {
+            .Returns([
                 "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg",
                 "1/99/foo/stuff/2048.jpg" , "1/99/full/100,200/0/default.jpg"
-            });
+            ]);
 
         // Act
         var sut = GetSut();
@@ -753,8 +695,7 @@ public class AssetUpdatedHandlerTests
     {
         // Arrange
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel> { imageDeliveryChannelUseOriginalImage }, new List<ImageDeliveryChannel> { imageDeliveryChannelDefaultImage },
-            string.Empty, string.Empty);
+            [imageDeliveryChannelUseOriginalImage], [imageDeliveryChannelDefaultImage]);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -776,8 +717,7 @@ public class AssetUpdatedHandlerTests
     {
         // Arrange
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel> { imageDeliveryChannelDefaultImage }, new List<ImageDeliveryChannel> { imageDeliveryChannelUseOriginalImage },
-            string.Empty, string.Empty);
+            [imageDeliveryChannelDefaultImage], [imageDeliveryChannelUseOriginalImage]);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -799,9 +739,8 @@ public class AssetUpdatedHandlerTests
     {
         // Arrange
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel> { imageDeliveryChannelUseOriginalImage },
-            new List<ImageDeliveryChannel> { imageDeliveryChannelDefaultImage, imageDeliveryChannelFile },
-            string.Empty, string.Empty);
+            [imageDeliveryChannelUseOriginalImage],
+            [imageDeliveryChannelDefaultImage, imageDeliveryChannelFile]);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -823,11 +762,11 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DoesNotRemoveAnything_WhenFilePolicyUpdated()
     {
         // Arrange
-        var fileDeliveryChannelAfter = new ImageDeliveryChannel()
+        var fileDeliveryChannelAfter = new ImageDeliveryChannel
         {
             Id = 56785678,
             Channel = AssetDeliveryChannels.File,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
             {
                 Id = KnownDeliveryChannelPolicies.FileNone,
                 Channel = AssetDeliveryChannels.File,
@@ -838,9 +777,8 @@ public class AssetUpdatedHandlerTests
             DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
         };
 
-        var requestDetails = CreateMinimalRequestDetails(new List<ImageDeliveryChannel> { imageDeliveryChannelFile },
-            new List<ImageDeliveryChannel>() { fileDeliveryChannelAfter },
-            string.Empty, string.Empty);
+        var requestDetails = CreateMinimalRequestDetails([imageDeliveryChannelFile],
+            [fileDeliveryChannelAfter]);
     
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -877,8 +815,7 @@ public class AssetUpdatedHandlerTests
         // Get request and simulate 'before' asset having been ingested prior to DCP updating
         var requestDetails = CreateMinimalRequestDetails(
             [imageDeliveryChannelTimebased],
-            [imageDeliveryChannelAfter],
-            string.Empty, string.Empty, "video/*",
+            [imageDeliveryChannelAfter], "video/*",
             before => before.Finished = DateTime.UtcNow);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
@@ -891,7 +828,10 @@ public class AssetUpdatedHandlerTests
         });
 
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
-            .Returns(new []{ "1/99/foo/full/full/max/max/0/default.mp4", "1/99/foo/some/other/key", "1/99/foo/full/full/max/max/0/default.webm", "1/99/foo/full/full/max/max/0/default.oga" });
+            .Returns([
+                "1/99/foo/full/full/max/max/0/default.mp4", "1/99/foo/some/other/key",
+                "1/99/foo/full/full/max/max/0/default.webm", "1/99/foo/full/full/max/max/0/default.oga"
+            ]);
 
         // Act
         var sut = GetSut();
@@ -940,7 +880,7 @@ public class AssetUpdatedHandlerTests
         var requestDetails = CreateMinimalRequestDetails(
             [imageDeliveryChannelTimebased],
             [imageDeliveryChannelAfter],
-            string.Empty, string.Empty, "video/*", before => before.Finished = DateTime.UtcNow);
+            "video/*", before => before.Finished = DateTime.UtcNow);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -964,11 +904,11 @@ public class AssetUpdatedHandlerTests
     public async Task Handle_DoesNothing_WhenTimebasedPolicyUpdatedWithInvalidPresetDetails()
     {
         // Arrange
-        var imageDeliveryChannelAfter = new ImageDeliveryChannel()
+        var imageDeliveryChannelAfter = new ImageDeliveryChannel
         {
             Channel = AssetDeliveryChannels.Timebased,
             Id = 356367,
-            DeliveryChannelPolicy = new DeliveryChannelPolicy()
+            DeliveryChannelPolicy = new DeliveryChannelPolicy
             {
                 Channel = AssetDeliveryChannels.Timebased,
                 Id = KnownDeliveryChannelPolicies.AvDefaultVideo,
@@ -980,9 +920,9 @@ public class AssetUpdatedHandlerTests
         };
 
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelTimebased },
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelAfter },
-            string.Empty, string.Empty, "video/*");
+            [imageDeliveryChannelTimebased],
+            [imageDeliveryChannelAfter],
+            "video/*");
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -1008,7 +948,7 @@ public class AssetUpdatedHandlerTests
         // Arrange
         var imageDeliveryChannelsAfter = new List<ImageDeliveryChannel>
         {
-            new ()
+            new()
             {
                 Channel = AssetDeliveryChannels.Thumbnails,
                 Id = 356367,
@@ -1023,9 +963,7 @@ public class AssetUpdatedHandlerTests
             }
         };
 
-        var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel> { imageDeliveryChannelThumbnail }, imageDeliveryChannelsAfter,
-            string.Empty, string.Empty);
+        var requestDetails = CreateMinimalRequestDetails([imageDeliveryChannelThumbnail], imageDeliveryChannelsAfter);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -1034,11 +972,10 @@ public class AssetUpdatedHandlerTests
                     A<CancellationToken>._))
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
-            .Returns(new[]
-            {
+            .Returns([
                 "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg",
                 "1/99/foo/stuff/2048.jpg", "1/99/full/100,200/0/default.jpg"
-            });
+            ]);
 
         // Act
         var sut = GetSut();
@@ -1087,7 +1024,6 @@ public class AssetUpdatedHandlerTests
         var requestDetails = CreateMinimalRequestDetails(
             [imageDeliveryChannelDefaultImage],
             [imageDeliveryChannelDefaultUpdated],
-            string.Empty, string.Empty,
             customiseAssetBefore: before => before.Finished = DateTime.UtcNow);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
@@ -1106,7 +1042,7 @@ public class AssetUpdatedHandlerTests
     }
     
     [Fact]
-    public async Task Handle_DeletesValidPaths_WhenImageChannelHasUpdatedUseOrginalPolicy()
+    public async Task Handle_DeletesValidPaths_WhenImageChannelHasUpdatedUseOriginalPolicy()
     {
         // Arrange
         var imageDeliveryChannelUseOriginalUpdated = new ImageDeliveryChannel
@@ -1127,7 +1063,6 @@ public class AssetUpdatedHandlerTests
         var requestDetails = CreateMinimalRequestDetails(
             [imageDeliveryChannelUseOriginalImage], 
             [imageDeliveryChannelUseOriginalUpdated],
-            string.Empty, string.Empty,
             customiseAssetBefore: before => before.Finished = DateTime.UtcNow);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
@@ -1144,19 +1079,24 @@ public class AssetUpdatedHandlerTests
             .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
-    
+
+    #region InfoJson
+
     // roles
     
     [Theory]
     [InlineData("", "new role")]
     [InlineData(null, "new role")]
     [InlineData("old role", null)]
+    [InlineData("old role", "")]
+    [InlineData("old role", "new role")]
     public async Task Handle_DeletesInfoJson_WhenRolesChanged(string? rolesBefore, string? rolesAfter)
     {
         // Arrange
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelUseOriginalImage }, new List<ImageDeliveryChannel>() { imageDeliveryChannelUseOriginalImage },
-            string.Empty, "new role");
+            [imageDeliveryChannelUseOriginalImage], [imageDeliveryChannelUseOriginalImage],
+            customiseAssetBefore: asset => asset.Roles = rolesBefore,
+            customiseAssetAfter: asset => asset.Roles = rolesAfter);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -1167,21 +1107,24 @@ public class AssetUpdatedHandlerTests
         
         // Assert
         response.Should().BeTrue();
+        A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
         A.CallTo(() =>
-                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
-        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(o => o.Key == "1/99/foo/info/"), A<bool>._)).MustHaveHappened();
+                bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(o => o.Key == "1/99/foo/info/"), A<bool>._))
+            .MustHaveHappened();
     }
     
     [Theory]
     [InlineData("", null)]
     [InlineData(null, "")]
     [InlineData(null, null)]
-    public async Task Handle_DeletesInfoJson_WhenRolesChangedBothNullOrEmpty(string? rolesBefore, string? rolesAfter)
+    [InlineData("", "")]
+    public async Task Handle_DoesNotDeleteInfoJson_WhenRolesChangedBothNullOrEmpty(string? rolesBefore, string? rolesAfter)
     {
         // Arrange
         var requestDetails = CreateMinimalRequestDetails(
-            new List<ImageDeliveryChannel>() { imageDeliveryChannelUseOriginalImage }, new List<ImageDeliveryChannel>() { imageDeliveryChannelUseOriginalImage },
-            rolesBefore, rolesAfter);
+            [imageDeliveryChannelUseOriginalImage], [imageDeliveryChannelUseOriginalImage],
+            customiseAssetBefore: asset => asset.Roles = rolesBefore,
+            customiseAssetAfter: asset => asset.Roles = rolesAfter);
 
         A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
             .Returns(requestDetails.assetAfter);
@@ -1192,21 +1135,83 @@ public class AssetUpdatedHandlerTests
         
         // Assert
         response.Should().BeTrue();
-        A.CallTo(() =>
-            bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
-        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(o => o.Key == "1/99/foo/info/"), A<bool>._)).MustNotHaveHappened();
+        A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
+        A.CallTo(() => 
+                bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(o => o.Key == "1/99/foo/info/"), A<bool>._))
+            .MustNotHaveHappened();
     }
+    
+    // maxWidth - 0 means unset, so equivalent to null
+    
+    [Theory]
+    [InlineData(null, 512)]
+    [InlineData(0, 512)]
+    [InlineData(1024, 512)]
+    [InlineData(512, null)]
+    [InlineData(512, 0)]
+    public async Task Handle_DeletesInfoJson_WhenMaxWidthChanged(int? maxWidthBefore, int? maxWidthAfter)
+    {
+        // Arrange
+        var requestDetails = CreateMinimalRequestDetails(
+            [imageDeliveryChannelUseOriginalImage], [imageDeliveryChannelUseOriginalImage],
+            customiseAssetBefore: asset => asset.MaxWidth = maxWidthBefore,
+            customiseAssetAfter: asset => asset.MaxWidth = maxWidthAfter);
+
+        A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
+            .Returns(requestDetails.assetAfter);
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(requestDetails.queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
+        A.CallTo(() =>
+                bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(o => o.Key == "1/99/foo/info/"), A<bool>._))
+            .MustHaveHappened();
+    }
+    
+    [Theory]
+    [InlineData(0, null)]
+    [InlineData(0, 0)]
+    [InlineData(null, 0)]
+    [InlineData(512, 512)]
+    public async Task Handle_DoesNotDeleteInfoJson_WhenMaxWidthNotChanged(int? maxWidthBefore, int? maxWidthAfter)
+    {
+        // Arrange
+        var requestDetails = CreateMinimalRequestDetails(
+            [imageDeliveryChannelUseOriginalImage], [imageDeliveryChannelUseOriginalImage],
+            customiseAssetBefore: asset => asset.MaxWidth = maxWidthBefore,
+            customiseAssetAfter: asset => asset.MaxWidth = maxWidthAfter);
+
+        A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
+            .Returns(requestDetails.assetAfter);
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(requestDetails.queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
+        A.CallTo(() => 
+                bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(o => o.Key == "1/99/foo/info/"), A<bool>._))
+            .MustNotHaveHappened();
+    }
+    
+    #endregion
 
     private (QueueMessage queueMessage, Asset assetAfter) CreateMinimalRequestDetails(
         List<ImageDeliveryChannel> imageDeliveryChannelsBefore,
-        List<ImageDeliveryChannel> imageDeliveryChannelsAfter, string? rolesBefore, string? rolesAfter,
-        string mediaType = "image/jpg", Action<Asset>? customiseAssetBefore = null)
+        List<ImageDeliveryChannel> imageDeliveryChannelsAfter,
+        string mediaType = "image/jpeg", Action<Asset>? customiseAssetBefore = null,
+        Action<Asset>? customiseAssetAfter = null)
     {
         var assetBefore = new Asset
         {
             Id = new AssetId(1, 99, "foo"),
             ImageDeliveryChannels = imageDeliveryChannelsBefore,
-            Roles = rolesBefore,
             MediaType = mediaType
         };
         customiseAssetBefore?.Invoke(assetBefore);
@@ -1215,9 +1220,9 @@ public class AssetUpdatedHandlerTests
         {
             Id = new AssetId(1, 99, "foo"),
             ImageDeliveryChannels = imageDeliveryChannelsAfter,
-            Roles = rolesAfter,
             MediaType = mediaType
         };
+        customiseAssetAfter?.Invoke(assetAfter);
 
         var cleanupRequest = new AssetUpdatedNotificationRequest
         {

@@ -21,7 +21,7 @@ public class MetadataWithFallbackThumbSizeProviderTests
         policyRepository = A.Fake<IPolicyRepository>();
 
         var settings = new OrchestratorSettings();
-        settings.ImageIngest.DefaultThumbs = new List<string> { "!400,400" };
+        settings.ImageIngest.DefaultThumbs = ["!400,400"];
         var orchestratorSettings = Options.Create(settings);
         sut = new MetadataWithFallbackThumbSizeProvider(policyRepository, orchestratorSettings,
             new NullLogger<MetadataWithFallbackThumbSizeProvider>());
@@ -33,8 +33,8 @@ public class MetadataWithFallbackThumbSizeProviderTests
         // Arrange
         const string thumbsMetadata = "{\"a\": [[769, 1024],[300,400]], \"o\": [[150, 200],[75, 100]]}";
         var expected = new ThumbnailSizes(
-            new List<int[]> { new[] { 150, 200 }, new[] { 75, 100 }, },
-            new List<int[]> { new[] { 769, 1024 }, new[] { 300, 400 }, });
+            [[150, 200], [75, 100]],
+            [[769, 1024], [300, 400]]);
         
         var assetId = AssetIdGenerator.GetAssetId();
         var asset = new Asset(assetId).WithTestThumbnailMetadata(thumbsMetadata);
@@ -79,8 +79,8 @@ public class MetadataWithFallbackThumbSizeProviderTests
     {
         // Arrange
         var expected = new ThumbnailSizes(
-            new List<int[]> { new[] { 100, 200 }, new[] { 75, 150 }, },
-            new List<int[]> { new[] { 500, 1000 }, new[] { 200, 400 }, });
+            [[100, 200], [75, 150]],
+            [[500, 1000], [200, 400]]);
         
         var assetId = AssetIdGenerator.GetAssetId();
         var asset = GetAssetWithThumbsChannel(assetId, 1000, 2000, 250);
@@ -102,13 +102,14 @@ public class MetadataWithFallbackThumbSizeProviderTests
         actual.Should().BeEquivalentTo(expected);
     }
 
-    private Asset GetAssetWithThumbsChannel(AssetId assetId, int w, int h, int maxUnauth)
+    private static Asset GetAssetWithThumbsChannel(AssetId assetId, int w, int h, int openFullMax)
     {
         var asset = new Asset(assetId)
         {
             Width = w,
             Height = h,
-            MaxUnauthorised = maxUnauth,
+            OpenFullMax = openFullMax,
+            Roles = "https://role.example",
             ImageDeliveryChannels = new List<ImageDeliveryChannel>
             {
                 new()

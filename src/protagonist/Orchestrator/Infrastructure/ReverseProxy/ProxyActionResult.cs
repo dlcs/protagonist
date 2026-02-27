@@ -77,34 +77,31 @@ public class ProxyActionResult : IProxyActionResult
 /// <summary>
 /// Result for proxy actions that should be shortcut to return status code.
 /// </summary>
-public class StatusCodeResult : IProxyActionResult
+public class StatusCodeResult(HttpStatusCode statusCode, string? message = null) : IProxyActionResult
 {
     /// <summary>
     /// StatusCode to return
     /// </summary>
-    public HttpStatusCode StatusCode { get; }
+    public HttpStatusCode StatusCode { get; } = statusCode;
     
+    /// <summary>
+    /// Optional message to return with status code
+    /// </summary>
+    public string? Message { get; } = message;
+
     /// <summary>
     /// A collection of any Headers to set on response object. 
     /// </summary>
     public Dictionary<string, StringValues> Headers { get; } = new();
 
-    public StatusCodeResult(HttpStatusCode statusCode)
-    {
-        StatusCode = statusCode;
-    }
-    
     public static StatusCodeResult NotFound => new(HttpStatusCode.NotFound);
 }
 
 public static class ProxyActionResultsX
 {
     /// <summary>
-    /// Set header to return alongside statusCode
+    /// Add headers to <see cref="IProxyActionResult"/> object.
     /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
     public static IProxyActionResult WithHeader(this IProxyActionResult result, string key, string value)
     {
         result.Headers[key] = value;

@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Collections;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using IIIF;
 using IIIF.Auth.V2;
 using IIIF.Serialisation;
@@ -16,22 +19,15 @@ namespace Orchestrator.Infrastructure.Auth.V2;
 /// <summary>
 /// Client for interactions with IIIF Authorization Flow 2 services
 /// </summary>
-public class IIIFAuth2Client : IIIIFAuthBuilder
+public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> logger) : IIIIFAuthBuilder
 {
-    private readonly HttpClient httpClient;
-    private readonly ILogger<IIIFAuth2Client> logger;
-
-    public IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> logger)
-    {
-        this.httpClient = httpClient;
-        this.logger = logger;
-    }
-    
-    public async Task<IService?> GetAuthServicesForAsset(AssetId assetId, List<string> roles, CancellationToken cancellationToken = default)
+    public async Task<IService?> GetAuthServicesForAsset(AssetId assetId, IReadOnlyList<string> roles, CancellationToken cancellationToken = default)
     {
         logger.LogTrace("Getting auth 2 services description for {AssetId}, {@Roles}", assetId, roles);
+        
+        if (roles.ContainsOnly(Asset.UnobtainableRole)) return null;
+        
         var path = $"services/{assetId}?roles={GetRolesString(roles)}";
-
         try
         {
             await using var authServices = await httpClient.GetStreamAsync(path, cancellationToken);
@@ -45,7 +41,7 @@ public class IIIFAuth2Client : IIIIFAuthBuilder
         }
     }
 
-    public async Task<AuthProbeResult2> GetProbeServiceResult(AssetId assetId, List<string> roles, string accessToken,
+    public async Task<AuthProbeResult2> GetProbeServiceResult(AssetId assetId, IReadOnlyList<string> roles, string accessToken,
         CancellationToken cancellationToken)
     {
         var path = $"probe_internal/{assetId}?roles={GetRolesString(roles)}";
@@ -67,7 +63,7 @@ public class IIIFAuth2Client : IIIIFAuthBuilder
         }
     }
 
-    public async Task<bool> VerifyAccess(AssetId assetId, List<string> roles, CancellationToken cancellationToken)
+    public async Task<bool> VerifyAccess(AssetId assetId, IReadOnlyList<string> roles, CancellationToken cancellationToken)
     {
         var path = $"verifyaccess/{assetId}?roles={GetRolesString(roles)}";
         try
@@ -82,6 +78,8 @@ public class IIIFAuth2Client : IIIIFAuthBuilder
         }   
     }
 
-    private static string GetRolesString(IList<string> roles)
-        => roles.Count == 1 ? roles[0] : string.Join(",", roles);
+    private static string GetRolesString(IReadOnlyList<string> roles)
+        => roles.Count == 1
+            ? roles[0]
+            : string.Join(",", roles.Where(r => !r.Equals(Asset.UnobtainableRole, StringComparison.OrdinalIgnoreCase)));
 }

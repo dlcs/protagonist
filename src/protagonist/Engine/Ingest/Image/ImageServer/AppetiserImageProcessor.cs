@@ -91,6 +91,8 @@ public class AppetiserImageProcessor(
     
     private List<SizeParameter> GetThumbSizes(IngestionContext context)
     {
+        // NOTE - we may end up throwing away some generated thumbnails because they exceed maxWidth, however we don't
+        // know the size of the origin image yet so we always generate all possible thumbs.
         var thumbPolicy = context.Asset.ImageDeliveryChannels
             .GetThumbsChannel()?.DeliveryChannelPolicy
             .PolicyDataAs<List<string>>();

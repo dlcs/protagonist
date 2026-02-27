@@ -7,12 +7,14 @@ using System.Text.RegularExpressions;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using IIIF.Auth.V2;
 using IIIF.Serialisation;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Stubbery;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 
 namespace Orchestrator.Tests.Integration;
@@ -115,8 +117,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
-        responseBody["error"].Value<string>().Should().Be("missingCredentials");
-        responseBody["description"].Value<string>().Should().Be("Required cookie missing");
+        responseBody["error"]!.Value<string>().Should().Be("missingCredentials");
+        responseBody["description"]!.Value<string>().Should().Be("Required cookie missing");
     }
     
     [Fact]
@@ -135,8 +137,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
-        responseBody["error"].Value<string>().Should().Be("invalidCredentials");
-        responseBody["description"].Value<string>().Should().Be("Id not found in cookie");
+        responseBody["error"]!.Value<string>().Should().Be("invalidCredentials");
+        responseBody["description"]!.Value<string>().Should().Be("Id not found in cookie");
     }
     
     [Fact]
@@ -155,8 +157,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
-        responseBody["error"].Value<string>().Should().Be("invalidCredentials");
-        responseBody["description"].Value<string>().Should().Be("Credentials provided unknown or expired");
+        responseBody["error"]!.Value<string>().Should().Be("invalidCredentials");
+        responseBody["description"]!.Value<string>().Should().Be("Credentials provided unknown or expired");
     }
     
     [Fact]
@@ -177,8 +179,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
-        responseBody["error"].Value<string>().Should().Be("invalidCredentials");
-        responseBody["description"].Value<string>().Should().Be("Credentials provided unknown or expired");
+        responseBody["error"]!.Value<string>().Should().Be("invalidCredentials");
+        responseBody["description"]!.Value<string>().Should().Be("Credentials provided unknown or expired");
     }
     
     [Fact]
@@ -199,8 +201,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
-        responseBody["error"].Value<string>().Should().Be("invalidCredentials");
-        responseBody["description"].Value<string>().Should().Be("Credentials provided unknown or expired");
+        responseBody["error"]!.Value<string>().Should().Be("invalidCredentials");
+        responseBody["description"]!.Value<string>().Should().Be("Credentials provided unknown or expired");
     }
     
     [Fact]
@@ -220,8 +222,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var responseBody = JObject.Parse(await response.Content.ReadAsStringAsync());
-        responseBody["accessToken"].Value<string>().Should().Be(token.Entity.BearerToken);
-        responseBody["expiresIn"].Value<int>().Should().Be(token.Entity.Ttl);
+        responseBody["accessToken"]!.Value<string>().Should().Be(token.Entity.BearerToken);
+        responseBody["expiresIn"]!.Value<int>().Should().Be(token.Entity.Ttl);
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     #endregion
@@ -239,9 +241,9 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var responseBody = await ParseHtmlTokenReponse(response);
-        responseBody["error"].Value<string>().Should().Be("missingCredentials");
-        responseBody["description"].Value<string>().Should().Be("Required cookie missing");
+        var responseBody = await ParseHtmlTokenResponse(response);
+        responseBody["error"]!.Value<string>().Should().Be("missingCredentials");
+        responseBody["description"]!.Value<string>().Should().Be("Required cookie missing");
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
 
@@ -259,9 +261,9 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var responseBody = await ParseHtmlTokenReponse(response);
-        responseBody["error"].Value<string>().Should().Be("invalidCredentials");
-        responseBody["description"].Value<string>().Should().Be("Id not found in cookie");
+        var responseBody = await ParseHtmlTokenResponse(response);
+        responseBody["error"]!.Value<string>().Should().Be("invalidCredentials");
+        responseBody["description"]!.Value<string>().Should().Be("Id not found in cookie");
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     
@@ -279,9 +281,9 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var responseBody = await ParseHtmlTokenReponse(response);
-        responseBody["error"].Value<string>().Should().Be("invalidCredentials");
-        responseBody["description"].Value<string>().Should().Be("Credentials provided unknown or expired");
+        var responseBody = await ParseHtmlTokenResponse(response);
+        responseBody["error"]!.Value<string>().Should().Be("invalidCredentials");
+        responseBody["description"]!.Value<string>().Should().Be("Credentials provided unknown or expired");
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     
@@ -301,9 +303,9 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var responseBody = await ParseHtmlTokenReponse(response);
-        responseBody["error"].Value<string>().Should().Be("invalidCredentials");
-        responseBody["description"].Value<string>().Should().Be("Credentials provided unknown or expired");
+        var responseBody = await ParseHtmlTokenResponse(response);
+        responseBody["error"]!.Value<string>().Should().Be("invalidCredentials");
+        responseBody["description"]!.Value<string>().Should().Be("Credentials provided unknown or expired");
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     
@@ -323,9 +325,9 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var responseBody = await ParseHtmlTokenReponse(response);
-        responseBody["error"].Value<string>().Should().Be("invalidCredentials");
-        responseBody["description"].Value<string>().Should().Be("Credentials provided unknown or expired");
+        var responseBody = await ParseHtmlTokenResponse(response);
+        responseBody["error"]!.Value<string>().Should().Be("invalidCredentials");
+        responseBody["description"]!.Value<string>().Should().Be("Credentials provided unknown or expired");
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     
@@ -345,10 +347,10 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        var responseBody = await ParseHtmlTokenReponse(response);
-        responseBody["accessToken"].Value<string>().Should().Be(token.Entity.BearerToken);
-        responseBody["expiresIn"].Value<int>().Should().Be(token.Entity.Ttl);
-        responseBody["messageId"].Value<string>().Should().Be("123");
+        var responseBody = await ParseHtmlTokenResponse(response);
+        responseBody["accessToken"]!.Value<string>().Should().Be(token.Entity.BearerToken);
+        responseBody["expiresIn"]!.Value<int>().Should().Be(token.Entity.Ttl);
+        responseBody["messageId"]!.Value<string>().Should().Be("123");
         response.Headers.CacheControl!.NoStore.Should().BeTrue();
     }
     #endregion
@@ -364,7 +366,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.OK);
-        result.Headers.CacheControl.Private.Should().BeTrue();
+        result.Headers.CacheControl!.Private.Should().BeTrue();
 
         var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
         probeResult2.Status.Should().Be(401);
@@ -383,8 +385,8 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        result.Headers.CacheControl.Should().BeNull();
-        result.Content.Headers.ContentType.MediaType
+        result.Headers.CacheControl!.Should().BeNull();
+        result.Content.Headers.ContentType!.MediaType
             .Should().Be("application/problem+json", "this isn't an AuthProbeResult2");
     }
 
@@ -392,7 +394,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
     public async Task ProbeService_ReturnsProbeResultWith200Status_IfOpen()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(ProbeService_ReturnsProbeResultWith200Status_IfOpen)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"auth/v2/probe/{id}";
@@ -404,18 +406,18 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.OK);
-        result.Headers.CacheControl.Private.Should().BeTrue("asset is open but all auth responses should be private");
+        result.Headers.CacheControl!.Private.Should().BeTrue("asset is open but all auth responses should be private");
 
         var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
         probeResult2.Status.Should().Be(200);
     }
     
     [Fact]
-    public async Task ProbeService_ReturnsProbeResultWith200Status_IfHasMaxUnauth_WithoutRoles()
+    public async Task ProbeService_ReturnsProbeResultWith401Status_IfHasUnobtainableRoleOnly()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(ProbeService_ReturnsProbeResultWith200Status_IfHasMaxUnauth_WithoutRoles)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, maxUnauthorised: 100);
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: Asset.UnobtainableRole);
         await dbFixture.DbContext.SaveChangesAsync();
         var path = $"auth/v2/probe/{id}";
         
@@ -426,7 +428,29 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.OK);
-        result.Headers.CacheControl.Private.Should().BeTrue();
+        result.Headers.CacheControl!.Private.Should().BeTrue("asset is open but all auth responses should be private");
+
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Status.Should().Be(401);
+    }
+    
+    [Fact]
+    public async Task ProbeService_ReturnsProbeResultWith200Status_IfHasOpenFullMax_WithoutRoles()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, openFullMax: 100);
+        await dbFixture.DbContext.SaveChangesAsync();
+        var path = $"auth/v2/probe/{id}";
+        
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("bearer", "12345");
+        var result = await httpClient.SendAsync(request);
+        
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Headers.CacheControl!.Private.Should().BeTrue();
 
         var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
         probeResult2.Status.Should().Be(200);
@@ -436,10 +460,10 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
     public async Task ProbeService_ReturnsProbeResult_FromDownstreamAuthService()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(ProbeService_ReturnsProbeResult_FromDownstreamAuthService)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(
             id, 
-            maxUnauthorised: 100, 
+            openFullMax: 100, 
             roles: "test-role");
         await dbFixture.DbContext.SaveChangesAsync();
 
@@ -457,13 +481,13 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         
         // Assert
         result.StatusCode.Should().Be(HttpStatusCode.OK);
-        result.Headers.CacheControl.Private.Should().BeTrue();
+        result.Headers.CacheControl!.Private.Should().BeTrue();
 
         var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
         probeResult2.Should().BeEquivalentTo(downstreamProbeResult);
     }
     
-    private async Task<JObject> ParseHtmlTokenReponse(HttpResponseMessage response)
+    private static async Task<JObject> ParseHtmlTokenResponse(HttpResponseMessage response)
     {
         var htmlParser = new HtmlParser();
         var regex = new Regex("window.parent.postMessage\\(({.*}),.*");
@@ -471,7 +495,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         var document = htmlParser.ParseDocument(await response.Content.ReadAsStreamAsync());
         var scriptElement = document.QuerySelector("script") as IHtmlScriptElement;
         
-        var text = scriptElement.Text
+        var text = scriptElement!.Text
             .Replace("\n", string.Empty)
             .Replace("\r", string.Empty)
             .Replace("\t", string.Empty);

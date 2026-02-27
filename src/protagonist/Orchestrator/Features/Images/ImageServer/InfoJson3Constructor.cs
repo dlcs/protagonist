@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using IIIF;
 using IIIF.ImageApi.V3;
@@ -15,21 +13,18 @@ namespace Orchestrator.Features.Images.ImageServer;
 
 /// <summary>
 /// Implementation of <see cref="InfoJsonConstructorTemplate{T}"/> responsible for building IIIF ImageService3
-/// info.json. Assets requiring auth will have the following updates:
-///  If Roles are present, Auth v2 services are added + context updated
-///  If no Roles (ie MaxUnauthorised only) the maxWidth property is set  
+/// info.json.
+/// If Roles are present, Auth v2 services are added + context updated, unless it is 'unobtainable' role only
+/// The maxWidth property is set in all instances  
 /// </summary>
-public class InfoJson3Constructor : InfoJsonConstructorTemplate<ImageService3>
+public class InfoJson3Constructor(
+    IIIIFAuthBuilder iiifAuthBuilder,
+    IImageServerClient imageServerClient,
+    IThumbRepository thumbRepository,
+    ILogger<InfoJson3Constructor> logger)
+    : InfoJsonConstructorTemplate<ImageService3>(imageServerClient, thumbRepository, iiifAuthBuilder, logger)
 {
     protected override Version ImageApiVersion => Version.V3;
-
-    public InfoJson3Constructor(
-        IIIIFAuthBuilder iiifAuthBuilder,
-        IImageServerClient imageServerClient,
-        IThumbRepository thumbRepository,
-        ILogger<InfoJson3Constructor> logger) : base(imageServerClient, thumbRepository, iiifAuthBuilder, logger)
-    {
-    }
 
     protected override async Task SetImageServiceAuthServices(ImageService3 imageService, OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken)
@@ -47,7 +42,7 @@ public class InfoJson3Constructor : InfoJsonConstructorTemplate<ImageService3>
     {
         imageService.MaxArea = null;
         imageService.MaxHeight = null;
-        imageService.MaxWidth = orchestrationImage.MaxUnauthorised;
+        imageService.MaxWidth = orchestrationImage.MaxWidth;
     }
 
     protected override void SetImageServiceStubId(ImageService3 imageService, OrchestrationImage orchestrationImage) 
@@ -56,14 +51,9 @@ public class InfoJson3Constructor : InfoJsonConstructorTemplate<ImageService3>
     protected override void SetImageServiceSizes(ImageService3 imageService, List<Size> sizes) 
         => imageService.Sizes = sizes;
 
-    protected override void SetImageServiceTiles (ImageService3 imageService, OrchestrationImage orchestrationImage)
+    protected override void TrySetImageServiceTiles(ImageService3 imageService, OrchestrationImage orchestrationImage)
     {
-        if (imageService.Tiles.IsNullOrEmpty() || imageService.Tiles
-                .Select(s => s.Width).Max() > orchestrationImage.MaxUnauthorised)
-        {
-            var tiles = GetTiles(orchestrationImage);
-
-            imageService.Tiles = tiles;
-        }
+        if (!ShouldUpdateTiles(imageService.Tiles, orchestrationImage)) return;
+        imageService.Tiles = GetTiles(orchestrationImage);
     }
 }

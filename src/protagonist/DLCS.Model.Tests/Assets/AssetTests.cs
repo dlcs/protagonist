@@ -10,23 +10,18 @@ namespace DLCS.Model.Tests.Assets;
 public class AssetTests
 {
     [Theory]
-    [InlineData(null, 1)]
-    [InlineData("", 2)]
-    [InlineData(" ", 1)]
-    [InlineData("role", 0)]
-    [InlineData("role", 1)]
-    [InlineData("role", -1)]
-    [InlineData("more,roles", -5)]
-    public void RequiresAuth_True_IfHaveRolesOrMaxUnauthorised(string roles, int maxUnauthorised)
+    [InlineData(null, false)]
+    [InlineData("", false)]
+    [InlineData(" ", false)]
+    [InlineData("role", true)]
+    [InlineData("more,roles", true)]
+    public void HasRoles_True_IfHaveRoles(string roles, bool expected)
     {
         // Arrange
-        var asset = new Asset {Roles = roles, MaxUnauthorised = maxUnauthorised};
-        
-        // Act
-        var actual = asset.RequiresAuth;
+        var asset = new Asset { Roles = roles };
         
         // Assert
-        actual.Should().BeTrue();
+        asset.HasRoles.Should().Be(expected);
     }
 
     [Fact]
@@ -58,7 +53,7 @@ public class AssetTests
     [Fact]
     public void Roles_Convert_From_List()
     {
-        var asset = new Asset { RolesList = new[] { "a", "b", "c" } };
+        var asset = new Asset { RolesList = ["a", "b", "c"] };
         var expected = "a,b,c";
         asset.Roles.Should().Be(expected);
     }
@@ -74,7 +69,7 @@ public class AssetTests
     [Fact]
     public void Tags_Convert_From_List()
     {
-        var asset = new Asset { TagsList = new[] { "a", "b", "c" } };
+        var asset = new Asset { TagsList = ["a", "b", "c"] };
         var expected = "a,b,c";
         asset.Tags.Should().Be(expected);
     }
@@ -87,20 +82,20 @@ public class AssetTests
         {
             Reference1 = "someReference",
             Reference2 = "ref2",
-            ImageDeliveryChannels =new List<ImageDeliveryChannel>()
+            ImageDeliveryChannels =new List<ImageDeliveryChannel>
             {
                 new()
                 {
                     DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
                     Channel = AssetDeliveryChannels.Image,
-                    DeliveryChannelPolicy = new DeliveryChannelPolicy()
+                    DeliveryChannelPolicy = new DeliveryChannelPolicy
                     {
                         Id = KnownDeliveryChannelPolicies.ImageDefault,
                         Channel = AssetDeliveryChannels.Image
                     }
                 }
             },
-            AssetApplicationMetadata = new List<AssetApplicationMetadata>()
+            AssetApplicationMetadata = new List<AssetApplicationMetadata>
             {
                 new()
                 {

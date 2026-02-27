@@ -10,6 +10,7 @@ using DLCS.Model.Policies;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Tests.Integration.Infrastructure;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Yarp.ReverseProxy.Forwarder;
 
@@ -112,7 +113,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_Returns404_IfNotForDelivery()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNotForDelivery)}");
+        var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id, notForDelivery: true, imageDeliveryChannels: deliveryChannelsForTimebased);
         await dbFixture.DbContext.SaveChangesAsync();
 
@@ -127,15 +128,15 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_Returns404_IfNoTimebasedChannel()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(Get_Returns404_IfNoTimebasedChannel)}");
-        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels: new List<ImageDeliveryChannel>
-        {
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, imageDeliveryChannels:
+        [
             new()
             {
                 Channel = AssetDeliveryChannels.File,
                 DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.FileNone
             }
-        });
+        ]);
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
@@ -149,16 +150,16 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetDoesNotRequireAuth_ProxiesToS3Location()
     {
         // Arrange
-        var id = AssetId.FromString("99/1/test-noauth");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: -1,
-            origin: "/test/space", imageDeliveryChannels: deliveryChannelsForTimebased);
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", origin: "/test/space",
+            imageDeliveryChannels: deliveryChannelsForTimebased);
         await dbFixture.DbContext.SaveChangesAsync();
         var expectedPath =
             new Uri(
-                "https://protagonist-storage.s3.eu-west-1.amazonaws.com/99/1/test-noauth/full/full/max/max/0/default.mp4");
+                $"https://protagonist-storage.s3.eu-west-1.amazonaws.com/{id}/full/full/max/max/0/default.mp4");
         
         // Act
-        var response = await httpClient.GetAsync("/iiif-av/99/1/test-noauth/full/full/max/max/0/default.mp4");
+        var response = await httpClient.GetAsync($"/iiif-av/{id}/full/full/max/max/0/default.mp4");
         var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
 
         // Assert
@@ -171,13 +172,13 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetRequiresAuth_Returns401_IfNoAuthProvided()
     {
         // Arrange
-        var id = AssetId.FromString("99/1/test-auth");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg",
             origin: "/test/space", roles: "basic", imageDeliveryChannels: deliveryChannelsForTimebased);
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
-        var response = await httpClient.GetAsync("/iiif-av/99/1/test-auth/full/full/max/max/0/default.mp4");
+        var response = await httpClient.GetAsync($"/iiif-av/{id}/full/full/max/max/0/default.mp4");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -188,15 +189,14 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetRequiresAuth_Returns401_IfBearerTokenProvided_ButInvalid()
     {
         // Arrange
-        var id = AssetId.FromString("99/1/bearer-fail");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg",
             origin: "/test/space", roles: "basic", imageDeliveryChannels: deliveryChannelsForTimebased);
         await dbFixture.DbContext.SaveChangesAsync();
         const string bearerToken = "ababababab";
 
         // Act
-        var request = new HttpRequestMessage(HttpMethod.Get,
-            "/iiif-av/99/1/bearer-fail/full/full/max/max/0/default.mp4");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/iiif-av/{id}/full/full/max/max/0/default.mp4");
         request.Headers.Add("Authorization", $"bearer {bearerToken}");
         var response = await httpClient.SendAsync(request);
 
@@ -209,8 +209,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetRequiresAuth_Returns401_IfBearerTokenValid()
     {
         // Arrange
-        var id = AssetId.FromString("99/1/bearer-pass");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg",
             origin: "/test/space", roles: "clickthrough", imageDeliveryChannels: deliveryChannelsForTimebased);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -220,8 +220,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
         await dbFixture.DbContext.SaveChangesAsync();
         
         // Act
-        var request = new HttpRequestMessage(HttpMethod.Get,
-            "/iiif-av/99/1/bearer-pass/full/full/max/max/0/default.mp4");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/iiif-av/{id}/full/full/max/max/0/default.mp4");
         request.Headers.Add("Authorization", $"bearer {authToken.Entity.BearerToken}");
         var response = await httpClient.SendAsync(request);
 
@@ -234,8 +233,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Head_AssetRequiresAuth_Returns200_IfBearerTokenValid()
     {
         // Arrange
-        var id = AssetId.FromString("99/1/bearer-head");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", 
             origin: "/test/space", roles: "clickthrough", imageDeliveryChannels: deliveryChannelsForTimebased);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -245,8 +244,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
-        var request = new HttpRequestMessage(HttpMethod.Head,
-            "/iiif-av/99/1/bearer-head/full/full/max/max/0/default.mp4");
+        var request = new HttpRequestMessage(HttpMethod.Head, $"/iiif-av/{id}/full/full/max/max/0/default.mp4");
         request.Headers.Add("Authorization", $"bearer {authToken.Entity.BearerToken}");
         var response = await httpClient.SendAsync(request);
 
@@ -259,8 +257,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Head_AssetRequiresAuth_Returns401_IfBearerTokenProvided_ButInvalid()
     {
         // Arrange
-        var id = AssetId.FromString("99/1/bearer-head-invalid");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", 
             origin: "/test/space", roles: "clickthrough", imageDeliveryChannels: deliveryChannelsForTimebased);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -283,14 +281,13 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetRequiresAuth_Returns401_IfCookieProvided_ButInvalid()
     {
         // Arrange
-        var id = AssetId.FromString("99/1/cookie-fail");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", 
             origin: "/test/space", roles: "basic", imageDeliveryChannels: deliveryChannelsForTimebased);
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
-        var request = new HttpRequestMessage(HttpMethod.Get,
-            "/iiif-av/99/1/cookie-fail/full/full/max/max/0/default.mp4");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/iiif-av/{id}/full/full/max/max/0/default.mp4");
         request.Headers.Add("Cookie", "dlcs-token-99=blabla;");
         var response = await httpClient.SendAsync(request);
 
@@ -303,8 +300,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Get_AssetRequiresAuth_ProxiesToS3_IfCookieTokenValid()
     {
         // Arrange
-        var id = AssetId.FromString("99/1/cookie-pass");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", 
             origin: "/test/space", roles: "clickthrough", imageDeliveryChannels: deliveryChannelsForTimebased);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -315,11 +312,10 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
         
         var expectedPath =
             new Uri(
-                "https://protagonist-storage.s3.eu-west-1.amazonaws.com/99/1/cookie-pass/full/full/max/max/0/default.mp4");
+                $"https://protagonist-storage.s3.eu-west-1.amazonaws.com/{id}/full/full/max/max/0/default.mp4");
 
         // Act
-        var request = new HttpRequestMessage(HttpMethod.Get,
-            "/iiif-av/99/1/cookie-pass/full/full/max/max/0/default.mp4");
+        var request = new HttpRequestMessage(HttpMethod.Get, $"/iiif-av/{id}/full/full/max/max/0/default.mp4");
         request.Headers.Add("Cookie", $"dlcs-token-99=id={authToken.Entity.CookieId};");
         var response = await httpClient.SendAsync(request);
         var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
@@ -333,8 +329,8 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     public async Task Head_AssetRequiresAuth_Returns200_IfCookieValid()
     {
         // Arrange
-        var id = AssetId.FromString("99/1/cookie-head");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", 
             origin: "/test/space", roles: "clickthrough", imageDeliveryChannels: deliveryChannelsForTimebased);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(
@@ -344,8 +340,7 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
-        var request = new HttpRequestMessage(HttpMethod.Head,
-            "/iiif-av/99/1/cookie-head/full/full/max/max/0/default.mp4");
+        var request = new HttpRequestMessage(HttpMethod.Head, $"/iiif-av/{id}/full/full/max/max/0/default.mp4");
         request.Headers.Add("Cookie", $"dlcs-token-99=id={authToken.Entity.CookieId};");
         var response = await httpClient.SendAsync(request);
 
@@ -355,11 +350,36 @@ public class TimebasedHandlingTests : IClassFixture<ProtagonistAppFactory<Startu
     }
     
     [Fact]
+    public async Task Head_AssetRequiresAuth_Returns401_IfCookieValid_ButUnobtainableRole()
+    {
+        // This is not a realistic test but confirms we will shortcut auth requests if 'unobtainable' role
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", 
+            origin: "/test/space", roles: Asset.UnobtainableRole, imageDeliveryChannels: deliveryChannelsForTimebased);
+        var userSession =
+            await dbFixture.DbContext.SessionUsers.AddTestSession(
+                DlcsDatabaseFixture.ClickThroughAuthService.AsList());
+        var authToken = await dbFixture.DbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(15),
+            sessionUserId: userSession.Entity.Id);
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Head, $"/iiif-av/{id}/full/full/max/max/0/default.mp4");
+        request.Headers.Add("Cookie", $"dlcs-token-99=id={authToken.Entity.CookieId};");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+    }
+    
+    [Fact]
     public async Task Head_AssetRequiresAuth_Returns401_IfCookieProvided_ButInvalid()
     {
         // Arrange
-        var id = AssetId.FromString("99/1/cookie-head-invalid");
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", maxUnauthorised: 100,
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "video/mpeg", 
             origin: "/test/space", roles: "clickthrough", imageDeliveryChannels: deliveryChannelsForTimebased);
         var userSession =
             await dbFixture.DbContext.SessionUsers.AddTestSession(

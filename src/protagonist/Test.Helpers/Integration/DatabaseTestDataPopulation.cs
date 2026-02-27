@@ -30,7 +30,6 @@ public static class DatabaseTestDataPopulation
         string origin = "http://test",
         string roles = "",
         string mediaType = "image/jpeg",
-        int maxUnauthorised = -1,
         int maxWidth = 0,
         int openFullMax = 0,
         int width = 8000,
@@ -56,7 +55,7 @@ public static class DatabaseTestDataPopulation
         {
             Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
             Width = width, Height = height, Roles = roles, Family = family, MediaType = mediaType,
-            ThumbnailPolicy = thumbnailPolicy, MaxUnauthorised = maxUnauthorised,
+            ThumbnailPolicy = thumbnailPolicy, MaxUnauthorised = -1,
             MaxWidth = maxWidth, OpenFullMax = openFullMax,
             Reference1 = ref1, Reference2 = ref2, Reference3 = ref3,
             NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
