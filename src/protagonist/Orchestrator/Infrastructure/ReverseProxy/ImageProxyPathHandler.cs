@@ -37,13 +37,13 @@ public static class ImageProxyPathHandler
         var isV2 = imageVersion == Version.V2;
         var isExplicitFull = imageRequest.IsExplicitFullSize();
 
-        var failedValidationError = TryValidateRequest(imageRequest, isV2, isExplicitFull, strictMode);
+        var failedValidationError = GetValidationFailure(imageRequest, isV2, isExplicitFull, strictMode);
         if (failedValidationError != null) return failedValidationError;
         
         return HandleProxyLogic(imageRequest, imageSize, maxWidth, isV2, isExplicitFull);
     }
 
-    private static ProxyImageRequest? TryValidateRequest(ImageRequest imageRequest, bool isV2, bool isExplicitFull,
+    private static ProxyImageRequest? GetValidationFailure(ImageRequest imageRequest, bool isV2, bool isExplicitFull,
         bool strictMode)
     {
         // V2 doesn't support ^ character, ever
