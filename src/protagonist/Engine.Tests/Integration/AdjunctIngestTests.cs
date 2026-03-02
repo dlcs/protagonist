@@ -1,8 +1,9 @@
-﻿using System.Text;
+﻿using System.Net;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Json;
 using DLCS.AWS.S3;
 using DLCS.Core.FileSystem;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Model.Policies;
@@ -36,10 +37,8 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly ApiStub apiStub;
     
     // These spaces are used in tests 
-    private const int CustomerForLimits = -10;
+    private const int CustomerForLimits = -20;
     private const int SpaceExceedLimit = 1;
-    private const int SpaceWithinLimit = 2;
-    private const int SpaceExceedLimitReingest = 3;
 
     private string origin2k;
     private string origin4k;
@@ -201,10 +200,65 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         storage.AdjunctSize.Should().Be(4096, "the update origin replaces 2k adjunct with 4k adjunct - should not be any different value");
     }
 
+    [Fact]
+    public async Task IngestAsset_Error_ExceedAllowance()
+    {
+        // prep customer
+        await dbContext.Customers.AddTestCustomer(CustomerForLimits);
+        await dbContext.Spaces.AddTestSpace(CustomerForLimits, SpaceExceedLimit);
+        await dbContext.SaveChangesAsync();
+        
+        var asset = await CreateParentAsset(customer:CustomerForLimits);
+
+        const string adjunctId = nameof(IngestAsset_Error_ExceedAllowance);
+        
+        // Note - API would have set this up before handing of
+        var adjunct = new Adjunct
+        {
+            Id = adjunctId, AssetId = asset.Id, Asset = asset, IIIFLink = IIIFLinkType.SeeAlso,
+            MediaType = "image/jpeg", Type = "Image", Origin = origin2k, Created = DateTime.UtcNow, Error = string.Empty, Ingesting = true
+        };
+        
+        dbContext.Adjuncts.Add(adjunct);
+        
+        // also update customer storage to exceed limit
+        var customerStorage = dbContext.CustomerStorages.Single(cs => cs.Customer == CustomerForLimits);
+        customerStorage.StoragePolicy = "small";
+        customerStorage.TotalSizeOfStoredImages = 1000000000L;
+        
+        dbContext.Entry(customerStorage).State = EntityState.Modified;
+        
+        await dbContext.SaveChangesAsync();
+        
+        var message = new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow);
+        
+        // Act
+        var jsonContent =
+            new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
+        
+        var result = await httpClient.PostAsync("adjunct-ingest", jsonContent);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.InsufficientStorage);
+
+        // No S3 assets created
+        BucketWriter.ShouldNotHaveKey($"{asset.Id}/adjuncts/{adjunct.Id}");
+
+        // Database records updated
+        await dbContext.Entry(adjunct).ReloadAsync();
+
+        adjunct.Ingesting.Should().BeFalse();
+        adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(SpaceExceedLimit));
+        adjunct.Error.Should().Be("StoragePolicy size limit exceeded");
+        
+        var storage = await dbContext.ImageStorages.SingleOrDefaultAsync(a => a.Id == asset.Id);
+        storage.AdjunctSize.Should().Be(0);
+    }
     
     // -- helpers ---
     
-    private async Task<Asset> CreateParentAsset()
+    private async Task<Asset> CreateParentAsset(int customer = 99, int space = 1, [CallerMemberName] string assetName = "",
+        string assetPostfix = "")
     {
         List<ImageDeliveryChannel> imageDeliveryChannels =
         [
@@ -220,11 +274,11 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             }
         ];
         
-        var assetId = AssetIdGenerator.GetAssetId();
+        var assetId = AssetIdGenerator.GetAssetId(customer, space, assetName, assetPostfix);
 
         // Note - API would have set this up before handing off
         var origin = $"{apiStub.Address}/image";
-        var entity = await dbContext.Images.AddTestAsset(assetId, ingesting: true, origin: origin,
+        var entity = await dbContext.Images.AddTestAsset(assetId, customer: customer, space: space, ingesting: true, origin: origin,
             mediaType: "image/tiff", width: 0, height: 0, imageDeliveryChannels: imageDeliveryChannels);
         var asset = entity.Entity;
         await dbContext.SaveChangesAsync();

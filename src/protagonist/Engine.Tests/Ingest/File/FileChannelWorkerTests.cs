@@ -295,7 +295,7 @@ public class FileChannelWorkerTests
     
     // Helpers
     
-    private static AdjunctIngestionContext GetAdjunctIngestionContext(string assetId = "/1/2/something", string adjunctId = "someAdjunct")
+    private static AdjunctIngestionContext GetAdjunctIngestionContext(string assetId = "/1/2/something", string adjunctId = "someAdjunct", ImageStorage? imageStorage = null)
     {
         var id = AssetId.FromString(assetId);
         var asset = new Asset
@@ -310,14 +310,7 @@ public class FileChannelWorkerTests
             MediaType = "image/jpeg", Type = "Image"
         };
         
-        var storage = new ImageStorage
-        {
-            Id = id,
-            Customer = id.Customer,
-            Space = id.Space
-        };
-        
-        var context = new AdjunctIngestionContext(adjunct, storage);
+        var context = new AdjunctIngestionContext(adjunct, imageStorage);
         return context;
     }
     
