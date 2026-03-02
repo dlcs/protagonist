@@ -129,7 +129,15 @@
                             <td>@string.Join(",", Model.Image.Roles)</td>
                         </tr>
                         <tr>
-                            <td>MaxUnauthorised</td>
+                            <td>MaxWidth</td>
+                            <td>@Model.Image.MaxWidth</td>
+                        </tr>
+                        <tr>
+                            <td>OpenFullMax</td>
+                            <td>@Model.Image.OpenFullMax</td>
+                        </tr>
+                        <tr>
+                            <td>MaxUnauthorised<p class="text-secondary">Obsolete. Superseded by OpenFullMax</p></td>
                             <td>@Model.Image.MaxUnauthorised</td>
                         </tr>
                     </tbody>
