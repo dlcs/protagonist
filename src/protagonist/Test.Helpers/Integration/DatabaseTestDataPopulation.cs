@@ -72,7 +72,7 @@ public static class DatabaseTestDataPopulation
         IIIFLinkType iiifLinkType = IIIFLinkType.SeeAlso,
         string profile = null, LanguageMap label = null,
         string[] language = null, string externalId = "https://someHost.com/someUri", DateTime? created = null,
-        long? size = null)
+        long? size = null, string? motivation = null)
     {
         asset.Result.Entity.Adjuncts ??= [];
         asset.Result.Entity.Adjuncts.Add(new Adjunct
@@ -87,7 +87,8 @@ public static class DatabaseTestDataPopulation
             Language = language,
             ExternalId = new Uri(externalId),
             Created = created ?? DateTime.UtcNow,
-            Size = size
+            Size = size,
+            Motivation = motivation
         });
 
         return asset;

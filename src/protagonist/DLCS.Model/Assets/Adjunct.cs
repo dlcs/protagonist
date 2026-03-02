@@ -85,6 +85,11 @@ public class Adjunct : IDeliverable
     /// The size in bytes of the adjunct
     /// </summary>
     public long? Size { get; set; }
+    
+    /// <summary>
+    /// The reason why this adjunct exists.
+    /// </summary>
+    public string? Motivation { get; set; }
 
     public Asset Asset { get; set; } = null!;
 }

@@ -47,6 +47,7 @@ public static class AdjunctConverter
             Label =  hydraAdjunct.Label.ToLanguageMap(),
             Language = hydraAdjunct.Language,
             Size = hydraAdjunct.Size,
+            Motivation = hydraAdjunct.Motivation,
         };
         
         if (hydraAdjunct.Origin is not null)
@@ -85,6 +86,7 @@ public static class AdjunctConverter
             Finished = adjunct.Finished,
             Size = adjunct.Size,
             Error = adjunct.Error,
+            Motivation = adjunct.Motivation,
             Ingesting = adjunct.Ingesting
         };
 }

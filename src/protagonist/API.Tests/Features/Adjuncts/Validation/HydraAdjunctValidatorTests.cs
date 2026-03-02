@@ -108,7 +108,7 @@ public class HydraAdjunctValidatorTests
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.IIIFLink)
-            .WithErrorMessage("Valid values for 'iiifLink' are 'seeAlso', 'annotations', 'rendering'");
+            .WithErrorMessage("Valid values for 'iiifLink' are 'seeAlso', 'annotations', 'rendering', 'inlineAnnotation'");
     }
     
     [Fact]
@@ -218,5 +218,20 @@ public class HydraAdjunctValidatorTests
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.Language)
             .WithErrorMessage("All 'language' values must be 10 characters or less. e.g. ISO language codes, sub-codes or 'none'");
+    }
+    
+    [Fact]
+    public void Motivation_Error_NotAnnotationPage()
+    {
+        var adjunct = new Adjunct
+        {
+            MediaType = "mediaType",
+            IIIFLink = "seeAlso",
+            Type = "Annotation",
+            Motivation = "some motivation"
+        };
+        var result = sut.TestValidate(adjunct);
+        result.ShouldHaveValidationErrorFor(r => r.Motivation)
+            .WithErrorMessage("The 'motivation' is not allowed when the '@type' is not 'AnnotationPage'");
     }
 }

@@ -49,15 +49,15 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
         RuleFor(a => a.Type)
             .NotEmpty()
             .WithMessage("'@type' is required");
-        
-        RuleFor(a => a.Motivation).Empty()
-            .When(a => a.Type != "AnnotationPage")
-            .WithMessage("'motivation' is not allowed when the '@type' is not 'AnnotationPage'");
 
         const int maximumLength = 10;
         RuleForEach(a => a.Language)
             .MaximumLength(maximumLength)
             .WithMessage($"All 'language' values must be {maximumLength} characters or less. e.g. ISO language codes, sub-codes or 'none'");
+        
+        RuleFor(a => a.Motivation).Empty()
+            .When(a => a.Type != "AnnotationPage")
+            .WithMessage("The 'motivation' is not allowed when the '@type' is not 'AnnotationPage'");
     }
 
     private readonly List<string> validIIIFLinkTypes =

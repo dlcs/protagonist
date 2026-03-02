@@ -86,7 +86,7 @@ public class Adjunct : DlcsResource
     [JsonProperty(Order = 23, PropertyName = "origin")]
     public string? Origin { get; set; }
     
-    [RdfProperty(Description = "Why this adjunct exists.",
+    [RdfProperty(Description = "he reason why this adjunct exists.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 24, PropertyName = "motivation")]
     public string? Motivation { get; set; }

@@ -44,11 +44,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         const string newAdjunctJson = """
                                       {
                                                 "id": "someAdjunctId",
-                                                "@type": "Image",
+                                                "@type": "AnnotationPage",
                                                 "externalId": "https://some-location.com/an-adjunct",
                                                 "iiifLink": "seeAlso",
                                                 "mediaType": "a-mediaType",
                                                 "label": {"label": ["value"]},
+                                                "motivation": "a motivation",
                                                 "language": ["en"],
                                               }
                                       """;
@@ -71,6 +72,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
+        adjunct.Motivation.Should().Be("a motivation");
         
         response.Headers.Location.Should()
             .Be(
@@ -283,7 +285,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = AssetIdGenerator.GetAssetId();
 
         await dbContext.Images.AddTestAsset(assetId)
-            .WithTestAdjunct("someAdjunctId");
+            .WithTestAdjunct("someAdjunctId", motivation: "a motivation");
         await dbContext.SaveChangesAsync();
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
@@ -299,6 +301,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
         adjunct.IIIFLink.Should().Be("seeAlso");
+        adjunct.Motivation.Should().Be("a motivation");
     }
     
     [Fact]
