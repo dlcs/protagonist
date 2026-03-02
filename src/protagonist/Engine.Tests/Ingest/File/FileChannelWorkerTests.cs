@@ -310,7 +310,14 @@ public class FileChannelWorkerTests
             MediaType = "image/jpeg", Type = "Image"
         };
         
-        var context = new AdjunctIngestionContext(adjunct);
+        var storage = new ImageStorage
+        {
+            Id = id,
+            Customer = id.Customer,
+            Space = id.Space
+        };
+        
+        var context = new AdjunctIngestionContext(adjunct, storage);
         return context;
     }
     

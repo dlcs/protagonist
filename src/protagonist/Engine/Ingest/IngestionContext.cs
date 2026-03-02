@@ -9,9 +9,15 @@ using Engine.Ingest.Persistence;
 
 namespace Engine.Ingest;
 
-public class AdjunctIngestionContext(Adjunct adjunct) : IngestionContext(adjunct.Asset)
+public class AdjunctIngestionContext : IngestionContext
 {
-    public Adjunct Adjunct { get; } = adjunct;
+    public AdjunctIngestionContext(Adjunct adjunct, ImageStorage? imageStorage) : base(adjunct.Asset)
+    {
+        Adjunct = adjunct;
+        ImageStorage = imageStorage;
+    }
+
+    public Adjunct Adjunct { get; }
 
     public override IOriginItem GetOriginItem() => Adjunct;
 
@@ -36,7 +42,7 @@ public class IngestionContext(Asset asset)
 
     public ImageLocation? ImageLocation { get; private set; }
 
-    public ImageStorage? ImageStorage { get; private set; }
+    public ImageStorage? ImageStorage { get; protected set; }
 
     public long PreIngestionAssetSize { get; private set; }
 

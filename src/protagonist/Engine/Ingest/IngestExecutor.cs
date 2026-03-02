@@ -19,11 +19,12 @@ public class IngestExecutor(
 {
     private const int MinimumAssetSize = 100;
 
-    public async Task<AdjunctIngestResult> IngestAdjunct(Adjunct adjunct, CustomerOriginStrategy customerOriginStrategy,
+    public async Task<AdjunctIngestResult> IngestAdjunct(Adjunct adjunct, ImageStorage? imageStorage,
+        CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
         var sw = Stopwatch.StartNew();
-        var context = new AdjunctIngestionContext(adjunct);
+        var context = new AdjunctIngestionContext(adjunct, imageStorage);
 
         var customerId = adjunct.Asset.Customer;
         var assetId = adjunct.Asset.Id;
