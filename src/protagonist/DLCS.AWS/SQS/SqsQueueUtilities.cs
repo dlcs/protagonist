@@ -13,8 +13,14 @@ public class SqsQueueUtilities
 {
     public static class Constants
     {
+        /// <summary>
+        /// Static class providing constant names of the "Message Attributes" that can be set on queue messages
+        /// </summary>
         public static class MessageAttributeNames
         {
+            /// <summary>
+            /// Allows differentiation between different ingest types, e.g. Asset or Adjunct
+            /// </summary>
             public const string IngestType = "IngestType";
         }
     }

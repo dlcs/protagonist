@@ -36,7 +36,7 @@ public class SqsQueueSender(IAmazonSQS client, SqsQueueUtilities queueUtilities,
     /// Converts CLR string-string dictionary to one with Amazon SQS specific <see cref="MessageAttributeValue"/>
     /// </summary>
     /// <param name="messageAttributes">attributes as string-string dictionary or null if no custom message attributes are needed</param>
-    /// <returns>new instance of a string-<see cref="MessageAttributeValue"/> dictionary</returns>
+    /// <returns>New instance of a string-<see cref="MessageAttributeValue"/> dictionary</returns>
     private static Dictionary<string, MessageAttributeValue>? GetMessageAttributesDictionary(
         IDictionary<string, string>? messageAttributes)
         => messageAttributes?.ToDictionary(kvp => kvp.Key,

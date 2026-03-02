@@ -7,6 +7,10 @@ namespace Engine.Ingest;
 
 public interface IAdjunctIngester
 {
+    /// <summary>
+    /// Run ingest based on <see cref="IngestAdjunctRequest"/>.
+    /// </summary>
+    /// <returns>Result of ingest operations</returns>
     Task<IngestResult> Ingest(IngestAdjunctRequest request, CancellationToken cancellationToken = default);
 }
 

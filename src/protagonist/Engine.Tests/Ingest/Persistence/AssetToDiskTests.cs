@@ -33,8 +33,6 @@ public class AssetToDiskTests
 
         var engineSettings = new EngineSettings { ImageIngest = new ImageIngestSettings() };
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(engineSettings);
-
-
         var originFetched = new OriginFetcher(null, resolver);
 
         sut = new AssetToDisk(originFetched,

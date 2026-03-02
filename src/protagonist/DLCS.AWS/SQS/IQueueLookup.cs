@@ -12,6 +12,6 @@ public interface IQueueLookup
     /// <summary>
     /// Get the name of queue used for processing adjuncts
     /// </summary>
-    /// <returns></returns>
+    /// <returns>Adjunct processing queue name</returns>
     string GetAdjunctsQueueName();
 }
