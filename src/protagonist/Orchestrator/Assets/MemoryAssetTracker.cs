@@ -11,6 +11,7 @@ using LazyCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
+using Orchestrator.Infrastructure.DataAccess;
 using Orchestrator.Settings;
 
 namespace Orchestrator.Assets;
@@ -19,7 +20,7 @@ namespace Orchestrator.Assets;
 /// <see cref="IAssetTracker"/> implementation using in-memory tracking
 /// </summary>
 public class MemoryAssetTracker(
-    IAssetRepository assetRepository,
+    IOrchestratorAssetRepository assetRepository,
     IAppCache appCache,
     IThumbRepository thumbRepository,
     ICustomerOriginStrategyRepository customerOriginStrategyRepository,
@@ -58,7 +59,7 @@ public class MemoryAssetTracker(
     {
         var cacheKey = GetCacheKey(assetId);
 
-        var newOrchestrationAsset = await GetOrchestrationAssetFromSource(assetId);
+        var newOrchestrationAsset = await GetOrchestrationAssetFromSource(assetId, true);
         appCache.Add(cacheKey, newOrchestrationAsset, cacheSettings.GetMemoryCacheOptions());
 
         return newOrchestrationAsset as T;
@@ -89,9 +90,9 @@ public class MemoryAssetTracker(
         }, cacheSettings.GetMemoryCacheOptions());
     }
 
-    private async Task<OrchestrationAsset?> GetOrchestrationAssetFromSource(AssetId assetId)
+    private async Task<OrchestrationAsset?> GetOrchestrationAssetFromSource(AssetId assetId, bool noCache = false)
     {
-        var asset = await assetRepository.GetAsset(assetId);
+        var asset = await assetRepository.GetAsset(assetId, noCache);
         return asset == null || asset.NotForDelivery
             ? null
             : await ConvertAssetToTrackedAsset(assetId, asset);

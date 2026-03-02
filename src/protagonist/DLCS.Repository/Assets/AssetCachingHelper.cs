@@ -12,20 +12,13 @@ namespace DLCS.Repository.Assets;
 /// <summary>
 /// Helper for working with cached assets
 /// </summary>
-public class AssetCachingHelper
+public class AssetCachingHelper(
+    IAppCache appCache,
+    IOptions<CacheSettings> cacheOptions,
+    ILogger<AssetCachingHelper> logger)
 {
-    private readonly IAppCache appCache;
-    private readonly ILogger<AssetCachingHelper> logger;
-    private readonly CacheSettings cacheSettings;
+    private readonly CacheSettings cacheSettings = cacheOptions.Value;
     private static readonly Asset NullAsset = new() { Id = AssetId.Null };
-
-    public AssetCachingHelper(IAppCache appCache, IOptions<CacheSettings> cacheOptions,
-        ILogger<AssetCachingHelper> logger)
-    {
-        this.appCache = appCache;
-        this.logger = logger;
-        cacheSettings = cacheOptions.Value;
-    }
 
     /// <summary>
     /// Purge specified asset from cache
@@ -58,5 +51,5 @@ public class AssetCachingHelper
         return asset.Id == NullAsset.Id ? null : asset;
     }
 
-    private string GetCacheKey(AssetId assetId) => $"asset:{assetId}";
+    private static string GetCacheKey(AssetId assetId) => $"asset:{assetId}";
 }

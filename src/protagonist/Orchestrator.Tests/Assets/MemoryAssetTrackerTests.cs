@@ -8,6 +8,7 @@ using LazyCache.Mocks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Infrastructure.DataAccess;
 using Orchestrator.Settings;
 using Test.Helpers.Data;
 
@@ -15,14 +16,14 @@ namespace Orchestrator.Tests.Assets;
 
 public class MemoryAssetTrackerTests
 {
-    private readonly IAssetRepository assetRepository;
+    private readonly IOrchestratorAssetRepository assetRepository;
     private readonly IThumbRepository thumbRepository;
     private readonly ICustomerOriginStrategyRepository customerOriginStrategyRepository;
     private readonly MemoryAssetTracker sut;
 
     public MemoryAssetTrackerTests()
     {
-        assetRepository = A.Fake<IAssetRepository>();
+        assetRepository = A.Fake<IOrchestratorAssetRepository>();
         thumbRepository = A.Fake<IThumbRepository>();
         customerOriginStrategyRepository = A.Fake<ICustomerOriginStrategyRepository>();
         A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(A<AssetId>._, A<string>._))
@@ -52,7 +53,7 @@ public class MemoryAssetTrackerTests
     {
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns<Asset>(null);
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns<Asset>(null);
         
         // Act
         var result = await sut.GetOrchestrationAsset(assetId);
@@ -73,7 +74,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var imageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId))
+        A.CallTo(() => assetRepository.GetAsset(assetId, false))
             .Returns(new Asset { ImageDeliveryChannels = imageDeliveryChannels, Origin = "test" });
 
         // Act
@@ -96,7 +97,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var imageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId))
+        A.CallTo(() => assetRepository.GetAsset(assetId, false))
             .Returns(new Asset { ImageDeliveryChannels = imageDeliveryChannels, NotForDelivery = true });
         
         // Act
@@ -111,7 +112,7 @@ public class MemoryAssetTrackerTests
     {
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns<Asset>(null);
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns<Asset>(null);
         
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationAsset>(assetId);
@@ -125,7 +126,7 @@ public class MemoryAssetTrackerTests
     {
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns<Asset>(null);
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns<Asset>(null);
         
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
@@ -139,7 +140,7 @@ public class MemoryAssetTrackerTests
     {
         // Arrange
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset { NotForDelivery = true });
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns(new Asset { NotForDelivery = true });
         
         // Act
         var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
@@ -156,7 +157,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var imageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId))
+        A.CallTo(() => assetRepository.GetAsset(assetId, false))
             .Returns(new Asset
             {
                 ImageDeliveryChannels = imageDeliveryChannels, Origin = "my-origin"
@@ -180,7 +181,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var imageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId))
+        A.CallTo(() => assetRepository.GetAsset(assetId, false))
             .Returns(new Asset
             {
                 ImageDeliveryChannels = imageDeliveryChannels, Origin = "my-origin"
@@ -206,7 +207,7 @@ public class MemoryAssetTrackerTests
         var assetId = new AssetId(1, 1, "go!");
 
         var sizes = new List<int[]> { new[] { 100, 200 } };
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns(new Asset
         {
             ImageDeliveryChannels = imageDeliveryChannels,
             Height = 10, Width = 50, Origin = "test"
@@ -234,7 +235,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var imageDeliveryChannels = "iiif-img".GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns(new Asset
         {
             ImageDeliveryChannels = imageDeliveryChannels, Roles = roles, OpenFullMax = openFullMax
         });
@@ -256,7 +257,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var imageDeliveryChannels = "iiif-img".GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns(new Asset
         {
             ImageDeliveryChannels = imageDeliveryChannels, MaxWidth = assetMaxWidth
         });
@@ -277,7 +278,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var imageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "otis");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns(new Asset
         {
             ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50,
             Origin = "test", Created = DateTime.Today
@@ -299,7 +300,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var imageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "otis");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns(new Asset
         {
             ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50,
             Origin = "test", Created = DateTime.Today.AddDays(-1)
@@ -322,7 +323,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var imageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "otis");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns(new Asset
         {
             ImageDeliveryChannels = imageDeliveryChannels, Height = 10, Width = 50,
             Origin = "test", Created = DateTime.Today.AddDays(1)
@@ -346,7 +347,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var imageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId))
+        A.CallTo(() => assetRepository.GetAsset(assetId, false))
             .Returns(new Asset { ImageDeliveryChannels = imageDeliveryChannels, Origin = "test" });
         
         // Act
@@ -364,7 +365,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var imageDeliveryChannels = "iiif-img".GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "go!");
-        A.CallTo(() => assetRepository.GetAsset(assetId)).Returns(new Asset
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns(new Asset
         {
             ImageDeliveryChannels = imageDeliveryChannels, Roles = roles
         });
@@ -386,7 +387,7 @@ public class MemoryAssetTrackerTests
         var imageDeliveryChannels = deliveryChannels.GenerateDeliveryChannels();
         var assetId = new AssetId(1, 1, "go!");
 
-        A.CallTo(() => assetRepository.GetAsset(assetId))
+        A.CallTo(() => assetRepository.GetAsset(assetId, false))
             .Returns(new Asset { ImageDeliveryChannels = imageDeliveryChannels});
         
         // Act
@@ -412,7 +413,7 @@ public class MemoryAssetTrackerTests
             .Returns(Task.FromResult(new CustomerOriginStrategy
                 { Id = "_default_", Strategy = OriginStrategyType.Default, Optimised = optimised }));
         
-        A.CallTo(() => assetRepository.GetAsset(assetId))
+        A.CallTo(() => assetRepository.GetAsset(assetId, false))
             .Returns(new Asset
             {
                 ImageDeliveryChannels = imageDeliveryChannels, Origin = "test", MediaType = "audio/mpeg"
@@ -424,5 +425,33 @@ public class MemoryAssetTrackerTests
         // Assert
         result!.OptimisedOrigin.Should().Be(optimised);
         result.MediaType.ToString().Should().Be("audio/mpeg");
+    }
+    
+    [Fact]
+    public async Task RefreshCachedAsset_Null_IfNotFound()
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, "go!");
+        A.CallTo(() => assetRepository.GetAsset(assetId, true)).Returns<Asset>(null);
+        
+        // Act
+        var result = await sut.RefreshCachedAsset<OrchestrationAsset>(assetId);
+        
+        // Assert
+        result.Should().BeNull();
+    }
+    
+    [Fact]
+    public async Task RefreshCachedAsset_Null_IfAssetFoundButNotForDelivery()
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, "go!");
+        A.CallTo(() => assetRepository.GetAsset(assetId, true)).Returns(new Asset { NotForDelivery = true });
+        
+        // Act
+        var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
+        
+        // Assert
+        result.Should().BeNull();
     }
 }

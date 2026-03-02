@@ -20,30 +20,15 @@ namespace Orchestrator.Features.Images.ImageServer;
 /// <summary>
 /// Service for managing the fetching and storing of info.json requests.
 /// </summary>
-public class InfoJsonService
+public class InfoJsonService(
+    IStorageKeyGenerator storageKeyGenerator,
+    IBucketReader bucketReader,
+    IBucketWriter bucketWriter,
+    InfoJsonConstructorResolver infoJsonConstructorResolver,
+    IOptions<OrchestratorSettings> orchestratorSettings,
+    ILogger<InfoJsonService> logger)
 {
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly IBucketReader bucketReader;
-    private readonly IBucketWriter bucketWriter;
-    private readonly InfoJsonConstructorResolver infoJsonConstructorResolver;
-    private readonly OrchestratorSettings orchestratorSettings;
-    private readonly ILogger<InfoJsonService> logger;
-
-    public InfoJsonService(
-        IStorageKeyGenerator storageKeyGenerator,
-        IBucketReader bucketReader,
-        IBucketWriter bucketWriter,
-        InfoJsonConstructorResolver infoJsonConstructorResolver,
-        IOptions<OrchestratorSettings> orchestratorSettings,
-        ILogger<InfoJsonService> logger)
-    {
-        this.storageKeyGenerator = storageKeyGenerator;
-        this.bucketReader = bucketReader;
-        this.bucketWriter = bucketWriter;
-        this.infoJsonConstructorResolver = infoJsonConstructorResolver;
-        this.orchestratorSettings = orchestratorSettings.Value;
-        this.logger = logger;
-    }
+    private readonly OrchestratorSettings orchestratorSettings = orchestratorSettings.Value;
 
     public async Task<InfoJsonResponse?> GetInfoJson(OrchestrationImage orchestrationImage,
         Version version, CancellationToken cancellationToken = default)
@@ -65,7 +50,7 @@ public class InfoJsonService
         // If not found, build new copy
         var infoJsonConstructor = infoJsonConstructorResolver(version);
         var infoJsonResponse =
-            await infoJsonConstructor.BuildInfoJsonFromImageServer(orchestrationImage, cancellationToken);
+            await infoJsonConstructor.BuildInfoJsonFromImageServer(orchestrationImage.AssetId, cancellationToken);
 
         if (infoJsonResponse == null) return null;
 

@@ -21,12 +21,15 @@ public class InfoJson3Constructor(
     IIIIFAuthBuilder iiifAuthBuilder,
     IImageServerClient imageServerClient,
     IThumbRepository thumbRepository,
+    IAssetTracker assetTracker,
     ILogger<InfoJson3Constructor> logger)
-    : InfoJsonConstructorTemplate<ImageService3>(imageServerClient, thumbRepository, iiifAuthBuilder, logger)
+    : InfoJsonConstructorTemplate<ImageService3>(imageServerClient, thumbRepository, iiifAuthBuilder, assetTracker,
+        logger)
 {
     protected override Version ImageApiVersion => Version.V3;
 
-    protected override async Task SetImageServiceAuthServices(ImageService3 imageService, OrchestrationImage orchestrationImage,
+    protected override async Task SetImageServiceAuthServices(ImageService3 imageService,
+        OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken)
     {
         var authServices = await GetAuth2Service(orchestrationImage, cancellationToken);
@@ -45,10 +48,10 @@ public class InfoJson3Constructor(
         imageService.MaxWidth = orchestrationImage.MaxWidth;
     }
 
-    protected override void SetImageServiceStubId(ImageService3 imageService, OrchestrationImage orchestrationImage) 
+    protected override void SetImageServiceStubId(ImageService3 imageService, OrchestrationImage orchestrationImage)
         => imageService.Id = $"v3/{orchestrationImage.AssetId}";
 
-    protected override void SetImageServiceSizes(ImageService3 imageService, List<Size> sizes) 
+    protected override void SetImageServiceSizes(ImageService3 imageService, List<Size> sizes)
         => imageService.Sizes = sizes;
 
     protected override void TrySetImageServiceTiles(ImageService3 imageService, OrchestrationImage orchestrationImage)
