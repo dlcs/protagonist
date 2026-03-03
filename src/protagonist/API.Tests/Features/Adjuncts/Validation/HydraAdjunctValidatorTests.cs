@@ -226,12 +226,11 @@ public class HydraAdjunctValidatorTests
         var adjunct = new Adjunct
         {
             MediaType = "mediaType",
-            IIIFLink = "seeAlso",
+            IIIFLink = "annotations",
             Type = "Annotation",
-            Motivation = "some motivation"
         };
         var result = sut.TestValidate(adjunct);
-        result.ShouldHaveValidationErrorFor(r => r.Motivation)
-            .WithErrorMessage("The 'motivation' is not allowed when the '@type' is not 'AnnotationPage'");
+        result.ShouldHaveValidationErrorFor(r => r.Type)
+            .WithErrorMessage("When the 'iiifLink' is 'annotations', the '@type' must be 'AnnotationPage'");
     }
 }

@@ -55,9 +55,10 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
             .MaximumLength(maximumLength)
             .WithMessage($"All 'language' values must be {maximumLength} characters or less. e.g. ISO language codes, sub-codes or 'none'");
         
-        RuleFor(a => a.Motivation).Empty()
-            .When(a => a.Type != "AnnotationPage")
-            .WithMessage("The 'motivation' is not allowed when the '@type' is not 'AnnotationPage'");
+        RuleFor(a => a.Type)
+            .Must(t =>  t == "AnnotationPage")
+            .When(a => a.IIIFLink == IIIFLinkType.Annotations.GetDescription())
+            .WithMessage($"When the 'iiifLink' is '{IIIFLinkType.Annotations.GetDescription()}', the '@type' must be 'AnnotationPage'");
     }
 
     private readonly List<string> validIIIFLinkTypes =
