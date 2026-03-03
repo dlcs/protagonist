@@ -12,6 +12,8 @@ using Hydra.Collections;
 using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace API.Infrastructure;
 
@@ -314,18 +316,24 @@ public abstract class HydraController : Controller
     /// Make a request and handle exceptions, converting to a HydraProblem 
     /// </summary>
     protected async Task<IActionResult> HandleHydraRequest(Func<Task<IActionResult>> handler,
-        string? errorTitle = "Request failed")
+        string? errorTitle = "Request failed", ILogger? logger = null)
     {
+        // Would be better to include it in the HydraController_ctor, but that's 20+ files to change,
+        // recommend doing it as a separate PR - this is to facilitate current needs
+        logger ??= Request.HttpContext.RequestServices.GetService<ILogger<HydraController>>();
+        
         try
         {
             return await handler();
         }
         catch (APIException apiEx)
         {
+            logger?.LogError(apiEx, "APIException when handling HydraRequest");
             return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode ?? 500, apiEx.Label);
         }
         catch (Exception ex)
         {
+            logger?.LogError(ex, "Unknown Exception when handling HydraRequest");
             return this.HydraProblem(ex.Message, null, 500, errorTitle);
         }
     }
