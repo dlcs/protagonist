@@ -56,7 +56,7 @@ public class OrchestrationAsset : IOriginItem
     public StringValues? MediaType { get; set; }
 }
 
-public class OrchestrationImage : OrchestrationAsset
+public class OrchestrationImage : OrchestrationAsset, IOriginItem
 {
     /// <summary>
     /// Get or set the image dimensions
@@ -82,6 +82,13 @@ public class OrchestrationImage : OrchestrationAsset
     /// Get or set location in S3 where image-server source is located 
     /// </summary>
     public string? S3Location { get; set; }
+
+    /// <summary>
+    /// When this is treated as an <see cref="IOriginItem"/>, e.g. in an origin strategy, we actually want to use
+    /// the <see cref="S3Location"/>. The actual <see cref="OrchestrationAsset.Origin"/> is only used in a specific
+    /// channel ("File"), which is not using the <see cref="IOriginItem"/>
+    /// </summary>
+    string? IOriginItem.Origin => S3Location;
     
     /// <summary>
     /// Does this image need to be reingested on the fly?
