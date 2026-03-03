@@ -78,7 +78,7 @@ public class FileSaver : IFileSaver
 
             logger.LogDebug(
                 "Download {ItemDesc} to '{TargetPath}': done ({Bytes} bytes, {Elapsed}ms) using {CopyType}",
-                originItem, destination, received, sw.ElapsedMilliseconds,
+                originItem.Identifier(), destination, received, sw.ElapsedMilliseconds,
                 knownFileSize ? "framework-copy" : "manual-copy");
 
             return received;
