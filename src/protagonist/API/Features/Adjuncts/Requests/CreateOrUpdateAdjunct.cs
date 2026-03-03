@@ -121,7 +121,8 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
             };
         }
         
-        dbAdjunct = dbContext.Adjuncts.Include(a=>a.Asset).Single(a=>a.Id == dbAdjunct.Id);
+        dbAdjunct = dbContext.Adjuncts.Include(a=>a.Asset)
+            .Single(a=>a.Id == dbAdjunct.Id && a.AssetId == dbAdjunct.AssetId);
 
         if (toBeIngested)
         {
