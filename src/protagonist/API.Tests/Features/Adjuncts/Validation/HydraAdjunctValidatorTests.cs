@@ -221,7 +221,7 @@ public class HydraAdjunctValidatorTests
     }
     
     [Fact]
-    public void Motivation_Error_NotAnnotationPage()
+    public void Type_Error_NotAnnotationPage()
     {
         var adjunct = new Adjunct
         {
