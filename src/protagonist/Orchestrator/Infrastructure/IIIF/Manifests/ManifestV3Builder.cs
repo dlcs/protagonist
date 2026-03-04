@@ -510,27 +510,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                     canvas.Rendering.Add(CreateExternalResource(adjunct));
                     break;
                 case IIIFLinkType.InlineAnnotation:
-                    canvas.Annotations ??= [];
-                    canvas.Annotations.Add(new AnnotationPage
-                    {
-                        Id = GetPathForAdjunct(adjunct, asset.Customer),
-                        Label = new LanguageMap("en", "Inline annotations"),
-                        Items = [
-                            new PaintingAnnotation
-                            {
-                                Id = $"{GetPathForAdjunct(adjunct, asset.Customer)}/{adjunct.Id}",
-                                Motivation = adjunct.Motivation,
-                                Body = new AdjunctAnnotation(adjunct.Type)
-                                {
-                                    Id = adjunct.ExternalId.ToString(),
-                                    Format = adjunct.MediaType,
-                                    Profile = adjunct.Profile,
-                                    Label = adjunct.Label,
-                                    Language = adjunct.Language?.ToList(),
-                                }
-                            }
-                        ]
-                    });
+                    CreateInlineAnnotation(canvas, adjunct);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(adjunct.IIIFLink), adjunct.IIIFLink,
@@ -538,28 +518,64 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             }
         }
 
-        // "rendering" and "seeAlso" are ExternalResources
-        ExternalResource CreateExternalResource(Adjunct adjunct) => new(adjunct.Type)
+        return;
+
+        // generates inline annotation output for adjuncts
+        void CreateInlineAnnotation(Canvas currentCanvas, Adjunct adjunct)
         {
-            Id = adjunct.ExternalId.ToString(),
-            Format = adjunct.MediaType,
-            Profile = adjunct.Profile,
-            Label = adjunct.Label,
-            Language = adjunct.Language?.ToList(),
-        };
+            var inlineAnnotationPage = currentCanvas.Annotations?.FirstOrDefault(a => !a.Items.IsNullOrEmpty());
+        
+            if (inlineAnnotationPage == null)
+            {
+                currentCanvas.Annotations ??= [];
+                currentCanvas.Annotations.Add(new AnnotationPage
+                {
+                    Id = GetPathForAdjunct(adjunct),
+                    Label = new LanguageMap("en", "Inline annotations"),
+                    Items =
+                    [
+                        new GeneralAnnotation(adjunct.Motivation)
+                        {
+                            Id = $"{GetPathForAdjunct(adjunct)}/{adjunct.Id}",
+                            Body = [CreateExternalResource(adjunct)]
+                        }
+                    ]
+                });
+            }
+            else
+            {
+                inlineAnnotationPage.Items!.Add(new GeneralAnnotation(adjunct.Motivation)
+                {
+                    Id = $"{GetPathForAdjunct(adjunct)}/{adjunct.Id}",
+                    Body = [CreateExternalResource(adjunct)]
+                });
+            }
+        }
+
+        // "rendering", "seeAlso" and "inline annotations" are the same style of output
+        AdjunctOutput CreateExternalResource(Adjunct adjunct) =>
+            new(adjunct.Type)
+            {
+                Id = adjunct.ExternalId.ToString(),
+                Format = adjunct.MediaType,
+                Profile = adjunct.Profile,
+                Label = adjunct.Label,
+                Language = adjunct.Language?.ToList(),
+            };
     }
-    
-    private string GetPathForAdjunct(Adjunct adjunct, int customerId)
+
+
+    private string GetPathForAdjunct(Adjunct adjunct)
     {
         var transcodeRequest = new BasicPathElements
         {
-            Space = adjunct.Asset.Space,
-            AssetPath = adjunct.Asset.Id.Asset,
+            Space = adjunct.AssetId.Space,
+            AssetPath = adjunct.AssetId.Asset,
             RoutePrefix = AssetDeliveryChannels.Adjunct,
-            CustomerPathValue = customerId.ToString(),
+            CustomerPathValue = adjunct.AssetId.Customer.ToString(),
         };
         return assetPathGenerator.GetFullPathForRequest(transcodeRequest, BuilderUtils.UseNativeFormatForAssets, false);
     }
 }
 
-public class AdjunctAnnotation(string type) : ExternalResource(type), IPaintable;
+public class AdjunctOutput(string type) : ExternalResource(type), IPaintable;

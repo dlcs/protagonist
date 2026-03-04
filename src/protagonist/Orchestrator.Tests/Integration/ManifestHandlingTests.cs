@@ -14,6 +14,7 @@ using IIIF.Serialisation;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
 using Orchestrator.Infrastructure.IIIF;
+using Orchestrator.Infrastructure.IIIF.Manifests;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers;
 using Test.Helpers.Data;
@@ -812,13 +813,23 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             .WithTestAdjunct("rendering1", type: "Text", mediaType: "application/pdf", iiifLinkType: IIIFLinkType.Rendering,
                 label: new LanguageMap("none", "PDF of image"), externalId: "https://pdf.example/1", language: ["fr"])
             .WithTestAdjunct("seeAlso2", type: "Text", mediaType: "text/xml", iiifLinkType: IIIFLinkType.SeeAlso,
-                externalId: "https://other.example/2");
+                externalId: "https://other.example/2")
+            .WithTestAdjunct("inlineAnnotation1", type: "AnnotationPage", mediaType: "text/xml", iiifLinkType: IIIFLinkType.InlineAnnotation,
+                externalId: "https://inline.example/1")
+            .WithTestAdjunct("inlineAnnotation2", type: "AnnotationPage", mediaType: "text/xml", iiifLinkType: IIIFLinkType.InlineAnnotation,
+                externalId: "https://inline.example/2");
         
         await dbFixture.DbContext.SaveChangesAsync();
 
         List<AnnotationPage> expectedAnnos =
         [
-            new() { Id = "https://mets.example/w3c", Label = new LanguageMap("en", "Line-level annos") }
+            new() { Id = "https://mets.example/w3c", Label = new LanguageMap("en", "Line-level annos") },
+            new() { Id = $"http://localhost/adjunct-annotations/{id}", Label = new LanguageMap("en", "Inline annotations"), 
+                Items = 
+                [
+                    new GeneralAnnotation(null){Id = $"http://localhost/adjunct-annotations/{id}/inlineAnnotation1", Body = [new AdjunctOutput("AnnotationPage"){ Id = "https://inline.example/1", Format = "text/xml"}]},
+                    new GeneralAnnotation(null){Id = $"http://localhost/adjunct-annotations/{id}/inlineAnnotation2", Body = [new AdjunctOutput("AnnotationPage"){ Id = "https://inline.example/2", Format = "text/xml"}]}
+                ]}
         ];
 
         List<ExternalResource> expectedSeeAlso =
