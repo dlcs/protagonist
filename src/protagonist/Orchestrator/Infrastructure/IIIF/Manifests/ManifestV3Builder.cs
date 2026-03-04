@@ -509,6 +509,29 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                     canvas.Rendering ??= [];
                     canvas.Rendering.Add(CreateExternalResource(adjunct));
                     break;
+                case IIIFLinkType.InlineAnnotation:
+                    canvas.Annotations ??= [];
+                    canvas.Annotations.Add(new AnnotationPage
+                    {
+                        Id = GetPathForAdjunct(adjunct, asset.Customer),
+                        Label = new LanguageMap("en", "Inline annotations"),
+                        Items = [
+                            new PaintingAnnotation
+                            {
+                                Id = $"{GetPathForAdjunct(adjunct, asset.Customer)}/{adjunct.Id}",
+                                Motivation = adjunct.Motivation,
+                                Body = new AdjunctAnnotation(adjunct.Type)
+                                {
+                                    Id = adjunct.ExternalId.ToString(),
+                                    Format = adjunct.MediaType,
+                                    Profile = adjunct.Profile,
+                                    Label = adjunct.Label,
+                                    Language = adjunct.Language?.ToList(),
+                                }
+                            }
+                        ]
+                    });
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(adjunct.IIIFLink), adjunct.IIIFLink,
                         "IIIFLink type not supported");
@@ -525,4 +548,18 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             Language = adjunct.Language?.ToList(),
         };
     }
+    
+    private string GetPathForAdjunct(Adjunct adjunct, int customerId)
+    {
+        var transcodeRequest = new BasicPathElements
+        {
+            Space = adjunct.Asset.Space,
+            AssetPath = adjunct.Asset.Id.Asset,
+            RoutePrefix = AssetDeliveryChannels.Adjunct,
+            CustomerPathValue = customerId.ToString(),
+        };
+        return assetPathGenerator.GetFullPathForRequest(transcodeRequest, BuilderUtils.UseNativeFormatForAssets, false);
+    }
 }
+
+public class AdjunctAnnotation(string type) : ExternalResource(type), IPaintable;
