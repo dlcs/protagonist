@@ -70,7 +70,16 @@ public class Adjunct : IDeliverable
     /// <summary>
     /// When the adjunct last finished processing
     /// </summary>
-    public DateTime Finished { get; set; }
+    public DateTime? Finished { get; set; }
+
+    /// <inheritdoc/>
+    public string ItemId => Id;
+    
+    /// <inheritdoc/>
+    public string Identifier() => $"adjunct '{Id}' for asset '{AssetId}'";
+
+    /// <inheritdoc/>
+    public AssetId GetAssetId() => AssetId;
     
     /// <summary>
     /// The size in bytes of the adjunct

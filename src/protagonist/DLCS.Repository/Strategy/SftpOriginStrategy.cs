@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Repository.SFTP;
@@ -20,7 +21,7 @@ public class SftpOriginStrategy : IOriginStrategy
     private readonly ISftpReader sftpReader;
     private const int DefaultPort = 22;
 
-    public SftpOriginStrategy(ICredentialsRepository credentialsRepository, 
+    public SftpOriginStrategy(ICredentialsRepository credentialsRepository,
         ISftpReader sftpReader,
         ILogger<SftpOriginStrategy> logger)
     {
@@ -28,12 +29,12 @@ public class SftpOriginStrategy : IOriginStrategy
         this.logger = logger;
         this.sftpReader = sftpReader;
     }
-    
-    public async Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
+
+    public async Task<OriginResponse> LoadFromOrigin(IOriginItem originItem,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("Fetching {Asset} from Origin: {Origin}", assetId, origin);
-        
+        logger.LogDebug("Fetching {ItemDesc} from Origin: {Origin}", originItem.Identifier(), originItem.Origin);
+
         var basicCredentials =
             await credentialsRepository.GetBasicCredentialsForOriginStrategy(customerOriginStrategy!);
 
@@ -42,8 +43,8 @@ public class SftpOriginStrategy : IOriginStrategy
             throw new ApplicationException(
                 $"Could not find credentials for customerOriginStrategy {customerOriginStrategy?.Id}");
         }
-        
-        var originUri = new Uri(origin);
+
+        var originUri = new Uri(originItem.Origin!);
 
         // The URI class doesn't know what the default port is for SFTP, so defaults to -1
         var port = originUri.IsDefaultPort ? DefaultPort : originUri.Port;
@@ -57,7 +58,7 @@ public class SftpOriginStrategy : IOriginStrategy
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error fetching {Asset} from Origin: {Origin}", assetId, origin);
+            logger.LogError(ex, "Error fetching {ItemDesc} from Origin: {Origin}", originItem.Identifier(), originItem.Origin);
             return OriginResponse.Empty;
         }
     }
@@ -65,8 +66,8 @@ public class SftpOriginStrategy : IOriginStrategy
     private static ConnectionInfo GetConnectionInfo(Uri originUri, int port, BasicCredentials basicCredentials)
     {
         return new ConnectionInfo(originUri.Host, port, basicCredentials!.User,
-            ProxyTypes.None, originUri.Host, port, basicCredentials.User, 
-            basicCredentials.Password, new PasswordAuthenticationMethod(basicCredentials.User, 
+            ProxyTypes.None, originUri.Host, port, basicCredentials.User,
+            basicCredentials.Password, new PasswordAuthenticationMethod(basicCredentials.User,
                 basicCredentials.Password));
     }
 }

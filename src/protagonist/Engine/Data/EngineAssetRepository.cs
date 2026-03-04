@@ -9,37 +9,31 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Engine.Data;
 
-public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepository
+public class EngineAssetRepository(
+    DlcsContext dlcsContext,
+    IBatchCompletedNotificationSender batchCompletedNotificationSender,
+    ILogger<EngineAssetRepository> logger)
+    : IEngineAssetRepository, IDapperContextRepository
 {
-    private readonly ILogger<EngineAssetRepository> logger;
-    public DlcsContext DlcsContext { get; }
-    private readonly IBatchCompletedNotificationSender batchCompletedNotificationSender;
+    public DlcsContext DlcsContext { get; } = dlcsContext;
 
-    public EngineAssetRepository(
-        DlcsContext dlcsContext, 
-        IBatchCompletedNotificationSender batchCompletedNotificationSender, 
-        ILogger<EngineAssetRepository> logger)
-    {
-        DlcsContext = dlcsContext;
-        this.logger = logger;
-        this.batchCompletedNotificationSender = batchCompletedNotificationSender;
-    }
-
-    public async Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage,
+    public async Task<bool> UpdateIngestedDeliverable(IDeliverable deliverable, ImageLocation? imageLocation, ImageStorage? imageStorage,
         bool ingestFinished, CancellationToken cancellationToken = default)
     {
-        var hasBatch = !asset.BatchAssets.IsNullOrEmpty();
+        var hasBatch = deliverable is Asset { BatchAssets.Count: > 0 };
 
-        logger.LogDebug("Updating ingested asset {AssetId}. HasBatch:{HasBatch}, Finished:{Finished}", asset.Id,
+        logger.LogDebug("Updating ingested item {Item}. HasBatch:{HasBatch}, Finished:{Finished}", deliverable.Identifier(),
             hasBatch, ingestFinished);
 
+        var assetId = deliverable.GetAssetId();
+        
         try
         {
-            UpdateAsset(asset, ingestFinished);
+            UpdateDeliverable(deliverable, ingestFinished);
 
             if (imageLocation != null)
             {
-                if (await DlcsContext.ImageLocations.AnyAsync(l => l.Id == asset.Id, cancellationToken))
+                if (await DlcsContext.ImageLocations.AnyAsync(l => l.Id == assetId, cancellationToken))
                 {
                     DlcsContext.ImageLocations.Attach(imageLocation);
                     DlcsContext.Entry(imageLocation).State = EntityState.Modified;
@@ -50,20 +44,9 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
                 }
             }
 
-            if (imageStorage != null)
-            {
-                if (await DlcsContext.ImageStorages.AnyAsync(l => l.Id == asset.Id, cancellationToken))
-                {
-                    DlcsContext.ImageStorages.Attach(imageStorage);
-                    DlcsContext.Entry(imageStorage).State = EntityState.Modified;
-                }
-                else
-                {
-                    DlcsContext.ImageStorages.Add(imageStorage);
-                }
-            }
+            await UpsertImageStorage(assetId, imageStorage, cancellationToken);
             
-            var updatedRows = hasBatch
+            var updatedRows = hasBatch && deliverable is Asset asset
                 ? await BatchSave(asset, ingestFinished, cancellationToken)
                 : await NonBatchedSave(cancellationToken);
 
@@ -72,11 +55,11 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
                 await IncreaseCustomerStorage(imageStorage, cancellationToken);
             }
             
-            return updatedRows || !ingestFinished; // if the ingest hasn't finished, rows can be not updated - meaning success
+            return updatedRows || !ingestFinished; // if the ingestion hasn't finished, rows can be not updated - meaning success
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error finalising Asset {AssetId} in DB", asset.Id);
+            logger.LogError(ex, "Error finalising item {AssetId} in DB", deliverable.Identifier());
             return false;
         }
     }
@@ -95,6 +78,16 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
         return new ValueTask<Asset?>(images.SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
     }
 
+    public ValueTask<Adjunct?> GetAdjunct(string id, AssetId assetId, CancellationToken cancellationToken = default)
+        => new(
+            DlcsContext.Adjuncts
+            .Include(a => a.Asset)
+            .SingleOrDefaultAsync(a => a.Id == id && a.AssetId == assetId, cancellationToken)
+        );
+
+    public ValueTask<ImageStorage?> GetImageStorage(AssetId assetId, CancellationToken cancellationToken = default)
+        => new(DlcsContext.ImageStorages.SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
+
     public async Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default)
     {
         var imageSize = await DlcsContext.ImageStorages.AsNoTracking()
@@ -103,6 +96,23 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
         return imageSize;
+    }
+    
+    private async Task UpsertImageStorage(AssetId assetId, ImageStorage? imageStorage,
+        CancellationToken cancellationToken)
+    {
+        if (imageStorage != null)
+        {
+            if (await DlcsContext.ImageStorages.AnyAsync(l => l.Id == assetId, cancellationToken))
+            {
+                DlcsContext.ImageStorages.Attach(imageStorage);
+                DlcsContext.Entry(imageStorage).State = EntityState.Modified;
+            }
+            else
+            {
+                DlcsContext.ImageStorages.Add(imageStorage);
+            }
+        }
     }
     
     private async Task<bool> NonBatchedSave(CancellationToken cancellationToken)
@@ -147,11 +157,11 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
         batchAsset.Finished = DateTime.UtcNow;
     }
 
-    private static void UpdateAsset(Asset asset, bool ingestFinished)
+    private static void UpdateDeliverable(IDeliverable deliverable, bool ingestFinished)
     {
         if (ingestFinished)
         {
-            asset.MarkAsFinished();
+            deliverable.MarkAsFinished();
         }
     }
 

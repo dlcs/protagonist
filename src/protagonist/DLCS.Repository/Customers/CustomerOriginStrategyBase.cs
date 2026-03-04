@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -58,13 +59,22 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
         return matching;
     }
 
-    public async Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Asset asset, bool initialIngestion = false)
+    public Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Asset asset, bool initialIngestion = false)
+        => GetCustomerOriginStrategy(asset.Customer, asset);
+
+    public Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Adjunct adjunct)
+        => GetCustomerOriginStrategy(adjunct.Asset.Customer, adjunct);
+
+    private async Task<CustomerOriginStrategy> GetCustomerOriginStrategy(int customerId, IDeliverable deliverable)
     {
-        var customerStrategies = await GetCustomerOriginStrategies(asset.Customer);
-        var matching = FindMatchingStrategy(asset.Origin, customerStrategies) ?? DefaultStrategy;
+        // Ones without origin would not have been sent for ingestion, this is part of the API processing
+        Debug.Assert(deliverable.Origin != null,  nameof(deliverable.Origin) + " != null");
         
-        logger.LogTrace("Using strategy: {Strategy} ('{StrategyId}') for handling asset '{AssetId}'",
-            matching.Strategy, matching.Id, asset.Id);
+        var customerStrategies = await GetCustomerOriginStrategies(customerId);
+        var matching = FindMatchingStrategy(deliverable.Origin, customerStrategies) ?? DefaultStrategy;
+        
+        logger.LogTrace("Using strategy: {Strategy} ('{StrategyId}') for handling {Deliverable}",
+            matching.Strategy, matching.Id, deliverable.Identifier());
         
         return matching;
     }

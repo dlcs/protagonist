@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using IIIF;
 using Microsoft.Extensions.Primitives;
 
@@ -9,7 +10,7 @@ namespace Orchestrator.Assets;
 /// <summary>
 /// Represents an asset during orchestration.
 /// </summary>
-public class OrchestrationAsset
+public class OrchestrationAsset : IOriginItem
 {
     /// <summary>
     /// Get or set the AssetId for tracked Asset
@@ -31,7 +32,13 @@ public class OrchestrationAsset
     /// </summary>
     /// <remarks>This is currently only used when "File" channel is available</remarks>
     public string? Origin { get; set; }
-    
+
+    /// <inheritdoc/>
+    public string ItemId => AssetId.Asset;
+
+    /// <inheritdoc/>
+    public string Identifier() => AssetId.ToString();
+
     /// <summary>
     /// Get or set whether this asset has an optimised origin 
     /// </summary>
@@ -49,7 +56,7 @@ public class OrchestrationAsset
     public StringValues? MediaType { get; set; }
 }
 
-public class OrchestrationImage : OrchestrationAsset
+public class OrchestrationImage : OrchestrationAsset, IOriginItem
 {
     /// <summary>
     /// Get or set the image dimensions
@@ -75,6 +82,13 @@ public class OrchestrationImage : OrchestrationAsset
     /// Get or set location in S3 where image-server source is located 
     /// </summary>
     public string? S3Location { get; set; }
+
+    /// <summary>
+    /// When this is treated as an <see cref="IOriginItem"/>, e.g. in an origin strategy, we actually want to use
+    /// the <see cref="S3Location"/>. The actual <see cref="OrchestrationAsset.Origin"/> is only used in a specific
+    /// channel ("File"), which is not using the <see cref="IOriginItem"/>
+    /// </summary>
+    string? IOriginItem.Origin => S3Location;
     
     /// <summary>
     /// Does this image need to be reingested on the fly?

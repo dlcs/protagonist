@@ -8,26 +8,21 @@ namespace DLCS.AWS.SQS;
 /// <summary>
 /// Implementation of <see cref="IQueueSender"/> using Sqs for backing queue
 /// </summary>
-public class SqsQueueSender : IQueueSender
+public class SqsQueueSender(IAmazonSQS client, SqsQueueUtilities queueUtilities, ILogger<SqsQueueSender> logger)
+    : IQueueSender
 {
-    private readonly IAmazonSQS client;
-    private readonly SqsQueueUtilities queueUtilities;
-    private readonly ILogger<SqsQueueSender> logger;
-
-    public SqsQueueSender(IAmazonSQS client, SqsQueueUtilities queueUtilities, ILogger<SqsQueueSender> logger)
-    {
-        this.client = client;
-        this.queueUtilities = queueUtilities;
-        this.logger = logger;
-    }
-
     public async Task<bool> QueueMessage(string queueName, string messageContents,
-        CancellationToken cancellationToken = default)
+        IDictionary<string, string>? messageAttributes, CancellationToken cancellationToken = default)
     {
         var queueUrl = await QueueLookup.GetQueueUrl(queueUtilities, queueName, cancellationToken);
         try
         {
-            var result = await client.SendMessageAsync(queueUrl, messageContents, cancellationToken);
+            var message = new SendMessageRequest(queueUrl, messageContents)
+            {
+                MessageAttributes = GetMessageAttributesDictionary(messageAttributes)
+            };
+
+            var result = await client.SendMessageAsync(message, cancellationToken);
             return result.HttpStatusCode.IsSuccess();
         }
         catch (Exception ex)
@@ -37,30 +32,45 @@ public class SqsQueueSender : IQueueSender
         }
     }
 
+    /// <summary>
+    /// Converts CLR string-string dictionary to one with Amazon SQS specific <see cref="MessageAttributeValue"/>
+    /// </summary>
+    /// <param name="messageAttributes">attributes as string-string dictionary or null if no custom message attributes are needed</param>
+    /// <returns>New instance of a string-<see cref="MessageAttributeValue"/> dictionary</returns>
+    private static Dictionary<string, MessageAttributeValue>? GetMessageAttributesDictionary(
+        IDictionary<string, string>? messageAttributes)
+        => messageAttributes?.ToDictionary(kvp => kvp.Key,
+            kvp => new MessageAttributeValue { StringValue = kvp.Value, DataType = "String" });
+
     public async Task<int> QueueMessages(string queueName, IReadOnlyCollection<string> messageContents,
-        string batchIdentifier, CancellationToken cancellationToken = default)
+        string batchIdentifier, IDictionary<string, string>? messageAttributes,
+        CancellationToken cancellationToken = default)
     {
         const int batchSize = 10;
         var queueUrl = await QueueLookup.GetQueueUrl(queueUtilities, queueName, cancellationToken);
-        int successCount = 0;
+        var successCount = 0;
         try
         {
-            int batchCount = 0;
-            int count = 0;
+            var batchCount = 0;
+            var count = 0;
             foreach (var batch in messageContents.Chunk(batchSize))
             {
                 var batchPrefix = $"{batchIdentifier}_{++batchCount}";
                 var entries = batch
-                    .Select(c => new SendMessageBatchRequestEntry($"{batchPrefix}_{++count}", c))
+                    .Select(c => new SendMessageBatchRequestEntry($"{batchPrefix}_{++count}", c)
+                    {
+                        // Note: It seems recommended to have an instance-per-entry, not reuse the same one
+                        MessageAttributes = GetMessageAttributesDictionary(messageAttributes)
+                    })
                     .ToList();
                 var batchResult = await client.SendMessageBatchAsync(queueUrl, entries, cancellationToken);
-                
+
                 if (!batchResult.HttpStatusCode.IsSuccess())
                 {
                     logger.LogError("Overall batch failure for {BatchPrefix}. StatusCode: {StatusCode}", batchPrefix,
                         batchResult.HttpStatusCode);
                 }
-                
+
                 if (batchResult.Failed.Count > 0)
                 {
                     foreach (var errorEntry in batchResult.Failed)

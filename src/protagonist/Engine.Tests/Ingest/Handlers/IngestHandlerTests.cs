@@ -12,14 +12,16 @@ namespace Engine.Tests.Ingest.Handlers;
 public class IngestHandlerTests
 {
     private readonly IAssetIngester assetIngester;
+    private readonly IAdjunctIngester adjunctIngester;
     private readonly IngestHandler sut;
     private readonly ICustomerQueueRepository customerQueueRepository;
 
     public IngestHandlerTests()
     {
         assetIngester = A.Fake<IAssetIngester>();
+        adjunctIngester = A.Fake<IAdjunctIngester>();
         customerQueueRepository = A.Fake<ICustomerQueueRepository>();
-        sut = new IngestHandler(assetIngester, customerQueueRepository, new NullLogger<IngestHandler>());
+        sut = new IngestHandler(assetIngester, adjunctIngester, customerQueueRepository, new NullLogger<IngestHandler>());
     }
     
     [Fact]
@@ -30,7 +32,7 @@ public class IngestHandlerTests
         {
             ["created"] = "not-a-date"
         };
-        var queueMessage = new QueueMessage { Body = body };
+        var queueMessage = new QueueMessage { Body = body, MessageAttributes = []};
 
         // Act
         var success = await sut.HandleMessage(queueMessage, CancellationToken.None);
@@ -50,7 +52,7 @@ public class IngestHandlerTests
         {
             ["created"] = "1985-10-26T09:00:00"
         };
-        var queueMessage = new QueueMessage { Body = body, QueueName = "test" };
+        var queueMessage = new QueueMessage { Body = body, QueueName = "test", MessageAttributes = new(){{SqsQueueUtilities.Constants.MessageAttributeNames.IngestType, IngestAssetRequest.IngestType}} };
         A.CallTo(() => assetIngester.Ingest(A<IngestAssetRequest>._, A<CancellationToken>._))
             .Returns(new IngestResult(new AssetId(1 , 2, "fake"), result));
         
@@ -74,7 +76,7 @@ public class IngestHandlerTests
         {
             ["created"] = "1985-10-26T09:00:00"
         };
-        var queueMessage = new QueueMessage { Body = body, QueueName = "test" };
+        var queueMessage = new QueueMessage { Body = body, QueueName = "test", MessageAttributes = new(){{SqsQueueUtilities.Constants.MessageAttributeNames.IngestType, IngestAssetRequest.IngestType}} };
         A.CallTo(() => assetIngester.Ingest(A<IngestAssetRequest>._, A<CancellationToken>._))
             .Returns(new IngestResult(new AssetId(1 , 2, "fake"), result));
         

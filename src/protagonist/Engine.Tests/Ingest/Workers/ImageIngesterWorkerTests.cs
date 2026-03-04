@@ -48,7 +48,7 @@ public class ImageIngesterWorkerTests
         // Arrange
         var asset = new Asset(AssetId.FromString("2/1/shallow"));
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(A<IngestionContext>._, A<string>._, true, A<CustomerOriginStrategy>._,
+                assetToDisk.CopyItemToLocalDisk(A<IngestionContext>._, A<string>._, true, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
             .ThrowsAsync(new ArgumentNullException());
 
@@ -67,7 +67,7 @@ public class ImageIngesterWorkerTests
         // Arrange
         var asset = new Asset(AssetId.FromString($"{customerId}/1/shallow"));
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
-        A.CallTo(() => assetToDisk.CopyAssetToLocalDisk(A<IngestionContext>._, A<string>._, A<bool>._, A<CustomerOriginStrategy>._,
+        A.CallTo(() => assetToDisk.CopyItemToLocalDisk(A<IngestionContext>._, A<string>._, A<bool>._, A<CustomerOriginStrategy>._,
                 A<CancellationToken>._))
             .Returns(assetFromOrigin);
 
@@ -76,7 +76,7 @@ public class ImageIngesterWorkerTests
 
         // Assert
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(A<IngestionContext>._, A<string>._, !noStoragePolicyCheck, A<CustomerOriginStrategy>._,
+                assetToDisk.CopyItemToLocalDisk(A<IngestionContext>._, A<string>._, !noStoragePolicyCheck, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
             .MustHaveHappened();
     }
@@ -89,7 +89,7 @@ public class ImageIngesterWorkerTests
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
         assetFromOrigin.FileTooLarge();
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(A<IngestionContext>._, A<string>._, true, A<CustomerOriginStrategy>._,
+                assetToDisk.CopyItemToLocalDisk(A<IngestionContext>._, A<string>._, true, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
             .Returns(assetFromOrigin);
 
@@ -110,7 +110,7 @@ public class ImageIngesterWorkerTests
         var asset = new Asset(AssetId.FromString("/2/1/remurdered"));
 
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(A<IngestionContext>._, A<string>._, true, A<CustomerOriginStrategy>._,
+                assetToDisk.CopyItemToLocalDisk(A<IngestionContext>._, A<string>._, true, A<CustomerOriginStrategy>._,
                     A<CancellationToken>._))
             .Returns(new AssetFromOrigin(asset.Id, 13, "target", "application/json"));
 

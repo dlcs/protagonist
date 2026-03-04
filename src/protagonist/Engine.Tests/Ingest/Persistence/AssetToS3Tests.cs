@@ -197,7 +197,7 @@ public class AssetToS3Tests
         var assetFromOrigin = new AssetFromOrigin();
         assetFromOrigin.FileTooLarge();
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetFromOrigin);
 
         // Act
@@ -205,7 +205,7 @@ public class AssetToS3Tests
 
         // Assert
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .MustHaveHappened();
     }
     
@@ -228,7 +228,7 @@ public class AssetToS3Tests
         var assetOnDisk = new AssetFromOrigin(asset.Id, 1234, "1", "video/mpeg");
         assetOnDisk.FileTooLarge();
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetOnDisk);
 
         // Act
@@ -258,7 +258,7 @@ public class AssetToS3Tests
 
         var assetOnDisk = new AssetFromOrigin(asset.Id, 1234, "1", "video/mpeg");
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetOnDisk);
 
         A.CallTo(() => bucketWriter.WriteFileToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, ct))
@@ -300,7 +300,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
         var assetOnDisk = new AssetFromOrigin(asset.Id, assetSize, "/on/disk", mediaType);
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetOnDisk);
 
         A.CallTo(() => bucketWriter.WriteFileToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, ct))
@@ -331,7 +331,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
         var assetOnDisk = new AssetFromOrigin(asset.Id, 1234, "/on/disk", "video/mpeg");
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetOnDisk);
 
         // Act

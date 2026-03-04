@@ -15,71 +15,81 @@ namespace Engine.Ingest.Persistence;
 public interface IAssetToDisk
 {
     /// <summary>
-    /// Copy asset from Origin to local disk.
+    /// Copy item from Origin to local disk.
     /// </summary>
-    /// <param name="context">Ingestion context containing the <see cref="Asset"/> to be copied.</param>
+    /// <param name="context">Ingestion context containing the <see cref="IOriginItem"/> to be copied.</param>
     /// <param name="destinationTemplate">String representing destinations folder to copy to.</param>
     /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>Current cancellation token</param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    Task<AssetFromOrigin> CopyAssetToLocalDisk(IngestionContext context, string destinationTemplate, bool verifySize, 
+    /// <remarks>
+    /// This method can also take <see cref="AdjunctIngestionContext"/> which overrides certain methods,
+    /// resulting in copy of the Adjunct to appropriate adjuncts location, not the parent asset itself
+    /// </remarks>
+    Task<AssetFromOrigin> CopyItemToLocalDisk(IngestionContext context, string destinationTemplate, bool verifySize,
         CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default);
 }
 
 /// <summary>
-/// Class for copying asset from origin to local disk.
+/// Class for copying items from origin to local disk.
 /// </summary>
-public class AssetToDisk : AssetMoverBase, IAssetToDisk
+public class AssetToDisk(
+    OriginFetcher originFetcher,
+    IStorageRepository storageRepository,
+    IFileSaver fileSaver,
+    IOptionsMonitor<EngineSettings> engineOptions,
+    ILogger<AssetToDisk> logger)
+    : AssetMoverBase(storageRepository), IAssetToDisk
 {
-    private readonly OriginFetcher originFetcher;
-    private readonly IFileSaver fileSaver;
-    private readonly EngineSettings engineSettings;
-    private readonly ILogger<AssetToDisk> logger;
+    private readonly EngineSettings engineSettings = engineOptions.CurrentValue;
 
-    public AssetToDisk(
-        OriginFetcher originFetcher,
-        IStorageRepository storageRepository,
-        IFileSaver fileSaver,
-        IOptionsMonitor<EngineSettings> engineOptions,
-        ILogger<AssetToDisk> logger) : base(storageRepository)
-    {
-        this.originFetcher = originFetcher;
-        this.fileSaver = fileSaver;
-        this.logger = logger;
-        this.engineSettings = engineOptions.CurrentValue;
-    }
-    
+
     /// <summary>
     /// Copy asset from Origin to local disk.
     /// </summary>
-    /// <param name="context">Ingestion context containing the <see cref="Asset"/> to be copied.</param>
+    /// <param name="context">Ingestion context containing the <see cref="IOriginItem"/> to be copied.</param>
     /// <param name="destinationTemplate">String representing destinations folder to copy to.</param>
     /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/>Current cancellation token</param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
-    public async Task<AssetFromOrigin> CopyAssetToLocalDisk(IngestionContext context, string destinationTemplate, bool verifySize, 
+    public async Task<AssetFromOrigin> CopyItemToLocalDisk(IngestionContext context, string destinationTemplate,
+        bool verifySize,
         CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
         destinationTemplate.ThrowIfNullOrWhiteSpace(nameof(destinationTemplate));
+        var item = context.GetOriginItem();
 
         await using var originResponse =
-            await originFetcher.LoadAssetFromLocation(context.Asset.Id, context.Asset.Origin,
-                customerOriginStrategy, cancellationToken);
+            await originFetcher.LoadFromOrigin(item, customerOriginStrategy, cancellationToken);
 
-        if (originResponse == null || originResponse.Stream.IsNull())
+        if (originResponse.Stream.IsNull())
         {
-            logger.LogWarning("Unable to fetch asset {AssetId} from {Origin}, using {OriginStrategy}", context.Asset.Id,
-                context.Asset.Origin, customerOriginStrategy.Strategy);
+            logger.LogWarning("Unable to fetch asset {Item} from {Origin}, using {OriginStrategy}", item.Identifier(),
+                item.Origin, customerOriginStrategy.Strategy);
             throw new ApplicationException(
-                $"Unable to get asset '{context.Asset.Id}' from origin '{context.Asset.Origin}' using {customerOriginStrategy.Strategy}");
+                $"Unable to get item {item.Identifier()} from origin '{item.Origin}' using {customerOriginStrategy.Strategy}");
         }
-        
+
         cancellationToken.ThrowIfCancellationRequested();
-        var assetFromOrigin = await CopyAssetToDisk(context.Asset, destinationTemplate, originResponse, cancellationToken);
+
+        TrySetContentTypeForBinary(originResponse, item);
+
+        var extension = GetFileExtension(originResponse);
+
+        var path = GetPath(context, destinationTemplate,
+            engineSettings.ImageIngest.ThrowIfNull(nameof(engineSettings.ImageIngest)));
+
+        var targetPath = $"{path}.{extension}";
+
+        var received = await fileSaver.SaveResponseToDisk(item, originResponse, targetPath,
+            cancellationToken);
+
+        var assetFromOrigin = context.CreateAssetFromOrigin(received, targetPath, originResponse.ContentType);
+
         assetFromOrigin.CustomerOriginStrategy = customerOriginStrategy;
 
         if (verifySize)
@@ -90,24 +100,21 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
         return assetFromOrigin;
     }
 
-    private async Task<AssetFromOrigin> CopyAssetToDisk(Asset asset, string destinationTemplate,
-        OriginResponse originResponse, CancellationToken cancellationToken)
+    private static string GetPath(IngestionContext context, string destinationTemplate, ImageIngestSettings settings)
     {
-        TrySetContentTypeForBinary(originResponse, asset);
-        var extension = GetFileExtension(originResponse);
+        var path = Path.Join(destinationTemplate, context.AssetId.GetDiskSafeAssetId(settings));
 
-        var path = Path.Join(destinationTemplate, asset.Id.GetDiskSafeAssetId(engineSettings.ImageIngest));
+        if (context is AdjunctIngestionContext adjunctContext)
+        {
+            path = Path.Join(path, "adjuncts",
+                adjunctContext.Adjunct.Id.GetDiskSafeFileId(settings));
+        }
 
-        var targetPath = $"{path}.{extension}";
-
-        var received = await fileSaver.SaveResponseToDisk(asset.Id, originResponse, targetPath,
-            cancellationToken);
-        
-        return new AssetFromOrigin(asset.Id, received, targetPath, originResponse.ContentType);
+        return path;
     }
-    
+
     // TODO - this may need refined depending on whether it's 'I' or 'T' ingest
-    private void TrySetContentTypeForBinary(OriginResponse originResponse, Asset asset)
+    private void TrySetContentTypeForBinary(OriginResponse originResponse, IOriginItem item)
     {
         string? GuessContentType(string source)
         {
@@ -115,14 +122,14 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
             var guess = MIMEHelper.GetContentTypeForExtension(extension);
             return guess;
         }
-        
+
         // If the content type is binary, attempt to determine via file extension on name
         var contentType = originResponse.ContentType;
         if (string.IsNullOrWhiteSpace(contentType) || IsBinaryContent(contentType))
         {
-            var uniqueName = asset.Id.Asset;
-            
-            var guess = GuessContentType(asset.Origin);
+            var uniqueName = item.ItemId;
+
+            var guess = GuessContentType(item.Origin!);
             if (string.IsNullOrEmpty(guess))
             {
                 guess = GuessContentType(uniqueName);
@@ -141,7 +148,7 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
 
     private static bool IsBinaryContent(string contentType) =>
         contentType is MIMEHelper.ApplicationOctet or MIMEHelper.BinaryOctet;
-    
+
     private string GetFileExtension(OriginResponse originResponse)
     {
         var extension = MIMEHelper.GetExtensionForContentType(originResponse.ContentType);
@@ -154,10 +161,11 @@ public class AssetToDisk : AssetMoverBase, IAssetToDisk
 
         return extension;
     }
-    
+
     private async Task VerifyFileSize(IngestionContext context, AssetFromOrigin assetFromOrigin)
     {
-        var customerHasEnoughSize = await VerifyFileSize(context.Asset.Id, assetFromOrigin.AssetSize, context.PreIngestionAssetSize);
+        var customerHasEnoughSize = await VerifyFileSize(context.Asset.Customer, assetFromOrigin.AssetSize,
+            context.PreIngestionAssetSize);
 
         if (!customerHasEnoughSize)
         {

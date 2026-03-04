@@ -11,6 +11,8 @@ namespace DLCS.Model.Messaging;
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
 public class IngestAssetRequest
 {
+    public const string IngestType = "IngestAsset";
+        
     /// <summary>
     /// Get date that this request was created.
     /// </summary>

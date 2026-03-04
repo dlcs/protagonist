@@ -9,8 +9,8 @@ public class DeliverableXTests
     public void SetFieldsForIngestion_ClearsFields_Asset()
     {
         // Arrange
-        var asset = new Asset { Error = "I am an error", Ingesting = false };
-        var expected = new Asset { Error = string.Empty, Ingesting = true };
+        var asset = new Asset { Id = AssetId.Null, Error = "I am an error", Ingesting = false };
+        var expected = new Asset { Id = AssetId.Null, Error = string.Empty, Ingesting = true };
 
         // Act
         asset.SetFieldsForIngestion();

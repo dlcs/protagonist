@@ -3,57 +3,69 @@ using DLCS.AWS.SQS;
 using DLCS.Model.Messaging;
 using DLCS.Model.Processing;
 using DLCS.Web.Logging;
+using static DLCS.AWS.SQS.SqsQueueUtilities.Constants.MessageAttributeNames;
 
 namespace Engine.Ingest;
 
 /// <summary>
 /// Handler for ingest messages that have been pulled from queue.
 /// </summary>
-public class IngestHandler : IMessageHandler
+public class IngestHandler(
+    IAssetIngester assetIngester,
+    IAdjunctIngester adjunctIngester,
+    ICustomerQueueRepository customerQueueRepository,
+    ILogger<IngestHandler> logger)
+    : IMessageHandler
 {
-    private readonly IAssetIngester ingester;
-    private readonly ICustomerQueueRepository customerQueueRepository;
-    private readonly ILogger<IngestHandler> logger;
-
-    public IngestHandler(IAssetIngester ingester, ICustomerQueueRepository customerQueueRepository, 
-        ILogger<IngestHandler> logger)
-    {
-        this.ingester = ingester;
-        this.customerQueueRepository = customerQueueRepository;
-        this.logger = logger;
-    }
-    
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken)
     {
-        var ingestEvent = DeserializeBody<IngestAssetRequest>(message);
-        
-        if (ingestEvent == null) return false;
+        _ = message.MessageAttributes.TryGetValue(IngestType, out var ingestType);
+
+        return ingestType switch
+        {
+            IngestAssetRequest.IngestType => await HandleIngest<IngestAssetRequest>(message, assetIngester.Ingest,
+                cancellationToken),
+            IngestAdjunctRequest.IngestType => await HandleIngest<IngestAdjunctRequest>(message, adjunctIngester.Ingest,
+                cancellationToken),
+            _ => false
+        };
+    }
+
+    private async Task<bool> HandleIngest<T>(QueueMessage message,
+        Func<T, CancellationToken, Task<IngestResult>> ingester, CancellationToken cancellationToken) where T : class
+    {
+        var ingestEvent = DeserializeBody<T>(message);
+        if (ingestEvent == null)
+        {
+            return false;
+        }
 
         using (LogContextHelpers.SetCorrelationId(message.MessageId))
         {
-            var ingestResult = await ingester.Ingest(ingestEvent, cancellationToken);
+            var ingestResult = await ingester.Invoke(ingestEvent, cancellationToken);
 
             logger.LogDebug("Message {MessageId} handled with result {IngestResult}", message.MessageId,
                 ingestResult.Status);
-            await UpdateCustomerQueue(message, cancellationToken, ingestResult);
+            await UpdateCustomerQueue(message, ingestResult, cancellationToken);
         }
 
         // return true so that the message is deleted from the queue in all instances.
-        // This shouldn't be the case and can be revisited at a later date as it will need logic of how Batch.Errors is
-        // calculated
+        // This shouldn't be the case and can be revisited at a later date as it will need logic of how Batch.Errors
+        // property is calculated
+
         return true;
     }
 
-    private async Task UpdateCustomerQueue(QueueMessage message, CancellationToken cancellationToken,
-        IngestResult ingestResult)
+    private async Task UpdateCustomerQueue(QueueMessage message,
+        IngestResult ingestResult, CancellationToken cancellationToken)
     {
-        var queue = message.QueueName.ToLower().Contains("priority") ? QueueNames.Priority : QueueNames.Default;
-        int customer = 0;
+        var queue = message.QueueName.Contains("priority", StringComparison.OrdinalIgnoreCase) ? QueueNames.Priority : QueueNames.Default;
+        var customer = 0;
         try
         {
             if (ingestResult.AssetId != null)
             {
-                customer = ingestResult.AssetId.Customer; 
+                customer = ingestResult.AssetId.Customer;
                 await customerQueueRepository.DecrementSize(ingestResult.AssetId.Customer, queue,
                     cancellationToken: cancellationToken);
             }

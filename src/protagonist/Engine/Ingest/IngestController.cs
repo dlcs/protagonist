@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Engine.Ingest;
 
 [ApiController]
-public class IngestController(IAssetIngester ingester) : Controller
+public class IngestController(IAssetIngester assetIngester, IAdjunctIngester adjunctIngester) : Controller
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
 
@@ -21,7 +21,24 @@ public class IngestController(IAssetIngester ingester) : Controller
             await JsonSerializer.DeserializeAsync<IngestAssetRequest>(Request.Body,
                 JsonSerializerOptions, cancellationToken);
 
-        var result = await ingester.Ingest(message!, cancellationToken);
+        var result = await assetIngester.Ingest(message!, cancellationToken);
+
+        return ConvertToStatusCode(message!, result.Status);
+    }
+    
+    /// <summary>
+    /// Synchronously ingest an adjunct 
+    /// </summary>
+    /// <remarks>Added for easier integration testing without SQS</remarks>
+    [HttpPost]
+    [Route("adjunct-ingest")]
+    public async Task<IActionResult> IngestAdjunct(CancellationToken cancellationToken)
+    {
+        var message =
+            await JsonSerializer.DeserializeAsync<IngestAdjunctRequest>(Request.Body,
+                JsonSerializerOptions, cancellationToken);
+
+        var result = await adjunctIngester.Ingest(message!, cancellationToken);
 
         return ConvertToStatusCode(message!, result.Status);
     }

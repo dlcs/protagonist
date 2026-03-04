@@ -1,6 +1,9 @@
-﻿namespace DLCS.Model.Assets;
+﻿using System;
+using DLCS.Core.Types;
 
-public interface IDeliverable
+namespace DLCS.Model.Assets;
+
+public interface IDeliverable : IOriginItem
 {
     /// <summary>
     /// Marks this object as being currently ingested
@@ -13,7 +16,12 @@ public interface IDeliverable
     string? Error { get; set; }
     
     /// <summary>
-    /// Contains source to ingest from
+    /// When the item has last finished processing
     /// </summary>
-    string? Origin { get; set; }
+    DateTime? Finished { get; set; }
+
+    /// <summary>
+    /// Returns <see cref="AssetId"/> that is or is parent to this deliverable
+    /// </summary>
+    AssetId GetAssetId();
 }

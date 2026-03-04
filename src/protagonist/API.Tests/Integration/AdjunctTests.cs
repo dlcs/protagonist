@@ -10,6 +10,7 @@ using DLCS.Repository;
 using DLCS.Web.Response;
 using Hydra.Collections;
 using Hydra.Model;
+using Microsoft.EntityFrameworkCore;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
@@ -817,5 +818,235 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Location.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_UpdateHostedToHosted()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        const string adjunctId = "updateableAdjunct";
+        const string adjunctOrigin = "https://example.com/an-adjunct";
+        
+        // we provide "size", but as this will be ingested the API should remove it, checked below
+        const string newAdjunctJson = $$"""
+                                      {
+                                                "id": "{{adjunctId}}",
+                                                "@type": "Image",
+                                                "origin": "{{adjunctOrigin}}",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                                "size": 67
+                                              }
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act 1
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert 1
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+
+        adjunct.Size.Should().BeNull("hosted adjunct's size will be determined and updated by the engine");
+        adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
+        adjunct.Error.Should().BeNullOrEmpty("no errors yet");
+        adjunct.Finished.Should().BeNull("will be set by the engine when done, and it's a new adjunct");
+        
+        // update the adjunct to simulate Engine
+        var dbAdjunct = dbContext.Adjuncts.Single(a => a.Id == adjunctId && a.AssetId == assetId);
+        dbAdjunct.Size = 1234L; // some value determined by the engine
+        dbAdjunct.Ingesting = false;
+        dbAdjunct.Finished = DateTime.UtcNow;
+        // no error, "ingest" was successful
+        dbContext.Entry(dbAdjunct).State = EntityState.Modified;
+        await dbContext.SaveChangesAsync();
+        
+        // update json, e.g. we change the origin
+        const string updatedAdjunctJson = $$"""
+                                        {
+                                                  "id": "{{adjunctId}}",
+                                                  "@type": "Image",
+                                                  "origin": "{{adjunctOrigin + "2"}}",
+                                                  "iiifLink": "seeAlso",
+                                                  "mediaType": "a-mediaType",
+                                                  "label": {"label": ["value"]},
+                                                  "language": ["en"],
+                                                  "size": 69
+                                                }
+                                        """;
+        content = new StringContent(updatedAdjunctJson, Encoding.UTF8, "application/json");
+        
+        // Act 2
+        // we use put to update, passing the adjunctId in the path
+        response = await httpClient.AsCustomer(assetId.Customer).PutAsync($"{path}/{adjunctId}", content);
+
+        // Assert 2
+        response.StatusCode.Should().Be(HttpStatusCode.OK); // not created, updated
+        adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+
+        adjunct.Size.Should().Be(1234L, "API preserves the size set by engine");
+        adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for (re)ingestion");
+        adjunct.Finished.Should().NotBeNull("API doesn't touch finished, as it now states for 'last finished'");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_UpdateExternalToHosted()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        const string adjunctId = "exToHostAdjunct";
+        const string adjunctOrigin = "https://example.com/an-adjunct";
+        const string externalUri = "https://example.com/some-external-id";
+        
+        // we provide "size", but as this will be ingested the API should remove it, checked below
+        const string newAdjunctJson = $$"""
+                                      {
+                                                "id": "{{adjunctId}}",
+                                                "@type": "Image",
+                                                "externalId": "{{externalUri}}",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                                "size": 67
+                                              }
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act 1
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert 1
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+
+        adjunct.Size.Should().Be(67, "we 'trust' external adjunct's submitted size declaration");
+        adjunct.Ingesting.Should().NotBe(true, "the adjunct was NOT sent to engine for ingestion");
+        adjunct.Error.Should().BeNullOrEmpty("not ingested");
+        adjunct.Created.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        adjunct.ExternalId.Should().Be(externalUri);
+        adjunct.PublicId.Should().Be(externalUri);
+        
+        // update json, now it's gonna be a hosted - we removed externalId and added origin
+        const string updatedAdjunctJson = $$"""
+                                        {
+                                                  "id": "{{adjunctId}}",
+                                                  "@type": "Image",
+                                                  "origin": "{{adjunctOrigin}}",
+                                                  "iiifLink": "seeAlso",
+                                                  "mediaType": "a-mediaType",
+                                                  "label": {"label": ["value"]},
+                                                  "language": ["en"],
+                                                  "size": 69
+                                                }
+                                        """;
+        content = new StringContent(updatedAdjunctJson, Encoding.UTF8, "application/json");
+        
+        // Act 2
+        // we use put to update, passing the adjunctId in the path
+        response = await httpClient.AsCustomer(assetId.Customer).PutAsync($"{path}/{adjunctId}", content);
+
+        // Assert 2
+        response.StatusCode.Should().Be(HttpStatusCode.OK); // not created, updated
+        adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+
+        adjunct.Size.Should().Be(null, "API sets to null to signify it wasn't hosted previously - so no size for our purposes");
+        adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
+        adjunct.Finished.Should().NotBeNull("API doesn't touch finished, as it now states for 'last finished'");
+        adjunct.ExternalId.Should().BeNull("we removed it in the update json");
+        adjunct.PublicId.Should().NotBe(externalUri, "it no longer points to the external id from initial creation");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_UpdateHostedToExternal()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        const string adjunctId = "updateableAdjunct";
+        const string adjunctOrigin = "https://example.com/an-adjunct";
+        const string externalUri = "https://example.com/some-external-id";
+
+        
+        // we provide "size", but as this will be ingested the API should remove it, checked below
+        const string newAdjunctJson = $$"""
+                                      {
+                                                "id": "{{adjunctId}}",
+                                                "@type": "Image",
+                                                "origin": "{{adjunctOrigin}}",
+                                                "iiifLink": "seeAlso",
+                                                "mediaType": "a-mediaType",
+                                                "label": {"label": ["value"]},
+                                                "language": ["en"],
+                                                "size": 67
+                                              }
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act 1
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert 1
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+
+        adjunct.Size.Should().BeNull("hosted adjunct's size will be determined and updated by the engine");
+        adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
+        adjunct.Error.Should().BeNullOrEmpty("no errors yet");
+        adjunct.Finished.Should().BeNull("will be set by the engine when done, and it's a new adjunct");
+        
+        // update the adjunct to simulate Engine
+        var dbAdjunct = dbContext.Adjuncts.Single(a => a.Id == adjunctId && a.AssetId == assetId);
+        dbAdjunct.Size = 1234L; // some value determined by the engine
+        dbAdjunct.Ingesting = false;
+        dbAdjunct.Finished = DateTime.UtcNow;
+        // no error, "ingest" was successful
+        dbContext.Entry(dbAdjunct).State = EntityState.Modified;
+        await dbContext.SaveChangesAsync();
+        
+        // update json, this time it will be an external one
+        const string updatedAdjunctJson = $$"""
+                                        {
+                                                  "id": "{{adjunctId}}",
+                                                  "@type": "Image",
+                                                  "externalId": "{{externalUri}}",
+                                                  "iiifLink": "seeAlso",
+                                                  "mediaType": "a-mediaType",
+                                                  "label": {"label": ["value"]},
+                                                  "language": ["en"],
+                                                  "size": 69
+                                                }
+                                        """;
+        content = new StringContent(updatedAdjunctJson, Encoding.UTF8, "application/json");
+        
+        // Act 2
+        // we use put to update, passing the adjunctId in the path
+        response = await httpClient.AsCustomer(assetId.Customer).PutAsync($"{path}/{adjunctId}", content);
+
+        // Assert 2
+        response.StatusCode.Should().Be(HttpStatusCode.OK); // not created, updated
+        adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+
+        adjunct.Size.Should().Be(69L, "as this is now external adjunct, ");
+        adjunct.Ingesting.Should().NotBe(true, "the adjunct was NOT sent to engine for ingestion");
+        adjunct.Finished.Should().NotBeNull("API doesn't touch finished, as it now states for 'last finished'");
     }
 }

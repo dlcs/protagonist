@@ -1,0 +1,314 @@
+﻿using System.Net;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Json;
+using DLCS.AWS.S3;
+using DLCS.Core.FileSystem;
+using DLCS.Model.Assets;
+using DLCS.Model.Messaging;
+using DLCS.Model.Policies;
+using DLCS.Repository;
+using DLCS.Repository.Strategy;
+using DLCS.Repository.Strategy.Utils;
+using Engine.Ingest.Image;
+using Engine.Ingest.Image.ImageServer.Models;
+using Engine.Tests.Integration.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Stubbery;
+using Test.Helpers;
+using Test.Helpers.Data;
+using Test.Helpers.Integration;
+using Test.Helpers.Storage;
+
+namespace Engine.Tests.Integration;
+
+/// <summary>
+/// Tests for adjunct ingestion
+/// </summary>
+[Trait("Category", "Integration")]
+[Collection(EngineCollection.CollectionName)]
+public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
+{
+    private readonly HttpClient httpClient;
+    private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
+    private readonly DlcsContext dbContext;
+    private static readonly TestBucketWriter BucketWriter = new();
+    private readonly ApiStub apiStub;
+    
+    // These spaces are used in tests 
+    private const int CustomerForLimits = -20;
+    private const int SpaceExceedLimit = 1;
+
+    private string origin2k;
+    private string origin4k;
+    
+    public AdjunctIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
+    {
+        dbContext = engineFixture.DbFixture.DbContext;
+        apiStub = engineFixture.ApiStub;
+        
+        // Fake http images
+        apiStub.Get("/image", (request, args) => "anything")
+            .Header("Content-Type", "image/jpeg");
+        
+        apiStub.Get("/image/adjunct2k", (request, args) => "blob2kb")
+            .Header("Content-Type", "image/jpeg");
+        origin2k = $"{apiStub.Address}/image/adjunct2k";
+        
+        apiStub.Get("/image/adjunct4k", (request, args) => "blob4kb")
+            .Header("Content-Type", "image/jpeg");
+        origin4k = $"{apiStub.Address}/image/adjunct4k";
+
+        var saver = new FakeAdjunctSaver()
+            .WithFileSize(origin2k, 2048)
+            .WithFileSize(origin4k, 4096);
+        
+        httpClient = appFactory
+            .WithTestServices(services =>
+            {
+                // Mock out things that write to disk or read from disk
+                services
+                    .AddSingleton<IFileSaver>(saver)
+                    .AddSingleton<IFileSystem, FakeFileSystem>()
+                    .AddSingleton<IBucketWriter>(BucketWriter);
+            })
+            .WithConfigValue("OrchestratorBaseUrl", apiStub.Address)
+            .WithConfigValue("ImageIngest:ImageProcessorUrl", apiStub.Address)
+            .WithConnectionString(engineFixture.DbFixture.ConnectionString)
+            .CreateClient();
+        
+        // Stubbed appetiser
+        var appetiserResponse = new AppetiserResponseModel
+        {
+            Height = 1000, Width = 500, Thumbs =
+            [
+                new ImageOnDisk { Height = 800, Width = 400, Path = "/path/to/800.jpg" },
+                new ImageOnDisk { Height = 400, Width = 200, Path = "/path/to/400.jpg" },
+                new ImageOnDisk { Height = 200, Width = 100, Path = "/path/to/200.jpg" }
+            ],
+            JP2 = "/path/to.jp2"
+        };
+
+        var appetiserResponseJson = JsonSerializer.Serialize(appetiserResponse, settings);
+        apiStub.Post("/convert", (request, args) => appetiserResponseJson)
+            .Header("Content-Type", "application/json");
+        
+
+        engineFixture.DbFixture.CleanUp();
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_Success()
+    {
+        var asset = await CreateParentAsset();
+
+        const string adjunctId = nameof(IngestAdjunct_Success);
+        
+        // Note - API would have set this up before handing of
+        var adjunct = new Adjunct
+        {
+            Id = adjunctId, AssetId = asset.Id, Asset = asset, IIIFLink = IIIFLinkType.SeeAlso,
+            MediaType = "image/jpeg", Type = "Image", Origin = origin2k, Created = DateTime.UtcNow, Error = string.Empty, Ingesting = true
+        };
+        
+        dbContext.Adjuncts.Add(adjunct);
+        
+        await dbContext.SaveChangesAsync();
+        
+        var message = new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow);
+        
+        // Act
+        var jsonContent =
+            new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
+        
+        var result = await httpClient.PostAsync("adjunct-ingest", jsonContent);
+        
+        // Assert
+        result.Should().BeSuccessful();
+        
+        BucketWriter.ShouldHaveKey($"{asset.Id}/adjuncts/{adjunct.Id}").ForBucket(LocalStackFixture.StorageBucketName);
+        
+        var updatedAdjunct =  await dbContext.Adjuncts.SingleAsync(a => a.Id == adjunctId && a.AssetId == asset.Id);
+        updatedAdjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        updatedAdjunct.Ingesting.Should().BeFalse();
+        updatedAdjunct.Error.Should().BeEmpty();
+        updatedAdjunct.Size.Should().BeGreaterThan(0);
+        
+        var storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == asset.Id);
+        storage.AdjunctSize.Should().Be(2048);
+    }
+    
+    [Fact]
+    public async Task IngestAdjunct_Success_ReingestUpdatesAdjunctSize()
+    {
+        var asset = await CreateParentAsset();
+
+        const string adjunctId = nameof(IngestAdjunct_Success_ReingestUpdatesAdjunctSize);
+        
+        // Note - API would have set this up before handing of
+        var adjunct = new Adjunct
+        {
+            Id = adjunctId, AssetId = asset.Id, Asset = asset, IIIFLink = IIIFLinkType.SeeAlso,
+            MediaType = "image/jpeg", Type = "Image", Origin = origin2k, Created = DateTime.UtcNow, Error = string.Empty, Ingesting = true
+        };
+        
+        dbContext.Adjuncts.Add(adjunct);
+        
+        await dbContext.SaveChangesAsync();
+        
+        var message = new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow);
+        
+        // Act 1 - ingest adjunct
+        var jsonContent =
+            new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
+        
+        var result = await httpClient.PostAsync("adjunct-ingest", jsonContent);
+        
+        // Assert 1
+        result.Should().BeSuccessful();
+        
+        var storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == asset.Id);
+        storage.AdjunctSize.Should().Be(2048);
+        
+        // Simulate API reacting to updated Adjunct
+        await dbContext.Entry(adjunct).ReloadAsync();
+        // sanity check - prev op should have updated the Size
+        adjunct.Size.Should().Be(2048);
+        // we leave size as-is, we change origin though to e.g. say it should be a different file
+        adjunct.Origin = origin4k;
+        await dbContext.SaveChangesAsync();
+        
+        message = new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow);
+        
+        // Act 2 - (re)ingest adjunct
+        jsonContent =
+            new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
+        
+        result = await httpClient.PostAsync("adjunct-ingest", jsonContent);
+        
+        // Assert 2
+        result.Should().BeSuccessful();
+        
+        var updatedAdjunct =  await dbContext.Adjuncts.SingleAsync(a => a.Id == adjunctId && a.AssetId == asset.Id);
+        updatedAdjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
+        updatedAdjunct.Ingesting.Should().BeFalse();
+        updatedAdjunct.Error.Should().BeEmpty();
+        updatedAdjunct.Size.Should().Be(4096);
+        
+        storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == asset.Id);
+        storage.AdjunctSize.Should().Be(4096, "the update origin replaces 2k adjunct with 4k adjunct - should not be any different value");
+    }
+
+    [Fact]
+    public async Task IngestAsset_Error_ExceedAllowance()
+    {
+        // prep customer
+        await dbContext.Customers.AddTestCustomer(CustomerForLimits);
+        await dbContext.Spaces.AddTestSpace(CustomerForLimits, SpaceExceedLimit);
+        await dbContext.SaveChangesAsync();
+        
+        var asset = await CreateParentAsset(customer:CustomerForLimits);
+
+        const string adjunctId = nameof(IngestAsset_Error_ExceedAllowance);
+        
+        // Note - API would have set this up before handing of
+        var adjunct = new Adjunct
+        {
+            Id = adjunctId, AssetId = asset.Id, Asset = asset, IIIFLink = IIIFLinkType.SeeAlso,
+            MediaType = "image/jpeg", Type = "Image", Origin = origin2k, Created = DateTime.UtcNow, Error = string.Empty, Ingesting = true
+        };
+        
+        dbContext.Adjuncts.Add(adjunct);
+        
+        // also update customer storage to exceed limit
+        var customerStorage = dbContext.CustomerStorages.Single(cs => cs.Customer == CustomerForLimits);
+        customerStorage.StoragePolicy = "small";
+        customerStorage.TotalSizeOfStoredImages = 1000000000L;
+        
+        dbContext.Entry(customerStorage).State = EntityState.Modified;
+        
+        await dbContext.SaveChangesAsync();
+        
+        var message = new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow);
+        
+        // Act
+        var jsonContent =
+            new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
+        
+        var result = await httpClient.PostAsync("adjunct-ingest", jsonContent);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.InsufficientStorage);
+
+        // No S3 assets created
+        BucketWriter.ShouldNotHaveKey($"{asset.Id}/adjuncts/{adjunct.Id}");
+
+        // Database records updated
+        await dbContext.Entry(adjunct).ReloadAsync();
+
+        adjunct.Ingesting.Should().BeFalse();
+        adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(SpaceExceedLimit));
+        adjunct.Error.Should().Be("StoragePolicy size limit exceeded");
+        
+        var storage = await dbContext.ImageStorages.SingleOrDefaultAsync(a => a.Id == asset.Id);
+        storage.AdjunctSize.Should().Be(0);
+    }
+    
+    // -- helpers ---
+    
+    private async Task<Asset> CreateParentAsset(int customer = 99, int space = 1, [CallerMemberName] string assetName = "",
+        string assetPostfix = "")
+    {
+        List<ImageDeliveryChannel> imageDeliveryChannels =
+        [
+            new()
+            {
+                Channel = AssetDeliveryChannels.Image,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
+                DeliveryChannelPolicy = new DeliveryChannelPolicy
+                {
+                    Name = "default",
+                    Channel = AssetDeliveryChannels.Image
+                }
+            }
+        ];
+        
+        var assetId = AssetIdGenerator.GetAssetId(customer, space, assetName, assetPostfix);
+
+        // Note - API would have set this up before handing off
+        var origin = $"{apiStub.Address}/image";
+        var entity = await dbContext.Images.AddTestAsset(assetId, customer: customer, space: space, ingesting: true, origin: origin,
+            mediaType: "image/tiff", width: 0, height: 0, imageDeliveryChannels: imageDeliveryChannels);
+        var asset = entity.Entity;
+        await dbContext.SaveChangesAsync();
+        
+        var message = new IngestAssetRequest(asset.Id, DateTime.UtcNow, null);
+        var jsonContent =
+            new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
+        var result = await httpClient.PostAsync("asset-ingest", jsonContent);
+        
+        // this isn't a test per-se, but we want to stop if that step failed
+        result.Should().BeSuccessful();
+
+        return asset;
+    }
+}
+
+public class FakeAdjunctSaver : IFileSaver
+{
+    private readonly Dictionary<string, long> fileSizes = new();
+
+    public FakeAdjunctSaver WithFileSize(string origin, long size)
+    {
+        fileSizes[origin] = size;
+        return this;
+    }
+    
+    public Task<long> SaveResponseToDisk(IOriginItem originItem, OriginResponse originResponse, string destination,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(originItem.Origin is {} origin 
+                               && fileSizes.TryGetValue(origin, out var size) ? size : 1000L);
+    }
+}
