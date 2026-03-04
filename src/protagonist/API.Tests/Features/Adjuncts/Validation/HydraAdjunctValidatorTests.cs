@@ -231,6 +231,6 @@ public class HydraAdjunctValidatorTests
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.Type)
-            .WithErrorMessage("When the 'iiifLink' is 'annotations', the '@type' must be 'AnnotationPage'");
+            .WithErrorMessage("When 'iiifLink' is 'annotations', the '@type' must be 'AnnotationPage'");
     }
 }

@@ -58,7 +58,7 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
         RuleFor(a => a.Type)
             .Must(t =>  t == "AnnotationPage")
             .When(a => a.IIIFLink == IIIFLinkType.Annotations.GetDescription())
-            .WithMessage($"When the 'iiifLink' is '{IIIFLinkType.Annotations.GetDescription()}', the '@type' must be 'AnnotationPage'");
+            .WithMessage($"When 'iiifLink' is '{IIIFLinkType.Annotations.GetDescription()}', the '@type' must be 'AnnotationPage'");
     }
 
     private readonly List<string> validIIIFLinkTypes =
