@@ -21,3 +21,4 @@
 19. [Querying Across IIIF Presentation and DLCS](019-presentation-dlcs.md)
 20. [Non-image content-resources](020-non-image-iiif.md)
 21. [AWS MediaConvert](021-mediaconvert.md)
+22. [Stub Assets](022-stub-assets.md)
