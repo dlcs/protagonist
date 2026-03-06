@@ -31,6 +31,8 @@ public class InfoJson2Constructor(
 
     protected override Version ImageApiVersion => Version.V2;
 
+    protected override List<Size> GetImageServiceSizes(ImageService2 imageService) => imageService.Sizes;
+
     protected override async Task SetImageServiceAuthServices(ImageService2 imageService,
         OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken)

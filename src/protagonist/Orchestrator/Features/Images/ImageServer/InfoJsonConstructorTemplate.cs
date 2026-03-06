@@ -34,24 +34,37 @@ public abstract class InfoJsonConstructorTemplate<T>(
     {
         var orchestrationImage = await GetRefreshedOrchestrationImage(assetId);
 
-        var getSizesTask = GetSizes(orchestrationImage);
+        // Start task to get "sizes" from thumbnails - the vast majority of cases will have set sizes
+        var getSizesFromThumbnailsTask = GetSizes(orchestrationImage);
 
         // Get info.json from downstream image server and add dlcs-known elements (services, thumbs) to it
-        // TODO - handle 501 etc from downstream image-server
         var imageService =
             await imageServerClient.GetInfoJson<T>(orchestrationImage, ImageApiVersion, cancellationToken);
         if (imageService == null) return null;
 
         await UpdateImageService(imageService, orchestrationImage, cancellationToken);
-        var sizes = await getSizesTask;
-        if (!sizes.IsNullOrEmpty())
-        {
-            SetImageServiceSizes(imageService, sizes);
-        }
+        var sizesFromThumbnails = await getSizesFromThumbnailsTask;
+        SetInfoJsonSizes(imageService, orchestrationImage, sizesFromThumbnails);
 
         return imageService;
     }
 
+    private void SetInfoJsonSizes(T imageService, OrchestrationImage orchestrationImage, List<Size> sizesFromThumbnails)
+    {
+        if (!sizesFromThumbnails.IsNullOrEmpty())
+        {
+            SetImageServiceSizes(imageService, sizesFromThumbnails);
+            return;
+        }
+
+        // If we didn't get any sizes from thumbnails, filter those from image-service
+        logger.LogInformation("No sizes found for {AssetId}, filtering those from image-server",
+            orchestrationImage.AssetId);
+        var imageServerSizes = GetImageServiceSizes(imageService);
+        var correctedSizes = imageServerSizes.Where(sz => sz.MaxDimension <= orchestrationImage.MaxWidth).ToList();
+        SetImageServiceSizes(imageService, correctedSizes);
+    }
+    
     // We always want to generate info.json using a fresh OrchestrationImage. If it's stale we could set an invalid
     // property (e.g. maxWidth or roles that have very recently been updated in API)
     private async Task<OrchestrationImage> GetRefreshedOrchestrationImage(AssetId assetId)
@@ -90,6 +103,11 @@ public abstract class InfoJsonConstructorTemplate<T>(
         TrySetImageServiceTiles(imageService, orchestrationImage);
     }
 
+    /// <summary>
+    /// Get "sizes" from image service
+    /// </summary>
+    protected abstract List<Size> GetImageServiceSizes(T imageService);
+    
     /// <summary>
     /// Add required auth services to "services" property
     /// </summary>

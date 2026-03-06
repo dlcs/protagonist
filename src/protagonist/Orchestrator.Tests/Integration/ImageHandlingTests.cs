@@ -356,6 +356,46 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         infoJson.MaxWidth.Should().Be(5000, "Fallback to system-default");
     }
     
+    [Fact]
+    public async Task GetInfoJson_RemovesSizesLargerThanMaxWidth_IfNoThumbsFound()
+    {
+        // This should be an uncommon scenario, see https://github.com/dlcs/protagonist/issues/1123#issuecomment-4010901536
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, maxWidth: 75,
+            imageDeliveryChannels: deliveryChannelsForImage); 
+        // NOTE - no s3 thumbs data setup
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
+
+        // Assert
+        var infoJson = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService3>();
+
+        var sizes = new List<Size> { new(25, 25), new(1, 1) };
+        infoJson.Sizes.Should().BeEquivalentTo(sizes, "100 size removed as greater than maxWidth");
+    }
+    
+    [Fact]
+    public async Task GetInfoJsonV2_RemovesSizesLargerThanMaxWidth_IfNoThumbsFound()
+    {
+        // This should be an uncommon scenario, see https://github.com/dlcs/protagonist/issues/1123#issuecomment-4010901536
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, maxWidth: 75,
+            imageDeliveryChannels: deliveryChannelsForImage); 
+        // NOTE - no s3 thumbs data setup
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/v2/{id}/info.json");
+
+        // Assert
+        var infoJson = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService2>();
+
+        var sizes = new List<Size> { new(25, 25), new(1, 1) };
+        infoJson.Sizes.Should().BeEquivalentTo(sizes, "100 size removed as greater than maxWidth");
+    }
+    
     [Theory]
     [InlineData(500, 256)]
     [InlineData(512, 512)]
