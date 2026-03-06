@@ -6,13 +6,14 @@ using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
 using DLCS.Model.PathElements;
+using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
 using IIIF.ImageApi.V3;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
+using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.IIIF.Manifests;
 using Test.Helpers;
@@ -24,13 +25,14 @@ public class ManifestV3BuilderTests
 {
     private readonly IManifestBuilderUtils builderUtils;
     private readonly CustomerPathElement pathElement = new(99, "test");
+    private readonly IAssetPathGenerator assetPathGenerator;
 
     private readonly ManifestV3Builder sut;
     
     public ManifestV3BuilderTests()
     {
         builderUtils = A.Fake<IManifestBuilderUtils>();
-        var assetPathGenerator = A.Fake<IAssetPathGenerator>();
+        assetPathGenerator = A.Fake<IAssetPathGenerator>();
         var authBuilder = A.Fake<IIIIFAuthBuilder>();
 
         A.CallTo(() => builderUtils.RetrieveThumbnails(A<Asset>._, A<CancellationToken>._))
@@ -512,6 +514,76 @@ public class ManifestV3BuilderTests
         image.Height.Should().Be(1000, "Height of static placeholder");
         image.Format.Should().Be("image/png", "Type of static placeholder");
         image.Service.Should().BeNull("No image service");
+    }
+    
+    [Fact]
+    public async Task BuildManifest_InlineAnnotation()
+    {
+        var asset = GetImageAsset("iiif-img");
+        asset.Adjuncts =
+        [
+            new Adjunct
+            {
+                Id = "first",
+                IIIFLink = IIIFLinkType.InlineAnnotation,
+                MediaType = "text/plain",
+                AssetId = AssetIdGenerator.GetAssetId(),
+                Type = "AnnotationPage",
+                ExternalId = new Uri("http://some.id/first")
+            },
+            new Adjunct
+            {
+                Id = "second",
+                IIIFLink = IIIFLinkType.InlineAnnotation,
+                MediaType = "text/plain",
+                AssetId = AssetIdGenerator.GetAssetId(),
+                Type = "AnnotationPage",
+                Label = new LanguageMap("en", "first"),
+                Motivation = "something",
+                Language = ["en"],
+                Profile = "some profile",
+                ExternalId = new Uri("http://some.id/second")
+            }
+        ];
+        
+        var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
+        A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
+            .Returns("https://dlcs.test/image-url/");
+        A.CallTo(() => builderUtils.GetCanvasId(asset, pathElement, A<int>._))
+            .Returns("https://dlcs.test/canvas/0");
+        A.CallTo(() => assetPathGenerator.GetFullPathForRequest(A<BasicPathElements>._, A<bool>._, A<bool>._))
+            .Returns($"https://dlcs.test/adjunct-annotations/{asset.Id}");
+
+        var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
+            ManifestType.NamedQuery, CancellationToken.None);
+
+        manifest.Id.Should().Be(manifestId);
+        var annotations = manifest.Items![0].Annotations;
+        annotations.Should().HaveCount(1);
+        var annotation = annotations!.First();
+        annotation.Id.Should().Be("https://dlcs.test/adjunct-annotations/99/1/GetImageAsset");
+        annotation.Label!.Should().BeEquivalentTo(new LanguageMap("en", "Inline annotations"));
+        annotation.Items.Should().HaveCount(2);
+        
+        var minimalInlinePaintingAnnotation =  annotation.Items!.First().As<GeneralAnnotation>();
+        minimalInlinePaintingAnnotation.Id.Should().Be("https://dlcs.test/adjunct-annotations/99/1/GetImageAsset/first");
+        minimalInlinePaintingAnnotation.Motivation.Should().Be(null);
+        var minimalInlinePaintingAnnotationBody = minimalInlinePaintingAnnotation.Body!.First().As<ExternalResource>();
+        minimalInlinePaintingAnnotationBody.Id.Should().Be("http://some.id/first");
+        minimalInlinePaintingAnnotationBody.Format.Should().Be("text/plain");
+        minimalInlinePaintingAnnotationBody.Profile.Should().BeNull();
+        minimalInlinePaintingAnnotationBody.Label.Should().BeNull();
+        minimalInlinePaintingAnnotationBody.Language.Should().BeNull();
+        
+        var fullInlinePaintingAnnotation =  annotation.Items!.Last().As<GeneralAnnotation>();
+        fullInlinePaintingAnnotation.Id.Should().Be("https://dlcs.test/adjunct-annotations/99/1/GetImageAsset/second");
+        fullInlinePaintingAnnotation.Motivation.Should().Be("something");
+        var fullInlinePaintingAnnotationBody = fullInlinePaintingAnnotation.Body!.First().As<ExternalResource>();
+        fullInlinePaintingAnnotationBody.Id.Should().Be("http://some.id/second");
+        fullInlinePaintingAnnotationBody.Format.Should().Be("text/plain");
+        fullInlinePaintingAnnotationBody.Profile.Should().Be("some profile");
+        fullInlinePaintingAnnotationBody.Label!.Should().BeEquivalentTo(new LanguageMap("en", "first"));
+        fullInlinePaintingAnnotationBody.Language.Should().OnlyContain(l => l == "en");
     }
     
     private static Asset GetImageAsset(string deliveryChannels) =>

@@ -35,6 +35,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     private readonly IAssetPathGenerator assetPathGenerator;
     private readonly IIIIFAuthBuilder authBuilder;
     private readonly ILogger<ManifestV3Builder> logger;
+    private const string AdjunctAnnotationRoutePrefix = "adjunct-annotations";
 
     /// <summary>
     /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v3 manifest
@@ -509,20 +510,63 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                     canvas.Rendering ??= [];
                     canvas.Rendering.Add(CreateExternalResource(adjunct));
                     break;
+                case IIIFLinkType.InlineAnnotation:
+                    CreateInlineAnnotation(canvas, adjunct);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(adjunct.IIIFLink), adjunct.IIIFLink,
                         "IIIFLink type not supported");
             }
         }
 
-        // "rendering" and "seeAlso" are ExternalResources
-        ExternalResource CreateExternalResource(Adjunct adjunct) => new(adjunct.Type)
+        return;
+
+        // generates inline annotation output for adjuncts
+        void CreateInlineAnnotation(Canvas currentCanvas, Adjunct adjunct)
         {
-            Id = adjunct.ExternalId.ToString(),
-            Format = adjunct.MediaType,
-            Profile = adjunct.Profile,
-            Label = adjunct.Label,
-            Language = adjunct.Language?.ToList(),
+            var inlineAnnotationPage = currentCanvas.Annotations?.FirstOrDefault(a => !a.Items.IsNullOrEmpty());
+        
+            if (inlineAnnotationPage == null)
+            {
+                currentCanvas.Annotations ??= [];
+                currentCanvas.Annotations.Add(new AnnotationPage
+                {
+                   Id = GetPathForAdjunct(adjunct),
+                   Label = new LanguageMap("en", "Inline annotations"),
+                   Items = []
+                });
+
+                inlineAnnotationPage = currentCanvas.Annotations.Last();
+            }
+            
+            inlineAnnotationPage.Items!.Add(new GeneralAnnotation(adjunct.Motivation)
+            {
+                Id = $"{GetPathForAdjunct(adjunct)}/{adjunct.Id}",
+                Body = [CreateExternalResource(adjunct)]
+            });
+        }
+
+        // "rendering", "seeAlso" and "inline annotations" are the same style of output
+        ExternalResource CreateExternalResource(Adjunct adjunct) =>
+            new(adjunct.Type)
+            {
+                Id = adjunct.ExternalId.ToString(),
+                Format = adjunct.MediaType,
+                Profile = adjunct.Profile,
+                Label = adjunct.Label,
+                Language = adjunct.Language?.ToList(),
+            };
+    }
+
+    private string GetPathForAdjunct(Adjunct adjunct)
+    {
+        var adjunctRequest = new BasicPathElements
+        {
+            Space = adjunct.AssetId.Space,
+            AssetPath = adjunct.AssetId.Asset,
+            RoutePrefix = AdjunctAnnotationRoutePrefix,
+            CustomerPathValue = adjunct.AssetId.Customer.ToString(),
         };
+        return assetPathGenerator.GetFullPathForRequest(adjunctRequest, true, false);
     }
 }
