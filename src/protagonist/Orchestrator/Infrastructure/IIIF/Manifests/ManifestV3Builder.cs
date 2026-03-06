@@ -35,7 +35,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     private readonly IAssetPathGenerator assetPathGenerator;
     private readonly IIIIFAuthBuilder authBuilder;
     private readonly ILogger<ManifestV3Builder> logger;
-    private const string AdjunctRoutePrefix = "adjunct-annotations";
+    private const string AdjunctAnnotationRoutePrefix = "adjunct-annotations";
 
     /// <summary>
     /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v3 manifest
@@ -532,8 +532,8 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                 currentCanvas.Annotations.Add(new AnnotationPage
                 {
                    Id = GetPathForAdjunct(adjunct),
-                    Label = new LanguageMap("en", "Inline annotations"),
-                    Items = []
+                   Label = new LanguageMap("en", "Inline annotations"),
+                   Items = []
                 });
 
                 inlineAnnotationPage = currentCanvas.Annotations.Last();
@@ -564,7 +564,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         {
             Space = adjunct.AssetId.Space,
             AssetPath = adjunct.AssetId.Asset,
-            RoutePrefix = AdjunctRoutePrefix,
+            RoutePrefix = AdjunctAnnotationRoutePrefix,
             CustomerPathValue = adjunct.AssetId.Customer.ToString(),
         };
         return assetPathGenerator.GetFullPathForRequest(adjunctRequest, true, false);
