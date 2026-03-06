@@ -80,17 +80,19 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_DeliveryChannelMissingChannel()
     {
-        var model = new Image { DeliveryChannels =
-        [
-            new DeliveryChannel
-            {
-                Policy = "none"
-            },
-            new DeliveryChannel
-            {
-                Channel = "file"
-            }
-        ]
+        var model = new Image
+        {
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                {
+                    Policy = "none"
+                },
+                new DeliveryChannel
+                {
+                    Channel = "file"
+                }
+            ]
         };
         var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
@@ -99,17 +101,19 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_WhenNoneAndMoreDeliveryChannels()
     {
-        var model = new Image { DeliveryChannels =
-        [
-            new DeliveryChannel
-            {
-                Channel = "none"
-            },
-            new DeliveryChannel
-            {
-                Channel = "file"
-            }
-        ]
+        var model = new Image
+        {
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                {
+                    Channel = "none"
+                },
+                new DeliveryChannel
+                {
+                    Channel = "file"
+                }
+            ]
         };
         var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
@@ -118,17 +122,19 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_WhenDefaultAndMoreDeliveryChannels()
     {
-        var model = new Image { DeliveryChannels =
-        [
-            new DeliveryChannel
-            {
-                Channel = "default"
-            },
-            new DeliveryChannel
-            {
-                Channel = "file"
-            }
-        ]
+        var model = new Image
+        {
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                {
+                    Channel = "default"
+                },
+                new DeliveryChannel
+                {
+                    Channel = "file"
+                }
+            ]
         };
         var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
@@ -137,17 +143,19 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_NoValidationError_WhenDeliveryChannelsWithNoNone()
     {
-        var model = new Image { DeliveryChannels =
-        [
-            new DeliveryChannel
-            {
-                Channel = "iiif-img"
-            },
-            new DeliveryChannel
-            {
-                Channel = "file"
-            }
-        ]
+        var model = new Image
+        {
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                    {
+                        Channel = "iiif-img"
+                    },
+                    new DeliveryChannel
+                    {
+                        Channel = "file"
+                    }
+            ]
         };
         var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
@@ -156,13 +164,15 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_NoValidationError_WhenOnlyNone()
     {
-        var model = new Image { DeliveryChannels =
-        [
-            new DeliveryChannel
-            {
-                Channel = "none"
-            }
-        ]
+        var model = new Image
+        {
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                {
+                    Channel = "none"
+                }
+            ]
         };
         var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
@@ -183,7 +193,8 @@ public class HydraImageValidatorTests
     [InlineData("application/pdf", "none")]
     public void DeliveryChannel_NoValidationError_WhenChannelValidForMediaType(string mediaType, string channel)
     {
-        var model = new Image { 
+        var model = new Image
+        {
             MediaType = mediaType,
             DeliveryChannels =
             [
@@ -206,14 +217,15 @@ public class HydraImageValidatorTests
     [InlineData("application/pdf", "iiif-av")]
     public void DeliveryChannel_ValidationError_WhenWrongChannelForMediaType(string mediaType, string channel)
     {
-        var model = new Image { 
+        var model = new Image
+        {
             MediaType = mediaType,
             DeliveryChannels =
             [
                 new DeliveryChannel
-                {
-                Channel = channel,
-            }
+                    {
+                        Channel = channel,
+                    }
             ]
         };
         var result = Sut.TestValidate(model);
