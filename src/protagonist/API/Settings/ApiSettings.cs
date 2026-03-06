@@ -25,6 +25,11 @@ public class ApiSettings
     public int MaxWidth { get; set; } = SystemDefaults.MaxWidth;
     
     /// <summary>
+    /// The lowest possible maxWidth value
+    /// </summary>
+    public int MinimumMaxWidth { get; set; } = SystemDefaults.MinimumMaxWidth;
+    
+    /// <summary>
     /// The default PageSize for endpoints that support paging 
     /// </summary>
     public int PageSize { get; set; }

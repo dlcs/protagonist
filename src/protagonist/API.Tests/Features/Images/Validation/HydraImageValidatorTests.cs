@@ -273,4 +273,28 @@ public class HydraImageValidatorTests
         var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.MaxWidth);
     }
+    
+    [Fact]
+    public void MaxWidth_TooSmall()
+    {
+        var model = new Image
+        {
+            MaxWidth = new ApiSettings().MinimumMaxWidth - 1
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.MaxWidth);
+    }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData(-1)]
+    public void MaxWidth_CanBeZeroOrNegative(int? maxWidth)
+    {
+        var model = new Image
+        {
+            MaxWidth = maxWidth
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.MaxWidth);
+    }
 }

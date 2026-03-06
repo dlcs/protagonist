@@ -10,4 +10,9 @@ public static class SystemDefaults
     /// that exceed this.
     /// </remarks>
     public const int MaxWidth = 5000;
+
+    /// <summary>
+    /// The system default minimum allowed value for the maxWidth property.
+    /// </summary>
+    public const int MinimumMaxWidth = 256;
 }
