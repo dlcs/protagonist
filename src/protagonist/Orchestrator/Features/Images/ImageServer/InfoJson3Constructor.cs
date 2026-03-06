@@ -28,6 +28,8 @@ public class InfoJson3Constructor(
 {
     protected override Version ImageApiVersion => Version.V3;
 
+    protected override List<Size> GetImageServiceSizes(ImageService3 imageService) => imageService.Sizes;
+
     protected override async Task SetImageServiceAuthServices(ImageService3 imageService,
         OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken)

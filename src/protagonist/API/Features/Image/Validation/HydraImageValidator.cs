@@ -30,9 +30,16 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .When(a => a.MaxWidth.HasValue || a.OpenFullMax.HasValue)
             .WithMessage("'maxUnauthorised' cannot be set when 'maxWidth' or 'openFullMax' is set");
         
+        // MaxWidth must be negative or null (ie unset) or, if it is set it must be between the min and max values
         RuleFor(a => a.MaxWidth)
-            .Must(mw => (mw ?? 0) <= apiSettings.Value.MaxWidth)
-            .WithMessage($"'maxWidth' cannot exceed system-default {apiSettings.Value.MaxWidth}.");
+            .Must(mw =>
+            {
+                var maxWidthValue = mw ?? apiSettings.Value.MinimumMaxWidth;
+                return maxWidthValue >= apiSettings.Value.MinimumMaxWidth && maxWidthValue <= apiSettings.Value.MaxWidth;
+            })
+            .When(asset => asset.MaxWidth is > 0)
+            .WithMessage(
+                $"'maxWidth' must be between {apiSettings.Value.MinimumMaxWidth} and {apiSettings.Value.MaxWidth}.");
         
         // Legacy policy fields
         RuleFor(a => a.ImageOptimisationPolicy).Null()
