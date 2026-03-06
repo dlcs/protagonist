@@ -4,6 +4,7 @@ using DLCS.Core.Caching;
 using DLCS.Repository;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.Strategy.DependencyInjection;
+using DLCS.Web;
 using DLCS.Web.Configuration;
 using DLCS.Web.Handlers;
 using DLCS.Web.Logging;
@@ -158,6 +159,7 @@ public class Startup
                 endpoints.MapTimeBasedHandling();
                 endpoints.MapFileHandling();
                 endpoints.MapConfiguredHealthChecks();
+                endpoints.AddVersionEndpoint();
             });
     }
 }

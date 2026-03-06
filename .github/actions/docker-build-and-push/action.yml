@@ -48,3 +48,5 @@ runs:
         tags: ${{ steps.docker-meta.outputs.tags }}
         labels: ${{ steps.docker-meta.outputs.labels }}
         push: ${{ github.actor != 'dependabot[bot]' }}
+        build-args: |
+          APP_VERSION=${{ steps.docker-meta.outputs.version }}
