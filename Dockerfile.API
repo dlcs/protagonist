@@ -23,6 +23,8 @@ FROM build AS publish
 RUN dotnet publish "API.csproj" -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-bookworm-slim AS base
+ARG APP_VERSION=dev
+ENV APP_VERSION=${APP_VERSION}
 
 LABEL maintainer="Donald Gray <donald.gray@digirati.com>,Tom Crane <tom.crane@digirati.com>"
 LABEL org.opencontainers.image.source=https://github.com/dlcs/protagonist

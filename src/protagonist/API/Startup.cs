@@ -17,6 +17,7 @@ using DLCS.Repository;
 using DLCS.Repository.Messaging;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.NamedQueries.Infrastructure;
+using DLCS.Web;
 using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
 using DLCS.Web.Handlers;
@@ -162,6 +163,7 @@ public class Startup
                     .MapControllers()
                     .RequireAuthorization();
                 endpoints.MapHealthChecks("/ping").AllowAnonymous();
+                endpoints.AddVersionEndpoint();
             });
     }
 }
