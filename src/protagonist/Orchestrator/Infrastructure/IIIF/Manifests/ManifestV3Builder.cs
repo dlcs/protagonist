@@ -35,6 +35,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     private readonly IAssetPathGenerator assetPathGenerator;
     private readonly IIIIFAuthBuilder authBuilder;
     private readonly ILogger<ManifestV3Builder> logger;
+    private const string AdjunctRoutePrefix = "adjunct-annotations";
 
     /// <summary>
     /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v3 manifest
@@ -530,30 +531,23 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                 currentCanvas.Annotations ??= [];
                 currentCanvas.Annotations.Add(new AnnotationPage
                 {
-                    Id = GetPathForAdjunct(adjunct),
+                   Id = GetPathForAdjunct(adjunct),
                     Label = new LanguageMap("en", "Inline annotations"),
-                    Items =
-                    [
-                        new GeneralAnnotation(adjunct.Motivation)
-                        {
-                            Id = $"{GetPathForAdjunct(adjunct)}/{adjunct.Id}",
-                            Body = [CreateExternalResource(adjunct)]
-                        }
-                    ]
+                    Items = []
                 });
+
+                inlineAnnotationPage = currentCanvas.Annotations.Last();
             }
-            else
+            
+            inlineAnnotationPage.Items!.Add(new GeneralAnnotation(adjunct.Motivation)
             {
-                inlineAnnotationPage.Items!.Add(new GeneralAnnotation(adjunct.Motivation)
-                {
-                    Id = $"{GetPathForAdjunct(adjunct)}/{adjunct.Id}",
-                    Body = [CreateExternalResource(adjunct)]
-                });
-            }
+                Id = $"{GetPathForAdjunct(adjunct)}/{adjunct.Id}",
+                Body = [CreateExternalResource(adjunct)]
+            });
         }
 
         // "rendering", "seeAlso" and "inline annotations" are the same style of output
-        AdjunctOutput CreateExternalResource(Adjunct adjunct) =>
+        ExternalResource CreateExternalResource(Adjunct adjunct) =>
             new(adjunct.Type)
             {
                 Id = adjunct.ExternalId.ToString(),
@@ -564,18 +558,15 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             };
     }
 
-
     private string GetPathForAdjunct(Adjunct adjunct)
     {
-        var transcodeRequest = new BasicPathElements
+        var adjunctRequest = new BasicPathElements
         {
             Space = adjunct.AssetId.Space,
             AssetPath = adjunct.AssetId.Asset,
-            RoutePrefix = AssetDeliveryChannels.Adjunct,
+            RoutePrefix = AdjunctRoutePrefix,
             CustomerPathValue = adjunct.AssetId.Customer.ToString(),
         };
-        return assetPathGenerator.GetFullPathForRequest(transcodeRequest, BuilderUtils.UseNativeFormatForAssets, false);
+        return assetPathGenerator.GetFullPathForRequest(adjunctRequest, true, false);
     }
 }
-
-public class AdjunctOutput(string type) : ExternalResource(type), IPaintable;

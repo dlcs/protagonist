@@ -815,7 +815,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             .WithTestAdjunct("seeAlso2", type: "Text", mediaType: "text/xml", iiifLinkType: IIIFLinkType.SeeAlso,
                 externalId: "https://other.example/2")
             .WithTestAdjunct("inlineAnnotation1", type: "AnnotationPage", mediaType: "text/xml", iiifLinkType: IIIFLinkType.InlineAnnotation,
-                externalId: "https://inline.example/1")
+                externalId: "https://inline.example/1", motivation: "something")
             .WithTestAdjunct("inlineAnnotation2", type: "AnnotationPage", mediaType: "text/xml", iiifLinkType: IIIFLinkType.InlineAnnotation,
                 externalId: "https://inline.example/2");
         
@@ -827,8 +827,8 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
             new() { Id = $"http://localhost/adjunct-annotations/{id}", Label = new LanguageMap("en", "Inline annotations"), 
                 Items = 
                 [
-                    new GeneralAnnotation(null){Id = $"http://localhost/adjunct-annotations/{id}/inlineAnnotation1", Body = [new AdjunctOutput("AnnotationPage"){ Id = "https://inline.example/1", Format = "text/xml"}]},
-                    new GeneralAnnotation(null){Id = $"http://localhost/adjunct-annotations/{id}/inlineAnnotation2", Body = [new AdjunctOutput("AnnotationPage"){ Id = "https://inline.example/2", Format = "text/xml"}]}
+                    new GeneralAnnotation(null){Id = $"http://localhost/adjunct-annotations/{id}/inlineAnnotation1", Motivation = "something", Body = [new ExternalResource("AnnotationPage"){ Id = "https://inline.example/1", Format = "text/xml"}]},
+                    new GeneralAnnotation(null){Id = $"http://localhost/adjunct-annotations/{id}/inlineAnnotation2", Body = [new ExternalResource("AnnotationPage"){ Id = "https://inline.example/2", Format = "text/xml"}]}
                 ]}
         ];
 

@@ -12,7 +12,6 @@ public static class AssetDeliveryChannels
     public const string File = "file";
     public const string None = "none";
     public const string Default = "default";
-    public const string Adjunct = "adjunct-annotations";
 
     /// <summary>
     /// All possible delivery channels
