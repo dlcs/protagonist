@@ -9,7 +9,8 @@ namespace API.Tests.Features.Images.Validation;
 
 public class HydraImageValidatorTests
 {
-    private static HydraImageValidator Sut => new(Options.Create(new ApiSettings()));
+    private static readonly ApiSettings apiSettings = new();
+    private static HydraImageValidator Sut => new(Options.Create(apiSettings));
 
     [Theory]
     [InlineData(null)]
@@ -79,17 +80,18 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_DeliveryChannelMissingChannel()
     {
-        var model = new Image { DeliveryChannels = new[]
-        {
-            new DeliveryChannel()
+        var model = new Image { DeliveryChannels =
+        [
+            new DeliveryChannel
             {
                 Policy = "none"
             },
-            new DeliveryChannel()
+            new DeliveryChannel
             {
                 Channel = "file"
             }
-        } };
+        ]
+        };
         var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
@@ -97,17 +99,18 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_WhenNoneAndMoreDeliveryChannels()
     {
-        var model = new Image { DeliveryChannels = new[]
-        {
-            new DeliveryChannel()
+        var model = new Image { DeliveryChannels =
+        [
+            new DeliveryChannel
             {
                 Channel = "none"
             },
-            new DeliveryChannel()
+            new DeliveryChannel
             {
                 Channel = "file"
             }
-        } };
+        ]
+        };
         var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
@@ -115,17 +118,18 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_ValidationError_WhenDefaultAndMoreDeliveryChannels()
     {
-        var model = new Image { DeliveryChannels = new[]
-        {
-            new DeliveryChannel()
+        var model = new Image { DeliveryChannels =
+        [
+            new DeliveryChannel
             {
                 Channel = "default"
             },
-            new DeliveryChannel()
+            new DeliveryChannel
             {
                 Channel = "file"
             }
-        } };
+        ]
+        };
         var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
@@ -133,17 +137,18 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_NoValidationError_WhenDeliveryChannelsWithNoNone()
     {
-        var model = new Image { DeliveryChannels = new[]
-        {
-            new DeliveryChannel()
+        var model = new Image { DeliveryChannels =
+        [
+            new DeliveryChannel
             {
                 Channel = "iiif-img"
             },
-            new DeliveryChannel()
+            new DeliveryChannel
             {
                 Channel = "file"
             }
-        } };
+        ]
+        };
         var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
@@ -151,13 +156,14 @@ public class HydraImageValidatorTests
     [Fact]
     public void DeliveryChannel_NoValidationError_WhenOnlyNone()
     {
-        var model = new Image { DeliveryChannels = new[]
-        {
-            new DeliveryChannel()
+        var model = new Image { DeliveryChannels =
+        [
+            new DeliveryChannel
             {
                 Channel = "none"
             }
-        } };
+        ]
+        };
         var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
@@ -179,13 +185,14 @@ public class HydraImageValidatorTests
     {
         var model = new Image { 
             MediaType = mediaType,
-            DeliveryChannels = new[]
-            {
-                new DeliveryChannel()
+            DeliveryChannels =
+            [
+                new DeliveryChannel
                 {
                     Channel = channel,
                 }
-            } };
+            ]
+        };
         var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
@@ -201,13 +208,14 @@ public class HydraImageValidatorTests
     {
         var model = new Image { 
             MediaType = mediaType,
-            DeliveryChannels = new[]
-        {
-            new DeliveryChannel()
-            {
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                {
                 Channel = channel,
             }
-        } };
+            ]
+        };
         var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
@@ -217,7 +225,7 @@ public class HydraImageValidatorTests
     {
         var model = new Image
         {
-            DeliveryChannels = Array.Empty<DeliveryChannel>()
+            DeliveryChannels = []
         };
         var result = Sut.TestValidate(model, options => 
             options.IncludeRuleSets("default", "patch"));
@@ -268,7 +276,7 @@ public class HydraImageValidatorTests
     {
         var model = new Image
         {
-            MaxWidth = new ApiSettings().MaxWidth + 1
+            MaxWidth = apiSettings.MaxWidth + 1
         };
         var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.MaxWidth);
@@ -279,7 +287,7 @@ public class HydraImageValidatorTests
     {
         var model = new Image
         {
-            MaxWidth = new ApiSettings().MinimumMaxWidth - 1
+            MaxWidth = apiSettings.MinimumMaxWidth - 1
         };
         var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.MaxWidth);
@@ -293,6 +301,28 @@ public class HydraImageValidatorTests
         var model = new Image
         {
             MaxWidth = maxWidth
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.MaxWidth);
+    }
+    
+    [Fact]
+    public void MaxWidth_CanBeMinSize()
+    {
+        var model = new Image
+        {
+            MaxWidth = apiSettings.MinimumMaxWidth
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.MaxWidth);
+    }
+    
+    [Fact]
+    public void MaxWidth_CanBeMaxSize()
+    {
+        var model = new Image
+        {
+            MaxWidth = apiSettings.MaxWidth
         };
         var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.MaxWidth);
