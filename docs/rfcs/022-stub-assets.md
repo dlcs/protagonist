@@ -153,6 +153,16 @@ I don't think we would need all the functionality of batches immediately - no pr
 >
 > While there is a lot of shared properties, it is a different object. `vocab:AdjunctBatch` perhaps?
 
+### Bulk Deleting
+
+Support bulk delete operations, similar to current POST `/customers/{customerId}/deleteImages`.
+
+## `manifests` Property
+
+Rename `manifests` column/property to `scopes`. `manifests` is to prescriptive for use, it can also be collections too. `scopes` keeps options for reuse open in the future. To fully make this change there will be changes to NQs to support `scopes` parameter, PATCH `/customers/{customerId}/allImages`, update `assetQuery` syntax etc.
+
+The `scopes` parameter is an internal use list of associated references. We will also introduce a `usedBy` property. This renders full URLs to all associated Manifests and Collections that contain this Asset.
+
 ## Alternative Options
 
 This section is a record of some alternative approaches that were disregarded.
@@ -166,3 +176,9 @@ Without batches there would be no batch completion event, instead we could raise
 ### Customer Controlled 'special' Space
 
 We could allow customers to specify their own unique 'stub asset' space, controllable by configuration. The additional complexity overhead for this seem unnecessary.
+
+### Adjuncts as Asset-lite
+
+With the above suggestions, adjuncts share a lot of functionality with assets. Would it have been useful to treat them in a very similar way to assets? 
+
+Effectively "file" only assets, with a separate table modelling how they are rendered on generated Manifests?
