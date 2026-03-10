@@ -36,16 +36,18 @@ public interface IAssetDeliveryPathParser
     Task<T> ParseForHttp<T>(string path) where T : BaseAssetRequest, new();
 }
 
-public class AssetDeliveryPathParser : IAssetDeliveryPathParser
+public partial class AssetDeliveryPathParser : IAssetDeliveryPathParser
 {
     private readonly IPathCustomerRepository pathCustomerRepository;
     private readonly ILogger<AssetDeliveryPathParser> logger;
 
     // regex to clean query params and hashmark from asset id
-    private static readonly Regex AssetIdClean = new(@"[\?\#].*$", RegexOptions.Compiled);
+    [GeneratedRegex(@"[\?\#].*$")]
+    private static partial Regex AssetIdClean();
     
     // regex to match v1, v2 etc but not a v23
-    private static readonly Regex VersionRegex = new("^(v\\d)$", RegexOptions.Compiled);
+    [GeneratedRegex("^(v\\d)$")]
+    private static partial Regex VersionRegex();
 
     public AssetDeliveryPathParser(IPathCustomerRepository pathCustomerRepository,
         ILogger<AssetDeliveryPathParser> logger)
@@ -85,13 +87,20 @@ public class AssetDeliveryPathParser : IAssetDeliveryPathParser
         var escapedPath = WebUtility.UrlDecode(path);
         await ParseBaseAssetRequest(escapedPath, assetRequest);
 
-        if (assetRequest is ImageAssetDeliveryRequest imageAssetRequest)
+        switch (assetRequest)
         {
-            imageAssetRequest.IIIFImageRequest = ImageRequest.Parse(escapedPath, assetRequest.BasePath, true);
-        }
-        else if (assetRequest is TimeBasedAssetDeliveryRequest timebasedAssetRequest)
-        {
-            timebasedAssetRequest.TimeBasedRequest = timebasedAssetRequest.AssetPath.Replace(assetRequest.AssetId, string.Empty);
+            case ImageAssetDeliveryRequest imageAssetRequest:
+                imageAssetRequest.IIIFImageRequest = ImageRequest.Parse(escapedPath, assetRequest.BasePath, true);
+                break;
+            case TimeBasedAssetDeliveryRequest timebasedAssetRequest:
+                timebasedAssetRequest.TimeBasedRequest = timebasedAssetRequest.AssetPath.Replace(assetRequest.AssetId, string.Empty);
+                break;
+            case AdjunctDeliveryRequest adjunctDeliveryRequest:
+                // expected: assetPath = <asset-id>/<adjunct-id>
+                adjunctDeliveryRequest.AdjunctId = adjunctDeliveryRequest.AssetPath.Split('/') is [_, var adjunctId, ..]
+                    ? adjunctId
+                    : null;
+                break;
         }
 
         return assetRequest;
@@ -105,10 +114,10 @@ public class AssetDeliveryPathParser : IAssetDeliveryPathParser
 
         string[] parts = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
         
-        // The first slug after prefix is generally customer but it might be version number
+        // The first slug after prefix is generally customer, but it might be version number
         // If the latter, offset standard indexes by 1
         var versionCandidate = parts[defaultCustomerIndex];
-        var isVersioned = VersionRegex.IsMatch(versionCandidate);
+        var isVersioned = VersionRegex().IsMatch(versionCandidate);
         var versionOffset = isVersioned ? 1 : 0;
         
         request.RoutePrefix = parts[routeIndex];
@@ -142,7 +151,7 @@ public class AssetDeliveryPathParser : IAssetDeliveryPathParser
     private static string GetAssetPath(string[] parts, int versionOffset)
     {
          var assetPath = string.Join("/", parts.Skip(3 + versionOffset));
-         return AssetIdClean.Replace(assetPath, string.Empty);
+         return AssetIdClean().Replace(assetPath, string.Empty);
     }
 
     private static string GenerateBasePath(string route, string customer, string space, bool isVersioned,

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Enum;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
@@ -32,10 +33,48 @@ public class DapperAssetRepository(
         return GetAsset(assetId);
     }
 
+    public Task<Adjunct?> GetAdjunct(string adjunctId, AssetId assetId, bool noCache)
+    {
+        if (noCache)
+        {
+            assetCachingHelper.RemoveAdjunctFromCache(adjunctId, assetId);
+        }
+        
+        return GetAdjunct(adjunctId, assetId);
+    }
+
     public async Task<Asset?> GetAsset(AssetId assetId)
     {
         var asset = await assetCachingHelper.GetCachedAsset(assetId, GetAssetInternal);
         return asset;
+    }
+
+    private async Task<Adjunct?> GetAdjunct(string adjunctId, AssetId assetId)
+    {
+        return await assetCachingHelper.GetCachedAdjunct(adjunctId, assetId, GetAdjunctInternal);
+    }
+
+    private async Task<Adjunct?> GetAdjunctInternal(string adjunctId, AssetId assetId)
+    {
+        IEnumerable<dynamic> rawAdjunct =
+            await this.QueryAsync(AdjunctSql, new { Id = adjunctId, AssetId = assetId.ToString() });
+        var convertedRawAsset = rawAdjunct.ToList();
+        if (convertedRawAsset.Count == 0)
+        {
+            return null;
+        }
+
+        var firstAdjunct = convertedRawAsset[0];
+        return new Adjunct
+        {
+            Id = firstAdjunct.Id,
+            AssetId = AssetId.FromString(firstAdjunct.AssetId),
+            Origin = firstAdjunct.Origin,
+            IIIFLink = ((string)firstAdjunct.IIIFLink).GetEnumFromString<IIIFLinkType>(),
+            MediaType = firstAdjunct.MediaType,
+            Type = firstAdjunct.Type
+            // TODO: Add more if turns out it's needed, also add to SQL
+        };
     }
     
     private async Task<Asset?> GetAssetInternal(AssetId assetId)
@@ -105,16 +144,25 @@ public class DapperAssetRepository(
         return imageDeliveryChannels;
     }
 
-    private const string AssetSql = @"
-SELECT ""Images"".""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Roles"", 
-""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", ""MaxWidth"", ""OpenFullMax"",
-""NumberReference1"", ""NumberReference2"", ""NumberReference3"", ""Width"", 
-""Height"", ""Error"", ""Batch"", ""Finished"", ""Ingesting"", ""ImageOptimisationPolicy"", 
-""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels"", ""Manifests"",
-IDC.""Channel"", IDC.""DeliveryChannelPolicyId""
-  FROM ""Images""
-  LEFT OUTER JOIN ""ImageDeliveryChannels"" IDC on ""Images"".""Id"" = IDC.""ImageId""
-  WHERE ""Images"".""Id""=@Id;";
+    private const string AdjunctSql =
+        """
+        SELECT a.Id, a.AssetId, a.Origin, a.IIIFLink, a.MediaType, a.Type
+        FROM "Ajunct"
+        WHERE a.Id = @Id AND a.AssetId = @AssetId
+        """;
+    
+    private const string AssetSql =
+        """
+        SELECT "Images"."Id", "Customer", "Space", "Created", "Origin", "Tags", "Roles", 
+        "PreservedUri", "Reference1", "Reference2", "Reference3", "MaxUnauthorised", "MaxWidth", "OpenFullMax",
+        "NumberReference1", "NumberReference2", "NumberReference3", "Width", 
+        "Height", "Error", "Batch", "Finished", "Ingesting", "ImageOptimisationPolicy", 
+        "ThumbnailPolicy", "Family", "MediaType", "Duration", "NotForDelivery", "DeliveryChannels", "Manifests",
+        IDC."Channel", IDC."DeliveryChannelPolicyId"
+          FROM "Images"
+          LEFT OUTER JOIN "ImageDeliveryChannels" IDC on "Images"."Id" = IDC."ImageId"
+          WHERE "Images"."Id"=@Id;
+        """;
 
     private const string ImageLocationSql =
         "SELECT \"Id\", \"S3\", \"Nas\" FROM public.\"ImageLocation\" WHERE \"Id\"=@Id;";

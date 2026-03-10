@@ -170,6 +170,7 @@ public static class ServiceCollectionX
     {
         var serviceCollection = services
             .AddSingleton<IAssetTracker, MemoryAssetTracker>()
+            .AddSingleton<IAdjunctTracker, MemoryAssetTracker>()
             .AddSingleton<IImageOrchestrator>(sp =>
                 ActivatorUtilities.CreateInstance<ImageOrchestrator>(sp,
                     sp.GetRequiredService<S3AmbientOriginStrategy>()))
