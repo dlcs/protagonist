@@ -60,8 +60,11 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
     }
 
     public RegionalisedObjectInBucket GetStoredAdjunctLocation(AssetId assetId, Adjunct adjunct)
+        => GetStoredAdjunctLocation(adjunct.Id, assetId);
+    
+    public RegionalisedObjectInBucket GetStoredAdjunctLocation(string adjunctId, AssetId assetId)
     {
-        var key = $"{GetStorageKey(assetId)}/adjuncts/{adjunct.Id}";
+        var key = $"{GetStorageKey(assetId)}/adjuncts/{adjunctId}";
         return new RegionalisedObjectInBucket(s3Options.StorageBucket, key, awsSettings.Region);
     }
 
