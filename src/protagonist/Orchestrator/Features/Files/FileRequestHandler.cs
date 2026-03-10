@@ -17,28 +17,13 @@ namespace Orchestrator.Features.Files;
 /// <summary>
 /// Handling logic for /file/ requests 
 /// </summary>
-public class FileRequestHandler
+public class FileRequestHandler(
+    ILogger<TimeBasedRequestHandler> logger,
+    AssetRequestProcessor assetRequestProcessor,
+    IServiceScopeFactory scopeFactory,
+    IStorageKeyGenerator storageKeyGenerator,
+    S3ProxyPathGenerator proxyPathGenerator)
 {
-    private readonly ILogger<TimeBasedRequestHandler> logger;
-    private readonly AssetRequestProcessor assetRequestProcessor;
-    private readonly IServiceScopeFactory scopeFactory;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly S3ProxyPathGenerator proxyPathGenerator;
-
-    public FileRequestHandler(
-        ILogger<TimeBasedRequestHandler> logger,
-        AssetRequestProcessor assetRequestProcessor,
-        IServiceScopeFactory scopeFactory,
-        IStorageKeyGenerator storageKeyGenerator, 
-        S3ProxyPathGenerator proxyPathGenerator)
-    {
-        this.logger = logger;
-        this.assetRequestProcessor = assetRequestProcessor;
-        this.scopeFactory = scopeFactory;
-        this.storageKeyGenerator = storageKeyGenerator;
-        this.proxyPathGenerator = proxyPathGenerator;
-    }
-    
     /// <summary>
     /// Handle /file/ request, returning object detailing operation that should be carried out.
     /// </summary>
