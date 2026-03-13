@@ -1,6 +1,6 @@
 # Stub Assets and Adjuncts
 
-This RFC looks at how we can enable "stub" assets to store adjuncts and how we can carry out bulk adjunct operations for multiple assets. 
+This RFC looks at how we can enable "stub" assets to store adjuncts and how we can carry out bulk adjunct operations for multiple assets.
 
 Stub assets are assets that won't ever have any binary content themselves, they exist purely to store adjuncts.
 
@@ -22,7 +22,7 @@ We could leverage the `none` channel but what about `"origin"` and `"mediaType"`
 }
 ```
 
-We could require that the consumer pass some known placeholder values, similar to the "unobtainable" role from [ADR-0010](https://github.com/dlcs/protagonist/blob/develop/docs/adr/0010-replace-maxunauthorised.md), or they are free to use these columns for their own means - they are effectively ignored.
+We could require that the consumer pass some known placeholder values, similar to the "unobtainable" role from [ADR-0010](https://github.com/dlcs/protagonist/blob/develop/docs/adr/0010-replace-maxunauthorised.md), or they are free to use these properties for their own means - they are effectively ignored.
 
 ```json
 {
@@ -56,17 +56,15 @@ When creating spaces, customers will get the next available int identifier, or t
 >
 > If we supported JWT tokens and claims we could specify what consumers can use this space.
 
-### Specific Logic
+### Validation/Logic Changes
 
-If we use space 0 for _all_ stub assets we can make the validation logic work slightly differently - all fields will act as they do with other spaces with the exception that:
+If we use space 0 for _all_ stub assets we can make updates to the validation logic to help. 
 
-* `"origin"` and `"mediaType"` are optional. If not supplied they gain placeholder values.
-* `"deliveryChannel"` must be `none`, any other value is rejected.
+In space 0, all fields will act as they do with other spaces with the exception that `"deliveryChannel"` must be `none`, any other value is rejected.
 
-> [!NOTE]
-> Do we want to do this? I'm not sure if different validation logic is better than the consumer passing random values? Restricting use of none makes sense.
-
-The API can shortcut assets and auto-finish them, no need to notify Engine at all.
+When using the `none` channel:
+* `"origin"` and `"mediaType"` are optional. If not supplied they gain placeholder values (this will be considerably simpler to implement over changing logic to check for existence).
+* The API can shortcut assets and auto-finish them, no need to notify Engine at all.
 
 ### Routing / Paths
 
@@ -121,6 +119,15 @@ For bulk reading of adjuncts we should support an `include` parameter for assetQ
 * Con: The returned Image Hydra model has an existing "adjuncts" property, which is normally a URI but this would involve it being a collection of adjuncts. This is valid for json+ld, but may present some serialisation challenges.
 * Con: It won't be possible to query for adjuncts only.
 
+An alternative representation of a separate `?include` parameter would be to encode it within the query parameter itself, e.g.
+
+```json
+{
+   "manifest": [ "blah" ],
+   "includeAdjuncts": true
+}
+```
+
 ### Bulk Writing
 
 `POST /customers/{c}/spaces/{s}/images/{i}/adjuncts` allows bulk adding of adjuncts to a single asset. We need an alternative endpoint that would allow adding adjuncts to multiple assets at once. This is akin to how a batch can be created for images in multiple different spaces.
@@ -141,7 +148,7 @@ This would have the same behaviour as an asset batch:
 * GET batch adjuncts `/customers/{c}/adjunctQueue/batches/{id}/adjuncts` (equivalent of `/customers/{c}/queue/batches/{id}/assets`)
 * POST add batch `/customers/{c}/adjunctQueue` (equivalent of `/customers/{c}/queue`)
 
-I don't think we would need all the functionality of batches immediately - no priority batches or recent/active batch endpoints.
+Not all batch functionality needs to be implemented immediately - no priority batches or recent/active batch endpoints.
 
 > [!NOTE]
 > What `@type` would this be? `vocab:Batch` has `"*Images"` properties that are not relevant to adjuncts.
