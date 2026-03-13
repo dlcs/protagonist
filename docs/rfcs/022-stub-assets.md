@@ -32,7 +32,7 @@ We could require that the consumer pass some known placeholder values, similar t
 }
 ```
 
-or, using example from IIIF-Presentation RFC-0006, for a range:
+or, using an example from IIIF-Presentation RFC-0006, for a range:
 
 ```json
 {
@@ -48,7 +48,8 @@ The above, while functional, doesn't seem quite right. It would be better to hav
 
 When creating spaces, customers will get the next available int identifier, or they can specify their own. The special space needs a set identifier that can't be used - we could pick an arbitrary number, say 10 or 100, but this could be used by an existing customer. The alternative is to use a number that won't already be in use, the suggested space is `0` - this won't be used elsewhere and reads better in URLs than a negative space or something like `int.MaxValue`.
 
-There is an outstanding bug highlighting that it is possible to create spaces <= 0, this should be addressed as part of implementing [#997](https://github.com/dlcs/protagonist/issues/997).
+> [!NOTE]
+> There is an outstanding bug highlighting that it is possible to create spaces <= 0, this should be addressed as part of implementing [#997](https://github.com/dlcs/protagonist/issues/997).
 
 > [!WARNING]
 > Ideally we would be able to restrict the access of space 0 to specific callers or operations only. 
@@ -60,10 +61,10 @@ There is an outstanding bug highlighting that it is possible to create spaces <=
 If we use space 0 for _all_ stub assets we can make the validation logic work slightly differently - all fields will act as they do with other spaces with the exception that:
 
 * `"origin"` and `"mediaType"` are optional. If not supplied they gain placeholder values.
-* `"deliveryChannel"` must be `none`, anything other value is rejected.
+* `"deliveryChannel"` must be `none`, any other value is rejected.
 
 > [!NOTE]
-> Do we want to do this? I'm not sure if different validation logic is better than consumer passing random values? Restricting use of none makes sense.
+> Do we want to do this? I'm not sure if different validation logic is better than the consumer passing random values? Restricting use of none makes sense.
 
 The API can shortcut assets and auto-finish them, no need to notify Engine at all.
 
@@ -74,7 +75,7 @@ Would we want to output space 0 on output paths? By default we will but it could
 > [!NOTE]
 > Is this of use? Or would we need to see what path rewrite requirements would be before we determine what to do here?
 
-An alternative might be to have different values based on whether the space is 0 or not. A common customer configuration is to have a Customer/Space per environment, in these instances we would likely want to differentiate between space 0 or not. E.g.
+An alternative might be to have different values based on whether the space is 0 or not. A common customer configuration is to have a Customer/Space per environment, in these instances we would likely want to differentiate between space 0 and not. E.g.
 
 * Canonical image: `https://example.dlcs/iiif-img/2/10/asset`
 * Custom image: `https://customer.host/images/asset`
@@ -83,23 +84,28 @@ An alternative might be to have different values based on whether the space is 0
 * Canonical stub asset adjunct: `https://example.dlcs/adjuncts/2/0/fake/ocr.txt`
 * Custom stub asset adjunct: `https://customer.host/other/fake/ocr.txt`
 
+> [!NOTE]
+> We could eventually make space "0" optional in canonical routes but we should check the feasibility of this change before attempting. 
+>
+> Would this sit within Orchestrator, or outside? 
+
 ### Space 0 Problem
 
-The problem with using Space 0 is that it has a significant meaning in `CustomerStorage` table. The `CustomerStorage` table with a 0 space means *storage for all spaces*. 
+The problem with using Space 0 is that it has a significant meaning in the `CustomerStorage` table. The `CustomerStorage` table with a 0 space means *storage for all spaces*. 
 
 We would need a different mechanism for denoting this - potentially using `null` or an alternative identifier as the "all spaces" space. This is used both for reporting and validating customer hasn't exceeded their storage allowance.
 
 ### Manifest Output
 
-Manifest generation will need to support this scenario - it currently won't add any Assets that have `none` channel as there is nothing to deliver. However, there might be some adjuncts to add. In this case we'd need to add a placeholder `Canvas` without any AnnotationPages, only the adjuncts, using existing rules.
+Manifest generation will need to support stub assets - it currently won't add any Assets that have `none` channel as there is nothing to deliver. However, there might be some adjuncts to add. In this case we'd need to add a placeholder `Canvas` without any AnnotationPages, only the adjuncts, using existing rules. The same behaviour applies for both single-item and NQ manifests.
 
 ## Bulk Adjunct Operations
 
 The API supports bulk adjunct operations at an asset level:
 * requesting all adjuncts for an asset `GET /customers/{c}/spaces/{s}/images/{i}/adjuncts` 
-* upserting multiple adjuncts to an assets via `POST /customers/{c}/spaces/{s}/images/{i}/adjuncts`
+* upserting multiple adjuncts to an asset via `POST /customers/{c}/spaces/{s}/images/{i}/adjuncts`
 
-These are useful but in scenarios like IIIF-Presentation where we may want to get all adjuncts for a number of assets, or upsert adjuncts to a number of different assets it would be useful to have alternative endpoints for these.
+These are useful, but in scenarios like IIIF-Presentation where we may want to get all adjuncts for a number of assets, or upsert adjuncts to a number of different assets it would be useful to have alternative endpoints for these.
 
 ### Bulk Reading
 
@@ -108,64 +114,62 @@ These are useful but in scenarios like IIIF-Presentation where we may want to ge
 * `/customers/{customer}/allImages`
 * `/customers/{customer}/spaces/{space}/images`
 
-For bulk reading of adjuncts there are 2 options:
-
-#### "Include" parameter
-
-Extend the query syntax to support an `includes` property - this would include inline adjuncts with each asset. E.g. `/customer/99/allImages?q={{\"manifests\":[\"whatever\"]}}&include=adjuncts`.
+For bulk reading of adjuncts we should support an `include` parameter for assetQuery syntax, rather than introducing new endpoints. This would include inline adjuncts with each asset. E.g. `/customers/99/allImages?q={{\"manifests\":[\"whatever\"]}}&include=adjuncts`.
 
 * Pro: Single query can fetch all assets and associated adjuncts.
 * Pro: For IIIF-Presentation specifically, we are already making this request to get all assets for a manifest. Adding a simple include would allow us to fetch everything in one.
-* Con: The returned Image Hydra model has an existing "adjuncts" property, which is normally a URI but this would involve it being a collection of adjuncts.
+* Con: The returned Image Hydra model has an existing "adjuncts" property, which is normally a URI but this would involve it being a collection of adjuncts. This is valid for json+ld, but may present some serialisation challenges.
 * Con: It won't be possible to query for adjuncts only.
-
-#### Adjunct Specific
-
-Have an alternative endpoint that supports querying for adjuncts, `/customers/{customer}/allAdjuncts` or `/customers/{customer}/allImages/adjuncts`
-
-* Pro: Would return Hydra collection of Adjuncts.
-* Pro: Avoids above issue with Hydra model changes.
-* Pro: Allow querying on adjunct types, although this may be of limited use. E.g. `?q={{\"iiifLink\":[\"seeAlso\"]}}`
-* Con: We would want to query on parent asset properties, would the syntax need to differ? E.g. `?q={{\"asset.manifests\":[\"whatever\"]}}` to indicate this is the parent Asset property. This would only make sense if we wanted to allow filtering by both asset and adjunct specific values.
 
 ### Bulk Writing
 
-`POST /customers/{c}/spaces/{s}/images/{i}/adjuncts` allows bulk adding of adjuncts to a single asset. Could we have an alternative endpoint that would allow adding adjuncts to multiple assets at once? This is akin to how a batch can be created for images in multiple different spaces.
+`POST /customers/{c}/spaces/{s}/images/{i}/adjuncts` allows bulk adding of adjuncts to a single asset. We need an alternative endpoint that would allow adding adjuncts to multiple assets at once. This is akin to how a batch can be created for images in multiple different spaces.
 
-One suggestion would be to `POST /customers/{{customerId}}/adjunct/queue`. Which would create an adjunct batch, similar to asset batch. This would have the same behaviour of an adjunct batch but wouldn't set an `adjunct.batch` property - everything would be managed like the new `BatchAssets` table introduced in [#491](https://github.com/dlcs/protagonist/issues/491).
+One suggestion would be to use `POST /customers/{{customerId}}/adjunctQueue`, which would create an adjunct batch, similar to an asset batch. This would have the same behaviour as an asset batch but wouldn't set an `adjunct.batch` property - everything would be managed like the new `BatchAssets` table introduced in [#491](https://github.com/dlcs/protagonist/issues/491).
 
 > [!NOTE]
-> Unsure of URL structure below, `/adjunct/queue/` feels cumbersome `/adjunct-queue/` or something different?
+> `adjunctQueue` is suggested as a new resource. This keeps it consistent with how `queue` is used. 
 >
-> Alternatively should we reuse same endpoint as we have now (create a batch of _things_ with different handling for assets and adjuncts).
+> `adjunctQueue` is a queue for adjuncts, creating batches of adjuncts.
+>
+> `queue` is a queue for assets, creating batches of assets.
 
 This would have the same behaviour as an asset batch:
 * Raise notification on completion
-* GET all batches (equivalent of `/customers/{c}/queue/batches`)
-* GET batch details (equivalent of `/customers/{c}/queue/batches/{id}`)
-* GET batch images (equivalent of `/customers/{c}/queue/batches/{id}/images`)
-* POST add batch (equivalent of `/customers/{c}/queue`)
+* GET all batches `/customers/{c}/adjunctQueue/batches` (equivalent of `/customers/{c}/queue/batches`)
+* GET batch details `/customers/{c}/adjunctQueue/batches/{id}` (equivalent of `/customers/{c}/queue/batches/{id}`)
+* GET batch adjuncts `/customers/{c}/adjunctQueue/batches/{id}/adjuncts` (equivalent of `/customers/{c}/queue/batches/{id}/assets`)
+* POST add batch `/customers/{c}/adjunctQueue` (equivalent of `/customers/{c}/queue`)
 
 I don't think we would need all the functionality of batches immediately - no priority batches or recent/active batch endpoints.
 
 > [!NOTE]
 > What `@type` would this be? `vocab:Batch` has `"*Images"` properties that are not relevant to adjuncts.
 >
-> While there is a lot of shared properties, it is a different object. `vocab:AdjunctBatch` perhaps?
+> While there are a lot of shared properties, it is a different object. `vocab:AdjunctBatch` perhaps?
 
 ### Bulk Deleting
 
-Support bulk delete operations, similar to current POST `/customers/{customerId}/deleteImages`.
+Support bulk delete operations, similar to current POST `/customers/{customerId}/deleteImages`. Suggested endpoint is `/customers/{customerId}/deleteAdjuncts`, similar to the asset equivalent this will accept a list of `id` values.
 
 ## `manifests` Property
 
-Rename `manifests` column/property to `scopes`. `manifests` is to prescriptive for use, it can also be collections too. `scopes` keeps options for reuse open in the future. To fully make this change there will be changes to NQs to support `scopes` parameter, PATCH `/customers/{customerId}/allImages`, update `assetQuery` syntax etc.
+Rename `manifests` column/property to `scopes`. `manifests` is too prescriptive for use, it can also be Collections. `scopes` keeps options for reuse open in the future. To fully make this change there will be changes to NQs to support `scopes` parameter, PATCH `/customers/{customerId}/allImages`, update `assetQuery` syntax etc. The `scopes` parameter is an internal use list of associated references. 
 
-The `scopes` parameter is an internal use list of associated references. We will also introduce a `usedBy` property. This renders full URLs to all associated Manifests and Collections that contain this Asset.
+We will also introduce a `usedBy` property. This renders full URLs to all associated Manifests and Collections that contain this asset and is for public consumption.
 
 ## Alternative Options
 
 This section is a record of some alternative approaches that were disregarded.
+
+### Bulk Reading
+
+Have an alternative endpoint that supports querying for adjuncts, `/customers/{customer}/allAdjuncts` or `/customers/{customer}/allImages/adjuncts`
+
+* Pro: Would return Hydra collection of Adjuncts.
+* Pro: Avoids above issue with Hydra model changes.
+* Pro: Allows querying on adjunct types, although this may be of limited use. E.g. `?q={{\"iiifLink\":[\"seeAlso\"]}}`
+* Con: We would want to query on parent asset properties, would the syntax need to differ? E.g. `?q={{\"asset.manifests\":[\"whatever\"]}}` to indicate this is the parent Asset property. This would only make sense if we wanted to allow filtering by both asset and adjunct specific values.
 
 ### Bulk Writing
 
@@ -175,7 +179,7 @@ Without batches there would be no batch completion event, instead we could raise
 
 ### Customer Controlled 'special' Space
 
-We could allow customers to specify their own unique 'stub asset' space, controllable by configuration. The additional complexity overhead for this seem unnecessary.
+We could allow customers to specify their own unique 'stub asset' space, controllable by configuration. The additional complexity overhead for this seems unnecessary.
 
 ### Adjuncts as Asset-lite
 
