@@ -146,9 +146,9 @@ public class DapperAssetRepository(
 
     private const string AdjunctSql =
         """
-        SELECT a.Id, a.AssetId, a.Origin, a.IIIFLink, a.MediaType, a.Type
-        FROM "Ajunct"
-        WHERE a.Id = @Id AND a.AssetId = @AssetId
+        SELECT "Id", "AssetId", "Origin", "IIIFLink", "MediaType", "Type"
+        FROM "Adjuncts"
+        WHERE "Id" = @Id AND "AssetId" = @AssetId
         """;
     
     private const string AssetSql =
