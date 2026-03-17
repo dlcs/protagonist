@@ -563,7 +563,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
         await dbContext.Images.AddTestAsset(assetId)
-            .WithTestAdjunct("someAdjunctId", created: DateTime.UtcNow.AddDays(-2));
+            .WithTestAdjunct("someAdjunctId", created: DateTime.UtcNow.AddDays(-2), motivation: "something");
         await dbContext.SaveChangesAsync();
         
         const string updateAdjunctJson = """
@@ -575,6 +575,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
                                                    "mediaType": "a-mediaType",
                                                    "label": {"label": ["value"]},
                                                    "language": ["en"],
+                                                   "motivation": "changed"
                                                  }
                                          """;
         
@@ -598,6 +599,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
+        adjunct.Motivation.Should().Be("changed");
     }
     
     [Fact]
