@@ -568,6 +568,7 @@ public class ManifestV3BuilderTests
         var minimalInlinePaintingAnnotation =  annotation.Items!.First().As<GeneralAnnotation>();
         minimalInlinePaintingAnnotation.Id.Should().Be("https://dlcs.test/adjunct-annotations/99/1/GetImageAsset/first");
         minimalInlinePaintingAnnotation.Motivation.Should().Be(null);
+        minimalInlinePaintingAnnotation.Target.Id.Should().Be("https://dlcs.test/canvas/0");
         var minimalInlinePaintingAnnotationBody = minimalInlinePaintingAnnotation.Body!.First().As<ExternalResource>();
         minimalInlinePaintingAnnotationBody.Id.Should().Be("http://some.id/first");
         minimalInlinePaintingAnnotationBody.Format.Should().Be("text/plain");
@@ -578,6 +579,7 @@ public class ManifestV3BuilderTests
         var fullInlinePaintingAnnotation =  annotation.Items!.Last().As<GeneralAnnotation>();
         fullInlinePaintingAnnotation.Id.Should().Be("https://dlcs.test/adjunct-annotations/99/1/GetImageAsset/second");
         fullInlinePaintingAnnotation.Motivation.Should().Be("something");
+        fullInlinePaintingAnnotation.Target.Id.Should().Be("https://dlcs.test/canvas/0");
         var fullInlinePaintingAnnotationBody = fullInlinePaintingAnnotation.Body!.First().As<ExternalResource>();
         fullInlinePaintingAnnotationBody.Id.Should().Be("http://some.id/second");
         fullInlinePaintingAnnotationBody.Format.Should().Be("text/plain");
