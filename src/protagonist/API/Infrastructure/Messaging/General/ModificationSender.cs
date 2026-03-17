@@ -46,7 +46,7 @@ public class ModificationSender(
                 await topicPublisher.PublishToAssetModifiedTopic(changes, cancellationToken);
                 break;
             default:
-                throw new Exception(); // todo: work out correct one
+                throw new InvalidOperationException($"Deliverable type not supported - {typeParameterType}");
         }
     }
 
