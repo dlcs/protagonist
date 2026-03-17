@@ -1,4 +1,5 @@
 ﻿using DLCS.Model.Customers;
+using DLCS.Model.Messaging.Adjunct;
 
 namespace DLCS.AWS.SNS;
 
@@ -10,7 +11,7 @@ public interface ITopicPublisher
     /// <param name="messages">A collection of notifications to send</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Boolean representing the overall success/failure status of all requests</returns>
-    public Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<AssetModifiedNotification> messages,
+    public Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -26,12 +27,20 @@ public interface ITopicPublisher
     /// <returns>Boolean representing the overall success/failure status of request</returns>
     public Task<bool> PublishToBatchCompletedTopic(BatchCompletedNotification message,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Asynchronously publishes a message to an Adjunct Modified SNS topic
+    /// </summary>
+    /// <param name="messages">A collection of notifications to send</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Boolean representing the overall success/failure status of all requests</returns>
+    Task PublishToAdjunctModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages, CancellationToken cancellationToken);
 }
 
 /// <summary>
-/// Represents the contents + type of change for Asset modified notification
+/// Represents the contents + type of change for Deliverable modified notification
 /// </summary>
-public record AssetModifiedNotification(string MessageContents, Dictionary<string, string> Attributes);
+public record DeliverableModifiedNotification(string MessageContents, Dictionary<string, string> Attributes);
 
 /// <summary>
 /// Represents contents of CustomerCreation notification

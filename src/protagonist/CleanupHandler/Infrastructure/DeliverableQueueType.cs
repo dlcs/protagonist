@@ -1,6 +1,6 @@
 ﻿namespace CleanupHandler.Infrastructure;
 
-public enum AssetQueueType
+public enum DeliverableQueueType
 {
     Delete,
     Update

@@ -7,7 +7,6 @@ using DLCS.Core.Collections;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using DLCS.Web.Logging;
 using Microsoft.Extensions.Logging;
@@ -18,42 +17,26 @@ namespace CleanupHandler;
 /// <summary>
 /// Handler for SQS messages notifying of asset deletion
 /// </summary>
-public class AssetDeletedHandler : IMessageHandler
+public class AssetDeletedHandler(
+    IStorageKeyGenerator storageKeyGenerator,
+    IBucketWriter bucketWriter,
+    ICacheInvalidator cacheInvalidator,
+    IFileSystem fileSystem,
+    IOptions<CleanupHandlerSettings> handlerSettings,
+    ICleanupHandlerAssetRepository assetRepository,
+    ILogger<AssetDeletedHandler> logger)
+    : IMessageHandler
 {
-    private readonly CleanupHandlerSettings handlerSettings;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly IBucketWriter bucketWriter;
-    private readonly IFileSystem fileSystem;
-    private readonly ILogger<AssetDeletedHandler> logger;
-    private readonly ICacheInvalidator cacheInvalidator;
-    private readonly ICleanupHandlerAssetRepository assetRepository;
+    private readonly CleanupHandlerSettings handlerSettings = handlerSettings.Value;
 
-    public AssetDeletedHandler(
-        IStorageKeyGenerator storageKeyGenerator,
-        IBucketWriter bucketWriter,
-        ICacheInvalidator cacheInvalidator,
-        IFileSystem fileSystem,
-        IOptions<CleanupHandlerSettings> handlerSettings,
-        ICleanupHandlerAssetRepository assetRepository,
-        ILogger<AssetDeletedHandler> logger)
-    {
-        this.storageKeyGenerator = storageKeyGenerator;
-        this.bucketWriter = bucketWriter;
-        this.fileSystem = fileSystem;
-        this.cacheInvalidator = cacheInvalidator;
-        this.logger = logger;
-        this.handlerSettings = handlerSettings.Value;
-        this.assetRepository = assetRepository;
-    }
-    
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        var request = TryParseMessage(message);
+        var request = MessageParser.TryParseDeleteMessage<Asset>(message, logger);
         if (request == null) return false;
 
         using (LogContextHelpers.SetCorrelationId(message.MessageId))
         {
-            var assetId = request.Asset!.Id;
+            var assetId = request.Deliverable!.Id;
             logger.LogDebug("Processing delete notification for {AssetId}", assetId);
 
             // if the item exists in the db, assume the asset has been reingested after delete
@@ -71,31 +54,11 @@ public class AssetDeletedHandler : IMessageHandler
 
             if (request.DeleteFrom.HasFlag(ImageCacheType.Cdn))
             {
-                return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
+                return await InvalidateContentDeliveryNetwork(request.Deliverable, request.CustomerPathElement.Name);
             }
 
             logger.LogDebug("CDN invalidation not specified for {Asset}", assetId);
             return true;
-        }
-    }
-    
-    private AssetDeletedNotificationRequest? TryParseMessage(QueueMessage message)
-    {
-        try
-        {
-            var request = message.GetMessageContents<AssetDeletedNotificationRequest>();
-
-            if (request?.Asset?.Id == null)
-            {
-                logger.LogInformation("Deserialised message but no asset id found");
-                return null;
-            }
-            return request;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to deserialize notification {@Message}", message);
-            return null;
         }
     }
 

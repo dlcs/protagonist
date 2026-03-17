@@ -8,7 +8,6 @@ using DLCS.AWS.Transcoding;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
-using DLCS.Model.Messaging;
 using DLCS.Model.Policies;
 using DLCS.Repository.Messaging;
 using DLCS.Web.Logging;
@@ -37,12 +36,12 @@ public class AssetUpdatedHandler(
 
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        var request = TryParseMessage(message);
+        var request = MessageParser.TryParseUpdatedMessage<Asset>(message, logger);
         if (request == null) return false;
 
         using (LogContextHelpers.SetCorrelationId(message.MessageId))
         {
-            var assetBefore = request.AssetBeforeUpdate!;
+            var assetBefore = request.DeliverableBeforeUpdate!;
 
             var assetAfter = await cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(assetBefore.Id);
 
@@ -53,7 +52,7 @@ public class AssetUpdatedHandler(
                 return false;
             }
             
-            logger.LogDebug("Processing update notification for {AssetId}", assetBefore.Id);
+            logger.LogDebug("Processing update asset notification for {AssetId}", assetBefore.Id);
 
             if (NoCleanupRequired(message, assetAfter, assetBefore))
             {
@@ -128,26 +127,6 @@ public class AssetUpdatedHandler(
 
         var maxWidthChanged = (assetAfter.MaxWidth ?? 0) != (assetBefore.MaxWidth ?? 0);
         return rolesChanged || maxWidthChanged;
-    }
-
-    private AssetUpdatedNotificationRequest? TryParseMessage(QueueMessage message)
-    {
-        try
-        {
-            var request = message.GetMessageContents<AssetUpdatedNotificationRequest>();
-
-            if (request?.AssetBeforeUpdate?.Id == null)
-            {
-                logger.LogInformation("Deserialised message but no 'before' asset id found");
-                return null;
-            }
-            return request;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to deserialize notification {@Message}", message);
-            return null;
-        }
     }
 
     private static bool AssetStillIngesting(Asset assetAfter, Asset assetBefore) =>

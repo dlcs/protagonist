@@ -1,4 +1,5 @@
-﻿using CleanupHandler.Repository;
+﻿using CleanupHandler.Adjunct;
+using CleanupHandler.Repository;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
@@ -35,6 +36,7 @@ public static class ServiceCollectionX
             .AddTransient(typeof(SqsListener<>))
             .AddSingleton<ICacheInvalidator, CloudfrontInvalidator>()
             .AddSingleton<SqsQueueUtilities>()
+            .AddSingleton<IAdjunctBucketOperations, AdjunctBucketOperations>()
             .SetupAWS(configuration, hostEnvironment)
             .WithAmazonS3()
             .WithAmazonCloudfront()
@@ -48,14 +50,22 @@ public static class ServiceCollectionX
     /// </summary>
     public static IServiceCollection AddQueueMonitoring(this IServiceCollection services)
         => services
-            .AddScoped<QueueHandlerResolver<AssetQueueType>>(provider => messageType => messageType switch
+            .AddScoped<QueueHandlerResolver<DeliverableQueueType>>(provider => messageType => messageType switch
             {
-                AssetQueueType.Delete => provider.GetRequiredService<AssetDeletedHandler>(),
-                AssetQueueType.Update => provider.GetRequiredService<AssetUpdatedHandler>(),
+                DeliverableQueueType.Delete => provider.GetRequiredService<AssetDeletedHandler>(), 
+                DeliverableQueueType.Update => provider.GetRequiredService<AssetUpdatedHandler>(),
                 _ => throw new ArgumentOutOfRangeException(nameof(messageType), messageType, null)
             })
             .AddScoped<AssetDeletedHandler>()
             .AddScoped<AssetUpdatedHandler>()
+            .AddScoped<QueueHandlerResolver<DeliverableQueueType>>(provider => messageType => messageType switch
+            {
+                DeliverableQueueType.Delete => provider.GetRequiredService<AdjunctDeletedHandler>(), 
+                DeliverableQueueType.Update => provider.GetRequiredService<AdjunctUpdatedHandler>(),
+                _ => throw new ArgumentOutOfRangeException(nameof(messageType), messageType, null)
+            })
+            .AddScoped<AdjunctDeletedHandler>()
+            .AddScoped<AdjunctUpdatedHandler>()
             .AddSingleton<IFileSystem, FileSystem>()
             .AddHostedService<CleanupHandlerQueueMonitor>();
 

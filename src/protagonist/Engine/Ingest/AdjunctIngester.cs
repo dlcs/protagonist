@@ -1,6 +1,7 @@
 ﻿using DLCS.Core.Types;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
+using DLCS.Model.Messaging.Adjunct;
 using Engine.Data;
 
 namespace Engine.Ingest;

@@ -25,6 +25,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\API.Tests\API.Tests.csproj" />
         <ProjectReference Include="..\CleanupHandler\CleanupHandler.csproj"/>
         <ProjectReference Include="..\Test.Helpers\Test.Helpers.csproj"/>
     </ItemGroup>

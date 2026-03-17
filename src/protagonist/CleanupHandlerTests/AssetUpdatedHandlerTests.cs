@@ -1224,11 +1224,11 @@ public class AssetUpdatedHandlerTests
         };
         customiseAssetAfter?.Invoke(assetAfter);
 
-        var cleanupRequest = new AssetUpdatedNotificationRequest
+        var cleanupRequest = new UpdatedNotificationRequest<Asset>
         {
-            AssetBeforeUpdate = assetBefore,
+            DeliverableBeforeUpdate = assetBefore,
             CustomerPathElement = new CustomerPathElement(99, "stuff"),
-            AssetAfterUpdate = assetAfter
+            DeliverableAfterUpdate = assetAfter
         };
 
         var serialized = JsonSerializer.Serialize(cleanupRequest, settings);

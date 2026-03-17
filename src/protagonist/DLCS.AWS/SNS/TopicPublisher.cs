@@ -18,7 +18,7 @@ public class TopicPublisher(
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
 
     /// <inheritdoc />
-    public async Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<AssetModifiedNotification> messages,
+    public async Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages,
         CancellationToken cancellationToken = default)
     {
         if (messages.Count == 1)
@@ -88,7 +88,12 @@ public class TopicPublisher(
         return await TryPublishRequest(request, cancellationToken);
     }
 
-    private Task<bool> PublishToAssetModifiedTopic(AssetModifiedNotification message,
+    public Task PublishToAdjunctModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException(); //todo: implement
+    }
+
+    private Task<bool> PublishToAssetModifiedTopic(DeliverableModifiedNotification message,
         CancellationToken cancellationToken = default)
     {
         var request = new PublishRequest
@@ -115,7 +120,7 @@ public class TopicPublisher(
         }
     }
 
-    private async Task<bool> PublishBatch(AssetModifiedNotification[] chunk, Guid batchIdPrefix, int batchNumber,
+    private async Task<bool> PublishBatch(DeliverableModifiedNotification[] chunk, Guid batchIdPrefix, int batchNumber,
         CancellationToken cancellationToken)
     {
         try

@@ -2,7 +2,8 @@
 using System.Data;
 using API.Features.Image;
 using API.Features.Image.Ingest;
-using API.Infrastructure.Messaging;
+using API.Infrastructure.Messaging.Asset;
+using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Assets;
@@ -76,7 +77,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         var batch = await batchRepository.CreateBatch(request.CustomerId, request.AssetsBeforeProcessing.Select(a => a.Asset).ToList(), cancellationToken);
 
         var engineNotificationList = new List<Asset>(request.AssetsBeforeProcessing.Count);
-        var assetModifiedNotificationList = new List<AssetModificationRecord>();
+        var assetModifiedNotificationList = new List<NotificationRecord<Asset>>();
         
         try
         {
@@ -200,13 +201,13 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         return (false, missing);
     }
     
-    private static AssetModificationRecord GetAssetModificationRecord(ProcessAssetResult processAssetResult,
+    private static NotificationRecord<Asset> GetAssetModificationRecord(ProcessAssetResult processAssetResult,
         Asset savedAsset)
     {
         var existingAsset = processAssetResult.ExistingAsset;
         var assetModificationRecord = existingAsset == null
-            ? AssetModificationRecord.Create(savedAsset)
-            : AssetModificationRecord.Update(existingAsset, savedAsset, processAssetResult.RequiresEngineNotification);
+            ? NotificationRecord<Asset>.Create(savedAsset)
+            : NotificationRecord<Asset>.Update(existingAsset, savedAsset, processAssetResult.RequiresEngineNotification);
         return assetModificationRecord;
     }
 }

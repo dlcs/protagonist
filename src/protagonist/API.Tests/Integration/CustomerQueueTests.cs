@@ -7,7 +7,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using API.Client;
-using API.Infrastructure.Messaging;
+using API.Infrastructure.Messaging.Asset;
+using API.Infrastructure.Messaging.General;
 using API.Tests.Integration.Infrastructure;
 using DLCS.AWS.SNS.Messaging;
 using DLCS.Core.Types;
@@ -1089,7 +1090,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 A<IReadOnlyCollection<Asset>>.That.Matches(i => i.Count == 3), false,
                 A<CancellationToken>._)).MustHaveHappened();
         A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
-            A<IReadOnlyCollection<AssetModificationRecord>>.That.Matches(i => i.Count == 3),
+            A<IReadOnlyCollection<NotificationRecord<Asset>>>.That.Matches(i => i.Count == 3),
             A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -1150,7 +1151,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 A<IReadOnlyCollection<Asset>>.That.Matches(ca => ca.Any(a => a.Customer == customerId)), false,
                 A<CancellationToken>._)).MustNotHaveHappened();
         A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
-            A<IReadOnlyCollection<AssetModificationRecord>>.That.Matches(ca =>
+            A<IReadOnlyCollection<NotificationRecord<Asset>>>.That.Matches(ca =>
                 ca.Any(a => a.After.Customer == customerId)),
             A<CancellationToken>._)).MustNotHaveHappened();
     }

@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
 
-namespace DLCS.Model.Messaging;
+namespace DLCS.Model.Messaging.Adjunct;
 
 /// <summary>
 /// Represents a request to ingest an adjunct.

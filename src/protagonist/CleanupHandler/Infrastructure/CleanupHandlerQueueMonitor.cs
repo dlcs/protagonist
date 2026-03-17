@@ -9,30 +9,23 @@ namespace CleanupHandler.Infrastructure;
 /// <summary>
 /// Background worker that monitors SQS queue for cleanup notifications
 /// </summary>
-public class CleanupHandlerQueueMonitor : BackgroundService
+public class CleanupHandlerQueueMonitor(
+    SqsListenerManager sqsListenerManager,
+    ILogger<CleanupHandlerQueueMonitor> logger,
+    IHostApplicationLifetime hostApplicationLifetime,
+    IOptions<AWSSettings> awsSettings)
+    : BackgroundService
 {
-    private readonly IHostApplicationLifetime hostApplicationLifetime;
-    private readonly IOptions<AWSSettings> awsSettings;
-    private readonly SqsListenerManager sqsListenerManager;
-    private readonly ILogger<CleanupHandlerQueueMonitor> logger;
-
-    public CleanupHandlerQueueMonitor(SqsListenerManager sqsListenerManager, ILogger<CleanupHandlerQueueMonitor> logger,
-        IHostApplicationLifetime hostApplicationLifetime, IOptions<AWSSettings> awsSettings)
-    {
-        this.sqsListenerManager = sqsListenerManager;
-        this.logger = logger;
-        this.hostApplicationLifetime = hostApplicationLifetime;
-        this.awsSettings = awsSettings;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Starting queues in cleanup handler");
         
         var startTasks = new List<Task>
         {
-            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.DeleteNotificationQueueName, AssetQueueType.Delete),
-            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.UpdateNotificationQueueName, AssetQueueType.Update),
+            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.DeleteNotificationQueueName, DeliverableQueueType.Delete),
+            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.UpdateNotificationQueueName, DeliverableQueueType.Update),
+            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.AdjunctDeleteNotificationQueueName, DeliverableQueueType.Delete),
+            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.AdjunctUpdateNotificationQueueName, DeliverableQueueType.Update),
         };
         
         await Task.WhenAll(startTasks);

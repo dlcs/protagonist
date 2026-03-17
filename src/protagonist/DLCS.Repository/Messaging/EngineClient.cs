@@ -14,6 +14,7 @@ using DLCS.AWS.Transcoding.Models;
 using DLCS.Core.Caching;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.Messaging.Adjunct;
 using LazyCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

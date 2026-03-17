@@ -9,6 +9,8 @@ using System.Threading;
 using Amazon.S3;
 using API.Client;
 using API.Infrastructure.Messaging;
+using API.Infrastructure.Messaging.Asset;
+using API.Infrastructure.Messaging.General;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
@@ -2789,7 +2791,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
 
         A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
-            A<AssetModificationRecord>.That.Matches(r => r.ChangeType == ChangeType.Delete && r.DeleteFrom == ImageCacheType.None), 
+            A<NotificationRecord<Asset>>.That.Matches(r => r.ChangeType == ChangeType.Delete && r.DeleteFrom == ImageCacheType.None), 
             A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -2850,8 +2852,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
 
         A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
-            A<AssetModificationRecord>.That.Matches(r => r.ChangeType == ChangeType.Delete && 
-                                                         (int)r.DeleteFrom == 12), 
+            A<NotificationRecord<Asset>>.That.Matches(r => r.ChangeType == ChangeType.Delete && 
+                                                           (int)r.DeleteFrom == 12), 
             A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -2908,7 +2910,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
         
         A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
-            A<AssetModificationRecord>.That.Matches(r => r.ChangeType == ChangeType.Delete), 
+            A<NotificationRecord<Asset>>.That.Matches(r => r.ChangeType == ChangeType.Delete), 
             A<CancellationToken>._)).MustHaveHappened();
     }
 
@@ -2946,7 +2948,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         
         A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
-            A<AssetModificationRecord>.That.Matches(r => 
+            A<NotificationRecord<Asset>>.That.Matches(r => 
                 r.ChangeType == ChangeType.Delete &&
                 r.Before.ImageDeliveryChannels.Count == 3),
             A<CancellationToken>._)).MustHaveHappened();

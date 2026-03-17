@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using API.Features.Customer.Validation;
-using API.Infrastructure.Messaging;
+using API.Infrastructure.Messaging.Asset;
+using API.Infrastructure.Messaging.General;
 using DLCS.Model.Assets;
 using DLCS.Repository;
 using MediatR;
@@ -80,7 +81,7 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
 
     private async Task RaiseModifiedNotifications(List<Asset> assets, ImageCacheType deleteFrom, CancellationToken cancellationToken)
     {
-        var changeSet = assets.Select(a => AssetModificationRecord.Delete(a, deleteFrom)).ToList();
+        var changeSet = assets.Select(a => NotificationRecord<Asset>.Delete(a, deleteFrom)).ToList();
         await assetNotificationSender.SendAssetModifiedMessage(changeSet, cancellationToken);
     }
 }

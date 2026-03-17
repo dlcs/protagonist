@@ -7,11 +7,15 @@ using API.Features.Image.Ingest;
 using API.Features.OriginStrategies.Credentials;
 using API.Infrastructure;
 using API.Infrastructure.Messaging;
+using API.Infrastructure.Messaging.Adjunct;
+using API.Infrastructure.Messaging.Asset;
+using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Validation;
 using API.Settings;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
 using DLCS.Core.Settings;
+using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Messaging;
@@ -77,6 +81,8 @@ public class Startup
             .AddDataAccess(configuration)
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
             .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
+            .AddScoped<IAdjunctNotificationSender, AdjunctNotificationSender>()
+            .AddScoped<ModificationSender>()
             .AddScoped<AssetProcessor>()
             .AddScoped<IBulkAssetPatcher, BulkAssetPatcher>()
             .AddScoped<DeliveryChannelProcessor>()

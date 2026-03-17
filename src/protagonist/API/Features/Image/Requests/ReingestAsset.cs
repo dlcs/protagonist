@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using API.Features.Assets;
-using API.Infrastructure.Messaging;
+using API.Infrastructure.Messaging.Asset;
+using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Types;
@@ -52,7 +53,7 @@ public class ReingestAssetHandler : IRequestHandler<ReingestAsset, ModifyEntityR
         
         var asset = await MarkAssetAsIngesting(cancellationToken, existingAsset!);
 
-        await assetNotificationSender.SendAssetModifiedMessage(AssetModificationRecord.Update(existingAsset!, asset, true),
+        await assetNotificationSender.SendAssetModifiedMessage(NotificationRecord<Asset>.Update(existingAsset!, asset, true),
             cancellationToken);
         var statusCode = await ingestNotificationSender.SendImmediateIngestAssetRequest(asset, cancellationToken);
         

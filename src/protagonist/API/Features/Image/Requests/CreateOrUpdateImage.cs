@@ -3,7 +3,8 @@ using System.Net;
 using API.Exceptions;
 using API.Features.Assets;
 using API.Features.Image.Ingest;
-using API.Infrastructure.Messaging;
+using API.Infrastructure.Messaging.Asset;
+using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Collections;
@@ -132,8 +133,8 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         var assetAfterSave = modifyEntityResult.Entity!;
 
         var assetModificationRecord = existingAsset == null
-            ? AssetModificationRecord.Create(assetAfterSave)
-            : AssetModificationRecord.Update(existingAsset, assetAfterSave, processAssetResult.RequiresEngineNotification);
+            ? NotificationRecord<Asset>.Create(assetAfterSave)
+            : NotificationRecord<Asset>.Update(existingAsset, assetAfterSave, processAssetResult.RequiresEngineNotification);
 
         await assetNotificationSender.SendAssetModifiedMessage(assetModificationRecord, cancellationToken);
 

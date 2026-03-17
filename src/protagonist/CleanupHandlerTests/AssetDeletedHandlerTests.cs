@@ -323,9 +323,9 @@ public class AssetDeletedHandlerTests
     public async Task Handle_InvalidatesImagePath_IfDeliveryChannels()
     {
         // Arrange
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeletedNotificationRequest<Asset>()
         {
-            Asset = new Asset()
+            Deliverable = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 ImageDeliveryChannels = new List<ImageDeliveryChannel>()
@@ -418,9 +418,9 @@ public class AssetDeletedHandlerTests
     public async Task Handle_InvalidatesImagePath_IfImageAssetFamily()
     {
         // Arrange
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeletedNotificationRequest<Asset>()
         {
-            Asset = new Asset()
+            Deliverable = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
@@ -461,9 +461,9 @@ public class AssetDeletedHandlerTests
     public async Task Handle_DoesNotCreateInvalidation_IfFileAssetFamily()
     {
         // Arrange
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeletedNotificationRequest<Asset>()
         {
-            Asset = new Asset()
+            Deliverable = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.File
@@ -500,9 +500,9 @@ public class AssetDeletedHandlerTests
     public async Task Handle_DoesNotCreateInvalidation_IfDeleteFromDoesNotContainCdn()
     {
         // Arrange
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeletedNotificationRequest<Asset>()
         {
-            Asset = new Asset()
+            Deliverable = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
@@ -539,9 +539,9 @@ public class AssetDeletedHandlerTests
     public async Task Handle_ReturnsFalse_IfInvalidationFails()
     {
         // Arrange
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeletedNotificationRequest<Asset>()
         {
-            Asset = new Asset()
+            Deliverable = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
@@ -571,9 +571,9 @@ public class AssetDeletedHandlerTests
     
     private QueueMessage CreateMinimalQueueMessage()
     {
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeletedNotificationRequest<Asset>()
         {
-            Asset = new Asset()
+            Deliverable = new Asset()
             {
                 Id = new AssetId(1, 99, "foo")
             },

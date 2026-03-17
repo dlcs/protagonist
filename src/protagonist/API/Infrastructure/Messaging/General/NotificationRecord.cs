@@ -2,22 +2,20 @@
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 
-namespace API.Infrastructure.Messaging;
+namespace API.Infrastructure.Messaging.General;
 
-/// <summary>
-/// Represents a change to a single asset - the relevant status before/after change and the change type
-/// </summary>
-public class AssetModificationRecord
+public class NotificationRecord<T> where T : class, IDeliverable
 {
     public ChangeType ChangeType { get; }
-    public Asset? Before { get; }
-    public Asset? After { get; }
+    
+    public T? Before { get; }
+    public T? After { get; }
     
     public bool EngineNotified { get; }
     
     public ImageCacheType? DeleteFrom { get; }
-
-    private AssetModificationRecord(ChangeType changeType, Asset? before, Asset? after, ImageCacheType? deleteFrom, bool assetModifiedEngineNotified)
+    
+    private NotificationRecord(ChangeType changeType, T? before, T? after, ImageCacheType? deleteFrom, bool assetModifiedEngineNotified)
     {
         ChangeType = changeType;
         Before = before;
@@ -25,15 +23,15 @@ public class AssetModificationRecord
         DeleteFrom = deleteFrom;
         EngineNotified = assetModifiedEngineNotified;
     }
-
-    public static AssetModificationRecord Delete(Asset before, ImageCacheType deleteFrom)
+    
+    public static NotificationRecord<T> Delete(T before, ImageCacheType deleteFrom)
         => new(ChangeType.Delete, before.ThrowIfNull(nameof(before)), null, deleteFrom.ThrowIfNull(nameof(deleteFrom)),
             false);
 
-    public static AssetModificationRecord Update(Asset before, Asset after, bool assetModifiedEngineNotified)
+    public static NotificationRecord<T> Update(T before, T after, bool assetModifiedEngineNotified)
         => new(ChangeType.Update, before.ThrowIfNull(nameof(before)), after.ThrowIfNull(nameof(after)), null,
             assetModifiedEngineNotified);
 
-    public static AssetModificationRecord Create(Asset after)
+    public static NotificationRecord<T> Create(T after)
         => new(ChangeType.Create, null, after.ThrowIfNull(nameof(after)), null, false);
 }

@@ -40,6 +40,16 @@ public class SQSSettings
     public string? DeleteNotificationQueueName { get; set; }
     
     /// <summary>
+    /// Name of queue for handling notifications that adjuncts have been deleted
+    /// </summary>
+    public string? AdjunctDeleteNotificationQueueName { get; set; }
+    
+    /// <summary>
+    /// Name of queue for handling notifications that adjuncts have been deleted
+    /// </summary>
+    public string? AdjunctUpdateNotificationQueueName { get; set; }
+    
+    /// <summary>
     /// Name of queue for handling notifications that assets have been updated
     /// </summary>
     public string? UpdateNotificationQueueName { get; set; }
