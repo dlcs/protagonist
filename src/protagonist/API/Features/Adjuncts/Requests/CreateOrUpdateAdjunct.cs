@@ -76,6 +76,7 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
             dbAdjunct.Origin = adjunct.Origin;
             dbAdjunct.Error = adjunct.Error;
             dbAdjunct.Type = adjunct.Type;
+            dbAdjunct.Motivation =  adjunct.Motivation;
             dbAdjunct.Ingesting = adjunct.Ingesting;
         }
         else

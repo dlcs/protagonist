@@ -542,7 +542,8 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             inlineAnnotationPage.Items!.Add(new GeneralAnnotation(adjunct.Motivation)
             {
                 Id = $"{GetPathForAdjunct(adjunct)}/{adjunct.Id}",
-                Body = [CreateExternalResource(adjunct)]
+                Body = [CreateExternalResource(adjunct)],
+                Target = new Canvas { Id = currentCanvas.Id }
             });
         }
 
