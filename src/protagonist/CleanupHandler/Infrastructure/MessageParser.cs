@@ -5,9 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace CleanupHandler.Infrastructure;
 
-public class MessageParser
+public static class MessageParser
 {
-    public static DeletedNotificationRequest<T>? TryParseDeleteMessage<T>(QueueMessage message, ILogger logger) where T : IDeliverable //todo: do we need to handle legacy? Probably
+    public static DeletedNotificationRequest<T>? TryParseDeleteMessage<T>(QueueMessage message, ILogger logger) where T : IDeliverable
     {
         try
         {

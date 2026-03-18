@@ -1,4 +1,5 @@
 ﻿using CleanupHandler.Infrastructure;
+using CleanupHandler.Infrastructure.Messages;
 using CleanupHandler.Repository;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
@@ -7,6 +8,7 @@ using DLCS.Core.Collections;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Messaging;
 using DLCS.Model.Templates;
 using DLCS.Web.Logging;
 using Microsoft.Extensions.Logging;
@@ -31,7 +33,7 @@ public class AssetDeletedHandler(
 
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        var request = MessageParser.TryParseDeleteMessage<Asset>(message, logger);
+        var request = TryParseMessage(message); MessageParser.TryParseDeleteMessage<Asset>(message, logger);
         if (request == null) return false;
 
         using (LogContextHelpers.SetCorrelationId(message.MessageId))
@@ -60,6 +62,35 @@ public class AssetDeletedHandler(
             logger.LogDebug("CDN invalidation not specified for {Asset}", assetId);
             return true;
         }
+    }
+
+    private DeletedNotificationRequest<Asset>? TryParseMessage(QueueMessage message)
+    {
+        var updateMessage = MessageParser.TryParseDeleteMessage<Asset>(message, logger);
+
+        // this is legacy handling for the older message format - it should be removed at the point this code is released everywhere
+        // and just the above line used
+        if (updateMessage == null)
+        {
+            try
+            {
+                var request = message.GetMessageContents<AssetDeletedNotificationRequest>();
+
+                if (request?.Asset?.Id == null)
+                {
+                    logger.LogInformation("Deserialised message but no 'before' asset id found");
+                    return null;
+                }
+                return request.ConvertToStandard();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to deserialize notification {@Message}", message);
+                return null;
+            }
+        }
+
+        return updateMessage;
     }
 
     private async Task DeleteFromOriginBucket(AssetId assetId)

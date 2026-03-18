@@ -1,5 +1,6 @@
 ﻿using System.IO.Enumeration;
 using CleanupHandler.Infrastructure;
+using CleanupHandler.Infrastructure.Messages;
 using CleanupHandler.Repository;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -8,6 +9,7 @@ using DLCS.AWS.Transcoding;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
+using DLCS.Model.Messaging;
 using DLCS.Model.Policies;
 using DLCS.Repository.Messaging;
 using DLCS.Web.Logging;
@@ -36,7 +38,7 @@ public class AssetUpdatedHandler(
 
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        var request = MessageParser.TryParseUpdatedMessage<Asset>(message, logger);
+        var request = TryParseMessage(message);
         if (request == null) return false;
 
         using (LogContextHelpers.SetCorrelationId(message.MessageId))
@@ -117,6 +119,35 @@ public class AssetUpdatedHandler(
 
             return true;
         }
+    }
+
+    private UpdatedNotificationRequest<Asset>? TryParseMessage(QueueMessage message)
+    {
+        var updateMessage = MessageParser.TryParseUpdatedMessage<Asset>(message, logger);
+
+        // this is legacy handling for the older message format - it should be removed at the point this code is released everywhere
+        // and just the above line used
+        if (updateMessage == null)
+        {
+            try
+            {
+                var request = message.GetMessageContents<AssetUpdatedNotificationRequest>();
+
+                if (request?.AssetBeforeUpdate?.Id == null)
+                {
+                    logger.LogInformation("Deserialised message but no 'before' asset id found");
+                    return null;
+                }
+                return request.ConvertToStandard();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to deserialize notification {@Message}", message);
+                return null;
+            }
+        }
+
+        return updateMessage;
     }
 
     // If a value has changed that can affect info.json we need to replace it
