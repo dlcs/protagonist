@@ -25,6 +25,7 @@ public class TopicPublisherTests
             SNS = new SNSSettings
             {
                 AssetModifiedNotificationTopicArn = "arn:aws:sns:us-east-1:000000000000:assetModified",
+                AdjunctModifiedNotificationTopicArn = "arn:aws:sns:us-east-1:000000000000:adjunctModified",
                 CustomerCreatedTopicArn = "arn:aws:sns:us-east-1:000000000000:customerCreated",
             }
         });
@@ -202,6 +203,24 @@ public class TopicPublisherTests
                                                              "Update"&& 
                                                              r.MessageAttributes["engineNotified"].StringValue == "True") &&
                                                          b.PublishBatchRequestEntries.Count == 2),
+                A<CancellationToken>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task PublishToAdjunctModifiedTopicBatch_SuccessfullyPublishesSingleMessage_IfSingleItemInBatch()
+    {
+        // Arrange
+        var notification = new DeliverableModifiedNotification("message", GetAttributes(ChangeType.Delete, false));
+
+        // Act
+        await sut.PublishToAdjunctModifiedTopic([notification]);
+
+        // Assert
+        A.CallTo(() =>
+            snsClient.PublishAsync(
+                A<PublishRequest>.That.Matches(r =>
+                    r.Message == "message" && r.MessageAttributes["messageType"].StringValue == "Delete" && 
+                    r.TopicArn == "arn:aws:sns:us-east-1:000000000000:adjunctModified"),
                 A<CancellationToken>._)).MustHaveHappened();
     }
 

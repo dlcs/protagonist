@@ -34,7 +34,7 @@ public interface ITopicPublisher
     /// <param name="messages">A collection of notifications to send</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Boolean representing the overall success/failure status of all requests</returns>
-    Task PublishToAdjunctModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages, CancellationToken cancellationToken);
+    Task<bool> PublishToAdjunctModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages, CancellationToken cancellationToken);
 }
 
 /// <summary>
