@@ -36,6 +36,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     private readonly IIIIFAuthBuilder authBuilder;
     private readonly ILogger<ManifestV3Builder> logger;
     private const string AdjunctAnnotationRoutePrefix = "adjunct-annotations";
+    private const string AdjunctRoutePrefix = "adjuncts";
 
     /// <summary>
     /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v3 manifest
@@ -502,7 +503,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                     canvas.Annotations ??= [];
                     canvas.Annotations.Add(new AnnotationPage
                     {
-                        Id = adjunct.ExternalId.ToString(),
+                        Id = GetAdjunctId(adjunct),
                         Label = adjunct.Label,
                     });
                     break;
@@ -531,7 +532,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                 currentCanvas.Annotations ??= [];
                 currentCanvas.Annotations.Add(new AnnotationPage
                 {
-                   Id = GetPathForAdjunct(adjunct),
+                   Id = GetPathForAdjunctAnnotation(adjunct),
                    Label = new LanguageMap("en", "Inline annotations"),
                    Items = []
                 });
@@ -541,7 +542,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             
             inlineAnnotationPage.Items!.Add(new GeneralAnnotation(adjunct.Motivation)
             {
-                Id = $"{GetPathForAdjunct(adjunct)}/{adjunct.Id}",
+                Id = $"{GetPathForAdjunctAnnotation(adjunct)}/{adjunct.Id}",
                 Body = [CreateExternalResource(adjunct)],
                 Target = new Canvas { Id = currentCanvas.Id }
             });
@@ -551,15 +552,29 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         ExternalResource CreateExternalResource(Adjunct adjunct) =>
             new(adjunct.Type)
             {
-                Id = adjunct.ExternalId.ToString(),
+                Id = GetAdjunctId(adjunct),
                 Format = adjunct.MediaType,
                 Profile = adjunct.Profile,
                 Label = adjunct.Label,
                 Language = adjunct.Language?.ToList(),
             };
+
+        string? GetAdjunctId(Adjunct adjunct)
+            => adjunct switch
+            {
+                { Origin: null, ExternalId: { } externalUri } => externalUri.ToString(),
+                { Origin: not null, ExternalId: null } => assetPathGenerator.GetFullPathForRequest(new BasicPathElements
+                {
+                    Space = adjunct.AssetId.Space,
+                    AssetPath = $"{adjunct.AssetId.Asset}/{adjunct.Id}",
+                    RoutePrefix = AdjunctRoutePrefix,
+                    CustomerPathValue = adjunct.AssetId.Customer.ToString(),
+                }),
+                _ => null
+            };
     }
 
-    private string GetPathForAdjunct(Adjunct adjunct)
+    private string GetPathForAdjunctAnnotation(Adjunct adjunct)
     {
         var adjunctRequest = new BasicPathElements
         {
