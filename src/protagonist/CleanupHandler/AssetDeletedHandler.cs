@@ -83,7 +83,7 @@ public class AssetDeletedHandler(
                     logger.LogInformation("Deserialised message but no 'before' asset id found");
                     return null;
                 }
-                return request.ConvertToStandard();
+                return request.ConvertToNewFormat();
             }
             catch (Exception ex)
             {

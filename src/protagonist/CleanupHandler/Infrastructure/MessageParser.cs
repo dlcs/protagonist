@@ -7,6 +7,9 @@ namespace CleanupHandler.Infrastructure;
 
 public static class MessageParser
 {
+    /// <summary>
+    /// Parses a delete message from an SQS message
+    /// </summary>
     public static DeletedNotificationRequest<T>? TryParseDeleteMessage<T>(QueueMessage message, ILogger logger) where T : IDeliverable
     {
         try
@@ -27,6 +30,9 @@ public static class MessageParser
         }
     }
     
+    /// <summary>
+    /// Parses an update message from an SQS message
+    /// </summary>
     public static UpdatedNotificationRequest<T>? TryParseUpdatedMessage<T>(QueueMessage message, ILogger logger) where T : IDeliverable
     {
         try
