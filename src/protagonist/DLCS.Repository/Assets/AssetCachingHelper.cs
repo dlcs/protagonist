@@ -48,14 +48,14 @@ public class AssetCachingHelper(
         {
             logger.LogDebug("Refreshing assetCache from database {Asset}", assetId);
             var dbAsset = await assetLoader(assetId);
-            if (dbAsset != null)
+            if (dbAsset == null)
             {
-                return dbAsset;
+                entry.AbsoluteExpirationRelativeToNow =
+                    TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+                return NullAsset;
             }
 
-            entry.AbsoluteExpirationRelativeToNow =
-                TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
-            return NullAsset;
+            return dbAsset;
 
         }, cacheSettings.GetMemoryCacheOptions(cacheDuration));
 
