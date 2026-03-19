@@ -17,6 +17,7 @@ namespace Orchestrator.Tests.Assets;
 public class MemoryAssetTrackerTests
 {
     private readonly IOrchestratorAssetRepository assetRepository;
+    private readonly IOrchestratorAdjunctRepository adjunctRepository;
     private readonly IThumbRepository thumbRepository;
     private readonly ICustomerOriginStrategyRepository customerOriginStrategyRepository;
     private readonly MemoryAssetTracker sut;
@@ -24,6 +25,7 @@ public class MemoryAssetTrackerTests
     public MemoryAssetTrackerTests()
     {
         assetRepository = A.Fake<IOrchestratorAssetRepository>();
+        adjunctRepository = A.Fake<IOrchestratorAdjunctRepository>();
         thumbRepository = A.Fake<IThumbRepository>();
         customerOriginStrategyRepository = A.Fake<ICustomerOriginStrategyRepository>();
         A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(A<AssetId>._, A<string>._))
@@ -43,7 +45,7 @@ public class MemoryAssetTrackerTests
                 EmptyImageLocationCreatedDate = emptyImageLocationCreatedDate
             }
         };
-        return new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository,
+        return new MemoryAssetTracker(assetRepository, adjunctRepository, new MockCachingService(), thumbRepository,
             customerOriginStrategyRepository, Options.Create(orchestratorSettings),
             new NullLogger<MemoryAssetTracker>());
     }
@@ -459,9 +461,9 @@ public class MemoryAssetTrackerTests
     public async Task GetOrchestrationAdjunct_Null_IfNotFound()
     {
         // Arrange
-        var assetId = new AssetId(1, 1, nameof(GetOrchestrationAdjunct_Null_IfNotFound));
+        var assetId = AssetIdGenerator.GetAssetId(1);
         const string adjunctId = "nope";
-        A.CallTo(() => assetRepository.GetAdjunct(adjunctId, assetId, false)).Returns<Adjunct>(null);
+        A.CallTo(() => adjunctRepository.GetAdjunct(adjunctId, assetId, false)).Returns<Adjunct>(null);
         
         // Act
         var result = await sut.GetOrchestrationAdjunct(adjunctId, assetId);
@@ -477,7 +479,7 @@ public class MemoryAssetTrackerTests
         var assetId = new AssetId(1, 1, nameof(GetOrchestrationAdjunct_ReturnsOrchestrationAdjunct));
         const string adjunctId = "yup";
         const string origin = "http://example.com/some-origin";
-        A.CallTo(() => assetRepository.GetAdjunct(adjunctId, assetId, false)).Returns(
+        A.CallTo(() => adjunctRepository.GetAdjunct(adjunctId, assetId, false)).Returns(
             new Adjunct
             {
                 Id = adjunctId,
@@ -510,7 +512,7 @@ public class MemoryAssetTrackerTests
         // Arrange
         var assetId = new AssetId(1, 1, nameof(RefreshCachedAdjunct_Null_IfNotFound));
         const string adjunctId = "nope";
-        A.CallTo(() => assetRepository.GetAdjunct(adjunctId, assetId, true)).Returns<Adjunct>(null);
+        A.CallTo(() => adjunctRepository.GetAdjunct(adjunctId, assetId, true)).Returns<Adjunct>(null);
 
         // Act
         var result = await sut.RefreshCachedAdjunct(adjunctId, assetId);
@@ -525,7 +527,7 @@ public class MemoryAssetTrackerTests
         var assetId = new AssetId(1, 1, nameof(RefreshCachedAdjunct_ReturnsAdjunct));
         const string adjunctId = "yup";
         const string origin = "http://example.com/some-origin";
-        A.CallTo(() => assetRepository.GetAdjunct(adjunctId, assetId, true)).Returns(
+        A.CallTo(() => adjunctRepository.GetAdjunct(adjunctId, assetId, true)).Returns(
             new Adjunct
             {
                 Id = adjunctId,

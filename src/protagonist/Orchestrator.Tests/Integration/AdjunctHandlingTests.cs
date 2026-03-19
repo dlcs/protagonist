@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
+using DLCS.Repository;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Tests.Integration.Infrastructure;
@@ -21,7 +22,7 @@ namespace Orchestrator.Tests.Integration;
 [Collection(OrchestratorCollection.CollectionName)]
 public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
-    private readonly DlcsDatabaseFixture dbFixture;
+    private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
     private readonly string stubAddress;
     private readonly List<ImageDeliveryChannel> deliveryChannelsForFile =
@@ -35,10 +36,11 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
     
     public AdjunctHandlingTests(ProtagonistAppFactory<Startup> factory, OrchestratorFixture orchestratorFixture)
     {
-        dbFixture = orchestratorFixture.DbFixture;
+        var dbFixture1 = orchestratorFixture.DbFixture;
+        dbContext = dbFixture1.DbContext;
         stubAddress = orchestratorFixture.ApiStub.Address;
         httpClient = factory
-            .WithConnectionString(dbFixture.ConnectionString)
+            .WithConnectionString(dbFixture1.ConnectionString)
             .WithLocalStack(orchestratorFixture.LocalStackFixture)
             .WithTestServices(services =>
             {
@@ -49,7 +51,7 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
             })
             .CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        dbFixture.CleanUp();
+        dbFixture1.CleanUp();
         ConfigureStubbery(orchestratorFixture);
     }
     
@@ -117,16 +119,16 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
         const string adjunctId = nameof(Get_NotOptimisedOrigin_ReturnsAdjunctFromDLCSStorage);
-        await dbFixture.DbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
             origin: $"{stubAddress}/testfile", imageDeliveryChannels: deliveryChannelsForFile);
-        await dbFixture.DbContext.Adjuncts.AddAsync(new()
+        await dbContext.Adjuncts.AddAsync(new()
         {
             AssetId = id, Id = adjunctId, Created = DateTime.UtcNow, Origin = $"{stubAddress}/testadjunct",
             IIIFLink = IIIFLinkType.SeeAlso, MediaType = "text/plain", Finished = DateTime.UtcNow, Type = "type",
             Ingesting = false, Size = 100L
         });
         
-        await dbFixture.DbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
 
         var expectedPath = new Uri($"https://protagonist-storage.s3.eu-west-1.amazonaws.com/{id}/adjuncts/{adjunctId}");
 
@@ -147,18 +149,18 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         var adjunctId = nameof(Get_OptimisedOrigin_ReturnsFile_AssetNotOptimized);
         var s3Key = $"{id}/this-is-where";
         var adjS3Key = $"{s3Key}/adjuncts/{adjunctId}";
-        await dbFixture.DbContext.Images.AddTestAsset(id, 
+        await dbContext.Images.AddTestAsset(id, 
             mediaType: "text/plain",
             origin: $"{stubAddress}/testfile", 
             imageDeliveryChannels: deliveryChannelsForFile);
-        await dbFixture.DbContext.Adjuncts.AddAsync(new()
+        await dbContext.Adjuncts.AddAsync(new()
         {
             AssetId = id, Id = adjunctId, Created = DateTime.UtcNow, Origin = $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{adjS3Key}",
             IIIFLink = IIIFLinkType.SeeAlso, MediaType = "text/plain", Finished = DateTime.UtcNow, Type = "type",
             Ingesting = false, Size = 100L
         });
         
-        await dbFixture.DbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
 
         var expectedPathRegex = GetExpectedPathRegex(adjS3Key);
 
@@ -179,18 +181,18 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         var adjunctId = nameof(Get_OptimisedOrigin_ReturnsFile);
         var s3Key = $"{id}/this-is-where";
         var adjS3Key = $"{s3Key}/adjuncts/{adjunctId}";
-        await dbFixture.DbContext.Images.AddTestAsset(id, 
+        await dbContext.Images.AddTestAsset(id, 
             mediaType: "text/plain",
             origin: $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{s3Key}", 
             imageDeliveryChannels: deliveryChannelsForFile);
-        await dbFixture.DbContext.Adjuncts.AddAsync(new()
+        await dbContext.Adjuncts.AddAsync(new()
         {
             AssetId = id, Id = adjunctId, Created = DateTime.UtcNow, Origin = $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{adjS3Key}",
             IIIFLink = IIIFLinkType.SeeAlso, MediaType = "text/plain", Finished = DateTime.UtcNow, Type = "type",
             Ingesting = false, Size = 100L
         });
         
-        await dbFixture.DbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync();
 
         var expectedPathRegex = GetExpectedPathRegex(adjS3Key);
 

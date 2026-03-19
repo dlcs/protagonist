@@ -22,6 +22,7 @@ namespace Orchestrator.Assets;
 /// </summary>
 public class MemoryAssetTracker(
     IOrchestratorAssetRepository assetRepository,
+    IOrchestratorAdjunctRepository adjunctRepository,
     IAppCache appCache,
     IThumbRepository thumbRepository,
     ICustomerOriginStrategyRepository customerOriginStrategyRepository,
@@ -132,7 +133,7 @@ public class MemoryAssetTracker(
 
     private async Task<OrchestrationAdjunct?> GetOrchestrationAdjunctFromSource(string adjunctId, AssetId assetId, bool noCache = false)
     {
-        var asset = await assetRepository.GetAdjunct(adjunctId, assetId, noCache);
+        var asset = await adjunctRepository.GetAdjunct(adjunctId, assetId, noCache);
         return asset == null
             ? null
             : await ConvertAdjunctToTrackedAdjunct(assetId, asset);

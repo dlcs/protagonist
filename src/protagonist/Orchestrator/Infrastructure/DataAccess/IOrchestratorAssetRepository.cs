@@ -13,13 +13,4 @@ public interface IOrchestratorAssetRepository : IAssetRepository
     /// <param name="noCache">If true the object will not be loaded from cache</param>
     /// <returns><see cref="Asset"/> if found, or null</returns>
     public Task<Asset?> GetAsset(AssetId assetId, bool noCache);
-    
-    /// <summary>
-    /// Get specified adjunct from database
-    /// </summary>
-    /// <param name="adjunctId">Id of the adjunct to retrieve</param>
-    /// <param name="assetId">Id of the parent asset of the adjunct</param>
-    /// <param name="noCache">If true, the object will not be loaded from cache</param>
-    /// <returns><see cref="Adjunct"/> if found, otherwise null</returns>
-    public Task<Adjunct?> GetAdjunct(string adjunctId, AssetId assetId, bool noCache);
 }

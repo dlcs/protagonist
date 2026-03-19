@@ -58,6 +58,7 @@ public static class ServiceCollectionX
             .AddSingleton<IPathCustomerRepository, GranularCustomerPathElementRepository>()
             .AddSingleton<AssetCachingHelper>()
             .AddSingleton<IOrchestratorAssetRepository, DapperAssetRepository>()
+            .AddSingleton<IOrchestratorAdjunctRepository, DapperAdjunctRepository>()
             .AddSingleton<IThumbRepository, ThumbRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
