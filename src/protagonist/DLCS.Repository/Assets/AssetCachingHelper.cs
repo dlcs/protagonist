@@ -69,7 +69,7 @@ public class AssetCachingHelper(
     public async Task<Adjunct?> GetCachedAdjunct(string adjunctId, AssetId assetId, Func<string, AssetId, Task<Adjunct?>> adjunctLoader,
         CacheDuration cacheDuration = CacheDuration.Default)
     {
-        var key = GetCacheKey(assetId);
+        var key = GetCacheKey(assetId, adjunctId);
 
         // Note that due to single/dual key discrepancy with Assets, reusing the code is more trouble than it's worth
         var adjunct = await appCache.GetOrAddAsync(key, async entry =>
