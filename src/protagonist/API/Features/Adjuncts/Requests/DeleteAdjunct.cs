@@ -36,6 +36,7 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IAdjunctNotificationSen
         }
         
         dbContext.Adjuncts.Remove(adjunct);
+        await dbContext.SaveChangesAsync(cancellationToken);
         await RaiseNotification(request, adjunct, cancellationToken);
 
         return new ResultMessage<DeleteResult>(string.Empty, DeleteResult.Deleted);

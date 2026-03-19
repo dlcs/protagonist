@@ -51,7 +51,7 @@ public class AdjunctDeletedHandlerTests
         bucketWriter = A.Fake<IBucketWriter>();
         var storageKeyGenerator = new S3StorageKeyGenerator(Options.Create(handlerSettings.AWS));
         
-        adjunctBucketOperations = new AdjunctBucketOperations(new NullLogger<AdjunctDeletedHandler>(), storageKeyGenerator, bucketWriter);
+        adjunctBucketOperations = new AdjunctBucketOperations(new NullLogger<AdjunctBucketOperations>(), storageKeyGenerator, bucketWriter);
     }
     
     private AdjunctDeletedHandler GetSut()
@@ -88,8 +88,8 @@ public class AdjunctDeletedHandlerTests
                 MediaType = "a-mediaType",
                 IIIFLink = IIIFLinkType.Annotations,
                 Type = "a-type",
-                AssetId = new AssetId(1, 1, "someAsset")
-                
+                AssetId = new AssetId(1, 1, "someAsset"),
+                Origin = "https://some.origin"
             }
         };
         
@@ -107,6 +107,38 @@ public class AdjunctDeletedHandlerTests
         // Assert
         response.Should().BeTrue();
         A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_ReturnsTrueWithoutDeletion_WhenNotHosted()
+    {
+        // Arrange
+        var cleanupRequest = new DeletedNotificationRequest<Adjunct>
+        {
+            Deliverable = new Adjunct
+            {
+                Id = "someId",
+                MediaType = "a-mediaType",
+                IIIFLink = IIIFLinkType.Annotations,
+                Type = "a-type",
+                AssetId = new AssetId(1, 1, "someAsset")
+            }
+        };
+        
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+        
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonNode.Parse(serialized)!.AsObject()
+        };
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
     }
     
     [Fact]

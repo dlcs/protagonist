@@ -33,7 +33,7 @@ public class AssetDeletedHandler(
 
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
-        var request = TryParseMessage(message); MessageParser.TryParseDeleteMessage<Asset>(message, logger);
+        var request = TryParseMessage(message);
         if (request == null) return false;
 
         using (LogContextHelpers.SetCorrelationId(message.MessageId))
@@ -72,6 +72,8 @@ public class AssetDeletedHandler(
         // and just the above line used
         if (updateMessage == null)
         {
+            logger.LogInformation("Message not parsed in the new format.  Attempting legacy parsing");
+            
             try
             {
                 var request = message.GetMessageContents<AssetDeletedNotificationRequest>();

@@ -22,10 +22,10 @@ public class CleanupHandlerQueueMonitor(
         
         var startTasks = new List<Task>
         {
-            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.DeleteNotificationQueueName, DeliverableQueueType.Delete),
-            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.UpdateNotificationQueueName, DeliverableQueueType.Update),
-            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.AdjunctDeleteNotificationQueueName, DeliverableQueueType.Delete),
-            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.AdjunctUpdateNotificationQueueName, DeliverableQueueType.Update),
+            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.DeleteNotificationQueueName, AssetQueueType.Delete),
+            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.UpdateNotificationQueueName, AssetQueueType.Update),
+            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.AdjunctDeleteNotificationQueueName, AdjunctQueueType.Delete),
+            sqsListenerManager.AddQueueListener(awsSettings.Value.SQS.AdjunctUpdateNotificationQueueName, AdjunctQueueType.Update),
         };
         
         await Task.WhenAll(startTasks);

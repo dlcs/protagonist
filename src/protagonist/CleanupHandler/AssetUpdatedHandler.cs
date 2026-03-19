@@ -129,6 +129,8 @@ public class AssetUpdatedHandler(
         // and just the above line used
         if (updateMessage == null)
         {
+            logger.LogInformation("Message not parsed in the new format.  Attempting legacy parsing");
+            
             try
             {
                 var request = message.GetMessageContents<AssetUpdatedNotificationRequest>();

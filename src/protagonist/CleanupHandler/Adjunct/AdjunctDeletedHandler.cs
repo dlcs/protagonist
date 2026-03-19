@@ -1,7 +1,6 @@
 ﻿using CleanupHandler.Infrastructure;
 using DLCS.AWS.SQS;
 using DLCS.Repository;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -21,10 +20,16 @@ public class AdjunctDeletedHandler(
         var request = MessageParser.TryParseDeleteMessage<DLCS.Model.Assets.Adjunct>(message, logger);
         if (request == null) return false;
 
-        var adjunct = request.Deliverable!;
+        // This means it's not a hosted asset, so nothing to do
+        if (request.Deliverable!.Origin == null)
+        {
+            return true;
+        }
+
+        var adjunct = request.Deliverable;
         
         // if the item exists in the db, assume the adjunct has been reingested after delete
-        if (await dbContext.Adjuncts.AnyAsync(x => x.Id == adjunct.Id, cancellationToken))
+        if (dbContext.Adjuncts.Any(a => a.Id == adjunct.Id && a.AssetId == adjunct.AssetId))
         {
             logger.LogInformation("Adjunct {Adjunct} can be found in the database, so will not be deleted",
                 adjunct.Id);

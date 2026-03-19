@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CleanupHandler.Infrastructure;
 
-public class AdjunctBucketOperations(ILogger logger, IStorageKeyGenerator storageKeyGenerator, IBucketWriter bucketWriter) : IAdjunctBucketOperations
+public class AdjunctBucketOperations(ILogger<AdjunctBucketOperations> logger, IStorageKeyGenerator storageKeyGenerator, IBucketWriter bucketWriter) : IAdjunctBucketOperations
 {
     public async Task DeleteFromOriginBucket(DLCS.Model.Assets.Adjunct adjunct, CleanupHandlerSettings settings)
     {

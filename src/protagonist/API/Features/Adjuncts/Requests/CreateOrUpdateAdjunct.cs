@@ -1,4 +1,6 @@
-﻿using API.Infrastructure.Requests;
+﻿using API.Infrastructure.Messaging.Adjunct;
+using API.Infrastructure.Messaging.General;
+using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
@@ -22,7 +24,7 @@ public class CreateOrUpdateAdjunct(Adjunct adjunct, bool createOnly) : IRequest<
     public bool CreateOnly { get; } = createOnly;
 }
 
-public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotificationSender  notificationSender)
+public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotificationSender  notificationSender, IAdjunctNotificationSender adjunctNotificationSender)
     : IRequestHandler<CreateOrUpdateAdjunct, ModifyEntityResult<Adjunct>>
 {
     public async Task<ModifyEntityResult<Adjunct>> Handle(CreateOrUpdateAdjunct request, CancellationToken cancellationToken)
@@ -34,6 +36,8 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
         var toBeIngested = adjunct.IsToBeIngested();
         
         Adjunct? dbAdjunct = null;
+        Adjunct? existingAdjunct = null;
+        
         if (!request.CreateOnly)
         {
             dbAdjunct = await dbContext.Adjuncts.SingleOrDefaultAsync(a =>
@@ -42,6 +46,8 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
 
         if (dbAdjunct != null)
         {
+            existingAdjunct = dbAdjunct.Clone();
+            
             // existing is not null => it is not create scenario
             isCreate = false;
 
@@ -135,6 +141,12 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
                     WriteResult.NotFound);
             }
         }
+        
+        var adjunctModificationRecord = existingAdjunct == null
+            ? NotificationRecord<Adjunct>.Create(dbAdjunct)
+            : NotificationRecord<Adjunct>.Update(existingAdjunct, dbAdjunct, toBeIngested);
+
+        await adjunctNotificationSender.SendAdjunctModifiedMessage(adjunctModificationRecord, cancellationToken);
 
         return ModifyEntityResult<Adjunct>.Success(dbAdjunct,
             isCreate ? WriteResult.Created : WriteResult.Updated);

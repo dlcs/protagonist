@@ -50,18 +50,18 @@ public static class ServiceCollectionX
     /// </summary>
     public static IServiceCollection AddQueueMonitoring(this IServiceCollection services)
         => services
-            .AddScoped<QueueHandlerResolver<DeliverableQueueType>>(provider => messageType => messageType switch
+            .AddScoped<QueueHandlerResolver<AssetQueueType>>(provider => messageType => messageType switch
             {
-                DeliverableQueueType.Delete => provider.GetRequiredService<AssetDeletedHandler>(), 
-                DeliverableQueueType.Update => provider.GetRequiredService<AssetUpdatedHandler>(),
+                AssetQueueType.Delete => provider.GetRequiredService<AssetDeletedHandler>(), 
+                AssetQueueType.Update => provider.GetRequiredService<AssetUpdatedHandler>(),
                 _ => throw new ArgumentOutOfRangeException(nameof(messageType), messageType, null)
             })
             .AddScoped<AssetDeletedHandler>()
             .AddScoped<AssetUpdatedHandler>()
-            .AddScoped<QueueHandlerResolver<DeliverableQueueType>>(provider => messageType => messageType switch
+            .AddScoped<QueueHandlerResolver<AdjunctQueueType>>(provider => messageType => messageType switch
             {
-                DeliverableQueueType.Delete => provider.GetRequiredService<AdjunctDeletedHandler>(), 
-                DeliverableQueueType.Update => provider.GetRequiredService<AdjunctUpdatedHandler>(),
+                AdjunctQueueType.Delete => provider.GetRequiredService<AdjunctDeletedHandler>(), 
+                AdjunctQueueType.Update => provider.GetRequiredService<AdjunctUpdatedHandler>(),
                 _ => throw new ArgumentOutOfRangeException(nameof(messageType), messageType, null)
             })
             .AddScoped<AdjunctDeletedHandler>()

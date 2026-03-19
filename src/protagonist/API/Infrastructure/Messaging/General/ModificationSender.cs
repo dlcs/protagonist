@@ -86,7 +86,7 @@ public class ModificationSender(
     {
         var customerPathElement = await PathHelper.GetCustomerPathElement(deliverableBefore.GetAssetId().Customer, customerPathRepository);
         
-        var request = new UpdatedNotificationRequest<IDeliverable>
+        var request = new UpdatedNotificationRequest<T>
         {
             DeliverableBeforeUpdate = deliverableBefore,
             DeliverableAfterUpdate = deliverableAfter, 
