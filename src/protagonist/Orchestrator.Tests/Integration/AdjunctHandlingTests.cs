@@ -120,13 +120,8 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         var id = AssetIdGenerator.GetAssetId();
         const string adjunctId = nameof(Get_NotOptimisedOrigin_ReturnsAdjunctFromDLCSStorage);
         await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
-            origin: $"{stubAddress}/testfile", imageDeliveryChannels: deliveryChannelsForFile);
-        await dbContext.Adjuncts.AddAsync(new()
-        {
-            AssetId = id, Id = adjunctId, Created = DateTime.UtcNow, Origin = $"{stubAddress}/testadjunct",
-            IIIFLink = IIIFLinkType.SeeAlso, MediaType = "text/plain", Finished = DateTime.UtcNow, Type = "type",
-            Ingesting = false, Size = 100L
-        });
+            origin: $"{stubAddress}/testfile", imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin:$"{stubAddress}/testadjunct");
         
         await dbContext.SaveChangesAsync();
 
@@ -152,13 +147,9 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         await dbContext.Images.AddTestAsset(id, 
             mediaType: "text/plain",
             origin: $"{stubAddress}/testfile", 
-            imageDeliveryChannels: deliveryChannelsForFile);
-        await dbContext.Adjuncts.AddAsync(new()
-        {
-            AssetId = id, Id = adjunctId, Created = DateTime.UtcNow, Origin = $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{adjS3Key}",
-            IIIFLink = IIIFLinkType.SeeAlso, MediaType = "text/plain", Finished = DateTime.UtcNow, Type = "type",
-            Ingesting = false, Size = 100L
-        });
+            imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin:$"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{adjS3Key}");
+      
         
         await dbContext.SaveChangesAsync();
 
@@ -181,16 +172,12 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         var adjunctId = nameof(Get_OptimisedOrigin_ReturnsFile);
         var s3Key = $"{id}/this-is-where";
         var adjS3Key = $"{s3Key}/adjuncts/{adjunctId}";
-        await dbContext.Images.AddTestAsset(id, 
-            mediaType: "text/plain",
-            origin: $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{s3Key}", 
-            imageDeliveryChannels: deliveryChannelsForFile);
-        await dbContext.Adjuncts.AddAsync(new()
-        {
-            AssetId = id, Id = adjunctId, Created = DateTime.UtcNow, Origin = $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{adjS3Key}",
-            IIIFLink = IIIFLinkType.SeeAlso, MediaType = "text/plain", Finished = DateTime.UtcNow, Type = "type",
-            Ingesting = false, Size = 100L
-        });
+        await dbContext.Images.AddTestAsset(id,
+                mediaType: "text/plain",
+                origin: $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{s3Key}",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId,
+                origin: $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{adjS3Key}");
         
         await dbContext.SaveChangesAsync();
 

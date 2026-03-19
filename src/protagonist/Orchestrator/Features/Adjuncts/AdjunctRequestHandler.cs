@@ -82,7 +82,7 @@ public class AdjunctRequestHandler(
         }
         else
         {
-            fileLocation = storageKeyGenerator.GetStoredAdjunctLocation(adjunctRequest.AdjunctId!, adjunctRequest.GetAssetId());
+            fileLocation = storageKeyGenerator.GetStoredAdjunctLocation(adjunctRequest.GetAssetId(), adjunctRequest.AdjunctId!);
         }
         
         return fileLocation;

@@ -71,10 +71,11 @@ public static class DatabaseTestDataPopulation
         string id, string type = "Image", string mediaType = "image/jpeg",
         IIIFLinkType iiifLinkType = IIIFLinkType.SeeAlso,
         string profile = null, LanguageMap label = null,
-        string[] language = null, string externalId = "https://someHost.com/someUri", DateTime? created = null,
-        long? size = null, string? motivation = null)
+        string[] language = null, string? externalId = null, DateTime? created = null,
+        long? size = null, string? motivation = null, string? origin = null)
     {
         asset.Result.Entity.Adjuncts ??= [];
+        externalId ??= origin == null ? "https://someHost.com/someUri" : null;
         asset.Result.Entity.Adjuncts.Add(new Adjunct
         {
             Id = id,
@@ -85,7 +86,8 @@ public static class DatabaseTestDataPopulation
             Profile = profile,
             Label = label,
             Language = language,
-            ExternalId = new Uri(externalId),
+            ExternalId = externalId != null ?  new Uri(externalId) : null,
+            Origin = origin,
             Created = created ?? DateTime.UtcNow,
             Size = size,
             Motivation = motivation
