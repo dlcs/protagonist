@@ -91,7 +91,7 @@ public class AssetCachingHelper(
 
     private static string GetCacheKey(AssetId assetId, string? adjunctId = null)
         => $"asset:{assetId}"
-            + adjunctId is { Length: > 0 }
-            ? $"_adj_{adjunctId}"
-            : string.Empty;
+            + (adjunctId is { Length: > 0 }
+                ? $"_adj_{adjunctId}"
+                : string.Empty);
 }

@@ -148,9 +148,9 @@ public class MemoryAssetTracker(
     }
 
     private static string GetCacheKey(AssetId assetId, string? adjunctId = null)
-        => $"Track:{assetId}" + adjunctId is { Length: > 0 }
+        => $"Track:{assetId}" + (adjunctId is { Length: > 0 }
             ? $"_adj_{adjunctId}"
-            : string.Empty;
+            : string.Empty);
 
     private static bool IsNullItem<T>(T orchestrationItem)
         => orchestrationItem switch
