@@ -14,7 +14,7 @@ using DLCS.Web.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace CleanupHandler;
+namespace CleanupHandler.Asset;
 
 /// <summary>
 /// Handler for SQS messages notifying of asset deletion
@@ -64,9 +64,9 @@ public class AssetDeletedHandler(
         }
     }
 
-    private DeliverableDeletedNotification<Asset>? TryParseMessage(QueueMessage message)
+    private DeliverableDeletedNotification<DLCS.Model.Assets.Asset>? TryParseMessage(QueueMessage message)
     {
-        var updateMessage = MessageParser.TryParseDeleteMessage<Asset>(message, logger);
+        var updateMessage = MessageParser.TryParseDeleteMessage<DLCS.Model.Assets.Asset>(message, logger);
 
         // this is legacy handling for the older message format - it should be removed at the point this code is released everywhere
         // and just the above line used
@@ -108,7 +108,7 @@ public class AssetDeletedHandler(
         await bucketWriter.DeleteFolder(storageKey, true);
     }
 
-    private async Task<bool> InvalidateContentDeliveryNetwork(Asset asset, string customerName)
+    private async Task<bool> InvalidateContentDeliveryNetwork(DLCS.Model.Assets.Asset asset, string customerName)
     {
         if (string.IsNullOrEmpty(handlerSettings.AWS.Cloudfront.DistributionId))
         {

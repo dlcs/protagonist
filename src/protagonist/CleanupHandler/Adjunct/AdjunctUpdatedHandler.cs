@@ -1,4 +1,5 @@
-﻿using CleanupHandler.Infrastructure;
+﻿using CleanupHandler.Asset;
+using CleanupHandler.Infrastructure;
 using DLCS.AWS.SQS;
 using DLCS.Repository;
 using DLCS.Web.Logging;

@@ -4,6 +4,10 @@ using DLCS.Model.Messaging;
 
 namespace API.Infrastructure.Messaging.General;
 
+/// <summary>
+/// Represents a change to a single deliverable - the relevant status before/after change and the change type
+/// </summary>
+/// <typeparam name="T">The type of the deliverable</typeparam>
 public class NotificationRecord<T> where T : class, IDeliverable
 {
     public ChangeType ChangeType { get; }

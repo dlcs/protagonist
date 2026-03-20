@@ -1,6 +1,7 @@
 ﻿using CleanupHandler.Infrastructure;
 using DLCS.AWS.SQS;
 using DLCS.Repository;
+using DLCS.Web.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -20,24 +21,28 @@ public class AdjunctDeletedHandler(
         var request = MessageParser.TryParseDeleteMessage<DLCS.Model.Assets.Adjunct>(message, logger);
         if (request == null) return false;
 
-        // This means it's not a hosted asset, so nothing to do
-        if (request.Deliverable!.Origin == null)
+        var adjunct = request.Deliverable!;
+        using (LogContextHelpers.SetCorrelationId(message.MessageId))
         {
-            return true;
+            // This means it's not a hosted asset, so nothing to do
+            if (request.Deliverable!.Origin == null)
+            {
+                logger.LogDebug("Adjunct {Asset}/{Adjunct} does not have an origin, so no deletion required",
+                    adjunct.AssetId, adjunct.Id);
+                return true;
+            }
+
+            // if the item exists in the db, assume the adjunct has been reingested after delete
+            if (dbContext.Adjuncts.Any(a => a.Id == adjunct.Id && a.AssetId == adjunct.AssetId))
+            {
+                logger.LogInformation("Adjunct {Asset}/{Adjunct} can be found in the database, so will not be deleted",
+                    adjunct.AssetId, adjunct.Id);
+                return true;
+            }
+
+            await adjunctBucketOperations.DeleteFromOriginBucket(adjunct, settings);
         }
 
-        var adjunct = request.Deliverable;
-        
-        // if the item exists in the db, assume the adjunct has been reingested after delete
-        if (dbContext.Adjuncts.Any(a => a.Id == adjunct.Id && a.AssetId == adjunct.AssetId))
-        {
-            logger.LogInformation("Adjunct {Adjunct} can be found in the database, so will not be deleted",
-                adjunct.Id);
-            return true;
-        }
-        
-        await adjunctBucketOperations.DeleteFromOriginBucket(adjunct, settings);
-        
         return true;
     }
 }

@@ -15,6 +15,8 @@ public class ModificationSender(
     IPathCustomerRepository customerPathRepository,
     ILogger<ModificationSender> logger)
 {
+    private readonly Dictionary<int, CustomerPathElement> customerPathElements = new();
+    
     public async Task SendModifiedMessage<T>(IReadOnlyCollection<NotificationRecord<T>> notifications, 
         JsonSerializerOptions serializerOptions, CancellationToken cancellationToken = default) where T : class, IDeliverable
     {
@@ -70,7 +72,7 @@ public class ModificationSender(
 
     private async Task<string> GetSerialisedDeletedNotification<T>(T deliverableBefore, ImageCacheType notificationDeleteFrom, JsonSerializerOptions serializerOptions)  where T : IDeliverable
     {
-        var customerPathElement = await PathHelper.GetCustomerPathElement(deliverableBefore.GetAssetId().Customer, customerPathRepository);
+        var customerPathElement = await GetCustomerPathElement(deliverableBefore.GetAssetId().Customer);
         
         var request = new DeliverableDeletedNotification<T>
         {
@@ -84,7 +86,7 @@ public class ModificationSender(
 
     private async Task<string> GetSerialisedUpdatedNotification<T>(T deliverableBefore, T deliverableAfter, JsonSerializerOptions serializerOptions) where T : IDeliverable
     {
-        var customerPathElement = await PathHelper.GetCustomerPathElement(deliverableBefore.GetAssetId().Customer, customerPathRepository);
+        var customerPathElement = await GetCustomerPathElement(deliverableBefore.GetAssetId().Customer);
         
         var request = new DeliverableUpdatedNotification<T>
         {
@@ -99,7 +101,7 @@ public class ModificationSender(
     private async Task<string>GetSerialisedCreatedNotification<T>(T deliverableAfter, JsonSerializerOptions serializerOptions) where T : IDeliverable
     {
         
-        var customerPathElement = await PathHelper.GetCustomerPathElement(deliverableAfter.GetAssetId().Customer, customerPathRepository);
+        var customerPathElement = await GetCustomerPathElement(deliverableAfter.GetAssetId().Customer);
         
         var request = new DeliverableCreatedNotification<T>
         {
@@ -108,5 +110,14 @@ public class ModificationSender(
         };
 
         return JsonSerializer.Serialize(request, serializerOptions);
+    }
+    
+    private async Task<CustomerPathElement> GetCustomerPathElement( int customer)
+    {
+        if (customerPathElements.TryGetValue(customer, out var prefetchedCustomer)) return prefetchedCustomer;
+        
+        var customerPathElement = await customerPathRepository.GetCustomerPathElement(customer.ToString());
+        customerPathElements[customer] = customerPathElement;
+        return customerPathElement;
     }
 }

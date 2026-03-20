@@ -9,7 +9,7 @@ namespace CleanupHandler.Infrastructure.Messages;
 /// </summary>
 public class AssetDeletedNotificationRequest
 {
-    public Asset? Asset { get; set; }
+    public DLCS.Model.Assets.Asset? Asset { get; set; }
 
     public CustomerPathElement? CustomerPathElement { get; set; }
 
@@ -24,7 +24,7 @@ public static class AssetDeletedNotificationRequestX
     /// <summary>
     /// Converts an asset deleted notification request to the new deleted notification request
     /// </summary>
-    public static DeliverableDeletedNotification<Asset> ConvertToNewFormat(
+    public static DeliverableDeletedNotification<DLCS.Model.Assets.Asset> ConvertToNewFormat(
         this AssetDeletedNotificationRequest assetUpdatedNotificationRequest)
         => new()
         {

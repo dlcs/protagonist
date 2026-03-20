@@ -1,4 +1,5 @@
 ﻿using CleanupHandler.Adjunct;
+using CleanupHandler.Asset;
 using CleanupHandler.Repository;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.Configuration;

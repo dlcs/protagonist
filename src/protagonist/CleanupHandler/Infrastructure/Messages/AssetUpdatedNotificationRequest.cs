@@ -6,16 +6,16 @@ namespace CleanupHandler.Infrastructure.Messages;
 
 public class AssetUpdatedNotificationRequest
 {
-    public Asset? AssetBeforeUpdate { get; set; }
+    public DLCS.Model.Assets.Asset? AssetBeforeUpdate { get; set; }
     
-    public Asset? AssetAfterUpdate { get; set; }
+    public DLCS.Model.Assets.Asset? AssetAfterUpdate { get; set; }
 
     public CustomerPathElement? CustomerPathElement { get; set; }
 }
 
 public static class AssetUpdatedNotificationRequestX
 {
-    public static DeliverableUpdatedNotification<Asset> ConvertToStandard(
+    public static DeliverableUpdatedNotification<DLCS.Model.Assets.Asset> ConvertToStandard(
         this AssetUpdatedNotificationRequest assetUpdatedNotificationRequest)
         => new()
         {
