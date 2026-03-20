@@ -14,7 +14,7 @@ public class AdjunctNotificationSender(
         => SendAdjunctModifiedMessage(notification.AsList(), cancellationToken);
 
     public async Task SendAdjunctModifiedMessage(IReadOnlyCollection<NotificationRecord<DLCS.Model.Assets.Adjunct>> notifications, CancellationToken cancellationToken = default) =>
-            await notificationSender.SendAdjunctModifiedMessage(notifications, adjunctSerialiserSettings,
+            await notificationSender.SendModifiedMessage(notifications, adjunctSerialiserSettings,
                 cancellationToken);
     
     private readonly JsonSerializerOptions adjunctSerialiserSettings = new(JsonSerializerDefaults.Web)

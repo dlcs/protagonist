@@ -21,7 +21,7 @@ public class AssetNotificationSender(
 
     public async Task SendAssetModifiedMessage(IReadOnlyCollection<NotificationRecord<DLCS.Model.Assets.Asset>> notifications,
         CancellationToken cancellationToken = default) =>
-        await notificationSender.SendAdjunctModifiedMessage(notifications, assetSerialiserSettings,
+        await notificationSender.SendModifiedMessage(notifications, assetSerialiserSettings,
             cancellationToken);
     
     private readonly JsonSerializerOptions assetSerialiserSettings = new(JsonSerializerDefaults.Web)

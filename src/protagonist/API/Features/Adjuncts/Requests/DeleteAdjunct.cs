@@ -47,14 +47,16 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IAdjunctNotificationSen
     {
         try
         {
-            var deleted = NotificationRecord<Adjunct>.Delete(deletedAdjunct, request.DeleteFrom); 
-            logger.LogDebug("Sending delete asset notification for {AssetId}", request.AssetId);
+            var deleted = NotificationRecord<Adjunct>.Delete(deletedAdjunct, request.DeleteFrom);
+            logger.LogDebug("Sending delete adjunct notification for {AssetId}/{AdjunctId}", request.AssetId,
+                request.Id);
             await adjunctNotificationSender.SendAdjunctModifiedMessage(deleted, cancellationToken);
         }
         catch (Exception ex)
         {
             // Don't return error because notification failed
-            logger.LogWarning(ex, "Error raising delete notification for {AssetId}", request.AssetId);
+            logger.LogWarning(ex, "Error raising delete adjunct notification for {AssetId}/{AdjunctId}",
+                request.AssetId, request.Id);
         }
     }
 }

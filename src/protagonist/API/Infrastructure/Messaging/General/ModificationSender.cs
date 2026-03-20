@@ -15,7 +15,7 @@ public class ModificationSender(
     IPathCustomerRepository customerPathRepository,
     ILogger<ModificationSender> logger)
 {
-    public async Task SendAdjunctModifiedMessage<T>(IReadOnlyCollection<NotificationRecord<T>> notifications, 
+    public async Task SendModifiedMessage<T>(IReadOnlyCollection<NotificationRecord<T>> notifications, 
         JsonSerializerOptions serializerOptions, CancellationToken cancellationToken = default) where T : class, IDeliverable
     {
         if (notifications.IsNullOrEmpty()) return;

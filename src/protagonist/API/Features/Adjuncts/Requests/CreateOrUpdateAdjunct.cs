@@ -141,10 +141,10 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
                     WriteResult.NotFound);
             }
         }
-        
-        var adjunctModificationRecord = existingAdjunct == null
+
+        var adjunctModificationRecord = isCreate
             ? NotificationRecord<Adjunct>.Create(dbAdjunct)
-            : NotificationRecord<Adjunct>.Update(existingAdjunct, dbAdjunct, toBeIngested);
+            : NotificationRecord<Adjunct>.Update(existingAdjunct!, dbAdjunct, toBeIngested);
 
         await adjunctNotificationSender.SendAdjunctModifiedMessage(adjunctModificationRecord, cancellationToken);
 

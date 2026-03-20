@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Amazon;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
@@ -78,8 +79,9 @@ public class TopicPublisher(
         const int maxSnsBatchSize = 5;
         var allBatchSuccess = true;
         var batchIdPrefix = Guid.NewGuid();
-        logger.LogDebug("Publishing SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
-            messages.Count);
+        Arn.TryParse(topicArn, out var arn);
+        logger.LogDebug("Publishing SNS batch {BatchPrefix} containing {ItemCount} items to {Service}", batchIdPrefix,
+            messages.Count, arn.Resource);
         var batchNumber = 0;
         foreach (var chunk in messages.Chunk(maxSnsBatchSize))
         {
