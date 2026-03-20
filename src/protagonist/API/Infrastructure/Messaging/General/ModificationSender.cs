@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 
 namespace API.Infrastructure.Messaging.General;
 
+/// <summary>
+/// Constructs and sends deliverable modification records to a topic using the <see cref="ITopicPublisher"/>
+/// </summary>
 public class ModificationSender(
     ITopicPublisher topicPublisher, 
     IPathCustomerRepository customerPathRepository,
@@ -98,9 +101,8 @@ public class ModificationSender(
         return JsonSerializer.Serialize(request, serializerOptions);
     }
 
-    private async Task<string>GetSerialisedCreatedNotification<T>(T deliverableAfter, JsonSerializerOptions serializerOptions) where T : IDeliverable
+    private async Task<string> GetSerialisedCreatedNotification<T>(T deliverableAfter, JsonSerializerOptions serializerOptions) where T : IDeliverable
     {
-        
         var customerPathElement = await GetCustomerPathElement(deliverableAfter.GetAssetId().Customer);
         
         var request = new DeliverableCreatedNotification<T>

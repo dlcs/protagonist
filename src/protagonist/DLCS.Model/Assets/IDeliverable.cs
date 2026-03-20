@@ -24,9 +24,4 @@ public interface IDeliverable : IOriginItem, ICloneable
     /// Returns <see cref="AssetId"/> that is or is parent to this deliverable
     /// </summary>
     AssetId GetAssetId();
-
-    /// <summary>
-    /// Returns the id of the deliverable
-    /// </summary>
-    string Identifier();
 }

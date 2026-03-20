@@ -2,6 +2,7 @@
 using CleanupHandler.Infrastructure;
 using DLCS.AWS.SQS;
 using DLCS.Repository;
+using DLCS.Repository.Adjuncts;
 using DLCS.Web.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -26,16 +27,17 @@ public class AdjunctUpdatedHandler(
         {
             var adjunctBefore = request.DeliverableBeforeUpdate!;
 
-            var adjunctAfter = await dlcsContext.Adjuncts.FirstOrDefaultAsync(a => a.Id == request.DeliverableAfterUpdate!.Id);
+            var adjunctAfter = await dlcsContext.Adjuncts.GetAdjunct(request.DeliverableAfterUpdate!.Id,
+                request.DeliverableAfterUpdate.AssetId, cancellationToken);
 
             if (adjunctAfter == null)
             {
-                logger.LogInformation("Adjunct {Id} was not found in the database for use in after calculation",
-                    adjunctBefore.Id);
+                logger.LogInformation("Adjunct {Asset}/{Id} was not found in the database for use in after calculation",
+                    adjunctBefore.AssetId, adjunctBefore.Id);
                 return false;
             }
             
-            logger.LogDebug("Processing update adjunct notification for {Id}", adjunctBefore.Id);
+            logger.LogDebug("Processing update adjunct notification for {Asset}/{Id}", adjunctBefore.AssetId, adjunctBefore.Id);
 
             if (NoCleanupRequired(adjunctAfter, adjunctBefore))
             {
@@ -50,6 +52,6 @@ public class AdjunctUpdatedHandler(
     }
 
     // We only cleanup when the adjunct has moved from hosted to unhosted
-    private bool NoCleanupRequired(DLCS.Model.Assets.Adjunct adjunctAfter,
-        DLCS.Model.Assets.Adjunct adjunctBefore) => adjunctBefore.Origin == null && adjunctAfter.Origin != null && adjunctAfter.ExternalId == null;
+    private bool NoCleanupRequired(DLCS.Model.Assets.Adjunct adjunctAfter, DLCS.Model.Assets.Adjunct adjunctBefore) =>
+        adjunctBefore.Origin == null && adjunctAfter.Origin != null && adjunctAfter.ExternalId == null;
 }

@@ -1,15 +1,9 @@
 ﻿namespace CleanupHandler.Infrastructure;
 
-// These are the same, but this avoids issues when the services are registered
-
-public enum AssetQueueType
+public enum CleanupMessageQueueType
 {
-    Delete,
-    Update
-}
-
-public enum AdjunctQueueType
-{
-    Delete,
-    Update
+    DeleteAsset,
+    UpdateAsset,
+    DeleteAdjunct,
+    UpdateAdjunct,
 }

@@ -51,20 +51,16 @@ public static class ServiceCollectionX
     /// </summary>
     public static IServiceCollection AddQueueMonitoring(this IServiceCollection services)
         => services
-            .AddScoped<QueueHandlerResolver<AssetQueueType>>(provider => messageType => messageType switch
+            .AddScoped<QueueHandlerResolver<CleanupMessageQueueType>>(provider => messageType => messageType switch
             {
-                AssetQueueType.Delete => provider.GetRequiredService<AssetDeletedHandler>(), 
-                AssetQueueType.Update => provider.GetRequiredService<AssetUpdatedHandler>(),
+                CleanupMessageQueueType.DeleteAsset => provider.GetRequiredService<AssetDeletedHandler>(), 
+                CleanupMessageQueueType.UpdateAsset => provider.GetRequiredService<AssetUpdatedHandler>(),
+                CleanupMessageQueueType.DeleteAdjunct => provider.GetRequiredService<AdjunctDeletedHandler>(), 
+                CleanupMessageQueueType.UpdateAdjunct => provider.GetRequiredService<AdjunctUpdatedHandler>(),
                 _ => throw new ArgumentOutOfRangeException(nameof(messageType), messageType, null)
             })
             .AddScoped<AssetDeletedHandler>()
             .AddScoped<AssetUpdatedHandler>()
-            .AddScoped<QueueHandlerResolver<AdjunctQueueType>>(provider => messageType => messageType switch
-            {
-                AdjunctQueueType.Delete => provider.GetRequiredService<AdjunctDeletedHandler>(), 
-                AdjunctQueueType.Update => provider.GetRequiredService<AdjunctUpdatedHandler>(),
-                _ => throw new ArgumentOutOfRangeException(nameof(messageType), messageType, null)
-            })
             .AddScoped<AdjunctDeletedHandler>()
             .AddScoped<AdjunctUpdatedHandler>()
             .AddSingleton<IFileSystem, FileSystem>()
