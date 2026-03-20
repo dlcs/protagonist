@@ -40,10 +40,10 @@ public class ModificationSender(
         
         switch (typeParameterType) {
             case not null when typeParameterType == typeof(DLCS.Model.Assets.Adjunct):
-                await topicPublisher.PublishToAdjunctModifiedTopic(changes, cancellationToken);
+                await topicPublisher.PublishToDeliverableModifiedTopic(changes, DeliverableTopicType.Adjunct, cancellationToken);
                 break;
             case not null when typeParameterType == typeof(DLCS.Model.Assets.Asset):
-                await topicPublisher.PublishToAssetModifiedTopic(changes, cancellationToken);
+                await topicPublisher.PublishToDeliverableModifiedTopic(changes, DeliverableTopicType.Asset, cancellationToken);
                 break;
             default:
                 throw new InvalidOperationException($"Deliverable type not supported - {typeParameterType}");

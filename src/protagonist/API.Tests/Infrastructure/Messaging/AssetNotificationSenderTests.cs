@@ -44,8 +44,8 @@ public class AssetNotificationSenderTests
         
         // Assert
         A.CallTo(() =>
-            topicPublisher.PublishToAssetModifiedTopic(A<IReadOnlyList<DeliverableModifiedNotification>>._,
-                A<CancellationToken>._)).MustHaveHappened();
+            topicPublisher.PublishToDeliverableModifiedTopic(A<IReadOnlyList<DeliverableModifiedNotification>>._,
+                DeliverableTopicType.Asset, A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]
@@ -59,8 +59,8 @@ public class AssetNotificationSenderTests
         
         // Assert
         A.CallTo(() =>
-            topicPublisher.PublishToAssetModifiedTopic(A<IReadOnlyList<DeliverableModifiedNotification>>._,
-                A<CancellationToken>._)).MustHaveHappened();
+            topicPublisher.PublishToDeliverableModifiedTopic(A<IReadOnlyList<DeliverableModifiedNotification>>._,
+                DeliverableTopicType.Asset, A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]
@@ -78,10 +78,10 @@ public class AssetNotificationSenderTests
         
         // Assert
         A.CallTo(() =>
-            topicPublisher.PublishToAssetModifiedTopic(
+            topicPublisher.PublishToDeliverableModifiedTopic(
                 A<IReadOnlyList<DeliverableModifiedNotification>>.That.Matches(n =>
-                    n.Single().Attributes.Values.Contains(ChangeType.Delete.ToString()) && n.Single().MessageContents.Contains(customerName)),
-                A<CancellationToken>._)).MustHaveHappened();
+                    n.Single().Attributes.Values.Contains(ChangeType.Delete.ToString()) && n.Single().MessageContents.Contains(customerName)), 
+                DeliverableTopicType.Asset, A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]
@@ -103,11 +103,11 @@ public class AssetNotificationSenderTests
         
         // Assert
         A.CallTo(() =>
-            topicPublisher.PublishToAssetModifiedTopic(
+            topicPublisher.PublishToDeliverableModifiedTopic(
                 A<IReadOnlyList<DeliverableModifiedNotification>>.That.Matches(n =>
                     n.Count == 2 && n.All(m =>
                         n.First().Attributes.Values.Contains(ChangeType.Delete.ToString()) && m.MessageContents.Contains(customerName))),
-                A<CancellationToken>._)).MustHaveHappened();
+                DeliverableTopicType.Asset, A<CancellationToken>._)).MustHaveHappened();
     }
 
     [Fact]
@@ -148,9 +148,9 @@ public class AssetNotificationSenderTests
         
         IReadOnlyList<DeliverableModifiedNotification> payload = null;
         A.CallTo(() =>
-                topicPublisher.PublishToAssetModifiedTopic(A<IReadOnlyList<DeliverableModifiedNotification>>._,
-                    CancellationToken.None))
-            .Invokes((IReadOnlyList<DeliverableModifiedNotification> n, CancellationToken _) => payload = n);
+                topicPublisher.PublishToDeliverableModifiedTopic(A<IReadOnlyList<DeliverableModifiedNotification>>._,
+                    DeliverableTopicType.Asset, CancellationToken.None))
+            .Invokes((IReadOnlyList<DeliverableModifiedNotification> n,  DeliverableTopicType _, CancellationToken _) => payload = n);
         
         // Act
         await sut.SendAssetModifiedMessage(assetModifiedRecord, CancellationToken.None);

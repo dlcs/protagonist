@@ -40,7 +40,7 @@ public class TopicPublisherTests
         var notification = new DeliverableModifiedNotification("message", GetAttributes(ChangeType.Delete, false));
 
         // Act
-        await sut.PublishToAssetModifiedTopic(new[] { notification });
+        await sut.PublishToDeliverableModifiedTopic(new[] { notification }, DeliverableTopicType.Asset);
 
         // Assert
         A.CallTo(() =>
@@ -63,7 +63,7 @@ public class TopicPublisherTests
             .Returns(new PublishResponse { HttpStatusCode = statusCode });
 
         // Act
-        var result = await sut.PublishToAssetModifiedTopic(new[] { notification });
+        var result = await sut.PublishToDeliverableModifiedTopic(new[] { notification }, DeliverableTopicType.Asset);
 
         // Assert
         result.Should().Be(expected);
@@ -77,7 +77,7 @@ public class TopicPublisherTests
         var notification2 = new DeliverableModifiedNotification("message", GetAttributes(ChangeType.Delete, false));
 
         // Act
-        await sut.PublishToAssetModifiedTopic(new[] { notification, notification2 });
+        await sut.PublishToDeliverableModifiedTopic(new[] { notification, notification2 }, DeliverableTopicType.Asset);
 
         // Assert
         A.CallTo(() =>
@@ -103,7 +103,7 @@ public class TopicPublisherTests
         } 
 
         // Act
-        await sut.PublishToAssetModifiedTopic(notifications.ToArray());
+        await sut.PublishToDeliverableModifiedTopic(notifications.ToArray(), DeliverableTopicType.Asset);
 
         // Assert
         A.CallTo(() =>
@@ -138,7 +138,7 @@ public class TopicPublisherTests
             .Returns(new PublishBatchResponse { HttpStatusCode = HttpStatusCode.OK });
 
         // Act
-        var response = await sut.PublishToAssetModifiedTopic(notifications.ToArray());
+        var response = await sut.PublishToDeliverableModifiedTopic(notifications.ToArray(), DeliverableTopicType.Asset);
 
         // Assert
         response.Should().BeTrue();
@@ -160,7 +160,7 @@ public class TopicPublisherTests
                 new PublishBatchResponse { HttpStatusCode = HttpStatusCode.OK });
 
         // Act
-        var response = await sut.PublishToAssetModifiedTopic(notifications.ToArray());
+        var response = await sut.PublishToDeliverableModifiedTopic(notifications.ToArray(), DeliverableTopicType.Asset);
 
         // Assert
         response.Should().BeFalse();
@@ -173,7 +173,7 @@ public class TopicPublisherTests
         var notification = new DeliverableModifiedNotification("message", GetAttributes(ChangeType.Update, true));
 
         // Act
-        await sut.PublishToAssetModifiedTopic(new[] { notification });
+        await sut.PublishToDeliverableModifiedTopic(new[] { notification }, DeliverableTopicType.Asset);
 
         // Assert
         A.CallTo(() =>
@@ -192,7 +192,7 @@ public class TopicPublisherTests
         var notification2 = new DeliverableModifiedNotification("message", GetAttributes(ChangeType.Update, true));
 
         // Act
-        await sut.PublishToAssetModifiedTopic(new[] { notification, notification2 });
+        await sut.PublishToDeliverableModifiedTopic(new[] { notification, notification2 }, DeliverableTopicType.Asset);
 
         // Assert
         A.CallTo(() =>
@@ -213,7 +213,7 @@ public class TopicPublisherTests
         var notification = new DeliverableModifiedNotification("message", GetAttributes(ChangeType.Delete, false));
 
         // Act
-        await sut.PublishToAdjunctModifiedTopic([notification]);
+        await sut.PublishToDeliverableModifiedTopic([notification], DeliverableTopicType.Adjunct);
 
         // Assert
         A.CallTo(() =>

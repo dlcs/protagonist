@@ -16,23 +16,7 @@ public class TopicPublisher(
 {
     private readonly SNSSettings snsSettings = settings.Value.SNS;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
-
-    /// <inheritdoc />
-    public async Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages,
-        CancellationToken cancellationToken = default)
-    {
-        return await PublishToDeliverableModifiedTopic(messages, snsSettings.AssetModifiedNotificationTopicArn!,
-            cancellationToken);
-    }
     
-    /// <inheritdoc />
-    public async Task<bool> PublishToAdjunctModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages,
-        CancellationToken cancellationToken = default)
-    {
-        return await PublishToDeliverableModifiedTopic(messages, snsSettings.AdjunctModifiedNotificationTopicArn!,
-            cancellationToken);
-    }
-
     /// <inheritdoc />
     public async Task<bool> PublishToCustomerCreatedTopic(CustomerCreatedNotification message, CancellationToken cancellationToken)
     {
@@ -77,9 +61,14 @@ public class TopicPublisher(
         return await TryPublishRequest(request, cancellationToken);
     }
     
-    private async Task<bool> PublishToDeliverableModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages,
-        string topicArn, CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    public async Task<bool> PublishToDeliverableModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages,
+        DeliverableTopicType topicType, CancellationToken cancellationToken = default)
     {
+        var topicArn = topicType == DeliverableTopicType.Asset
+            ? snsSettings.AssetModifiedNotificationTopicArn!
+            : snsSettings.AdjunctModifiedNotificationTopicArn!;
+        
         if (messages.Count == 1)
         {
             var singleMessage = messages[0];

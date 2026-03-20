@@ -5,15 +5,6 @@ namespace DLCS.AWS.SNS;
 public interface ITopicPublisher
 {
     /// <summary>
-    /// Asynchronously publishes a message to an Asset Modified SNS topic
-    /// </summary>
-    /// <param name="messages">A collection of notifications to send</param>
-    /// <param name="cancellationToken">Current cancellation token</param>
-    /// <returns>Boolean representing the overall success/failure status of all requests</returns>
-    public Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages,
-        CancellationToken cancellationToken);
-
-    /// <summary>
     /// Asynchronously publishes a message to Customer created topic
     /// </summary>
     /// <returns>Boolean representing the overall success/failure status of request</returns>
@@ -31,9 +22,11 @@ public interface ITopicPublisher
     /// Asynchronously publishes a message to an Adjunct Modified SNS topic
     /// </summary>
     /// <param name="messages">A collection of notifications to send</param>
+    /// <param name="topicType">The type of topic to publish to</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Boolean representing the overall success/failure status of all requests</returns>
-    Task<bool> PublishToAdjunctModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages, CancellationToken cancellationToken);
+    Task<bool> PublishToDeliverableModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages,
+        DeliverableTopicType topicType, CancellationToken cancellationToken);
 }
 
 /// <summary>

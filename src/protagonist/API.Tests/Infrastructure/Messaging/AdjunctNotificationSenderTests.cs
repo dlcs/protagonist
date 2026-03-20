@@ -53,9 +53,9 @@ public class AdjunctNotificationSenderTests
         
         IReadOnlyList<DeliverableModifiedNotification> payload = null;
         A.CallTo(() =>
-                topicPublisher.PublishToAdjunctModifiedTopic(A<IReadOnlyList<DeliverableModifiedNotification>>._,
-                    CancellationToken.None))
-            .Invokes((IReadOnlyList<DeliverableModifiedNotification> n, CancellationToken _) => payload = n);
+                topicPublisher.PublishToDeliverableModifiedTopic(A<IReadOnlyList<DeliverableModifiedNotification>>._,
+                    DeliverableTopicType.Adjunct, CancellationToken.None))
+            .Invokes((IReadOnlyList<DeliverableModifiedNotification> n, DeliverableTopicType _,  CancellationToken _) => payload = n);
         
         // Act
         await sut.SendAdjunctModifiedMessage(assetModifiedRecord, CancellationToken.None);
