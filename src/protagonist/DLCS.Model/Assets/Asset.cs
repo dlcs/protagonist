@@ -11,7 +11,7 @@ namespace DLCS.Model.Assets;
 /// <summary>
 /// Represents an Asset that is stored in the DLCS database.
 /// </summary>
-public class Asset : ICloneable, IDeliverable
+public class Asset : IDeliverable
 {
     /// <summary>
     /// A 'special' role that cannot be obtained by any user. AccessServices for this will not be advertised and Assets

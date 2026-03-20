@@ -5,7 +5,7 @@ using IIIF.Presentation.V3.Strings;
 
 namespace DLCS.Model.Assets;
 
-public class Adjunct : ICloneable, IDeliverable
+public class Adjunct : IDeliverable
 {
     public const int MaxIdLength = 200;
     
