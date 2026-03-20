@@ -158,7 +158,7 @@ public class AssetNotificationSenderTests
         // Assert
         payload.Should().HaveCount(1);
         var deleted = JsonNode.Parse(payload.Single().MessageContents)
-            .Deserialize<DeletedNotificationRequest<Asset>>(JsonSerializerOptions.Web).Deliverable!;
+            .Deserialize<DeliverableDeletedNotification<Asset>>(JsonSerializerOptions.Web).Deliverable!;
         deleted.Id.Should().Be(asset.Id, "Confirm entire message not cleared");
         deleted.BatchAssets.Should().BeNull("BatchAsset ignored");
         deleted.ImageOptimisationPolicy.Should().BeNull("ImageOptimisationPolicy ignored");

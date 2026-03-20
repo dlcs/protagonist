@@ -1,7 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
 using DLCS.Model.Messaging;
-using DLCS.Model.Messaging.Adjunct;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Engine.Ingest;

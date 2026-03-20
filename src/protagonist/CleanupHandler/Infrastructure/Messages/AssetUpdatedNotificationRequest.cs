@@ -15,7 +15,7 @@ public class AssetUpdatedNotificationRequest
 
 public static class AssetUpdatedNotificationRequestX
 {
-    public static UpdatedNotificationRequest<Asset> ConvertToStandard(
+    public static DeliverableUpdatedNotification<Asset> ConvertToStandard(
         this AssetUpdatedNotificationRequest assetUpdatedNotificationRequest)
         => new()
         {

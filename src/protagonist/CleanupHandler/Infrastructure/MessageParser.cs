@@ -10,11 +10,11 @@ public static class MessageParser
     /// <summary>
     /// Parses a delete message from an SQS message
     /// </summary>
-    public static DeletedNotificationRequest<T>? TryParseDeleteMessage<T>(QueueMessage message, ILogger logger) where T : IDeliverable
+    public static DeliverableDeletedNotification<T>? TryParseDeleteMessage<T>(QueueMessage message, ILogger logger) where T : IDeliverable
     {
         try
         {
-            var request = message.GetMessageContents<DeletedNotificationRequest<T>>();
+            var request = message.GetMessageContents<DeliverableDeletedNotification<T>>();
 
             if (request?.Deliverable?.GetAssetId() == null)
             {
@@ -33,11 +33,11 @@ public static class MessageParser
     /// <summary>
     /// Parses an update message from an SQS message
     /// </summary>
-    public static UpdatedNotificationRequest<T>? TryParseUpdatedMessage<T>(QueueMessage message, ILogger logger) where T : IDeliverable
+    public static DeliverableUpdatedNotification<T>? TryParseUpdatedMessage<T>(QueueMessage message, ILogger logger) where T : IDeliverable
     {
         try
         {
-            var request = message.GetMessageContents<UpdatedNotificationRequest<T>>();
+            var request = message.GetMessageContents<DeliverableUpdatedNotification<T>>();
 
             if (request?.DeliverableBeforeUpdate?.GetAssetId() == null)
             {

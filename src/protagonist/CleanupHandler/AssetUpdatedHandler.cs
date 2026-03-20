@@ -121,7 +121,7 @@ public class AssetUpdatedHandler(
         }
     }
 
-    private UpdatedNotificationRequest<Asset>? TryParseMessage(QueueMessage message)
+    private DeliverableUpdatedNotification<Asset>? TryParseMessage(QueueMessage message)
     {
         var updateMessage = MessageParser.TryParseUpdatedMessage<Asset>(message, logger);
 

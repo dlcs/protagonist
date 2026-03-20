@@ -64,7 +64,7 @@ public class AssetDeletedHandler(
         }
     }
 
-    private DeletedNotificationRequest<Asset>? TryParseMessage(QueueMessage message)
+    private DeliverableDeletedNotification<Asset>? TryParseMessage(QueueMessage message)
     {
         var updateMessage = MessageParser.TryParseDeleteMessage<Asset>(message, logger);
 

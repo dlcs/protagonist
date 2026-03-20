@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using DLCS.Core.Types;
 
-namespace DLCS.Model.Messaging.Adjunct;
+namespace DLCS.Model.Messaging;
 
 /// <summary>
 /// Represents a request to ingest an adjunct.

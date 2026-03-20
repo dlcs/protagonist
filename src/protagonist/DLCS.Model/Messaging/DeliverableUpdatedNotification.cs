@@ -3,7 +3,7 @@ using DLCS.Model.PathElements;
 
 namespace DLCS.Model.Messaging;
 
-public class UpdatedNotificationRequest<T> where T : IDeliverable
+public class DeliverableUpdatedNotification<T> where T : IDeliverable
 {
     public T? DeliverableBeforeUpdate { get; set; }
     

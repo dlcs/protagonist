@@ -1,7 +1,6 @@
 using System.Text.Json;
 using DLCS.AWS.SQS;
 using DLCS.Model.Messaging;
-using DLCS.Model.Messaging.Adjunct;
 using DLCS.Model.Processing;
 using DLCS.Web.Logging;
 using static DLCS.AWS.SQS.SqsQueueUtilities.Constants.MessageAttributeNames;

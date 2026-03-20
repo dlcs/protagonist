@@ -72,7 +72,7 @@ public class ModificationSender(
     {
         var customerPathElement = await PathHelper.GetCustomerPathElement(deliverableBefore.GetAssetId().Customer, customerPathRepository);
         
-        var request = new DeletedNotificationRequest<T>
+        var request = new DeliverableDeletedNotification<T>
         {
             Deliverable = deliverableBefore,
             CustomerPathElement = customerPathElement,
@@ -86,7 +86,7 @@ public class ModificationSender(
     {
         var customerPathElement = await PathHelper.GetCustomerPathElement(deliverableBefore.GetAssetId().Customer, customerPathRepository);
         
-        var request = new UpdatedNotificationRequest<T>
+        var request = new DeliverableUpdatedNotification<T>
         {
             DeliverableBeforeUpdate = deliverableBefore,
             DeliverableAfterUpdate = deliverableAfter, 
@@ -101,7 +101,7 @@ public class ModificationSender(
         
         var customerPathElement = await PathHelper.GetCustomerPathElement(deliverableAfter.GetAssetId().Customer, customerPathRepository);
         
-        var request = new CreatedNotificationRequest<T>
+        var request = new DeliverableCreatedNotification<T>
         {
             Deliverable = deliverableAfter,
             CustomerPathElement = customerPathElement

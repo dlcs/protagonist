@@ -80,7 +80,7 @@ public class AdjunctDeletedHandlerTests
     public async Task Handle_ReturnsTrue_IfValidAdjunct()
     {
         // Arrange
-        var cleanupRequest = new DeletedNotificationRequest<Adjunct>
+        var cleanupRequest = new DeliverableDeletedNotification<Adjunct>
         {
             Deliverable = new Adjunct
             {
@@ -113,7 +113,7 @@ public class AdjunctDeletedHandlerTests
     public async Task Handle_ReturnsTrueWithoutDeletion_WhenNotHosted()
     {
         // Arrange
-        var cleanupRequest = new DeletedNotificationRequest<Adjunct>
+        var cleanupRequest = new DeliverableDeletedNotification<Adjunct>
         {
             Deliverable = new Adjunct
             {
@@ -151,7 +151,7 @@ public class AdjunctDeletedHandlerTests
 
         var adjunct = asset.Entity.Adjuncts!.First();
         
-        var cleanupRequest = new DeletedNotificationRequest<Adjunct>
+        var cleanupRequest = new DeliverableDeletedNotification<Adjunct>
         {
             Deliverable = adjunct
         };

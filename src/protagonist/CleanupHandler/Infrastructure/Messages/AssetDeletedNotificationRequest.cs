@@ -24,7 +24,7 @@ public static class AssetDeletedNotificationRequestX
     /// <summary>
     /// Converts an asset deleted notification request to the new deleted notification request
     /// </summary>
-    public static DeletedNotificationRequest<Asset> ConvertToNewFormat(
+    public static DeliverableDeletedNotification<Asset> ConvertToNewFormat(
         this AssetDeletedNotificationRequest assetUpdatedNotificationRequest)
         => new()
         {

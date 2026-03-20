@@ -1,5 +1,4 @@
 ﻿using DLCS.Model.Customers;
-using DLCS.Model.Messaging.Adjunct;
 
 namespace DLCS.AWS.SNS;
 

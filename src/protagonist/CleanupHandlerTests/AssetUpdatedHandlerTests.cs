@@ -1250,7 +1250,7 @@ public class AssetUpdatedHandlerTests
         };
         customiseAssetAfter?.Invoke(assetAfter);
 
-        var cleanupRequest = new UpdatedNotificationRequest<Asset>
+        var cleanupRequest = new DeliverableUpdatedNotification<Asset>
         {
             DeliverableBeforeUpdate = assetBefore,
             CustomerPathElement = new CustomerPathElement(99, "stuff"),

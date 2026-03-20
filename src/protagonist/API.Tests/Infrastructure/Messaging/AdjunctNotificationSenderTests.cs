@@ -63,7 +63,7 @@ public class AdjunctNotificationSenderTests
         // Assert
         payload.Should().HaveCount(1);
         var deleted = JsonNode.Parse(payload.Single().MessageContents)
-            .Deserialize<DeletedNotificationRequest<Adjunct>>(JsonSerializerOptions.Web).Deliverable!;
+            .Deserialize<DeliverableDeletedNotification<Adjunct>>(JsonSerializerOptions.Web).Deliverable!;
         deleted.Id.Should().Be(adjunct.Id, "Confirm entire message not cleared");
         deleted.AssetId.Should().Be(adjunct.AssetId, "Confirm entire message not cleared");
         deleted.Asset.Should().BeNull("Asset ignored");

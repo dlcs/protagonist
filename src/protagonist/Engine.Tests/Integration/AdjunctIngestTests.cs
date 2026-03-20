@@ -6,7 +6,6 @@ using DLCS.AWS.S3;
 using DLCS.Core.FileSystem;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
-using DLCS.Model.Messaging.Adjunct;
 using DLCS.Model.Policies;
 using DLCS.Repository;
 using DLCS.Repository.Strategy;
