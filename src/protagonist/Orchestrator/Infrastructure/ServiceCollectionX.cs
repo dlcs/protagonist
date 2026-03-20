@@ -58,6 +58,7 @@ public static class ServiceCollectionX
             .AddSingleton<IPathCustomerRepository, GranularCustomerPathElementRepository>()
             .AddSingleton<AssetCachingHelper>()
             .AddSingleton<IOrchestratorAssetRepository, DapperAssetRepository>()
+            .AddSingleton<IOrchestratorAdjunctRepository, DapperAdjunctRepository>()
             .AddSingleton<IThumbRepository, ThumbRepository>()
             .AddScoped<IPolicyRepository, PolicyRepository>()
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
@@ -170,6 +171,7 @@ public static class ServiceCollectionX
     {
         var serviceCollection = services
             .AddSingleton<IAssetTracker, MemoryAssetTracker>()
+            .AddSingleton<IAdjunctTracker, MemoryAssetTracker>()
             .AddSingleton<IImageOrchestrator>(sp =>
                 ActivatorUtilities.CreateInstance<ImageOrchestrator>(sp,
                     sp.GetRequiredService<S3AmbientOriginStrategy>()))

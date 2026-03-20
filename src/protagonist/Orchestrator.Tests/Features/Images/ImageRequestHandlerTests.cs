@@ -26,6 +26,7 @@ namespace Orchestrator.Tests.Features.Images;
 public class ImageRequestHandlerTests
 {
     private readonly IAssetTracker assetTracker;
+    private readonly IAdjunctTracker adjunctTracker;
     private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
     private readonly IPathCustomerRepository customerRepository;
     private readonly AssetDeliveryPathParser assetDeliveryPathParserImpl;
@@ -37,6 +38,7 @@ public class ImageRequestHandlerTests
     public ImageRequestHandlerTests()
     {
         assetTracker = A.Fake<IAssetTracker>();
+        adjunctTracker = A.Fake<IAdjunctTracker>();
         assetDeliveryPathParser = A.Fake<IAssetDeliveryPathParser>();
         customerRepository = A.Fake<IPathCustomerRepository>();
         accessValidator = A.Fake<IAssetAccessValidator>();
@@ -860,7 +862,7 @@ public class ImageRequestHandlerTests
         OrchestratorSettings orchestratorSettings = null)
     {
         // mockPathParser = true will return A.Fake, else return actual impl with fake repo 
-        var requestProcessor = new AssetRequestProcessor(new NullLogger<AssetRequestProcessor>(), assetTracker,
+        var requestProcessor = new AssetRequestProcessor(new NullLogger<AssetRequestProcessor>(), assetTracker, adjunctTracker,
             mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl);
         return new(new NullLogger<ImageRequestHandler>(), requestProcessor, scopeFactory, customHeaderRepository,
             Options.Create(orchestratorSettings ?? CreateOrchestratorSettings()));

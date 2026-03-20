@@ -17,6 +17,7 @@ namespace Orchestrator.Tests.Assets;
 public class MemoryAssetTrackerTests
 {
     private readonly IOrchestratorAssetRepository assetRepository;
+    private readonly IOrchestratorAdjunctRepository adjunctRepository;
     private readonly IThumbRepository thumbRepository;
     private readonly ICustomerOriginStrategyRepository customerOriginStrategyRepository;
     private readonly MemoryAssetTracker sut;
@@ -24,6 +25,7 @@ public class MemoryAssetTrackerTests
     public MemoryAssetTrackerTests()
     {
         assetRepository = A.Fake<IOrchestratorAssetRepository>();
+        adjunctRepository = A.Fake<IOrchestratorAdjunctRepository>();
         thumbRepository = A.Fake<IThumbRepository>();
         customerOriginStrategyRepository = A.Fake<ICustomerOriginStrategyRepository>();
         A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(A<AssetId>._, A<string>._))
@@ -43,7 +45,7 @@ public class MemoryAssetTrackerTests
                 EmptyImageLocationCreatedDate = emptyImageLocationCreatedDate
             }
         };
-        return new MemoryAssetTracker(assetRepository, new MockCachingService(), thumbRepository,
+        return new MemoryAssetTracker(assetRepository, adjunctRepository, new MockCachingService(), thumbRepository,
             customerOriginStrategyRepository, Options.Create(orchestratorSettings),
             new NullLogger<MemoryAssetTracker>());
     }
@@ -453,5 +455,102 @@ public class MemoryAssetTrackerTests
         
         // Assert
         result.Should().BeNull();
+    }
+    
+    [Fact]
+    public async Task GetOrchestrationAdjunct_Null_IfNotFound()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId(1);
+        const string adjunctId = "nope";
+        A.CallTo(() => adjunctRepository.GetAdjunct(adjunctId, assetId, false)).Returns<Adjunct>(null);
+        
+        // Act
+        var result = await sut.GetOrchestrationAdjunct(adjunctId, assetId);
+        
+        // Assert
+        result.Should().BeNull("repo mock set to return null");
+    }
+
+    [Fact]
+    public async Task GetOrchestrationAdjunct_ReturnsOrchestrationAdjunct()
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, nameof(GetOrchestrationAdjunct_ReturnsOrchestrationAdjunct));
+        const string adjunctId = "yup";
+        const string origin = "http://example.com/some-origin";
+        A.CallTo(() => adjunctRepository.GetAdjunct(adjunctId, assetId, false)).Returns(
+            new Adjunct
+            {
+                Id = adjunctId,
+                AssetId = assetId,
+                Origin = origin,
+                MediaType = "application/json",
+                IIIFLink = IIIFLinkType.SeeAlso,
+                Type = "a_type"
+            });
+
+        A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, origin))
+            .Returns(new CustomerOriginStrategy { Id = "_default_", 
+                Optimised = true, Strategy = OriginStrategyType.Default });
+        
+        // Act
+        var result = await sut.GetOrchestrationAdjunct(adjunctId, assetId);
+        
+        // Assert
+        result.Should().NotBeNull("mock repo set to return a valid obj");
+        result!.Id.Should().Be(adjunctId, "as per repo setting");
+        result.AssetId.Should().Be(assetId, "as per repo setting");
+        result.Origin.Should().Be(origin, "as per repo setting");
+        result.MediaType.ToString().Should().Be("application/json", "as per repo setting");
+        result.OptimisedOrigin.Should().Be(true, "as per cos repo setting");
+    }
+
+    [Fact]
+    public async Task RefreshCachedAdjunct_Null_IfNotFound()
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, nameof(RefreshCachedAdjunct_Null_IfNotFound));
+        const string adjunctId = "nope";
+        A.CallTo(() => adjunctRepository.GetAdjunct(adjunctId, assetId, true)).Returns<Adjunct>(null);
+
+        // Act
+        var result = await sut.RefreshCachedAdjunct(adjunctId, assetId);
+        
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task RefreshCachedAdjunct_ReturnsAdjunct()
+    {
+        var assetId = new AssetId(1, 1, nameof(RefreshCachedAdjunct_ReturnsAdjunct));
+        const string adjunctId = "yup";
+        const string origin = "http://example.com/some-origin";
+        A.CallTo(() => adjunctRepository.GetAdjunct(adjunctId, assetId, true)).Returns(
+            new Adjunct
+            {
+                Id = adjunctId,
+                AssetId = assetId,
+                Origin = origin,
+                MediaType = "application/json",
+                IIIFLink = IIIFLinkType.SeeAlso,
+                Type = "a_type"
+            });
+
+        A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, origin))
+            .Returns(new CustomerOriginStrategy { Id = "_default_", 
+                Optimised = true, Strategy = OriginStrategyType.Default });
+        
+        // Act
+        var result = await sut.RefreshCachedAdjunct(adjunctId, assetId);
+        
+        // Assert
+        result.Should().NotBeNull("mock repo set to return a valid obj");
+        result!.Id.Should().Be(adjunctId, "as per repo setting");
+        result.AssetId.Should().Be(assetId, "as per repo setting");
+        result.Origin.Should().Be(origin, "as per repo setting");
+        result.MediaType.ToString().Should().Be("application/json", "as per repo setting");
+        result.OptimisedOrigin.Should().Be(true, "as per cos repo setting");
     }
 }

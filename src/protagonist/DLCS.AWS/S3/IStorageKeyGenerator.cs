@@ -182,4 +182,13 @@ public interface IStorageKeyGenerator
     /// <param name="adjunct">Adjunct that will be stored at location</param>
     /// <returns><see cref="ObjectInBucket"/> for specified Asset's hosted Adjunct</returns>
     RegionalisedObjectInBucket GetStoredAdjunctLocation(AssetId assetId, Adjunct adjunct);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> for stored adjunct file.
+    /// This is for adjuncts which all use "file" delivery
+    /// </summary>
+    /// <param name="assetId">Id of Asset owning this Adjunct</param>
+    /// <param name="adjunctId">Id of the adjunct location of which to generate</param>
+    /// <returns><see cref="ObjectInBucket"/> for specified Asset's hosted Adjunct</returns>
+    RegionalisedObjectInBucket GetStoredAdjunctLocation(AssetId assetId, string adjunctId);
 }

@@ -40,7 +40,7 @@ public class Adjunct : IDeliverable
     public string? Profile { get; set; }
     
     /// <summary>
-    /// A human readable label, name or title
+    /// A human-readable label, name or title
     /// </summary>
     public LanguageMap? Label { get; set; }
     

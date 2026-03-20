@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.AWS.S3;
 using DLCS.Core.Caching;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
@@ -21,31 +22,35 @@ namespace Orchestrator.Assets;
 /// </summary>
 public class MemoryAssetTracker(
     IOrchestratorAssetRepository assetRepository,
+    IOrchestratorAdjunctRepository adjunctRepository,
     IAppCache appCache,
     IThumbRepository thumbRepository,
     ICustomerOriginStrategyRepository customerOriginStrategyRepository,
     IOptions<OrchestratorSettings> orchestratorOptions,
     ILogger<MemoryAssetTracker> logger)
-    : IAssetTracker
+    : IAssetTracker, IAdjunctTracker
 {
     private readonly CacheSettings cacheSettings = orchestratorOptions.Value.Caching;
     private readonly ReingestOnOrchestrationSettings reingestSettings = orchestratorOptions.Value.ReingestOnOrchestration;
     private readonly int systemMaxWidth = orchestratorOptions.Value.MaxWidth;
 
-    // Null object to store in cache for short duration
+    // Null objects to store in cache for short duration
     private static readonly OrchestrationAsset NullOrchestrationAsset =
         new() { AssetId = new AssetId(-1, -1, "__notfound__") };
+
+    private static readonly OrchestrationAdjunct NullOrchestrationAdjunct =
+        new() { Id = "__missingadjunct__", AssetId = new AssetId(-1, -1, "__notfound__") };
 
     public async Task<OrchestrationAsset?> GetOrchestrationAsset(AssetId assetId)
     {
         var trackedAsset = await GetOrchestrationAssetInternal(assetId);
-        return IsNullAsset(trackedAsset) ? null : trackedAsset;
+        return IsNullItem(trackedAsset) ? null : trackedAsset;
     }
 
     public async Task<T?> GetOrchestrationAsset<T>(AssetId assetId) where T : OrchestrationAsset
     {
         var trackedAsset = await GetOrchestrationAssetInternal(assetId);
-        if (IsNullAsset(trackedAsset)) return null;
+        if (IsNullItem(trackedAsset)) return null;
 
         if (trackedAsset is T typedAsset) return typedAsset;
         
@@ -64,7 +69,43 @@ public class MemoryAssetTracker(
 
         return newOrchestrationAsset as T;
     }
+    
+    public async Task<OrchestrationAdjunct?> RefreshCachedAdjunct(string adjunctId, AssetId assetId)
+    {
+        var cacheKey = GetCacheKey(assetId, adjunctId);
 
+        var newOrchestrationAsset = await GetOrchestrationAdjunctFromSource(adjunctId, assetId, true);
+        appCache.Add(cacheKey, newOrchestrationAsset, cacheSettings.GetMemoryCacheOptions());
+
+        return newOrchestrationAsset;
+    }
+    
+    public async Task<OrchestrationAdjunct?> GetOrchestrationAdjunct(string adjunctId, AssetId assetId)
+    {
+        var trackedAdjunct = await GetOrchestrationAdjunctInternal(adjunctId, assetId);
+        return IsNullItem(trackedAdjunct) ? null : trackedAdjunct;
+    }
+
+    private async Task<OrchestrationAdjunct> GetOrchestrationAdjunctInternal(string adjunctId, AssetId assetId)
+    {
+        var key = GetCacheKey(assetId, adjunctId);
+        return await appCache.GetOrAddAsync(key, async entry =>
+        {
+            logger.LogTrace("Refreshing cache for {AssetId}", assetId);
+            var orchestrationAdjunct = await GetOrchestrationAdjunctFromSource(adjunctId, assetId);
+
+            if (orchestrationAdjunct != null)
+            {
+                return orchestrationAdjunct;
+            }
+
+            logger.LogDebug("Adjunct {Id} for asset {AssetId} not found, caching null object", adjunctId, assetId);
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+            return NullOrchestrationAdjunct;
+
+        }, cacheSettings.GetMemoryCacheOptions());
+    }
+    
     private async Task<OrchestrationAsset> GetOrchestrationAssetInternal(AssetId assetId)
     {
         var key = GetCacheKey(assetId);
@@ -90,6 +131,14 @@ public class MemoryAssetTracker(
         }, cacheSettings.GetMemoryCacheOptions());
     }
 
+    private async Task<OrchestrationAdjunct?> GetOrchestrationAdjunctFromSource(string adjunctId, AssetId assetId, bool noCache = false)
+    {
+        var asset = await adjunctRepository.GetAdjunct(adjunctId, assetId, noCache);
+        return asset == null
+            ? null
+            : await ConvertAdjunctToTrackedAdjunct(assetId, asset);
+    }
+    
     private async Task<OrchestrationAsset?> GetOrchestrationAssetFromSource(AssetId assetId, bool noCache = false)
     {
         var asset = await assetRepository.GetAsset(assetId, noCache);
@@ -98,11 +147,36 @@ public class MemoryAssetTracker(
             : await ConvertAssetToTrackedAsset(assetId, asset);
     }
 
-    private static string GetCacheKey(AssetId assetId) => $"Track:{assetId}";
+    private static string GetCacheKey(AssetId assetId, string? adjunctId = null)
+        => $"Track:{assetId}" + (adjunctId is { Length: > 0 }
+            ? $"_adj_{adjunctId}"
+            : string.Empty);
 
-    private static bool IsNullAsset(OrchestrationAsset orchestrationAsset)
-        => orchestrationAsset.AssetId == NullOrchestrationAsset.AssetId;
+    private static bool IsNullItem<T>(T orchestrationItem)
+        => orchestrationItem switch
+        {
+            OrchestrationAsset orchestrationAsset => orchestrationAsset.AssetId == NullOrchestrationAsset.AssetId,
+            OrchestrationAdjunct orchestrationAdjunct => orchestrationAdjunct.AssetId ==
+                NullOrchestrationAdjunct.AssetId && orchestrationAdjunct.Id == NullOrchestrationAdjunct.Id,
+            _ => true // unsupported, definitely don't allow
+        };
 
+    private async Task<OrchestrationAdjunct> ConvertAdjunctToTrackedAdjunct(AssetId assetId, Adjunct adjunct)
+    {
+        var origin = adjunct.Origin.ThrowIfNullOrEmpty(nameof(adjunct.Origin));
+        var cos = await customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, origin);
+        var orchestrationAdjunct = new OrchestrationAdjunct
+        {
+            Id = adjunct.Id,
+            AssetId = adjunct.AssetId,
+            Origin = origin,
+            MediaType = new StringValues(adjunct.MediaType),
+            OptimisedOrigin = cos.Optimised
+        };
+        
+        return  orchestrationAdjunct;
+    }
+    
     private async Task<OrchestrationAsset> ConvertAssetToTrackedAsset(AssetId assetId, Asset asset)
     {
         OrchestrationAsset orchestrationAsset;

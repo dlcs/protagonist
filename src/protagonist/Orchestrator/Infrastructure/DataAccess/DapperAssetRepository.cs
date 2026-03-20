@@ -104,17 +104,19 @@ public class DapperAssetRepository(
 
         return imageDeliveryChannels;
     }
-
-    private const string AssetSql = @"
-SELECT ""Images"".""Id"", ""Customer"", ""Space"", ""Created"", ""Origin"", ""Tags"", ""Roles"", 
-""PreservedUri"", ""Reference1"", ""Reference2"", ""Reference3"", ""MaxUnauthorised"", ""MaxWidth"", ""OpenFullMax"",
-""NumberReference1"", ""NumberReference2"", ""NumberReference3"", ""Width"", 
-""Height"", ""Error"", ""Batch"", ""Finished"", ""Ingesting"", ""ImageOptimisationPolicy"", 
-""ThumbnailPolicy"", ""Family"", ""MediaType"", ""Duration"", ""NotForDelivery"", ""DeliveryChannels"", ""Manifests"",
-IDC.""Channel"", IDC.""DeliveryChannelPolicyId""
-  FROM ""Images""
-  LEFT OUTER JOIN ""ImageDeliveryChannels"" IDC on ""Images"".""Id"" = IDC.""ImageId""
-  WHERE ""Images"".""Id""=@Id;";
+    
+    private const string AssetSql =
+        """
+        SELECT "Images"."Id", "Customer", "Space", "Created", "Origin", "Tags", "Roles", 
+        "PreservedUri", "Reference1", "Reference2", "Reference3", "MaxUnauthorised", "MaxWidth", "OpenFullMax",
+        "NumberReference1", "NumberReference2", "NumberReference3", "Width", 
+        "Height", "Error", "Batch", "Finished", "Ingesting", "ImageOptimisationPolicy", 
+        "ThumbnailPolicy", "Family", "MediaType", "Duration", "NotForDelivery", "DeliveryChannels", "Manifests",
+        IDC."Channel", IDC."DeliveryChannelPolicyId"
+          FROM "Images"
+          LEFT OUTER JOIN "ImageDeliveryChannels" IDC on "Images"."Id" = IDC."ImageId"
+          WHERE "Images"."Id"=@Id;
+        """;
 
     private const string ImageLocationSql =
         "SELECT \"Id\", \"S3\", \"Nas\" FROM public.\"ImageLocation\" WHERE \"Id\"=@Id;";

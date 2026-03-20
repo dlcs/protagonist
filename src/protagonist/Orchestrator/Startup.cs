@@ -21,6 +21,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Features.Adjuncts;
 using Orchestrator.Features.Files;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
@@ -68,6 +69,7 @@ public class Startup
             .AddSingleton<ImageRequestHandler>()
             .AddSingleton<TimeBasedRequestHandler>()
             .AddSingleton<FileRequestHandler>()
+            .AddSingleton<AdjunctRequestHandler>()
             .AddSingleton<S3ProxyPathGenerator>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
             .AddSingleton<AssetRequestProcessor>()
@@ -158,6 +160,7 @@ public class Startup
                 endpoints.MapImageHandling();
                 endpoints.MapTimeBasedHandling();
                 endpoints.MapFileHandling();
+                endpoints.MapAdjunctHandling();
                 endpoints.MapConfiguredHealthChecks();
                 endpoints.AddVersionEndpoint();
             });
