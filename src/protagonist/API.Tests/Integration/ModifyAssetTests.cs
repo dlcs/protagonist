@@ -8,8 +8,8 @@ using System.Text;
 using System.Threading;
 using Amazon.S3;
 using API.Client;
+using API.Infrastructure;
 using API.Infrastructure.Messaging;
-using API.Infrastructure.Messaging.Asset;
 using API.Infrastructure.Messaging.General;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
@@ -41,7 +41,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
-    private static readonly IAssetNotificationSender AssetNotificationSender = A.Fake<IAssetNotificationSender>();
+    private static readonly IDeliverableNotificationSender DeliverableNotificationSender = A.Fake<IDeliverableNotificationSender>();
     private readonly IAmazonS3 amazonS3;
     private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
 
@@ -59,7 +59,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .WithLocalStack(storageFixture.LocalStackFixture)
             .WithTestServices(services =>
             {
-                services.AddSingleton(_ => AssetNotificationSender);
+                services.AddSingleton(_ => DeliverableNotificationSender);
                 services.AddScoped(_ => EngineClient);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
@@ -2790,7 +2790,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ec.Customer == 99 && ec.Scope == "1" && ec.Type == KnownEntityCounters.SpaceImages);
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
 
-        A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<NotificationRecord<Asset>>.That.Matches(r => r.ChangeType == ChangeType.Delete && r.DeleteFrom == ImageCacheType.None), 
             A<CancellationToken>._)).MustHaveHappened();
     }
@@ -2851,7 +2851,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ec.Customer == 99 && ec.Scope == "1" && ec.Type == KnownEntityCounters.SpaceImages);
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
 
-        A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<NotificationRecord<Asset>>.That.Matches(r => r.ChangeType == ChangeType.Delete && 
                                                            (int)r.DeleteFrom == 12), 
             A<CancellationToken>._)).MustHaveHappened();
@@ -2909,7 +2909,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             ec.Customer == 99 && ec.Scope == "1" && ec.Type == KnownEntityCounters.SpaceImages);
         dbSpaceCounter.Next.Should().Be(currentSpaceImagesCounter - 1);
         
-        A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<NotificationRecord<Asset>>.That.Matches(r => r.ChangeType == ChangeType.Delete), 
             A<CancellationToken>._)).MustHaveHappened();
     }
@@ -2947,7 +2947,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         
-        A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<NotificationRecord<Asset>>.That.Matches(r => 
                 r.ChangeType == ChangeType.Delete &&
                 r.Before.ImageDeliveryChannels.Count == 3),

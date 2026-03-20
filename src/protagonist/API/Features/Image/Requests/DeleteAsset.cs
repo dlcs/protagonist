@@ -1,5 +1,5 @@
 ﻿using API.Features.Assets;
-using API.Infrastructure.Messaging.Asset;
+using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
 using DLCS.Core;
 using DLCS.Core.Types;
@@ -28,16 +28,16 @@ public class DeleteAsset : IRequest<DeleteResult>
 
 public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
 {
-    private readonly IAssetNotificationSender assetNotificationSender;
+    private readonly IDeliverableNotificationSender deliverableNotificationSender;
     private readonly IApiAssetRepository assetRepository;
     private readonly ILogger<DeleteAssetHandler> logger;
 
     public DeleteAssetHandler(
-        IAssetNotificationSender assetNotificationSender,
+        IDeliverableNotificationSender deliverableNotificationSender,
         IApiAssetRepository assetRepository,
         ILogger<DeleteAssetHandler> logger)
     {
-        this.assetNotificationSender = assetNotificationSender;
+        this.deliverableNotificationSender = deliverableNotificationSender;
         this.assetRepository = assetRepository;
         this.logger = logger;
     }
@@ -63,7 +63,7 @@ public class DeleteAssetHandler : IRequestHandler<DeleteAsset, DeleteResult>
         {
             var deleted = NotificationRecord<Asset>.Delete(deleteResult.DeletedEntity!, request.DeleteFrom);
             logger.LogDebug("Sending delete asset notification for {AssetId}", request.AssetId);
-            await assetNotificationSender.SendAssetModifiedMessage(deleted, cancellationToken);
+            await deliverableNotificationSender.SendDeliverableModifiedMessage(deleted, cancellationToken);
         }
         catch (Exception ex)
         {

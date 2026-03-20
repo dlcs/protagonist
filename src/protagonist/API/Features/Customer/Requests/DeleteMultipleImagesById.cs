@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using API.Features.Customer.Validation;
-using API.Infrastructure.Messaging.Asset;
+using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
 using DLCS.Model.Assets;
 using DLCS.Repository;
@@ -30,16 +30,16 @@ public class DeleteMultipleImagesById : IRequest<int>
 public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleImagesById, int>
 {
     private readonly DlcsContext dlcsContext;
-    private readonly IAssetNotificationSender assetNotificationSender;
+    private readonly IDeliverableNotificationSender deliverableNotificationSender;
     private readonly ILogger<DeleteMultipleImagesByIdHandler> logger;
 
     public DeleteMultipleImagesByIdHandler(
         DlcsContext dlcsContext,
-        IAssetNotificationSender assetNotificationSender,
+        IDeliverableNotificationSender deliverableNotificationSender,
         ILogger<DeleteMultipleImagesByIdHandler> logger)
     {
         this.dlcsContext = dlcsContext;
-        this.assetNotificationSender = assetNotificationSender;
+        this.deliverableNotificationSender = deliverableNotificationSender;
         this.logger = logger;
     }
 
@@ -82,6 +82,6 @@ public class DeleteMultipleImagesByIdHandler : IRequestHandler<DeleteMultipleIma
     private async Task RaiseModifiedNotifications(List<Asset> assets, ImageCacheType deleteFrom, CancellationToken cancellationToken)
     {
         var changeSet = assets.Select(a => NotificationRecord<Asset>.Delete(a, deleteFrom)).ToList();
-        await assetNotificationSender.SendAssetModifiedMessage(changeSet, cancellationToken);
+        await deliverableNotificationSender.SendDeliverableModifiedMessage(changeSet, cancellationToken);
     }
 }

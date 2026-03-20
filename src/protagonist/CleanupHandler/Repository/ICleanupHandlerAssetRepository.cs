@@ -1,5 +1,4 @@
 ﻿using DLCS.Core.Types;
-using DLCS.Model.Assets;
 
 namespace CleanupHandler.Repository;
 

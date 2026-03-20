@@ -2,7 +2,7 @@
 using System.Data;
 using API.Features.Image;
 using API.Features.Image.Ingest;
-using API.Infrastructure.Messaging.Asset;
+using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
 using DLCS.Core;
@@ -39,7 +39,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
     private readonly IBatchRepository batchRepository;
     private readonly AssetProcessor assetProcessor;
     private readonly IIngestNotificationSender ingestNotificationSender;
-    private readonly IAssetNotificationSender assetNotificationSender;
+    private readonly IDeliverableNotificationSender deliverableNotificationSender;
     private readonly ILogger<CreateBatchOfImagesHandler> logger;
 
     public CreateBatchOfImagesHandler(
@@ -47,14 +47,14 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         IBatchRepository batchRepository,
         AssetProcessor assetProcessor,
         IIngestNotificationSender ingestNotificationSender,
-        IAssetNotificationSender assetNotificationSender,
+        IDeliverableNotificationSender deliverableNotificationSender,
         ILogger<CreateBatchOfImagesHandler> logger)
     {
         this.dlcsContext = dlcsContext;
         this.batchRepository = batchRepository;
         this.assetProcessor = assetProcessor;
         this.ingestNotificationSender = ingestNotificationSender;
-        this.assetNotificationSender = assetNotificationSender;
+        this.deliverableNotificationSender = deliverableNotificationSender;
         this.logger = logger;
     }
     
@@ -125,7 +125,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
             if (!updateFailed)
             {
                 await transaction.CommitAsync(cancellationToken);
-                await assetNotificationSender.SendAssetModifiedMessage(assetModifiedNotificationList, cancellationToken);
+                await deliverableNotificationSender.SendDeliverableModifiedMessage(assetModifiedNotificationList, cancellationToken);
             }
         }
         catch (Exception ex)

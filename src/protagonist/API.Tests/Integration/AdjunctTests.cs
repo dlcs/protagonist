@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading;
 using API.Client;
-using API.Infrastructure.Messaging.Adjunct;
+using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Model.Messaging;
@@ -30,7 +30,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly HttpClient httpClient;
     private readonly DlcsContext dbContext;
-    private static readonly IAdjunctNotificationSender AdjunctNotificationSender = A.Fake<IAdjunctNotificationSender>();
+    private static readonly IDeliverableNotificationSender DeliverableNotificationSender = A.Fake<IDeliverableNotificationSender>();
     
     public AdjunctTests(StorageFixture storageFixture, ProtagonistAppFactory<Startup> factory)
     {
@@ -43,7 +43,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                         "API-Test", o => { o.TimeProvider = TimeProvider.System;  });
-                services.AddSingleton(_ => AdjunctNotificationSender);
+                services.AddSingleton(_ => DeliverableNotificationSender);
             }));
         dbContext = storageFixture.DbFixture.DbContext;
         storageFixture.DbFixture.CleanUp();
@@ -618,7 +618,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.Motivation.Should().Be("changed");
         
-        A.CallTo(() => AdjunctNotificationSender.SendAdjunctModifiedMessage(
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Update && r.After.AssetId == assetId), 
             A<CancellationToken>._)).MustHaveHappened();
     }
@@ -671,7 +671,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         dbContext.Adjuncts.Any(a => a.AssetId == assetId && a.Id == adjunctId).Should()
             .BeTrue("Adjunct persisted to DB");
-        A.CallTo(() => AdjunctNotificationSender.SendAdjunctModifiedMessage(
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Create && r.After.AssetId == assetId), 
             A<CancellationToken>._)).MustHaveHappened();
     }
@@ -802,7 +802,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         
-        A.CallTo(() => AdjunctNotificationSender.SendAdjunctModifiedMessage(
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Delete && r.Before.AssetId == assetId), 
             A<CancellationToken>._)).MustHaveHappened();
     }

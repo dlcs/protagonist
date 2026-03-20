@@ -1,4 +1,4 @@
-﻿using API.Infrastructure.Messaging.Adjunct;
+﻿using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
 using DLCS.Core;
@@ -24,7 +24,7 @@ public class CreateOrUpdateAdjunct(Adjunct adjunct, bool createOnly) : IRequest<
     public bool CreateOnly { get; } = createOnly;
 }
 
-public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotificationSender  notificationSender, IAdjunctNotificationSender adjunctNotificationSender)
+public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotificationSender  notificationSender, IDeliverableNotificationSender deliverableNotificationSender)
     : IRequestHandler<CreateOrUpdateAdjunct, ModifyEntityResult<Adjunct>>
 {
     public async Task<ModifyEntityResult<Adjunct>> Handle(CreateOrUpdateAdjunct request, CancellationToken cancellationToken)
@@ -146,7 +146,7 @@ public class CreateOrUpdateAdjunctHandler(DlcsContext dbContext, IIngestNotifica
             ? NotificationRecord<Adjunct>.Create(dbAdjunct)
             : NotificationRecord<Adjunct>.Update(existingAdjunct!, dbAdjunct, toBeIngested);
 
-        await adjunctNotificationSender.SendAdjunctModifiedMessage(adjunctModificationRecord, cancellationToken);
+        await deliverableNotificationSender.SendDeliverableModifiedMessage(adjunctModificationRecord, cancellationToken);
 
         return ModifyEntityResult<Adjunct>.Success(dbAdjunct,
             isCreate ? WriteResult.Created : WriteResult.Updated);

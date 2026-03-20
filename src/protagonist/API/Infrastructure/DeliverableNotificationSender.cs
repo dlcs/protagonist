@@ -6,21 +6,21 @@ using API.Infrastructure.Messaging.General;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 
-namespace API.Infrastructure.Messaging.Asset;
+namespace API.Infrastructure;
 
 /// <summary>
 /// Class that handles raising notifications for modifications made to assets (Create/Update/Delete)
 /// </summary>
-public class AssetNotificationSender(
+public class DeliverableNotificationSender(
     ModificationSender notificationSender)
-    : IAssetNotificationSender
+    : IDeliverableNotificationSender
 {
-    public Task SendAssetModifiedMessage(NotificationRecord<DLCS.Model.Assets.Asset> notification,
-        CancellationToken cancellationToken = default)
-        => SendAssetModifiedMessage(notification.AsList(), cancellationToken);
+    public Task SendDeliverableModifiedMessage<T>(NotificationRecord<T> notification,
+        CancellationToken cancellationToken = default) where T : class, IDeliverable
+        => SendDeliverableModifiedMessage(notification.AsList(), cancellationToken);
 
-    public async Task SendAssetModifiedMessage(IReadOnlyCollection<NotificationRecord<DLCS.Model.Assets.Asset>> notifications,
-        CancellationToken cancellationToken = default) =>
+    public async Task SendDeliverableModifiedMessage<T>(IReadOnlyCollection<NotificationRecord<T>> notifications,
+        CancellationToken cancellationToken = default) where T : class, IDeliverable =>
         await notificationSender.SendModifiedMessage(notifications, assetSerialiserSettings,
             cancellationToken);
     
@@ -32,22 +32,26 @@ public class AssetNotificationSender(
             Modifiers = { AssetSerialiserContractModifier }
         }
     };
-    
+
     private static void AssetSerialiserContractModifier(JsonTypeInfo typeInfo)
     {
         // Collection of properties to ignore when serialising Asset object, by containing type
         var exclusionsByType = new Dictionary<Type, HashSet<string>>
         {
-            [typeof(DLCS.Model.Assets.Asset)] = new(StringComparer.OrdinalIgnoreCase)
+            [typeof(Asset)] = new(StringComparer.OrdinalIgnoreCase)
             {
-                nameof(DLCS.Model.Assets.Asset.BatchAssets), 
-                nameof(DLCS.Model.Assets.Asset.ImageOptimisationPolicy), 
-                nameof(DLCS.Model.Assets.Asset.ThumbnailPolicy), 
-                nameof(DLCS.Model.Assets.Asset.Adjuncts)
+                nameof(Asset.BatchAssets),
+                nameof(Asset.ImageOptimisationPolicy),
+                nameof(Asset.ThumbnailPolicy),
+                nameof(Asset.Adjuncts)
             },
             [typeof(ImageDeliveryChannel)] = new(StringComparer.OrdinalIgnoreCase)
             {
                 nameof(ImageDeliveryChannel.DeliveryChannelPolicy)
+            },
+            [typeof(Adjunct)] = new(StringComparer.OrdinalIgnoreCase)
+            {
+                nameof(Adjunct.Asset)
             }
         };
 

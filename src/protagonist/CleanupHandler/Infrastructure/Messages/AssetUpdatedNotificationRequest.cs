@@ -1,5 +1,4 @@
-﻿using DLCS.Model.Assets;
-using DLCS.Model.Messaging;
+﻿using DLCS.Model.Messaging;
 using DLCS.Model.PathElements;
 
 namespace CleanupHandler.Infrastructure.Messages;

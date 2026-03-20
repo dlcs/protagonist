@@ -4,7 +4,6 @@ using DLCS.AWS.SQS;
 using DLCS.Repository;
 using DLCS.Repository.Adjuncts;
 using DLCS.Web.Logging;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -27,8 +26,8 @@ public class AdjunctUpdatedHandler(
         {
             var adjunctBefore = request.DeliverableBeforeUpdate!;
 
-            var adjunctAfter = await dlcsContext.Adjuncts.GetAdjunct(request.DeliverableAfterUpdate!.Id,
-                request.DeliverableAfterUpdate.AssetId, cancellationToken);
+            var adjunctAfter = dlcsContext.Adjuncts.FindAdjunct(request.DeliverableAfterUpdate!.Id,
+                request.DeliverableAfterUpdate.AssetId).SingleOrDefault();
 
             if (adjunctAfter == null)
             {

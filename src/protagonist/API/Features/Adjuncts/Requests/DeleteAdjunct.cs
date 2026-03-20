@@ -1,4 +1,4 @@
-﻿using API.Infrastructure.Messaging.Adjunct;
+﻿using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
 using DLCS.Core;
 using DLCS.Core.Types;
@@ -20,7 +20,7 @@ public class DeleteAdjunct(string id, AssetId assetId, ImageCacheType deleteFrom
 }
 
 
-public class DeleteAdjunctHandler(DlcsContext dbContext, IAdjunctNotificationSender adjunctNotificationSender, ILogger<DeleteAdjunctHandler> logger)
+public class DeleteAdjunctHandler(DlcsContext dbContext, IDeliverableNotificationSender deliverableNotificationSender, ILogger<DeleteAdjunctHandler> logger)
     : IRequestHandler<DeleteAdjunct, ResultMessage<DeleteResult>>
 {
     public async Task<ResultMessage<DeleteResult>> Handle(DeleteAdjunct request, CancellationToken cancellationToken)
@@ -50,7 +50,7 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IAdjunctNotificationSen
             var deleted = NotificationRecord<Adjunct>.Delete(deletedAdjunct, request.DeleteFrom);
             logger.LogDebug("Sending delete adjunct notification for {AssetId}/{AdjunctId}", request.AssetId,
                 request.Id);
-            await adjunctNotificationSender.SendAdjunctModifiedMessage(deleted, cancellationToken);
+            await deliverableNotificationSender.SendDeliverableModifiedMessage(deleted, cancellationToken);
         }
         catch (Exception ex)
         {
