@@ -13,7 +13,7 @@ public class AdjunctUpdatedHandler(
     IOptions<CleanupHandlerSettings> handlerSettings,
     IAdjunctBucketOperations adjunctBucketOperations,
     DlcsContext dlcsContext,
-    ILogger<AssetUpdatedHandler> logger) : IMessageHandler
+    ILogger<AdjunctUpdatedHandler> logger) : IMessageHandler
 {
     private readonly CleanupHandlerSettings settings = handlerSettings.Value;
     
@@ -38,7 +38,7 @@ public class AdjunctUpdatedHandler(
             
             logger.LogDebug("Processing update adjunct notification for {Asset}/{Id}", adjunctBefore.AssetId, adjunctBefore.Id);
 
-            if (NoCleanupRequired(adjunctAfter, adjunctBefore))
+            if (NoCleanupRequired(adjunctBefore, adjunctAfter))
             {
                 logger.LogDebug("No cleanup required, aborting");
                 return true;
@@ -51,6 +51,6 @@ public class AdjunctUpdatedHandler(
     }
 
     // We only cleanup when the adjunct has moved from hosted to unhosted
-    private bool NoCleanupRequired(DLCS.Model.Assets.Adjunct adjunctAfter, DLCS.Model.Assets.Adjunct adjunctBefore) =>
-        adjunctBefore.Origin == null && adjunctAfter.Origin != null && adjunctAfter.ExternalId == null;
+    private bool NoCleanupRequired(DLCS.Model.Assets.Adjunct adjunctBefore, DLCS.Model.Assets.Adjunct adjunctAfter) =>
+        adjunctBefore.ExternalId != null || (adjunctBefore.Origin == null && adjunctAfter.Origin != null);
 }
