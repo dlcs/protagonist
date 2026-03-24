@@ -542,7 +542,7 @@ public class ManifestV3BuilderTests
                 Motivation = "something",
                 Language = ["en"],
                 Profile = "some profile",
-                ExternalId = new Uri("http://some.id/second")
+                Origin = "http://some.id/second"
             }
         ];
         
@@ -552,7 +552,11 @@ public class ManifestV3BuilderTests
         A.CallTo(() => builderUtils.GetCanvasId(asset, pathElement, A<int>._))
             .Returns("https://dlcs.test/canvas/0");
         A.CallTo(() => assetPathGenerator.GetFullPathForRequest(A<BasicPathElements>._, A<bool>._, A<bool>._))
-            .Returns($"https://dlcs.test/adjunct-annotations/{asset.Id}");
+            .ReturnsLazily(c =>
+            {
+                var e = (BasicPathElements) c.Arguments[0];
+                return $"https://dlcs.test/{e.RoutePrefix}/{e.CustomerPathValue}/{e.Space}/{e.AssetPath}";
+            });
 
         var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
             ManifestType.NamedQuery, CancellationToken.None);
@@ -561,12 +565,12 @@ public class ManifestV3BuilderTests
         var annotations = manifest.Items![0].Annotations;
         annotations.Should().HaveCount(1);
         var annotation = annotations!.First();
-        annotation.Id.Should().Be("https://dlcs.test/adjunct-annotations/99/1/GetImageAsset");
+        annotation.Id.Should().Be($"https://dlcs.test/adjunct-annotations/99/1/{nameof(BuildManifest_InlineAnnotation)}");
         annotation.Label!.Should().BeEquivalentTo(new LanguageMap("en", "Inline annotations"));
         annotation.Items.Should().HaveCount(2);
         
         var minimalInlinePaintingAnnotation =  annotation.Items!.First().As<GeneralAnnotation>();
-        minimalInlinePaintingAnnotation.Id.Should().Be("https://dlcs.test/adjunct-annotations/99/1/GetImageAsset/first");
+        minimalInlinePaintingAnnotation.Id.Should().Be($"https://dlcs.test/adjunct-annotations/99/1/{nameof(BuildManifest_InlineAnnotation)}/first");
         minimalInlinePaintingAnnotation.Motivation.Should().Be(null);
         minimalInlinePaintingAnnotation.Target.Id.Should().Be("https://dlcs.test/canvas/0");
         var minimalInlinePaintingAnnotationBody = minimalInlinePaintingAnnotation.Body!.First().As<ExternalResource>();
@@ -577,11 +581,11 @@ public class ManifestV3BuilderTests
         minimalInlinePaintingAnnotationBody.Language.Should().BeNull();
         
         var fullInlinePaintingAnnotation =  annotation.Items!.Last().As<GeneralAnnotation>();
-        fullInlinePaintingAnnotation.Id.Should().Be("https://dlcs.test/adjunct-annotations/99/1/GetImageAsset/second");
+        fullInlinePaintingAnnotation.Id.Should().Be($"https://dlcs.test/adjunct-annotations/99/1/{nameof(BuildManifest_InlineAnnotation)}/second");
         fullInlinePaintingAnnotation.Motivation.Should().Be("something");
         fullInlinePaintingAnnotation.Target.Id.Should().Be("https://dlcs.test/canvas/0");
         var fullInlinePaintingAnnotationBody = fullInlinePaintingAnnotation.Body!.First().As<ExternalResource>();
-        fullInlinePaintingAnnotationBody.Id.Should().Be("http://some.id/second");
+        fullInlinePaintingAnnotationBody.Id.Should().Be($"https://dlcs.test/adjuncts/99/1/{nameof(BuildManifest_InlineAnnotation)}/second");
         fullInlinePaintingAnnotationBody.Format.Should().Be("text/plain");
         fullInlinePaintingAnnotationBody.Profile.Should().Be("some profile");
         fullInlinePaintingAnnotationBody.Label!.Should().BeEquivalentTo(new LanguageMap("en", "first"));
