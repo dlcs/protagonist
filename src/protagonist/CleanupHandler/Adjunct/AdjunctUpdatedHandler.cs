@@ -52,5 +52,5 @@ public class AdjunctUpdatedHandler(
 
     // We only cleanup when the adjunct has moved from hosted to unhosted
     private bool NoCleanupRequired(DLCS.Model.Assets.Adjunct adjunctBefore, DLCS.Model.Assets.Adjunct adjunctAfter) =>
-        adjunctBefore.ExternalId != null || (adjunctBefore.Origin.IsNullOrEmpty() && !adjunctAfter.Origin.IsNullOrEmpty()) || (!adjunctBefore.Origin.IsNullOrEmpty() && !adjunctAfter.Origin.IsNullOrEmpty());
+        adjunctBefore.ExternalId != null || !adjunctAfter.Origin.IsNullOrEmpty();
 }
