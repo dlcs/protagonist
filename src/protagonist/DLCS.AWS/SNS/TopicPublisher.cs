@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Amazon;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
@@ -16,34 +17,7 @@ public class TopicPublisher(
 {
     private readonly SNSSettings snsSettings = settings.Value.SNS;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
-
-    /// <inheritdoc />
-    public async Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<AssetModifiedNotification> messages,
-        CancellationToken cancellationToken = default)
-    {
-        if (messages.Count == 1)
-        {
-            var singleMessage = messages[0];
-            return await PublishToAssetModifiedTopic(singleMessage, cancellationToken);
-        }
-
-        const int maxSnsBatchSize = 5;
-        var allBatchSuccess = true;
-        var batchIdPrefix = Guid.NewGuid();
-        logger.LogDebug("Publishing SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
-            messages.Count);
-        var batchNumber = 0;
-        foreach (var chunk in messages.Chunk(maxSnsBatchSize))
-        {
-            var success = await PublishBatch(chunk, batchIdPrefix, batchNumber++, cancellationToken);
-            if (allBatchSuccess) allBatchSuccess = success;
-        }
-        
-        logger.LogTrace("Published SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
-            messages.Count);
-        return allBatchSuccess;
-    }
-
+    
     /// <inheritdoc />
     public async Task<bool> PublishToCustomerCreatedTopic(CustomerCreatedNotification message, CancellationToken cancellationToken)
     {
@@ -87,13 +61,49 @@ public class TopicPublisher(
 
         return await TryPublishRequest(request, cancellationToken);
     }
+    
+    /// <inheritdoc />
+    public async Task<bool> PublishToDeliverableModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages,
+        DeliverableTopicType topicType, CancellationToken cancellationToken = default)
+    {
+        var topicArn = topicType == DeliverableTopicType.Asset
+            ? snsSettings.AssetModifiedNotificationTopicArn!
+            : snsSettings.AdjunctModifiedNotificationTopicArn!;
+        
+        if (messages.Count == 1)
+        {
+            var singleMessage = messages[0];
+            return await PublishToDeliverableModifiedTopic(singleMessage, topicArn, cancellationToken);
+        }
 
-    private Task<bool> PublishToAssetModifiedTopic(AssetModifiedNotification message,
+        const int maxSnsBatchSize = 5;
+        var allBatchSuccess = true;
+        var batchIdPrefix = Guid.NewGuid();
+        if (!Arn.TryParse(topicArn, out var arn))
+        {
+            logger.LogError("Could not parse the topic arn {Arn} into a valid arn", topicArn);
+            return false;
+        }
+        logger.LogDebug("Publishing SNS batch {BatchPrefix} containing {ItemCount} items to {Service}", batchIdPrefix,
+            messages.Count, arn.Resource);
+        var batchNumber = 0;
+        foreach (var chunk in messages.Chunk(maxSnsBatchSize))
+        {
+            var success = await PublishBatch(chunk, batchIdPrefix, batchNumber++, topicArn, cancellationToken);
+            if (allBatchSuccess) allBatchSuccess = success;
+        }
+        
+        logger.LogTrace("Published SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
+            messages.Count);
+        return allBatchSuccess;
+    }
+
+    private Task<bool> PublishToDeliverableModifiedTopic(DeliverableModifiedNotification message, string topicArn,
         CancellationToken cancellationToken = default)
     {
         var request = new PublishRequest
         {
-            TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
+            TopicArn = topicArn,
             Message = message.MessageContents,
             MessageAttributes = GetMessageAttributes(message.Attributes)
         };
@@ -115,15 +125,15 @@ public class TopicPublisher(
         }
     }
 
-    private async Task<bool> PublishBatch(AssetModifiedNotification[] chunk, Guid batchIdPrefix, int batchNumber,
-        CancellationToken cancellationToken)
+    private async Task<bool> PublishBatch(DeliverableModifiedNotification[] chunk, Guid batchIdPrefix, int batchNumber,
+        string topicArn, CancellationToken cancellationToken)
     {
         try
         {
             int batchCount = 0;
             var bulkRequest = new PublishBatchRequest
             {
-                TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
+                TopicArn = topicArn,
                 PublishBatchRequestEntries = chunk.Select(m => new PublishBatchRequestEntry
                 {
                     MessageAttributes = GetMessageAttributes(m.Attributes),

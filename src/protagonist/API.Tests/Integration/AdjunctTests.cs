@@ -3,17 +3,24 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using API.Client;
+using API.Infrastructure;
+using API.Infrastructure.Messaging.General;
 using API.Tests.Integration.Infrastructure;
-using DLCS.HydraModel;
+using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Web.Response;
+using FakeItEasy;
 using Hydra.Collections;
 using Hydra.Model;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
+using Adjunct = DLCS.HydraModel.Adjunct;
 
 namespace API.Tests.Integration;
 
@@ -23,11 +30,21 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
     private readonly HttpClient httpClient;
     private readonly DlcsContext dbContext;
+    private static readonly IDeliverableNotificationSender DeliverableNotificationSender = A.Fake<IDeliverableNotificationSender>();
     
     public AdjunctTests(StorageFixture storageFixture, ProtagonistAppFactory<Startup> factory)
     {
-        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient(storageFixture.DbFixture, "API-Test",
-            f => f.WithLocalStack(storageFixture.LocalStackFixture));
+        httpClient = factory.ConfigureBasicAuthedIntegrationTestHttpClient
+        (
+            storageFixture.DbFixture, "API-Test",
+            f => f.WithLocalStack(storageFixture.LocalStackFixture
+            ).WithTestServices(services =>
+            {
+                services.AddAuthentication("API-Test")
+                    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
+                        "API-Test", o => { o.TimeProvider = TimeProvider.System;  });
+                services.AddSingleton(_ => DeliverableNotificationSender);
+            }));
         dbContext = storageFixture.DbFixture.DbContext;
         storageFixture.DbFixture.CleanUp();
     }
@@ -600,6 +617,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.Motivation.Should().Be("changed");
+        
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
+            A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Update && r.After.AssetId == assetId), 
+            A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]
@@ -650,6 +671,9 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         dbContext.Adjuncts.Any(a => a.AssetId == assetId && a.Id == adjunctId).Should()
             .BeTrue("Adjunct persisted to DB");
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
+            A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Create && r.After.AssetId == assetId), 
+            A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]
@@ -777,6 +801,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
+            A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Delete && r.Before.AssetId == assetId), 
+            A<CancellationToken>._)).MustHaveHappened();
     }
     
     [Fact]

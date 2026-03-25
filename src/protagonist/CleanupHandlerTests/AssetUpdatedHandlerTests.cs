@@ -1,7 +1,8 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
-using CleanupHandler;
+using CleanupHandler.Asset;
 using CleanupHandler.Infrastructure;
+using CleanupHandler.Infrastructure.Messages;
 using CleanupHandler.Repository;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -1079,6 +1080,31 @@ public class AssetUpdatedHandlerTests
             .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
+    
+    [Fact]
+    public async Task Handle_AllowsPathsToBeDelete_UsingLegacyMessageFormat()
+    {
+        // Arrange
+        var requestDetails = CreateMinimalRequestDetailsLegacy([imageDeliveryChannelUseOriginalImage], []);
+
+        A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
+            .Returns(requestDetails.assetAfter);
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(requestDetails.queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        A.CallTo(() =>
+                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo")))
+            .MustHaveHappened();
+        A.CallTo(() =>
+                bucketWriter.DeleteFromBucket(
+                    A<ObjectInBucket[]>.That.Matches(o => o[1].Key == "1/99/foo/original")))
+            .MustHaveHappened();
+        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
+    }
 
     #region InfoJson
 
@@ -1203,6 +1229,48 @@ public class AssetUpdatedHandlerTests
     #endregion
 
     private (QueueMessage queueMessage, Asset assetAfter) CreateMinimalRequestDetails(
+        List<ImageDeliveryChannel> imageDeliveryChannelsBefore,
+        List<ImageDeliveryChannel> imageDeliveryChannelsAfter,
+        string mediaType = "image/jpeg", Action<Asset>? customiseAssetBefore = null,
+        Action<Asset>? customiseAssetAfter = null)
+    {
+        var assetBefore = new Asset
+        {
+            Id = new AssetId(1, 99, "foo"),
+            ImageDeliveryChannels = imageDeliveryChannelsBefore,
+            MediaType = mediaType
+        };
+        customiseAssetBefore?.Invoke(assetBefore);
+
+        var assetAfter = new Asset
+        {
+            Id = new AssetId(1, 99, "foo"),
+            ImageDeliveryChannels = imageDeliveryChannelsAfter,
+            MediaType = mediaType
+        };
+        customiseAssetAfter?.Invoke(assetAfter);
+
+        var cleanupRequest = new DeliverableUpdatedNotification<Asset>
+        {
+            DeliverableBeforeUpdate = assetBefore,
+            CustomerPathElement = new CustomerPathElement(99, "stuff"),
+            DeliverableAfterUpdate = assetAfter
+        };
+
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonNode.Parse(serialized)!.AsObject(),
+            MessageAttributes = new Dictionary<string, string>
+            {
+                { "engineNotified", "True" }
+            }
+        };
+        return (queueMessage, assetAfter);
+    }
+    
+    private (QueueMessage queueMessage, Asset assetAfter) CreateMinimalRequestDetailsLegacy(
         List<ImageDeliveryChannel> imageDeliveryChannelsBefore,
         List<ImageDeliveryChannel> imageDeliveryChannelsAfter,
         string mediaType = "image/jpeg", Action<Asset>? customiseAssetBefore = null,

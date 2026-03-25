@@ -7,7 +7,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using API.Client;
-using API.Infrastructure.Messaging;
+using API.Infrastructure;
+using API.Infrastructure.Messaging.General;
 using API.Tests.Integration.Infrastructure;
 using DLCS.AWS.SNS.Messaging;
 using DLCS.Core.Types;
@@ -38,7 +39,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
     private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
-    private static readonly IAssetNotificationSender AssetNotificationSender = A.Fake<IAssetNotificationSender>();
+    private static readonly IDeliverableNotificationSender deliverableNotificationSender = A.Fake<IDeliverableNotificationSender>();
     private static readonly IBatchCompletedNotificationSender NotificationSender = A.Fake<IBatchCompletedNotificationSender>();
     
     public CustomerQueueTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
@@ -50,7 +51,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             {
                 services.AddSingleton(NotificationSender);
                 services.AddScoped<IEngineClient>(_ => EngineClient);
-                services.AddScoped<IAssetNotificationSender>(_ => AssetNotificationSender);
+                services.AddScoped<IDeliverableNotificationSender>(_ => deliverableNotificationSender);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                         "API-Test", _ => { });
@@ -1088,8 +1089,8 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             EngineClient.AsynchronousIngestBatch(
                 A<IReadOnlyCollection<Asset>>.That.Matches(i => i.Count == 3), false,
                 A<CancellationToken>._)).MustHaveHappened();
-        A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
-            A<IReadOnlyCollection<AssetModificationRecord>>.That.Matches(i => i.Count == 3),
+        A.CallTo(() => deliverableNotificationSender.SendDeliverableModifiedMessage(
+            A<IReadOnlyCollection<NotificationRecord<Asset>>>.That.Matches(i => i.Count == 3),
             A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -1149,8 +1150,8 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             EngineClient.AsynchronousIngestBatch(
                 A<IReadOnlyCollection<Asset>>.That.Matches(ca => ca.Any(a => a.Customer == customerId)), false,
                 A<CancellationToken>._)).MustNotHaveHappened();
-        A.CallTo(() => AssetNotificationSender.SendAssetModifiedMessage(
-            A<IReadOnlyCollection<AssetModificationRecord>>.That.Matches(ca =>
+        A.CallTo(() => deliverableNotificationSender.SendDeliverableModifiedMessage(
+            A<IReadOnlyCollection<NotificationRecord<Asset>>>.That.Matches(ca =>
                 ca.Any(a => a.After.Customer == customerId)),
             A<CancellationToken>._)).MustNotHaveHappened();
     }

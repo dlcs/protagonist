@@ -3,7 +3,8 @@ using System.Net;
 using API.Exceptions;
 using API.Features.Assets;
 using API.Features.Image.Ingest;
-using API.Infrastructure.Messaging;
+using API.Infrastructure;
+using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Collections;
@@ -54,7 +55,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
     private readonly IApiAssetRepository assetRepository;
     private readonly IBatchRepository batchRepository;
     private readonly IIngestNotificationSender ingestNotificationSender;
-    private readonly IAssetNotificationSender assetNotificationSender;
+    private readonly IDeliverableNotificationSender deliverableNotificationSender;
     private readonly DlcsContext dlcsContext;
     private readonly AssetProcessor assetProcessor;
 
@@ -63,7 +64,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         IApiAssetRepository assetRepository,
         IBatchRepository batchRepository,
         IIngestNotificationSender ingestNotificationSender,
-        IAssetNotificationSender assetNotificationSender,
+        IDeliverableNotificationSender deliverableNotificationSender,
         DlcsContext dlcsContext,
         AssetProcessor assetProcessor)
     {
@@ -71,7 +72,7 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         this.assetRepository = assetRepository;
         this.batchRepository = batchRepository;
         this.ingestNotificationSender = ingestNotificationSender;
-        this.assetNotificationSender = assetNotificationSender;
+        this.deliverableNotificationSender = deliverableNotificationSender;
         this.dlcsContext = dlcsContext;
         this.assetProcessor = assetProcessor;
     }
@@ -132,10 +133,10 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         var assetAfterSave = modifyEntityResult.Entity!;
 
         var assetModificationRecord = existingAsset == null
-            ? AssetModificationRecord.Create(assetAfterSave)
-            : AssetModificationRecord.Update(existingAsset, assetAfterSave, processAssetResult.RequiresEngineNotification);
+            ? NotificationRecord<Asset>.Create(assetAfterSave)
+            : NotificationRecord<Asset>.Update(existingAsset, assetAfterSave, processAssetResult.RequiresEngineNotification);
 
-        await assetNotificationSender.SendAssetModifiedMessage(assetModificationRecord, cancellationToken);
+        await deliverableNotificationSender.SendDeliverableModifiedMessage(assetModificationRecord, cancellationToken);
 
         if (processAssetResult.RequiresEngineNotification)
         {

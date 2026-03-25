@@ -103,9 +103,10 @@ public class AdjunctsController(
     [HttpDelete("{adjunctId}")]
     [ProducesResponseType(204)]
     [ProducesResponseType(404, Type = typeof(Error))]
-    public async Task<IActionResult> DeleteAdjunct(int customerId, int spaceId, string imageId, string adjunctId)
+    public async Task<IActionResult> DeleteAdjunct(int customerId, int spaceId, string imageId, string adjunctId, [FromQuery] string? deleteFrom)
     {
-        var deleteRequest = new DeleteAdjunct(adjunctId, new AssetId(customerId, spaceId, imageId));
+        var additionalDeletion = ImageCacheTypeConverter.ConvertToImageCacheType(deleteFrom, ',');
+        var deleteRequest = new DeleteAdjunct(adjunctId, new AssetId(customerId, spaceId, imageId),  additionalDeletion);
 
         return await HandleDelete(deleteRequest);
     }

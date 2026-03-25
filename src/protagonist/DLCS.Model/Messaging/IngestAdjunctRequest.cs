@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using DLCS.Core.Types;
-using DLCS.Model.Assets;
 
 namespace DLCS.Model.Messaging;
 

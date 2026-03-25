@@ -1,5 +1,6 @@
 ﻿using System.IO.Enumeration;
 using CleanupHandler.Infrastructure;
+using CleanupHandler.Infrastructure.Messages;
 using CleanupHandler.Repository;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -16,7 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NuGet.Packaging;
 
-namespace CleanupHandler;
+namespace CleanupHandler.Asset;
 
 /// <summary>
 /// Handle 'asset modified' notifications - running various derivative cleanup operations depending on what has changed
@@ -42,7 +43,7 @@ public class AssetUpdatedHandler(
 
         using (LogContextHelpers.SetCorrelationId(message.MessageId))
         {
-            var assetBefore = request.AssetBeforeUpdate!;
+            var assetBefore = request.DeliverableBeforeUpdate!;
 
             var assetAfter = await cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(assetBefore.Id);
 
@@ -53,7 +54,7 @@ public class AssetUpdatedHandler(
                 return false;
             }
             
-            logger.LogDebug("Processing update notification for {AssetId}", assetBefore.Id);
+            logger.LogDebug("Processing update DLCS.Model.Assets.Asset notification for {AssetId}", assetBefore.Id);
 
             if (NoCleanupRequired(message, assetAfter, assetBefore))
             {
@@ -72,7 +73,7 @@ public class AssetUpdatedHandler(
 
             if (handlerSettings.AssetModifiedSettings.DryRun)
             {
-                logger.LogInformation("Dry run enabled. Asset {AssetId} will log deletions, but not remove them",
+                logger.LogInformation("Dry run enabled. DLCS.Model.Assets.Asset {AssetId} will log deletions, but not remove them",
                     assetBefore.Id);
             }
 
@@ -120,8 +121,39 @@ public class AssetUpdatedHandler(
         }
     }
 
+    private DeliverableUpdatedNotification<DLCS.Model.Assets.Asset>? TryParseMessage(QueueMessage message)
+    {
+        var updateMessage = MessageParser.TryParseUpdatedMessage<DLCS.Model.Assets.Asset>(message, logger);
+
+        // this is legacy handling for the older message format - it should be removed at the point this code is released everywhere
+        // and just the above line used
+        if (updateMessage == null)
+        {
+            logger.LogInformation("Message not parsed in the new format.  Attempting legacy parsing");
+            
+            try
+            {
+                var request = message.GetMessageContents<AssetUpdatedNotificationRequest>();
+
+                if (request?.AssetBeforeUpdate?.Id == null)
+                {
+                    logger.LogInformation("Deserialised message but no 'before' DLCS.Model.Assets.Asset id found");
+                    return null;
+                }
+                return request.ConvertToStandard();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to deserialize notification {@Message}", message);
+                return null;
+            }
+        }
+
+        return updateMessage;
+    }
+
     // If a value has changed that can affect info.json we need to replace it
-    private static bool ShouldRemoveInfoJson(Asset assetAfter, Asset assetBefore)
+    private static bool ShouldRemoveInfoJson(DLCS.Model.Assets.Asset assetAfter, DLCS.Model.Assets.Asset assetBefore)
     {
         var rolesChanged = !string.Equals(assetAfter.Roles ?? string.Empty, assetBefore.Roles ?? string.Empty,
             StringComparison.OrdinalIgnoreCase);
@@ -130,43 +162,23 @@ public class AssetUpdatedHandler(
         return rolesChanged || maxWidthChanged;
     }
 
-    private AssetUpdatedNotificationRequest? TryParseMessage(QueueMessage message)
-    {
-        try
-        {
-            var request = message.GetMessageContents<AssetUpdatedNotificationRequest>();
-
-            if (request?.AssetBeforeUpdate?.Id == null)
-            {
-                logger.LogInformation("Deserialised message but no 'before' asset id found");
-                return null;
-            }
-            return request;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to deserialize notification {@Message}", message);
-            return null;
-        }
-    }
-
-    private static bool AssetStillIngesting(Asset assetAfter, Asset assetBefore) =>
+    private static bool AssetStillIngesting(DLCS.Model.Assets.Asset assetAfter, DLCS.Model.Assets.Asset assetBefore) =>
         assetAfter.Ingesting == true && assetBefore.Finished > assetAfter.Finished;
 
-    private static bool NoCleanupRequired(QueueMessage message, Asset assetAfter, Asset assetBefore)
+    private static bool NoCleanupRequired(QueueMessage message, DLCS.Model.Assets.Asset assetAfter, DLCS.Model.Assets.Asset assetBefore)
     {
         return !message.MessageAttributes.ContainsKey("engineNotified") &&
             (assetBefore.Roles ?? string.Empty) == (assetAfter.Roles ?? string.Empty);
     }
 
-    private void RemoveInfoJson(Asset assetAfter, HashSet<ObjectInBucket> foldersToRemove)
+    private void RemoveInfoJson(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> foldersToRemove)
     {
         logger.LogDebug("Deleting info.json files for {AssetId}", assetAfter.Id);
         var infoJsonRoot = storageKeyGenerator.GetInfoJsonRoot(assetAfter.Id);
         foldersToRemove.Add(infoJsonRoot);
     }
 
-    private async Task CleanupModified(List<ImageDeliveryChannel> modifiedOrAdded, Asset assetBefore, Asset assetAfter, 
+    private async Task CleanupModified(List<ImageDeliveryChannel> modifiedOrAdded, DLCS.Model.Assets.Asset assetBefore, DLCS.Model.Assets.Asset assetAfter, 
         (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects)
     {
         foreach (var deliveryChannel in modifiedOrAdded)
@@ -178,7 +190,7 @@ public class AssetUpdatedHandler(
         }
     }
     
-    private async Task CleanupRemoved(ImageDeliveryChannel deliveryChannelRemoved, Asset assetAfter, 
+    private async Task CleanupRemoved(ImageDeliveryChannel deliveryChannelRemoved, DLCS.Model.Assets.Asset assetAfter, 
         (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects)
     {
         switch (deliveryChannelRemoved.Channel)
@@ -202,7 +214,7 @@ public class AssetUpdatedHandler(
         }
     }
 
-    private async Task CleanupChangedPolicy(ImageDeliveryChannel deliveryChannelModified, Asset assetAfter, 
+    private async Task CleanupChangedPolicy(ImageDeliveryChannel deliveryChannelModified, DLCS.Model.Assets.Asset assetAfter, 
         HashSet<ObjectInBucket> objectsToRemove)
     {
         switch (deliveryChannelModified.Channel)
@@ -224,7 +236,7 @@ public class AssetUpdatedHandler(
     }
 
     private async Task CleanupChangedTimebasedDeliveryChannel(ImageDeliveryChannel imageDeliveryChannel,
-        Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+        DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
         logger.LogDebug("Processing timebased delivery-channel change");
         var presetList = imageDeliveryChannel.DeliveryChannelPolicy.AsTimebasedPresets(); 
@@ -264,13 +276,13 @@ public class AssetUpdatedHandler(
        objectsToRemove.AddRange(assetsToDelete);
     }
 
-    private async Task CleanupChangedThumbnailDeliveryChannel(Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+    private async Task CleanupChangedThumbnailDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
         var thumbsToDelete = await ThumbsToBeDeleted(assetAfter);
         objectsToRemove.AddRange(thumbsToDelete);
     }
 
-    private void CleanupChangedImageDeliveryChannel(ImageDeliveryChannel modifiedDeliveryChannel, Asset assetAfter, 
+    private void CleanupChangedImageDeliveryChannel(ImageDeliveryChannel modifiedDeliveryChannel, DLCS.Model.Assets.Asset assetAfter, 
         HashSet<ObjectInBucket> objectsToRemove)
     {
         List<ObjectInBucket> bucketObjectsToBeRemoved = new();
@@ -290,7 +302,7 @@ public class AssetUpdatedHandler(
         objectsToRemove.AddRange(bucketObjectsToBeRemoved);
     }
 
-    private void CleanupFileDeliveryChannel(Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+    private void CleanupFileDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
         if (assetAfter.ImageDeliveryChannels.Any(i => i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageUseOriginal)) return;
         List<ObjectInBucket> bucketObjectsTobeRemoved = [storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id)];
@@ -298,7 +310,7 @@ public class AssetUpdatedHandler(
         objectsToRemove.AddRange(bucketObjectsTobeRemoved);
     }
 
-    private async Task CleanupRemovedTimebasedDeliveryChannel(Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+    private async Task CleanupRemovedTimebasedDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
         List<ObjectInBucket> bucketObjectsTobeRemoved =
         [
@@ -326,7 +338,7 @@ public class AssetUpdatedHandler(
         objectsToRemove.AddRange(bucketObjectsTobeRemoved);
     }
 
-    private async Task CleanupRemovedThumbnailDeliveryChannel(Asset assetAfter, (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects)
+    private async Task CleanupRemovedThumbnailDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects)
     {
         if (assetAfter.DoesNotHaveDeliveryChannel(AssetDeliveryChannels.Image))
         {
@@ -345,7 +357,7 @@ public class AssetUpdatedHandler(
         }
     }
 
-    private async Task<List<ObjectInBucket>> ThumbsToBeDeleted(Asset assetAfter)
+    private async Task<List<ObjectInBucket>> ThumbsToBeDeleted(DLCS.Model.Assets.Asset assetAfter)
     {
         var thumbSizes = await thumbRepository.GetAllSizes(assetAfter.Id) ?? [];
         var thumbsBucketKeys = await bucketReader.GetMatchingKeys(storageKeyGenerator.GetThumbnailsRoot(assetAfter.Id));
@@ -369,7 +381,7 @@ public class AssetUpdatedHandler(
         return thumbBucketSizes;
     }
 
-    private void CleanupRemovedImageDeliveryChannel(Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+    private void CleanupRemovedImageDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
         List<ObjectInBucket> bucketObjectsTobeRemoved = [storageKeyGenerator.GetStorageLocation(assetAfter.Id)];
         
@@ -402,7 +414,7 @@ public class AssetUpdatedHandler(
         }
     }
     
-    private static string RetrieveMediaPath(Asset asset)
+    private static string RetrieveMediaPath(DLCS.Model.Assets.Asset asset)
     {
         var template = TranscoderTemplates.GetDestinationTemplate(asset.MediaType!);
         var path = template
@@ -419,7 +431,7 @@ public static class ChangeCalculator
     /// between then 
     /// </summary>
     public static (List<ImageDeliveryChannel> modifiedOrAdded, List<ImageDeliveryChannel> removed) GetChannelChangeSets(
-        Asset assetAfter, Asset assetBefore)
+        DLCS.Model.Assets.Asset assetAfter, DLCS.Model.Assets.Asset assetBefore)
     {
         // Get a list of deliveryChannel changes - split by modifiedOrAdded + removed
         var modifiedOrAdded =

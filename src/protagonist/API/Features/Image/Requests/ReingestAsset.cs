@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using API.Features.Assets;
-using API.Infrastructure.Messaging;
+using API.Infrastructure;
+using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Types;
@@ -27,18 +28,18 @@ public class ReingestAsset : IRequest<ModifyEntityResult<Asset>>
 public class ReingestAssetHandler : IRequestHandler<ReingestAsset, ModifyEntityResult<Asset>>
 {
     private readonly IIngestNotificationSender ingestNotificationSender;
-    private readonly IAssetNotificationSender assetNotificationSender;
+    private readonly IDeliverableNotificationSender deliverableNotificationSender;
     private readonly IApiAssetRepository assetRepository;
     private readonly ILogger<ReingestAssetHandler> logger;
 
     public ReingestAssetHandler(
         IIngestNotificationSender ingestNotificationSender,
-        IAssetNotificationSender assetNotificationSender,
+        IDeliverableNotificationSender deliverableNotificationSender,
         IApiAssetRepository assetRepository,
         ILogger<ReingestAssetHandler> logger)
     {
         this.ingestNotificationSender = ingestNotificationSender;
-        this.assetNotificationSender = assetNotificationSender;
+        this.deliverableNotificationSender = deliverableNotificationSender;
         this.assetRepository = assetRepository;
         this.logger = logger;
     }
@@ -52,7 +53,7 @@ public class ReingestAssetHandler : IRequestHandler<ReingestAsset, ModifyEntityR
         
         var asset = await MarkAssetAsIngesting(cancellationToken, existingAsset!);
 
-        await assetNotificationSender.SendAssetModifiedMessage(AssetModificationRecord.Update(existingAsset!, asset, true),
+        await deliverableNotificationSender.SendDeliverableModifiedMessage(NotificationRecord<Asset>.Update(existingAsset!, asset, true),
             cancellationToken);
         var statusCode = await ingestNotificationSender.SendImmediateIngestAssetRequest(asset, cancellationToken);
         

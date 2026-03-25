@@ -3,7 +3,7 @@ using DLCS.Core.Types;
 
 namespace DLCS.Model.Assets;
 
-public interface IDeliverable : IOriginItem
+public interface IDeliverable : IOriginItem, ICloneable
 {
     /// <summary>
     /// Marks this object as being currently ingested

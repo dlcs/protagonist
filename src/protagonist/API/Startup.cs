@@ -1,12 +1,11 @@
 using System.Security.Claims;
 using API.Auth;
 using API.Features.Customer;
-using API.Features.Customer.Requests;
 using API.Features.DeliveryChannels.Validation;
 using API.Features.Image.Ingest;
 using API.Features.OriginStrategies.Credentials;
 using API.Infrastructure;
-using API.Infrastructure.Messaging;
+using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Validation;
 using API.Settings;
 using DLCS.Core.Caching;
@@ -76,7 +75,8 @@ public class Startup
             .AddCaching(cacheSettings)
             .AddDataAccess(configuration)
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
-            .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
+            .AddScoped<IDeliverableNotificationSender, DeliverableNotificationSender>()
+            .AddScoped<ModificationSender>()
             .AddScoped<AssetProcessor>()
             .AddScoped<IBulkAssetPatcher, BulkAssetPatcher>()
             .AddScoped<DeliveryChannelProcessor>()

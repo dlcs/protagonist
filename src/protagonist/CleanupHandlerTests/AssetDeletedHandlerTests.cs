@@ -1,7 +1,8 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
-using CleanupHandler;
+using CleanupHandler.Asset;
 using CleanupHandler.Infrastructure;
+using CleanupHandler.Infrastructure.Messages;
 using CleanupHandler.Repository;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
@@ -323,9 +324,9 @@ public class AssetDeletedHandlerTests
     public async Task Handle_InvalidatesImagePath_IfDeliveryChannels()
     {
         // Arrange
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeliverableDeletedNotification<Asset>()
         {
-            Asset = new Asset()
+            Deliverable = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 ImageDeliveryChannels = new List<ImageDeliveryChannel>()
@@ -418,9 +419,9 @@ public class AssetDeletedHandlerTests
     public async Task Handle_InvalidatesImagePath_IfImageAssetFamily()
     {
         // Arrange
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeliverableDeletedNotification<Asset>()
         {
-            Asset = new Asset()
+            Deliverable = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
@@ -461,9 +462,9 @@ public class AssetDeletedHandlerTests
     public async Task Handle_DoesNotCreateInvalidation_IfFileAssetFamily()
     {
         // Arrange
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeliverableDeletedNotification<Asset>()
         {
-            Asset = new Asset()
+            Deliverable = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.File
@@ -500,9 +501,9 @@ public class AssetDeletedHandlerTests
     public async Task Handle_DoesNotCreateInvalidation_IfDeleteFromDoesNotContainCdn()
     {
         // Arrange
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeliverableDeletedNotification<Asset>()
         {
-            Asset = new Asset()
+            Deliverable = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
@@ -539,9 +540,9 @@ public class AssetDeletedHandlerTests
     public async Task Handle_ReturnsFalse_IfInvalidationFails()
     {
         // Arrange
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeliverableDeletedNotification<Asset>()
         {
-            Asset = new Asset()
+            Deliverable = new Asset()
             {
                 Id = new AssetId(1, 99, "foo"),
                 Family = AssetFamily.Image
@@ -569,9 +570,65 @@ public class AssetDeletedHandlerTests
         response.Should().BeFalse();
     }
     
+    [Fact]
+    public async Task Handle_AllowsDeletion_UsingLegacyMessageFormat()
+    {
+        // Arrange
+        const string assetId = "1/99/foo";
+        var queueMessage = CreateMinimalQueueMessageLegacy();
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        
+        // File deleted from local disk
+        fakeFileSystem.DeletedFiles.Should().ContainSingle(s => s == "/nas/1/99/foo/foo.jp2");
+        
+        // Thumbs deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.ThumbsBucketName && a.Key == $"{assetId}/"
+            ), A<bool>._)).MustHaveHappened();
+        
+        // storage deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.StorageBucketName && a.Key == $"{assetId}/"
+            ), A<bool>._)).MustHaveHappened();
+        
+        // origin deleted
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(a =>
+                a.Bucket == LocalStackFixture.OriginBucketName && a.Key == $"{assetId}/"
+            ), A<bool>._)).MustHaveHappened();
+    }
+    
     private QueueMessage CreateMinimalQueueMessage()
     {
-        var cleanupRequest = new AssetDeletedNotificationRequest()
+        var cleanupRequest = new DeliverableDeletedNotification<Asset>
+        {
+            Deliverable = new Asset()
+            {
+                Id = new AssetId(1, 99, "foo")
+            },
+            DeleteFrom = ImageCacheType.Cdn,
+            CustomerPathElement = new CustomerPathElement(99, "stuff")
+        };
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonNode.Parse(serialized)!.AsObject()
+        };
+        return queueMessage;
+    }
+    
+    private QueueMessage CreateMinimalQueueMessageLegacy()
+    {
+        var cleanupRequest = new AssetDeletedNotificationRequest
         {
             Asset = new Asset()
             {

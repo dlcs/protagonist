@@ -92,6 +92,15 @@ public class Adjunct : IDeliverable
     public string? Motivation { get; set; }
 
     public Asset Asset { get; set; } = null!;
+    
+    public Adjunct Clone()
+    {
+        var adjunct = (Adjunct)MemberwiseClone();
+
+        return adjunct;
+    }
+    
+    object ICloneable.Clone() { return Clone(); }
 }
 
 /// <summary>

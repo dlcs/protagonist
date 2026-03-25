@@ -1,4 +1,4 @@
-﻿using CleanupHandler;
+﻿using CleanupHandler.Asset;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 

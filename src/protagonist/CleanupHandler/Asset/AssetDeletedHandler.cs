@@ -1,4 +1,5 @@
 ﻿using CleanupHandler.Infrastructure;
+using CleanupHandler.Infrastructure.Messages;
 using CleanupHandler.Repository;
 using DLCS.AWS.Cloudfront;
 using DLCS.AWS.S3;
@@ -13,39 +14,23 @@ using DLCS.Web.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace CleanupHandler;
+namespace CleanupHandler.Asset;
 
 /// <summary>
 /// Handler for SQS messages notifying of asset deletion
 /// </summary>
-public class AssetDeletedHandler : IMessageHandler
+public class AssetDeletedHandler(
+    IStorageKeyGenerator storageKeyGenerator,
+    IBucketWriter bucketWriter,
+    ICacheInvalidator cacheInvalidator,
+    IFileSystem fileSystem,
+    IOptions<CleanupHandlerSettings> handlerSettings,
+    ICleanupHandlerAssetRepository assetRepository,
+    ILogger<AssetDeletedHandler> logger)
+    : IMessageHandler
 {
-    private readonly CleanupHandlerSettings handlerSettings;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-    private readonly IBucketWriter bucketWriter;
-    private readonly IFileSystem fileSystem;
-    private readonly ILogger<AssetDeletedHandler> logger;
-    private readonly ICacheInvalidator cacheInvalidator;
-    private readonly ICleanupHandlerAssetRepository assetRepository;
+    private readonly CleanupHandlerSettings handlerSettings = handlerSettings.Value;
 
-    public AssetDeletedHandler(
-        IStorageKeyGenerator storageKeyGenerator,
-        IBucketWriter bucketWriter,
-        ICacheInvalidator cacheInvalidator,
-        IFileSystem fileSystem,
-        IOptions<CleanupHandlerSettings> handlerSettings,
-        ICleanupHandlerAssetRepository assetRepository,
-        ILogger<AssetDeletedHandler> logger)
-    {
-        this.storageKeyGenerator = storageKeyGenerator;
-        this.bucketWriter = bucketWriter;
-        this.fileSystem = fileSystem;
-        this.cacheInvalidator = cacheInvalidator;
-        this.logger = logger;
-        this.handlerSettings = handlerSettings.Value;
-        this.assetRepository = assetRepository;
-    }
-    
     public async Task<bool> HandleMessage(QueueMessage message, CancellationToken cancellationToken = default)
     {
         var request = TryParseMessage(message);
@@ -53,7 +38,7 @@ public class AssetDeletedHandler : IMessageHandler
 
         using (LogContextHelpers.SetCorrelationId(message.MessageId))
         {
-            var assetId = request.Asset!.Id;
+            var assetId = request.Deliverable!.Id;
             logger.LogDebug("Processing delete notification for {AssetId}", assetId);
 
             // if the item exists in the db, assume the asset has been reingested after delete
@@ -71,32 +56,43 @@ public class AssetDeletedHandler : IMessageHandler
 
             if (request.DeleteFrom.HasFlag(ImageCacheType.Cdn))
             {
-                return await InvalidateContentDeliveryNetwork(request.Asset, request.CustomerPathElement.Name);
+                return await InvalidateContentDeliveryNetwork(request.Deliverable, request.CustomerPathElement.Name);
             }
 
             logger.LogDebug("CDN invalidation not specified for {Asset}", assetId);
             return true;
         }
     }
-    
-    private AssetDeletedNotificationRequest? TryParseMessage(QueueMessage message)
-    {
-        try
-        {
-            var request = message.GetMessageContents<AssetDeletedNotificationRequest>();
 
-            if (request?.Asset?.Id == null)
+    private DeliverableDeletedNotification<DLCS.Model.Assets.Asset>? TryParseMessage(QueueMessage message)
+    {
+        var updateMessage = MessageParser.TryParseDeleteMessage<DLCS.Model.Assets.Asset>(message, logger);
+
+        // this is legacy handling for the older message format - it should be removed at the point this code is released everywhere
+        // and just the above line used
+        if (updateMessage == null)
+        {
+            logger.LogInformation("Message not parsed in the new format.  Attempting legacy parsing");
+            
+            try
             {
-                logger.LogInformation("Deserialised message but no asset id found");
+                var request = message.GetMessageContents<AssetDeletedNotificationRequest>();
+
+                if (request?.Asset?.Id == null)
+                {
+                    logger.LogInformation("Deserialised message but no 'before' asset id found");
+                    return null;
+                }
+                return request.ConvertToNewFormat();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to deserialize notification {@Message}", message);
                 return null;
             }
-            return request;
         }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to deserialize notification {@Message}", message);
-            return null;
-        }
+
+        return updateMessage;
     }
 
     private async Task DeleteFromOriginBucket(AssetId assetId)
@@ -112,7 +108,7 @@ public class AssetDeletedHandler : IMessageHandler
         await bucketWriter.DeleteFolder(storageKey, true);
     }
 
-    private async Task<bool> InvalidateContentDeliveryNetwork(Asset asset, string customerName)
+    private async Task<bool> InvalidateContentDeliveryNetwork(DLCS.Model.Assets.Asset asset, string customerName)
     {
         if (string.IsNullOrEmpty(handlerSettings.AWS.Cloudfront.DistributionId))
         {
