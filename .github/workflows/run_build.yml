@@ -10,6 +10,10 @@ on:
       - "docs/**"
       - "scripts/**"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-dotnet:
     runs-on: ubuntu-latest
