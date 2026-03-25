@@ -1,6 +1,6 @@
-﻿using CleanupHandler.Asset;
-using CleanupHandler.Infrastructure;
+﻿using CleanupHandler.Infrastructure;
 using DLCS.AWS.SQS;
+using DLCS.Core.Collections;
 using DLCS.Repository;
 using DLCS.Repository.Adjuncts;
 using DLCS.Web.Logging;
@@ -52,5 +52,5 @@ public class AdjunctUpdatedHandler(
 
     // We only cleanup when the adjunct has moved from hosted to unhosted
     private bool NoCleanupRequired(DLCS.Model.Assets.Adjunct adjunctBefore, DLCS.Model.Assets.Adjunct adjunctAfter) =>
-        adjunctBefore.ExternalId != null || (adjunctBefore.Origin == null && adjunctAfter.Origin != null);
+        adjunctBefore.ExternalId != null || (adjunctBefore.Origin.IsNullOrEmpty() && !adjunctAfter.Origin.IsNullOrEmpty());
 }
