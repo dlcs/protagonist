@@ -35,7 +35,7 @@ public class DeliverableNotificationSender(
 
     private static void AssetSerialiserContractModifier(JsonTypeInfo typeInfo)
     {
-        // Collection of properties to ignore when serialising Asset object, by containing type
+        // Collection of properties to ignore when serialising objects, by containing type
         var exclusionsByType = new Dictionary<Type, HashSet<string>>
         {
             [typeof(Asset)] = new(StringComparer.OrdinalIgnoreCase)

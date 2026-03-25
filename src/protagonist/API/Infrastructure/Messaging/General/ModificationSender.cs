@@ -43,16 +43,14 @@ public class ModificationSender(
 
         var typeParameterType = typeof(T);
         
-        switch (typeParameterType) {
-            case not null when typeParameterType == typeof(DLCS.Model.Assets.Adjunct):
-                await topicPublisher.PublishToDeliverableModifiedTopic(changes, DeliverableTopicType.Adjunct, cancellationToken);
-                break;
-            case not null when typeParameterType == typeof(DLCS.Model.Assets.Asset):
-                await topicPublisher.PublishToDeliverableModifiedTopic(changes, DeliverableTopicType.Asset, cancellationToken);
-                break;
-            default:
-                throw new InvalidOperationException($"Deliverable type not supported - {typeParameterType}");
-        }
+        var topicType = typeParameterType switch
+        {
+            _ when typeParameterType == typeof(Adjunct) => DeliverableTopicType.Adjunct,
+            _ when typeParameterType == typeof(Asset) => DeliverableTopicType.Asset,
+            _ => throw new InvalidOperationException($"Deliverable type not supported - {typeParameterType}")
+        };
+
+        await topicPublisher.PublishToDeliverableModifiedTopic(changes, topicType, cancellationToken);
     }
 
     private async Task<string> GetSerialisedNotification<T>(NotificationRecord<T> notification, JsonSerializerOptions serializerOptions) where T : class, IDeliverable

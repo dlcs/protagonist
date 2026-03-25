@@ -1,6 +1,7 @@
 ﻿using CleanupHandler.Infrastructure;
 using DLCS.AWS.SQS;
 using DLCS.Repository;
+using DLCS.Repository.Adjuncts;
 using DLCS.Web.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -33,7 +34,7 @@ public class AdjunctDeletedHandler(
             }
 
             // if the item exists in the db, assume the adjunct has been reingested after delete
-            if (dbContext.Adjuncts.Any(a => a.Id == adjunct.Id && a.AssetId == adjunct.AssetId))
+            if (dbContext.Adjuncts.FindAdjunct(adjunct.Id, adjunct.AssetId).Any())
             {
                 logger.LogInformation("Adjunct {Asset}/{Adjunct} can be found in the database, so will not be deleted",
                     adjunct.AssetId, adjunct.Id);

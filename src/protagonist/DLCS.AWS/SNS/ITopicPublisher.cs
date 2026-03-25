@@ -1,4 +1,4 @@
-﻿using DLCS.Model.Customers;
+using DLCS.Model.Customers;
 
 namespace DLCS.AWS.SNS;
 
@@ -19,7 +19,7 @@ public interface ITopicPublisher
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Asynchronously publishes a message to an Adjunct Modified SNS topic
+    /// Asynchronously publishes a message to deliverable modified SNS
     /// </summary>
     /// <param name="messages">A collection of notifications to send</param>
     /// <param name="topicType">The type of topic to publish to</param>

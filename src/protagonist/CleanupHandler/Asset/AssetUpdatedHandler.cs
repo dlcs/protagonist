@@ -208,7 +208,7 @@ public class AssetUpdatedHandler(
                 CleanupFileDeliveryChannel(assetAfter, s3Objects.objectsToRemove);
                 break;
             default:
-                logger.LogDebug("policy {PolicyName} does not require any changes for DLCS.Model.Assets.Asset {AssetId}",
+                logger.LogDebug("policy {PolicyName} does not require any changes for asset {AssetId}",
                     deliveryChannelRemoved.DeliveryChannelPolicy.Name, assetAfter.Id);
                 break;
         }
@@ -229,7 +229,7 @@ public class AssetUpdatedHandler(
                 await CleanupChangedTimebasedDeliveryChannel(deliveryChannelModified, assetAfter, objectsToRemove);
                 break;
             default:
-                logger.LogDebug("Policy {PolicyName} does not require any changes for DLCS.Model.Assets.Asset {AssetId}",
+                logger.LogDebug("Policy {PolicyName} does not require any changes for asset {AssetId}",
                     deliveryChannelModified.DeliveryChannelPolicy.Name, assetAfter.Id);
                 break;
         }

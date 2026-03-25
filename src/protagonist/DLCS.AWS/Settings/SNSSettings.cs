@@ -8,7 +8,7 @@ public class SNSSettings
     public string? AssetModifiedNotificationTopicArn { get; set; }
     
     /// <summary>
-    /// Name of the SNS topic for notifying that adjuncts have been modified
+    /// Arn of the SNS topic for notifying that adjuncts have been modified
     /// </summary>
     public string? AdjunctModifiedNotificationTopicArn { get; set; }
     
