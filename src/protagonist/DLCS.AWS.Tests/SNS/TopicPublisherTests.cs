@@ -273,6 +273,30 @@ public class TopicPublisherTests
         result.Should().Be(expected);
     }
     
+    [Fact]
+    public async Task PublishToAssetModifiedTopicBatch_FailsToPublishTopic_WhenArnNotParsed()
+    {
+        // Arrange
+        var notification = new DeliverableModifiedNotification("message", GetAttributes(ChangeType.Delete, false));
+        var notification2 = new DeliverableModifiedNotification("message", GetAttributes(ChangeType.Delete, false));
+        
+        var settings = Options.Create(new AWSSettings
+        {
+            SNS = new SNSSettings
+            {
+                AssetModifiedNotificationTopicArn = "notValid"
+            }
+        });
+
+        var topicPublisher = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+
+        // Act
+        var output = await topicPublisher.PublishToDeliverableModifiedTopic(new[] { notification, notification2 }, DeliverableTopicType.Asset);
+
+        // Assert
+        output.Should().BeFalse();
+    }
+    
     private Dictionary<string, string> GetAttributes(ChangeType changeType, bool engineNotified)
     {
         var attributes = new Dictionary<string, string>()

@@ -79,7 +79,11 @@ public class TopicPublisher(
         const int maxSnsBatchSize = 5;
         var allBatchSuccess = true;
         var batchIdPrefix = Guid.NewGuid();
-        Arn.TryParse(topicArn, out var arn);
+        if (!Arn.TryParse(topicArn, out var arn))
+        {
+            logger.LogError("Could not parse the topic arn {Arn} into a valid arn", topicArn);
+            return false;
+        }
         logger.LogDebug("Publishing SNS batch {BatchPrefix} containing {ItemCount} items to {Service}", batchIdPrefix,
             messages.Count, arn.Resource);
         var batchNumber = 0;
