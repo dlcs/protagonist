@@ -81,14 +81,9 @@ public class AdjunctUpdatedHandlerTests
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        var asset = await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct("someAdjunct", origin: "https://some.origin", externalId: null);
-        await dbContext.SaveChangesAsync();
-        
-        var beforeAdjunct = asset.Entity.Adjuncts!.First();
         
         var cleanupRequest = new DeliverableUpdatedNotification<Adjunct>
         {
-            DeliverableBeforeUpdate = beforeAdjunct,
             DeliverableAfterUpdate = new Adjunct
             {
                 Id = "notMatching",
@@ -122,23 +117,23 @@ public class AdjunctUpdatedHandlerTests
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
         var adjunctId = "someAdjunct";
-        var asset = await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId, origin: "https://some.origin", externalId: null);
+        var asset = await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId, externalId: "https://some.external.id");
         await dbContext.SaveChangesAsync();
         
-        var beforeAdjunct = asset.Entity.Adjuncts!.First();
+        var afterAdjunct = asset.Entity.Adjuncts!.First();
         
         var cleanupRequest = new DeliverableUpdatedNotification<Adjunct>
         {
-            DeliverableBeforeUpdate = beforeAdjunct,
-            DeliverableAfterUpdate = new Adjunct
+            DeliverableBeforeUpdate = new Adjunct
             {
                 Id = adjunctId,
                 MediaType = "a-mediaType",
                 IIIFLink = IIIFLinkType.Annotations,
                 Type = "a-type",
                 AssetId = assetId,
-                ExternalId = new Uri("https://some.external.id")
-            }
+                Origin = "https://some.origin"
+            },
+            DeliverableAfterUpdate = afterAdjunct
         };
         
         var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
@@ -163,23 +158,23 @@ public class AdjunctUpdatedHandlerTests
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
         var adjunctId = "someAdjunct";
-        var asset = await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId, externalId: "https://some.external.id");
+        var asset = await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId, origin: "https://some.origin");
         await dbContext.SaveChangesAsync();
         
-        var beforeAdjunct = asset.Entity.Adjuncts!.First();
+        var afterAdjunct = asset.Entity.Adjuncts!.First();
         
         var cleanupRequest = new DeliverableUpdatedNotification<Adjunct>
         {
-            DeliverableBeforeUpdate = beforeAdjunct,
-            DeliverableAfterUpdate = new Adjunct
+            DeliverableBeforeUpdate = new Adjunct
             {
                 Id = adjunctId,
                 MediaType = "a-mediaType",
                 IIIFLink = IIIFLinkType.Annotations,
                 Type = "a-type",
                 AssetId = assetId,
-                Origin = "https://some.origin"
-            }
+                ExternalId = new Uri("https://some.origin")
+            },
+            DeliverableAfterUpdate  = afterAdjunct
         };
         
         var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
@@ -207,12 +202,11 @@ public class AdjunctUpdatedHandlerTests
         var asset = await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId, externalId: "https://some.external.id");
         await dbContext.SaveChangesAsync();
         
-        var beforeAdjunct = asset.Entity.Adjuncts!.First();
+        var afterAdjunct = asset.Entity.Adjuncts!.First();
         
         var cleanupRequest = new DeliverableUpdatedNotification<Adjunct>
         {
-            DeliverableBeforeUpdate = beforeAdjunct,
-            DeliverableAfterUpdate = new Adjunct
+            DeliverableBeforeUpdate = new Adjunct
             {
                 Id = adjunctId,
                 MediaType = "a-mediaType",
@@ -220,7 +214,49 @@ public class AdjunctUpdatedHandlerTests
                 Type = "a-type",
                 AssetId = assetId,
                 ExternalId = new Uri("https://some.external.id")
-            }
+            },
+            DeliverableAfterUpdate = afterAdjunct
+        };
+        
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+        
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonNode.Parse(serialized)!.AsObject()
+        };
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_ReturnsTrueNoCleanup_IfValidAdjunctHostedToHosted()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var adjunctId = "someAdjunct";
+        var asset = await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId, origin: "https://some.hosted.id");
+        await dbContext.SaveChangesAsync();
+        
+        var afterAdjunct = asset.Entity.Adjuncts!.First();
+        
+        var cleanupRequest = new DeliverableUpdatedNotification<Adjunct>
+        {
+            DeliverableBeforeUpdate = new Adjunct
+            {
+                Id = adjunctId,
+                MediaType = "a-mediaType",
+                IIIFLink = IIIFLinkType.Annotations,
+                Type = "a-type",
+                AssetId = assetId,
+                Origin = "https://some.hosted.id"
+            },
+            DeliverableAfterUpdate = afterAdjunct
         };
         
         var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
