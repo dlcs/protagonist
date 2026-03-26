@@ -71,7 +71,7 @@ public static class AdjunctConverter
     /// <param name="adjunct">The DLCS adjunct to convert</param>
     /// <param name="urlRoots">The base address used to create FQDN paths</param>
     /// <returns>A hydra <see cref="DLCS.HydraModel.Adjunct"/> representation of the adjunct</returns>
-    public static DLCS.HydraModel.Adjunct ToHydra(this Adjunct adjunct, UrlRoots urlRoots) 
+    public static DLCS.HydraModel.Adjunct ToHydra(this Adjunct adjunct, UrlRoots urlRoots)
         => new(urlRoots.BaseUrl, adjunct.AssetId.Customer, adjunct.AssetId.Space, adjunct.AssetId.Asset, adjunct.Id)
         {
             Type = adjunct.Type,
@@ -80,6 +80,7 @@ public static class AdjunctConverter
             Profile = adjunct.Profile,
             Label = adjunct.Label,
             Language = adjunct.Language,
+            Asset = $"{urlRoots.BaseUrl}/customers/{adjunct.AssetId.Customer}/spaces/{adjunct.AssetId.Space}/images/{adjunct.AssetId.Asset}",
             ExternalId = adjunct.ExternalId?.ToString(),
             Origin = adjunct.Origin,
             PublicId = adjunct.ExternalId?.ToString() ??  $"{urlRoots.ResourceRoot}adjuncts/{adjunct.AssetId.Customer}/{adjunct.AssetId.Space}/{adjunct.AssetId.Asset}/{adjunct.Id}",

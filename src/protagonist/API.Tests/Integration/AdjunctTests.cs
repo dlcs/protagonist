@@ -95,6 +95,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+        adjunct.Asset.Should().Be($"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}");
         adjunct.IIIFLink.Should().Be("seeAlso");
         adjunct.Label.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
