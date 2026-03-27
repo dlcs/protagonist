@@ -226,7 +226,7 @@ public class CustomerQueueController : HydraController
 
         return await HandlePagedFetch<Asset, GetBatchImages, DLCS.HydraModel.Image>(
             getCustomerRequest,
-            image => image.ToHydra(GetUrlRoots()),
+            image => image.ToHydra(GetUrlRoots(), assetFilter?.IncludesField(IncludeFields.Adjuncts) ?? false),
             errorTitle: "Get Batch Images failed",
             cancellationToken: cancellationToken
         );
@@ -273,7 +273,7 @@ public class CustomerQueueController : HydraController
 
         return await HandlePagedFetch<Asset, GetBatchAssets, DLCS.HydraModel.Image>(
             getCustomerRequest,
-            image => image.ToHydra(GetUrlRoots()),
+            image => image.ToHydra(GetUrlRoots(), assetFilter?.IncludesField(IncludeFields.Adjuncts) ?? false),
             errorTitle: "Get Batch Assets failed",
             cancellationToken: cancellationToken
         );

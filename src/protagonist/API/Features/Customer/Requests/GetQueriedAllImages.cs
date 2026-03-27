@@ -31,13 +31,12 @@ public class GetQueriedAllImages(int customerId, AssetFilter? assetFilter) : IRe
 public class GetQueriedAllImagesHandler(DlcsContext dlcsContext)
     : IRequestHandler<GetQueriedAllImages, FetchEntityResult<PageOf<Asset>>>
 {
-    private DlcsContext dlcsContext { get; } = dlcsContext;
-
     public async Task<FetchEntityResult<PageOf<Asset>>> Handle(GetQueriedAllImages request, CancellationToken cancellationToken = default)
     {
         var result = await dlcsContext.Images
             .AsNoTracking()
             .IncludeDeliveryChannelsWithPolicy()
+            .IncludeRelated(request.AssetFilter)
             .Where(a => a.Customer == request.CustomerId)
             .CreatePagedResult(
                 request,
@@ -46,6 +45,6 @@ public class GetQueriedAllImagesHandler(DlcsContext dlcsContext)
                     .AsSingleQuery(),
                 images => images.AsOrderedAssetQuery(request),
                 cancellationToken);
-        return  FetchEntityResult<PageOf<Asset>>.Success(result);
+        return FetchEntityResult<PageOf<Asset>>.Success(result);
     }
 }

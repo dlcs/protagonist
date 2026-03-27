@@ -30,22 +30,30 @@ public static class PagingHelpers
         Func<IQueryable<T>, IQueryable<T>>? entityOperations = null,
         CancellationToken cancellationToken = default) where T : class
     {
-        var workingEntities = filter(entities);
-        var entityQuery = workingEntities;
-        if (entityOperations != null)
+        try
         {
-            entityQuery = entityOperations(entityQuery);
-        }
-        
-        var result = new PageOf<T>
-        {
-            Page = request.Page,
-            Total = await workingEntities.CountAsync(cancellationToken: cancellationToken),
-            Entities = await entityQuery.WithPaging(request).ToListAsync(cancellationToken),
-            PageSize = request.PageSize
-        };
+            var workingEntities = filter(entities);
+            var entityQuery = workingEntities;
+            if (entityOperations != null)
+            {
+                entityQuery = entityOperations(entityQuery);
+            }
 
-        return result;
+            var result = new PageOf<T>
+            {
+                Page = request.Page,
+                Total = await workingEntities.CountAsync(cancellationToken: cancellationToken),
+                Entities = await entityQuery.WithPaging(request).ToListAsync(cancellationToken),
+                PageSize = request.PageSize
+            };
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            var x = ex.Message;
+            throw;
+        }
     }
 
     /// <summary>

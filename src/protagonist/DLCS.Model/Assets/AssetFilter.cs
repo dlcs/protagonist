@@ -1,4 +1,5 @@
-using System.Collections.Generic;
+using System;
+using System.Linq;
 
 namespace DLCS.Model.Assets;
 
@@ -13,4 +14,13 @@ public class AssetFilter
     public int? NumberReference3 { get; set; }
     public string[]? Manifests { get; set; }
     public string[]? Tags { get; set; }
+    public string[]? Include { get; set; }
+
+    public bool IncludesField(string field) =>
+        Include?.Contains(field, StringComparer.OrdinalIgnoreCase) ?? false;
+}
+
+public static class IncludeFields
+{
+    public const string Adjuncts = "adjuncts";
 }

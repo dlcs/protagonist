@@ -7,6 +7,7 @@ using DLCS.Model.Assets;
 using DLCS.Web.Requests;
 using Hydra;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json.Linq;
 using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Converters;
@@ -22,7 +23,7 @@ public static class AssetConverter
     /// <param name="dbAsset"></param>
     /// <param name="urlRoots">The domain name of the API and orchestrator applications</param>
     /// <returns><see cref="Image"/> hydra model</returns>
-    public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots)
+    public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots, bool includeAdjuncts = false)
     {
         if (dbAsset.Id.Customer != dbAsset.Customer || dbAsset.Id.Space != dbAsset.Space)
         {
@@ -84,7 +85,7 @@ public static class AssetConverter
             image.DeliveryChannels = dbAsset.ImageDeliveryChannels.Select(c => new DeliveryChannel
             {
                     Channel = c.Channel,
-                    Policy = c.DeliveryChannelPolicy.System 
+                    Policy = c.DeliveryChannelPolicy.System
                         ? c.DeliveryChannelPolicy.Name
                         : $"{urlRoots.BaseUrl}/customers/{c.DeliveryChannelPolicy.Customer}/deliveryChannelPolicies/{c.Channel}/{c.DeliveryChannelPolicy.Name}"
                 }).ToArray();
@@ -92,6 +93,13 @@ public static class AssetConverter
         else
         {
             image.DeliveryChannels = [];
+        }
+
+        if (includeAdjuncts)
+        {
+            image.Adjuncts = dbAsset.Adjuncts != null
+                ? JToken.FromObject(dbAsset.Adjuncts.Select(a => a.ToHydra(urlRoots)).ToArray())
+                : new JArray();
         }
 
         return image;
@@ -432,25 +440,23 @@ public static class AssetConverter
     /// Inspect the request for string1, number1 etc metadata fields.
     /// Create a new AssetFilter if present, or add to the one passed in.
     /// </summary>
-    /// <param name="request"></param>
-    /// <param name="assetFilter"></param>
     /// <returns>An AssetFilter, or null if none passed in and no query string params present.</returns>
     public static AssetFilter? UpdateAssetFilterFromQueryStringParams(this HttpRequest request, AssetFilter? assetFilter)
     {
         var string1 = request.GetFirstQueryParamValue("string1");
-        if(string1.HasText())
+        if (string1.HasText())
         {
             assetFilter ??= new AssetFilter();
             assetFilter.Reference1 = string1;
         }
         var string2 = request.GetFirstQueryParamValue("string2");
-        if(string2.HasText())
+        if (string2.HasText())
         {
             assetFilter ??= new AssetFilter();
             assetFilter.Reference2 = string2;
         }
         var string3 = request.GetFirstQueryParamValue("string3");
-        if(string3.HasText())
+        if (string3.HasText())
         {
             assetFilter ??= new AssetFilter();
             assetFilter.Reference3 = string3;
@@ -479,6 +485,13 @@ public static class AssetConverter
         {
             assetFilter ??= new AssetFilter();
             assetFilter.Manifests = manifests;
+        }
+
+        var include = request.GetFirstQueryParamValue("include");
+        if (include.HasText())
+        {
+            assetFilter ??= new AssetFilter();
+            assetFilter.Include = include.Split(',', StringSplitOptions.RemoveEmptyEntries);
         }
 
         return assetFilter;

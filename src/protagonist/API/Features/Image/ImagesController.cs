@@ -60,7 +60,7 @@ public class ImagesController : HydraController
     [ProducesResponseType(200, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
     [ProducesResponseType(404, Type = typeof(Error))]
     public async Task<IActionResult> GetImages(
-        [FromRoute] int customerId, [FromRoute] int spaceId, [FromQuery] string? q = null, 
+        [FromRoute] int customerId, [FromRoute] int spaceId, [FromQuery] string? q = null,
         CancellationToken cancellationToken = default)
     {
         var assetFilter = Request.GetAssetFilterFromQParam(q);
@@ -69,11 +69,11 @@ public class ImagesController : HydraController
         {
             return this.HydraProblem("Could not parse query", null, 400);
         }
-        
+
         var imagesRequest = new GetSpaceImages(spaceId, customerId, assetFilter);
         return await HandlePagedFetch<Asset, GetSpaceImages, DLCS.HydraModel.Image>(
             imagesRequest,
-            image => image.ToHydra(GetUrlRoots()),
+            image => image.ToHydra(GetUrlRoots(), assetFilter?.IncludesField(IncludeFields.Adjuncts) ?? false),
             errorTitle: "Get Space Images failed",
             cancellationToken: cancellationToken
         );

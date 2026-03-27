@@ -6,6 +6,7 @@ using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Page;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace DLCS.Repository.Assets;
 
@@ -74,6 +75,9 @@ public static class AssetQueryX
         return Expression.Lambda(body, param);
     }
 
+    /// <summary>
+    /// Apply asset filter to queryable (this is filtering only - it doesn't handle .Include() calls)
+    /// </summary>
     public static IQueryable<Asset> ApplyAssetFilter(this IQueryable<Asset> queryable, 
         AssetFilter? assetFilter, bool filterOnSpace = false)
     {
@@ -110,7 +114,7 @@ public static class AssetQueryX
         if (!assetFilter.Manifests.IsNullOrEmpty())
         {
             filtered = filtered.Where(a =>
-                a.Manifests.Any(manifest => assetFilter.Manifests.Contains(manifest)));
+                a.Manifests!.Any(manifest => assetFilter.Manifests.Contains(manifest)));
         }
 
         if (filterOnSpace && assetFilter.Space is > 0)
@@ -120,6 +124,23 @@ public static class AssetQueryX
 
         return filtered;
     }
+
+    /// <summary>
+    /// Helper to .Include() related entities in accordance with the AssetFilter.
+    /// </summary>
+    public static IQueryable<Asset> IncludeRelated(this IQueryable<Asset> assetQuery, AssetFilter? assetFilter) =>
+        assetFilter?.IncludesField(IncludeFields.Adjuncts) == true
+            ? assetQuery.Include(a => a.Adjuncts!)
+            : assetQuery;
+
+    /// <summary>
+    /// Helper to .ThenInclude() related entities in accordance with the AssetFilter.
+    /// </summary>
+    public static IQueryable<TEntity> IncludeRelated<TEntity>(
+        this IIncludableQueryable<TEntity, Asset> assetQuery, AssetFilter? assetFilter) where TEntity : class =>
+        assetFilter?.IncludesField(IncludeFields.Adjuncts) == true
+            ? assetQuery.ThenInclude(a => a.Adjuncts!)
+            : assetQuery;
 
     /// <summary>
     /// Include asset delivery channels and their associated policies.

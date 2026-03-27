@@ -50,9 +50,13 @@ public class DlcsResource : JsonLdBase
             if (jsonProp != null)
             {
                 var hydraLink = attrs.OfType<HydraLinkAttribute>().SingleOrDefault();
-                if (hydraLink != null && hydraLink.SetManually == false)
+                if (hydraLink is { SetManually: false })
                 {
-                    property.SetValue(this,  $"{Id}/{jsonProp.PropertyName}");
+                    var linkUri = $"{Id}/{jsonProp.PropertyName}";
+                    var value = typeof(JToken).IsAssignableFrom(property.PropertyType)
+                        ? (object)new JValue(linkUri)
+                        : linkUri;
+                    property.SetValue(this, value);
                 }
             }
         }

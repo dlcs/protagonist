@@ -97,7 +97,7 @@ public class CustomerImagesController : HydraController
 
         return await HandlePagedFetch<Asset, GetQueriedAllImages, DLCS.HydraModel.Image>(
             getQueriedAllImages,
-            image => image.ToHydra(GetUrlRoots()),
+            image => image.ToHydra(GetUrlRoots(), assetFilter?.IncludesField(IncludeFields.Adjuncts) ?? false),
             errorTitle: "Get All Images failed",
             cancellationToken: cancellationToken
         );

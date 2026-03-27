@@ -12,23 +12,15 @@ namespace API.Features.Queues.Requests;
 /// Although the behaviour is slightly different, this has been superseded by <see cref="GetBatchAssets"/>, which
 /// returns historical data as well as current batch data
 /// </remarks>
-public class GetBatchImages : GetBatchAssets
-{
-    public GetBatchImages(int customerId, int batchId, AssetFilter? assetFilter)
-        : base(customerId, batchId, assetFilter)
-    {
-    }
-}
+public class GetBatchImages(int customerId, int batchId, AssetFilter? assetFilter)
+    : GetBatchAssets(customerId, batchId, assetFilter);
 
-public class GetBatchImagesHandler : GetBatchAssetsBase<GetBatchImages>
+public class GetBatchImagesHandler(DlcsContext dlcsContext) : GetBatchAssetsBase<GetBatchImages>(dlcsContext)
 {
-    public GetBatchImagesHandler(DlcsContext dlcsContext) : base(dlcsContext)
-    {
-    }
-
     protected override IQueryable<Asset> GetBatchAssets(DlcsContext dlcsContext, GetBatchImages request)
         => dlcsContext.Images
             .AsNoTracking()
             .IncludeDeliveryChannelsWithPolicy()
+            .IncludeRelated(request.AssetFilter)
             .Where(a => a.Customer == request.CustomerId && a.Batch == request.BatchId);
 }

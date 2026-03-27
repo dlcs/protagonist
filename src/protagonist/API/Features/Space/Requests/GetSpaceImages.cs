@@ -14,42 +14,27 @@ namespace API.Features.Space.Requests;
 /// <summary>
 /// Get a paged results of images in specified space.
 /// </summary>
-public class GetSpaceImages : 
-    IRequest<FetchEntityResult<PageOf<Asset>>>, 
-    IPagedRequest, 
-    IOrderableRequest, 
-    IAssetFilterableRequest
+public class GetSpaceImages(int spaceId, int? customerId = null, AssetFilter? assetFilter = null)
+    :
+        IRequest<FetchEntityResult<PageOf<Asset>>>,
+        IPagedRequest,
+        IOrderableRequest,
+        IAssetFilterableRequest
 {
-    public GetSpaceImages(int spaceId, int? customerId = null, AssetFilter? assetFilter = null)
-    {
-        CustomerId = customerId;
-        SpaceId = spaceId;
-        AssetFilter = assetFilter;
-    }
-    
-    public int SpaceId { get; }
-    public int? CustomerId { get; }
+    public int SpaceId { get; } = spaceId;
+    public int? CustomerId { get; } = customerId;
     public int Page { get; set; }
     public int PageSize { get; set; }
     public string? Field { get; set; }
     public bool Descending { get; set; }
-    
-    public AssetFilter? AssetFilter { get; }
+
+    public AssetFilter? AssetFilter { get; } = assetFilter;
 }
 
-public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, FetchEntityResult<PageOf<Asset>>>
+public class GetSpaceImagesHandler(
+    ClaimsPrincipal principal,
+    DlcsContext dlcsContext) : IRequestHandler<GetSpaceImages, FetchEntityResult<PageOf<Asset>>>
 {
-    private readonly ClaimsPrincipal principal;
-    private readonly DlcsContext dlcsContext;
-    
-    public GetSpaceImagesHandler(
-        ClaimsPrincipal principal,
-        DlcsContext dlcsContext)
-    {
-        this.principal = principal;
-        this.dlcsContext = dlcsContext;
-    }
-    
     public async Task<FetchEntityResult<PageOf<Asset>>> Handle(GetSpaceImages request, CancellationToken cancellationToken)
     {
         int? customerId = request.CustomerId ?? principal.GetCustomerId();
@@ -62,6 +47,7 @@ public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, FetchEntity
             request,
             i => i
                 .Where(a => a.Customer == request.CustomerId && a.Space == request.SpaceId)
+                .IncludeRelated(request.AssetFilter)
                 .ApplyAssetFilter(request.AssetFilter)
                 .IncludeDeliveryChannelsWithPolicy()
                 .AsSingleQuery(),

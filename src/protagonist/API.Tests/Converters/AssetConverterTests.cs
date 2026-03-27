@@ -5,6 +5,8 @@ using API.Exceptions;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
+using Newtonsoft.Json.Linq;
+using Adjunct = DLCS.Model.Assets.Adjunct;
 using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Tests.Converters;
@@ -278,6 +280,68 @@ public class AssetConverterTests
         hydraImage.OpenFullMax.Should().Be(1024);
     }
     
+    [Fact]
+    public void ToHydra_Adjuncts_IsUriString_WhenIncludeAdjunctsFalse()
+    {
+        var asset = new Asset
+        {
+            Id = AssetId.FromString($"{Customer}/99/asset"),
+            Customer = Customer,
+            Space = 99,
+            Family = DLCS.Model.Assets.AssetFamily.Image,
+            Adjuncts = [new Adjunct { Id = "adj1", AssetId = AssetId.FromString($"{Customer}/99/asset"), Type = "Image", MediaType = "text/plain", IIIFLink = IIIFLinkType.SeeAlso }]
+        };
+
+        var hydraImage = asset.ToHydra(new UrlRoots { BaseUrl = "https://dlcs.io" });
+
+        hydraImage.Adjuncts!.Type.Should().Be(JTokenType.String);
+        hydraImage.Adjuncts.ToString().Should().Be("https://dlcs.io/customers/1/spaces/99/images/asset/adjuncts");
+    }
+
+    [Fact]
+    public void ToHydra_Adjuncts_IsEmptyArray_WhenIncludeAdjunctsTrueAndNoAdjuncts()
+    {
+        var asset = new Asset
+        {
+            Id = AssetId.FromString($"{Customer}/99/asset"),
+            Customer = Customer,
+            Space = 99,
+            Family = DLCS.Model.Assets.AssetFamily.Image,
+            Adjuncts = null
+        };
+
+        var hydraImage = asset.ToHydra(new UrlRoots { BaseUrl = "https://dlcs.io" }, includeAdjuncts: true);
+
+        hydraImage.Adjuncts!.Type.Should().Be(JTokenType.Array);
+        ((JArray)hydraImage.Adjuncts).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ToHydra_Adjuncts_IsInlineArray_WhenIncludeAdjunctsTrueAndAdjunctsExist()
+    {
+        var assetId = AssetId.FromString($"{Customer}/99/asset");
+        var asset = new Asset
+        {
+            Id = assetId,
+            Customer = Customer,
+            Space = 99,
+            Family = DLCS.Model.Assets.AssetFamily.Image,
+            Adjuncts =
+            [
+                new Adjunct { Id = "adj1", AssetId = assetId, Type = "Image", MediaType = "text/plain", IIIFLink = IIIFLinkType.SeeAlso },
+                new Adjunct { Id = "adj2", AssetId = assetId, Type = "Image", MediaType = "application/json", IIIFLink = IIIFLinkType.Rendering }
+            ]
+        };
+
+        var hydraImage = asset.ToHydra(new UrlRoots { BaseUrl = "https://dlcs.io" }, includeAdjuncts: true);
+
+        hydraImage.Adjuncts!.Type.Should().Be(JTokenType.Array);
+        var adjuncts = (JArray)hydraImage.Adjuncts;
+        adjuncts.Should().HaveCount(2);
+        adjuncts[0]["id"]!.ToString().Should().Contain("adj1");
+        adjuncts[1]["id"]!.ToString().Should().Contain("adj2");
+    }
+
     [Fact]
     public void ToHydraModel_ManifestsEmpty_IfEntityHasNullManifests()
     {

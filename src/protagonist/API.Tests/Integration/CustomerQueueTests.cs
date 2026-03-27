@@ -19,6 +19,7 @@ using DLCS.Repository.Messaging;
 using FakeItEasy;
 using Hydra;
 using Hydra.Collections;
+using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -92,7 +93,11 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             {
                 Id = 4006, Customer = 99, Submitted = DateTime.UtcNow, Count = 5, Completed = 5,
                 Finished = DateTime.UtcNow.AddDays(-1)
-            }
+            }/*,
+            // for adjunct include tests
+            new Batch { Id = 4007, Customer = 99, Submitted = DateTime.UtcNow, Count = 1, Completed = 1 },
+            new Batch { Id = 4008, Customer = 99, Submitted = DateTime.UtcNow, Count = 1, Completed = 1 },
+            new Batch { Id = 4009, Customer = 99, Submitted = DateTime.UtcNow, Count = 1, Completed = 1 }*/
         );
         dbContext.SaveChanges();
         LegacyModeHelpers.SetupLegacyCustomer(dbContext).Wait();
@@ -636,7 +641,142 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         images.TotalItems.Should().Be(2);
         images.Members.Should().HaveCount(2);
     }
-    
+
+    [Fact]
+    public async Task Get_BatchImages_Adjuncts_IsUriString_WhenNoIncludeParam()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: "bi-adj-uri");
+        await dbContext.Images.AddTestAsset(assetId, batch: 4007)
+            .WithTestAdjunct("adj1");
+        await dbContext.SaveChangesAsync();
+        const string path = "customers/99/queue/batches/4007/images";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        var asset = images.Members.Single(m => m.ModelId == assetId.Asset);
+        asset.Adjuncts!.Type.Should().Be(JTokenType.String);
+        asset.Adjuncts.ToString().Should().EndWith($"/images/{assetId.Asset}/adjuncts");
+    }
+
+    [Fact]
+    public async Task Get_BatchImages_Adjuncts_IsEmptyArray_WhenIncludeAdjunctsButNoneExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: "bi-adj-empty");
+        await dbContext.Images.AddTestAsset(assetId, batch: 4008);
+        await dbContext.SaveChangesAsync();
+        const string path = "customers/99/queue/batches/4008/images?include=adjuncts";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        var asset = images.Members.Single();
+        asset.Adjuncts!.Type.Should().Be(JTokenType.Array);
+        ((JArray)asset.Adjuncts).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Get_BatchImages_Adjuncts_IsInlineArray_WhenIncludeAdjunctsAndAdjunctsExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: "bi-adj-inline");
+        await dbContext.Images.AddTestAsset(assetId, batch: 4009)
+            .WithTestAdjunct("adj1")
+            .WithTestAdjunct("adj2");
+        await dbContext.SaveChangesAsync();
+        const string path = "customers/99/queue/batches/4009/images?include=adjuncts";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        var asset = images.Members.Single();
+        asset.Adjuncts!.Type.Should().Be(JTokenType.Array);
+        ((JArray)asset.Adjuncts).Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task Get_BatchAssets_Adjuncts_IsUriString_WhenNoIncludeParam()
+    {
+        // Arrange
+        const int batchId = 6010;
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: "ba-adj-uri");
+        var batch = await dbContext.Batches.AddTestBatch(batchId);
+        batch.Entity.AddBatchAsset(assetId);
+        await dbContext.Images.AddTestAsset(assetId, batch: batchId)
+            .WithTestAdjunct("adj1");
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/99/queue/batches/{batchId}/assets";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        var asset = images.Members.Single();
+        asset.Adjuncts!.Type.Should().Be(JTokenType.String);
+        asset.Adjuncts.ToString().Should().EndWith($"/images/{assetId.Asset}/adjuncts");
+    }
+
+    [Fact]
+    public async Task Get_BatchAssets_Adjuncts_IsEmptyArray_WhenIncludeAdjunctsButNoneExist()
+    {
+        // Arrange
+        const int batchId = 6011;
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: "ba-adj-empty");
+        var batch = await dbContext.Batches.AddTestBatch(batchId);
+        batch.Entity.AddBatchAsset(assetId);
+        await dbContext.Images.AddTestAsset(assetId, batch: batchId);
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/99/queue/batches/{batchId}/assets?include=adjuncts";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        var asset = images.Members.Single();
+        asset.Adjuncts!.Type.Should().Be(JTokenType.Array);
+        ((JArray)asset.Adjuncts).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Get_BatchAssets_Adjuncts_IsInlineArray_WhenIncludeAdjunctsAndAdjunctsExist()
+    {
+        // Arrange
+        const int batchId = 6012;
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: "ba-adj-inline");
+        var batch = await dbContext.Batches.AddTestBatch(batchId);
+        batch.Entity.AddBatchAsset(assetId);
+        await dbContext.Images.AddTestAsset(assetId, batch: batchId)
+            .WithTestAdjunct("adj1")
+            .WithTestAdjunct("adj2");
+        await dbContext.SaveChangesAsync();
+        var path = $"customers/99/queue/batches/{batchId}/assets?include=adjuncts";
+
+        // Act
+        var response = await httpClient.AsCustomer().GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var images = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Image>>();
+        var asset = images.Members.Single();
+        asset.Adjuncts!.Type.Should().Be(JTokenType.Array);
+        ((JArray)asset.Adjuncts).Should().HaveCount(2);
+    }
+
     [Fact]
     public async Task Post_CreateBatch_400_IfValidationFails()
     {
