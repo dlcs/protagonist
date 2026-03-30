@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace DLCS.Model.Page;
+namespace API.Infrastructure.Page;
 
 /// <summary>
 /// Represents a page of entities, including paging details

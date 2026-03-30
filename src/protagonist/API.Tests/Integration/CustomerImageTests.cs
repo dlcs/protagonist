@@ -6,7 +6,6 @@ using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
-using DLCS.Model.Page;
 using DLCS.Repository;
 using DLCS.Web.Response;
 using Hydra.Collections;

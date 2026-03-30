@@ -1,7 +1,7 @@
-using API.Converters;
+using API.Features.Assets.Query;
 using Microsoft.AspNetCore.Http;
 
-namespace DLCS.Model.Tests.Assets;
+namespace API.Tests.Features.Assets.Query;
 
 public class AssetFilterTests
 {

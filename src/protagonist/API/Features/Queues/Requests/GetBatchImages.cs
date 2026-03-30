@@ -1,4 +1,5 @@
-﻿using DLCS.Model.Assets;
+﻿using API.Features.Assets.Query;
+using DLCS.Model.Assets;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using Microsoft.EntityFrameworkCore;

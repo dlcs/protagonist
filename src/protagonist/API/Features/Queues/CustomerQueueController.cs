@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
+using API.Features.Assets.Query;
 using API.Features.Image;
 using API.Features.Queues.Converters;
 using API.Features.Queues.Requests;

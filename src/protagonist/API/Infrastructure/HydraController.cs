@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
+using API.Features.Assets.Query;
+using API.Infrastructure.Page;
 using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
 using DLCS.HydraModel;
-using DLCS.Model.Page;
 using DLCS.Web.Requests;
 using Hydra;
 using Hydra.Collections;

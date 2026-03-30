@@ -1,8 +1,8 @@
-﻿using API.Infrastructure.Requests;
+﻿using API.Features.Assets.Query;
+using API.Infrastructure.Page;
+using API.Infrastructure.Requests;
 using DLCS.Model.Assets;
-using DLCS.Model.Page;
 using DLCS.Repository;
-using DLCS.Repository.Assets;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 

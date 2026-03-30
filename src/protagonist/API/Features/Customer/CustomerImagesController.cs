@@ -1,4 +1,5 @@
 ﻿using API.Converters;
+using API.Features.Assets.Query;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Features.Image.Validation;

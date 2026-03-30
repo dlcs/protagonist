@@ -1,7 +1,4 @@
-using System;
-using System.Linq;
-
-namespace DLCS.Model.Assets;
+namespace API.Features.Assets.Query;
 
 /// <summary>
 /// Strongly typed model for Asset queries (Asset Query Syntax)
