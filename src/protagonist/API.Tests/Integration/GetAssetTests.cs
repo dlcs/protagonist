@@ -277,6 +277,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = AssetIdGenerator.GetAssetId(customer: 202, space: 101);
         await dbContext.Spaces.AddTestSpace(assetId.Customer, assetId.Space);
         await dbContext.Images.AddTestAsset(assetId, customer: assetId.Customer, space: assetId.Space);
+        await dbContext.SaveChangesAsync();
         var url = $"/customers/{assetId.Customer}/spaces/{assetId.Space}/images?include=adjuncts";
         
         // Act

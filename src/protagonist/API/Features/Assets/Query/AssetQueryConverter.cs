@@ -24,11 +24,8 @@ public static class AssetQueryConverter
         };
     
     /// <summary>
-    /// Attempt to parse an AssetFilter from a supplied ImageQuery object on the query string.
+    /// Attempt to parse an <see cref="AssetQueryModel"/> from incoming request.
     /// </summary>
-    /// <param name="request"></param>
-    /// <param name="q">Supply a q; if not present will attempt to parse from request</param>
-    /// <returns></returns>
     public static AssetQueryModel GetAssetQuery(this HttpRequest request)
     {
         var filterModel = request.GetAssetFilter();
