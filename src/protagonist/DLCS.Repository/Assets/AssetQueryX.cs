@@ -128,7 +128,7 @@ public static class AssetQueryX
     /// <summary>
     /// Helper to .Include() related entities in accordance with the AssetFilter.
     /// </summary>
-    public static IQueryable<Asset> IncludeRelated(this IQueryable<Asset> assetQuery, AssetFilter? assetFilter) =>
+    public static IQueryable<Asset> IncludeRelated(this IQueryable<Asset> assetQuery, AssetInclude? assetFilter) =>
         assetFilter?.IncludesField(IncludeFields.Adjuncts) == true
             ? assetQuery.Include(a => a.Adjuncts!)
             : assetQuery;
@@ -137,7 +137,7 @@ public static class AssetQueryX
     /// Helper to .ThenInclude() related entities in accordance with the AssetFilter.
     /// </summary>
     public static IQueryable<TEntity> IncludeRelated<TEntity>(
-        this IIncludableQueryable<TEntity, Asset> assetQuery, AssetFilter? assetFilter) where TEntity : class =>
+        this IIncludableQueryable<TEntity, Asset> assetQuery, AssetInclude? assetFilter) where TEntity : class =>
         assetFilter?.IncludesField(IncludeFields.Adjuncts) == true
             ? assetQuery.ThenInclude(a => a.Adjuncts!)
             : assetQuery;

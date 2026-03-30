@@ -10,10 +10,12 @@ public interface IPagedRequest
     int Page { get; set; }
     int PageSize { get; set; }
 }
-
+/// <summary>
+/// Marker interface for requests that can be filtered by Asset Query Syntax
+/// </summary>
 public interface IAssetFilterableRequest
 {
-    AssetFilter? AssetFilter { get; }
+    AssetQueryModel AssetQueryModel { get; }
 }
 
 /// <summary>

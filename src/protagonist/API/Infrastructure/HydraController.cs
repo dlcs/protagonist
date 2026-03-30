@@ -243,20 +243,30 @@ public abstract class HydraController : Controller
         }, errorTitle);
     }
 
-    private List<KeyValuePair<string, string>>? GetFurtherPageLinkParameters(IPagedRequest pagedRequest)
+    private static List<KeyValuePair<string, string>>? GetFurtherPageLinkParameters(IPagedRequest pagedRequest)
     {
-        List<KeyValuePair<string, string>>? furtherParameters = null;
-        
-        if (pagedRequest is IAssetFilterableRequest assetFilterableRequest)
+        if (pagedRequest is not IAssetFilterableRequest assetFilterableRequest)
         {
-            if (assetFilterableRequest.AssetFilter != null)
-            {
-                var imageQuery = assetFilterableRequest.AssetFilter.ToImageQuery();
-                furtherParameters ??= new List<KeyValuePair<string, string>>();
-                furtherParameters.Add(new KeyValuePair<string, string>("q", imageQuery.ToQueryParam()));
-            }
+            return null;
         }
         
+        // TODO - tests
+        List<KeyValuePair<string, string>>? furtherParameters = null;
+
+        if (assetFilterableRequest.AssetQueryModel.Filter != null)
+        {
+            var imageQuery = assetFilterableRequest.AssetQueryModel.Filter.ToImageQuery();
+            furtherParameters ??= [];
+            furtherParameters.Add(new KeyValuePair<string, string>("q", imageQuery.ToQueryParam()));
+        }
+        
+        if (assetFilterableRequest.AssetQueryModel.Include != null)
+        {
+            var includeQueryParam = string.Join(",", assetFilterableRequest.AssetQueryModel.Include);
+            furtherParameters ??= [];
+            furtherParameters.Add(new KeyValuePair<string, string>("include", includeQueryParam));
+        }
+
         // Add any other parameters we want to pass through here
         
         return furtherParameters;

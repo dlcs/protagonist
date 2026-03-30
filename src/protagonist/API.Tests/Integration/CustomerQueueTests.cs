@@ -93,11 +93,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             {
                 Id = 4006, Customer = 99, Submitted = DateTime.UtcNow, Count = 5, Completed = 5,
                 Finished = DateTime.UtcNow.AddDays(-1)
-            }/*,
-            // for adjunct include tests
-            new Batch { Id = 4007, Customer = 99, Submitted = DateTime.UtcNow, Count = 1, Completed = 1 },
-            new Batch { Id = 4008, Customer = 99, Submitted = DateTime.UtcNow, Count = 1, Completed = 1 },
-            new Batch { Id = 4009, Customer = 99, Submitted = DateTime.UtcNow, Count = 1, Completed = 1 }*/
+            }
         );
         dbContext.SaveChanges();
         LegacyModeHelpers.SetupLegacyCustomer(dbContext).Wait();

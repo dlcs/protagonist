@@ -23,12 +23,9 @@ namespace API.Features.Customer;
 /// </summary>
 [Route("/customers/{customerId}")]
 [ApiController]
-public class CustomerImagesController : HydraController
+public class CustomerImagesController(IOptions<ApiSettings> settings, IMediator mediator)
+    : HydraController(settings.Value, mediator)
 {
-    public CustomerImagesController(IOptions<ApiSettings> settings, IMediator mediator) : base(settings.Value, mediator)
-    {
-    }
-    
     /// <summary>
     /// Accepts a list of image identifiers, will return a list of matching images.
     ///
@@ -86,18 +83,17 @@ public class CustomerImagesController : HydraController
         [FromQuery] string? q = null,
         CancellationToken cancellationToken = default)
     {
-        var assetFilter = Request.GetAssetFilterFromQParam(q);
-        assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
-        if (q.HasText() && assetFilter == null)
+        var assetQueryModel = Request.GetAssetQuery();
+        if (q.HasText() && assetQueryModel.Filter == null)
         {
             return this.HydraProblem("Could not parse query", null, 400);
         }
 
-        var getQueriedAllImages = new GetQueriedAllImages(customerId, assetFilter);
+        var getQueriedAllImages = new GetQueriedAllImages(customerId, assetQueryModel);
 
         return await HandlePagedFetch<Asset, GetQueriedAllImages, DLCS.HydraModel.Image>(
             getQueriedAllImages,
-            image => image.ToHydra(GetUrlRoots(), assetFilter?.IncludesField(IncludeFields.Adjuncts) ?? false),
+            image => image.ToHydra(GetUrlRoots(), assetQueryModel.IncludesField(IncludeFields.Adjuncts)),
             errorTitle: "Get All Images failed",
             cancellationToken: cancellationToken
         );

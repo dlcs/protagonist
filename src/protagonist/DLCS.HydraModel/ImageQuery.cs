@@ -1,9 +1,14 @@
-using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace DLCS.HydraModel;
 
+/// <summary>
+/// Represents a query object that can be used to filter images.
+/// </summary>
+/// <remarks>
+/// This is a strongly typed version of the AssetQuerySyntax object that can be used to filter images.
+/// </remarks>
 public class ImageQuery
 {
     private static readonly JsonSerializerSettings JsonSerializerSettings;
@@ -41,8 +46,5 @@ public class ImageQuery
         }
     }
 
-    public string ToQueryParam()
-    {
-        return JsonConvert.SerializeObject(this, JsonSerializerSettings);
-    }
+    public string ToQueryParam() => JsonConvert.SerializeObject(this, JsonSerializerSettings);
 }

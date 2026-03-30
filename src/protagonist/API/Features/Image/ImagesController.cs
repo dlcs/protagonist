@@ -35,10 +35,10 @@ public class ImagesController : HydraController
     {
         this.logger = logger;
     }
-    
+
     /// <summary>
     /// Get a page of images within space
-    ///
+    /// 
     /// Supports the following query parameters:
     ///   ?q= parameter for filtering
     ///   ?orderBy= and ?orderByDescending= for ordering
@@ -47,10 +47,11 @@ public class ImagesController : HydraController
     /// <param name="customerId">Id of customer</param>
     /// <param name="spaceId">Id of space to load images from</param>
     /// <param name="q">A serialised JSON <see cref="AssetFilter"/> object</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>A Hydra Collection of Image objects as JSON-LD</returns>
     /// <remarks>
     /// Sample request:
-    ///
+    /// 
     ///     GET: /customers/1/spaces/5/images?q={"string1":"metadata-value"}
     ///     GET: /customers/1/spaces/5/images?orderByDescending=width
     ///     GET: /customers/1/spaces/5/images?orderBy=height
@@ -63,17 +64,16 @@ public class ImagesController : HydraController
         [FromRoute] int customerId, [FromRoute] int spaceId, [FromQuery] string? q = null,
         CancellationToken cancellationToken = default)
     {
-        var assetFilter = Request.GetAssetFilterFromQParam(q);
-        assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
-        if (q.HasText() && assetFilter == null)
+        var assetQueryModel = Request.GetAssetQuery();
+        if (q.HasText() && assetQueryModel.Filter == null)
         {
             return this.HydraProblem("Could not parse query", null, 400);
         }
 
-        var imagesRequest = new GetSpaceImages(spaceId, customerId, assetFilter);
+        var imagesRequest = new GetSpaceImages(spaceId, customerId, assetQueryModel);
         return await HandlePagedFetch<Asset, GetSpaceImages, DLCS.HydraModel.Image>(
             imagesRequest,
-            image => image.ToHydra(GetUrlRoots(), assetFilter?.IncludesField(IncludeFields.Adjuncts) ?? false),
+            image => image.ToHydra(GetUrlRoots(), assetQueryModel.IncludesField(IncludeFields.Adjuncts)),
             errorTitle: "Get Space Images failed",
             cancellationToken: cancellationToken
         );
@@ -86,10 +86,12 @@ public class ImagesController : HydraController
     /// <param name="customerId">(from resource path)</param>
     /// <param name="spaceId">(from resource path)</param>
     /// <param name="images">The JSON-LD request body, a HydraCollection of Hydra Image objects.</param>
+    /// <param name="validator">Payload validator</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>A HydraCollection of the updated Assets, as Hydra Image objects.</returns>
     /// <remarks>
     /// Sample request:
-    ///
+    /// 
     ///     PATCH: /customers/1/spaces/5/images
     ///     {
     ///         "@context": "http://www.w3.org/ns/hydra/context.jsonld",

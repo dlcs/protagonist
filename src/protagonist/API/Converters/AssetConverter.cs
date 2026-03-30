@@ -7,6 +7,7 @@ using DLCS.Model.Assets;
 using DLCS.Web.Requests;
 using Hydra;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using AssetFamily = DLCS.HydraModel.AssetFamily;
 
@@ -97,8 +98,10 @@ public static class AssetConverter
 
         if (includeAdjuncts)
         {
+            // TODO - is there a JsonSerializerSettings that can be reused?
             image.Adjuncts = dbAsset.Adjuncts != null
-                ? JToken.FromObject(dbAsset.Adjuncts.Select(a => a.ToHydra(urlRoots)).ToArray())
+                ? JToken.FromObject(dbAsset.Adjuncts.Select(a => a.ToHydra(urlRoots)).ToArray(),
+                    new JsonSerializer { NullValueHandling = NullValueHandling.Ignore })
                 : new JArray();
         }
 
@@ -436,6 +439,32 @@ public static class AssetConverter
         return null;
     }
 
+    // TODO - move all the AssetFilter stuff to 1 single class, it's not AssetConverting
+    public static AssetQueryModel GetAssetQuery(this HttpRequest request)
+    {
+        // TODO: Tidy up calls to this method - make it private
+        var filterFromModel = request.GetAssetFilterFromQParam();
+        
+        // TODO: Make this private
+        var fullModel = request.UpdateAssetFilterFromQueryStringParams(filterFromModel);
+        
+        // TODO: Maybe extract this to a separate method?
+        // TODO: Move 'include' and 'q' to a common place, shared with HydraController
+        var include = request.GetFirstQueryParamValue("include");
+        AssetInclude? assetInclude = null;
+        if (include.HasText())
+        {
+            assetInclude = new AssetInclude
+            {
+                Include = include.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            };
+        }
+
+        // TODO - is this right? Always return a new object, callers can handle internal being null or no
+        // return fullModel == null && assetInclude == null ? null : new AssetQueryModel(fullModel, assetInclude);
+        return new AssetQueryModel(fullModel, assetInclude);
+    }
+
     /// <summary>
     /// Inspect the request for string1, number1 etc metadata fields.
     /// Create a new AssetFilter if present, or add to the one passed in.
@@ -443,6 +472,7 @@ public static class AssetConverter
     /// <returns>An AssetFilter, or null if none passed in and no query string params present.</returns>
     public static AssetFilter? UpdateAssetFilterFromQueryStringParams(this HttpRequest request, AssetFilter? assetFilter)
     {
+        // TODO: Tidy up these calls?
         var string1 = request.GetFirstQueryParamValue("string1");
         if (string1.HasText())
         {
@@ -486,14 +516,7 @@ public static class AssetConverter
             assetFilter ??= new AssetFilter();
             assetFilter.Manifests = manifests;
         }
-
-        var include = request.GetFirstQueryParamValue("include");
-        if (include.HasText())
-        {
-            assetFilter ??= new AssetFilter();
-            assetFilter.Include = include.Split(',', StringSplitOptions.RemoveEmptyEntries);
-        }
-
+        
         return assetFilter;
     }
 }

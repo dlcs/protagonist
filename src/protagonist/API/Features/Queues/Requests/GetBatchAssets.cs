@@ -11,7 +11,7 @@ namespace API.Features.Queues.Requests;
 /// <summary>
 /// Get details of images within batch. This uses BatchAssets table to get historical data, not just current data 
 /// </summary>
-public class GetBatchAssets(int customerId, int batchId, AssetFilter? assetFilter)
+public class GetBatchAssets(int customerId, int batchId, AssetQueryModel assetQueryModel)
     : IRequest<FetchEntityResult<PageOf<Asset>>>, IPagedRequest, IOrderableRequest,
         IAssetFilterableRequest
 {
@@ -19,7 +19,7 @@ public class GetBatchAssets(int customerId, int batchId, AssetFilter? assetFilte
 
     public int BatchId { get; } = batchId;
 
-    public AssetFilter? AssetFilter { get; } = assetFilter;
+    public AssetQueryModel AssetQueryModel { get; } = assetQueryModel;
 
     public int Page { get; set; }
 
@@ -40,7 +40,7 @@ public class GetBatchAssetsHandler(DlcsContext dlcsContext) : GetBatchAssetsBase
             .ThenInclude(a => a.ImageDeliveryChannels.OrderBy(idc => idc.Channel))
             .ThenInclude(dc => dc.DeliveryChannelPolicy)
             .Include(ba => ba.Asset)
-            .IncludeRelated(request.AssetFilter)
+            .IncludeRelated(request.AssetQueryModel.Include)
             .Where(ba => ba.Batch.Id == request.BatchId && ba.Batch.Customer == request.CustomerId)
             .Select(ba => ba.Asset);
 }

@@ -11,13 +11,13 @@ namespace API.Features.Customer.Requests;
 /// <summary>
 /// Retrieves all images that match supported query parameters
 /// </summary>
-public class GetQueriedAllImages(int customerId, AssetFilter? assetFilter) : IRequest<FetchEntityResult<PageOf<Asset>>>,
+public class GetQueriedAllImages(int customerId, AssetQueryModel assetQueryModel) : IRequest<FetchEntityResult<PageOf<Asset>>>,
     IPagedRequest, IOrderableRequest,
     IAssetFilterableRequest
 {
     public int CustomerId { get; } = customerId;
 
-    public AssetFilter? AssetFilter { get; } = assetFilter;
+    public AssetQueryModel AssetQueryModel { get; } = assetQueryModel;
 
     public int Page { get; set; }
 
@@ -36,12 +36,12 @@ public class GetQueriedAllImagesHandler(DlcsContext dlcsContext)
         var result = await dlcsContext.Images
             .AsNoTracking()
             .IncludeDeliveryChannelsWithPolicy()
-            .IncludeRelated(request.AssetFilter)
+            .IncludeRelated(request.AssetQueryModel.Include)
             .Where(a => a.Customer == request.CustomerId)
             .CreatePagedResult(
                 request,
                 i => i
-                    .ApplyAssetFilter(request.AssetFilter)
+                    .ApplyAssetFilter(request.AssetQueryModel.Filter)
                     .AsSingleQuery(),
                 images => images.AsOrderedAssetQuery(request),
                 cancellationToken);
