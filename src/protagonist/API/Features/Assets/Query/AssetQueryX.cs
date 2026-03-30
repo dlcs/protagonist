@@ -124,7 +124,7 @@ public static class AssetQueryX
     }
 
     /// <summary>
-    /// Helper to .Include() related entities in accordance with the AssetFilter.
+    /// Helper to .Include() related entities in accordance with the <see cref="AssetInclude"/>.
     /// </summary>
     public static IQueryable<Asset> IncludeRelated(this IQueryable<Asset> assetQuery, AssetInclude? assetFilter) =>
         assetFilter?.IncludesField(IncludeFields.Adjuncts) == true
@@ -132,7 +132,7 @@ public static class AssetQueryX
             : assetQuery;
 
     /// <summary>
-    /// Helper to .ThenInclude() related entities in accordance with the AssetFilter.
+    /// Helper to .ThenInclude() related entities in accordance with the <see cref="AssetInclude"/>.
     /// </summary>
     public static IQueryable<TEntity> IncludeRelated<TEntity>(
         this IIncludableQueryable<TEntity, Asset> assetQuery, AssetInclude? assetFilter) where TEntity : class =>

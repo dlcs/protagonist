@@ -28,7 +28,16 @@ public class AssetFilter
 
 public class AssetInclude
 {
-    public string[]? Include { get; set; }
+    public string[]? Include { get; }
+
+    public AssetInclude(string[]? includes)
+    {
+        var include = includes?
+            .Where(i => IncludeFields.AllowedFields.Contains(i, StringComparer.OrdinalIgnoreCase))
+            .Distinct()
+            .ToArray();
+        if (include?.Length > 0) Include = include;
+    }
 
     public bool IncludesField(string field) =>
         Include?.Contains(field, StringComparer.OrdinalIgnoreCase) ?? false;
@@ -37,4 +46,19 @@ public class AssetInclude
 public static class IncludeFields
 {
     public const string Adjuncts = "adjuncts";
+
+    public static readonly string[] AllowedFields = [Adjuncts];
+}
+
+public static class QueryParameters
+{
+    /// <summary>
+    /// The "q" parameter is used to specify serialised AssetQueryModel
+    /// </summary>
+    public const string Query = "q";
+    
+    /// <summary>
+    /// The "include" parameter is used to specify fields to include in the response
+    /// </summary>
+    public const string Include = "include";
 }

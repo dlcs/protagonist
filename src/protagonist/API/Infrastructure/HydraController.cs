@@ -251,21 +251,20 @@ public abstract class HydraController : Controller
             return null;
         }
         
-        // TODO - tests
         List<KeyValuePair<string, string>>? furtherParameters = null;
 
         if (assetFilterableRequest.AssetQueryModel.Filter != null)
         {
             var imageQuery = assetFilterableRequest.AssetQueryModel.Filter.ToImageQuery();
             furtherParameters ??= [];
-            furtherParameters.Add(new KeyValuePair<string, string>("q", imageQuery.ToQueryParam()));
+            furtherParameters.Add(new KeyValuePair<string, string>(QueryParameters.Query, imageQuery.ToQueryParam()));
         }
         
-        if (assetFilterableRequest.AssetQueryModel.Include != null)
+        if (assetFilterableRequest.AssetQueryModel.Include is { Include: not null })
         {
-            var includeQueryParam = string.Join(",", assetFilterableRequest.AssetQueryModel.Include);
+            var includeQueryParam = string.Join(",", assetFilterableRequest.AssetQueryModel.Include.Include);
             furtherParameters ??= [];
-            furtherParameters.Add(new KeyValuePair<string, string>("include", includeQueryParam));
+            furtherParameters.Add(new KeyValuePair<string, string>(QueryParameters.Include, includeQueryParam));
         }
 
         // Add any other parameters we want to pass through here

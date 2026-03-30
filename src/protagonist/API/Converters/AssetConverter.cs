@@ -16,11 +16,17 @@ namespace API.Converters;
 /// </summary>
 public static class AssetConverter
 {
+    private static JsonSerializer jsonSerializer = new()
+    {
+        NullValueHandling = NullValueHandling.Ignore,
+    };
+
     /// <summary>
     /// Converts the EF model object to an API resource.
     /// </summary>
     /// <param name="dbAsset"></param>
     /// <param name="urlRoots">The domain name of the API and orchestrator applications</param>
+    /// <param name="includeAdjuncts">True if embedded adjuncts should be included in response</param>
     /// <returns><see cref="Image"/> hydra model</returns>
     public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots, bool includeAdjuncts = false)
     {
@@ -96,10 +102,9 @@ public static class AssetConverter
 
         if (includeAdjuncts)
         {
-            // TODO - is there a JsonSerializerSettings that can be reused?
+            // If we are including adjuncts - embed child adjuncts as full objects, or set empty array if none
             image.Adjuncts = dbAsset.Adjuncts != null
-                ? JToken.FromObject(dbAsset.Adjuncts.Select(a => a.ToHydra(urlRoots)).ToArray(),
-                    new JsonSerializer { NullValueHandling = NullValueHandling.Ignore })
+                ? JToken.FromObject(dbAsset.Adjuncts.Select(a => a.ToHydra(urlRoots)).ToArray(), jsonSerializer)
                 : new JArray();
         }
 
