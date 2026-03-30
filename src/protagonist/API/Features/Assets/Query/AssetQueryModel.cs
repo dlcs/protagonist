@@ -14,6 +14,9 @@ public class AssetQueryModel(AssetFilter? filter, AssetInclude? include)
     public bool IncludesField(string field) => Include?.IncludesField(field) ?? false;
 }
 
+/// <summary>
+/// Model containing parameters for filtering results (effectively a WHERE clause)
+/// </summary>
 public class AssetFilter
 {
     public int? Space { get; set; }
@@ -26,6 +29,9 @@ public class AssetFilter
     public string[]? Manifests { get; set; }
 }
 
+/// <summary>
+/// Model containing parameters for inclusion of additional fields (e.g. adjuncts)
+/// </summary>
 public class AssetInclude
 {
     public string[]? Include { get; }
@@ -43,6 +49,9 @@ public class AssetInclude
         Include?.Contains(field, StringComparer.OrdinalIgnoreCase) ?? false;
 }
 
+/// <summary>
+/// Valid/known/accepted include parameters
+/// </summary>
 public static class IncludeFields
 {
     public const string Adjuncts = "adjuncts";
@@ -50,6 +59,9 @@ public static class IncludeFields
     public static readonly string[] AllowedFields = [Adjuncts];
 }
 
+/// <summary>
+/// QueryParameters used in Asset queries
+/// </summary>
 public static class QueryParameters
 {
     /// <summary>

@@ -56,10 +56,14 @@ public static class AssetQueryX
             _ => pascalCase
         };
     }
-
-    // Create an Expression from the PropertyName. 
-    // I think Split(".") handles nested properties maybe - seems unnecessary but from an SO post
-    // "x" means nothing when creating the Parameter, it's just used for debug messages
+    
+    /// <summary>
+    /// Create an Expression from the PropertyName.
+    /// </summary>
+    /// <remarks>
+    /// I think Split(".") handles nested properties maybe - seems unnecessary but from an SO post
+    /// "x" means nothing when creating the Parameter, it's just used for debug messages
+    /// </remarks>
     private static LambdaExpression CreateExpression(Type type, string propertyName)
     {
         var param = Expression.Parameter(type, "x");
