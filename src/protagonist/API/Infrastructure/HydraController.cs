@@ -114,18 +114,13 @@ public abstract class HydraController : Controller
         {
             var result = await Mediator.Send(request, cancellationToken);
 
-            if (result is { IsSuccess: true, Entity: [var single] })
-            {
-                // It's a single result, unpack from collection and return as a single entity
-                return this.ModifyResultToHttpResult(single, null, result.WriteResult, hydraBuilder, instance,
-                    errorTitle);
-            }
-            // else, it's a collection result, so we wrap it in a HydraCollection,
-            // OR it is a non-success, which will not touch the .Entity anyway
-            
-            return this.ModifyResultToHttpResult(result.Entity, result.Error, result.WriteResult, CollectionBuilder, instance, errorTitle);
+            var collectionId = Request.GetEncodedUrl();
 
-            HydraCollection<TLd> CollectionBuilder(T[] items) => new() {Id=Request.GetEncodedUrl(), Members = items.Select(hydraBuilder).ToArray() };
+            return this.ModifyResultToHttpResult(result.Entity, result.Error, result.WriteResult, CollectionBuilder,
+                instance, errorTitle);
+
+            HydraCollection<TLd> CollectionBuilder(T[] items) => new()
+                { Id = collectionId, Members = items.Select(hydraBuilder).ToArray() };
         }, errorTitle);
     }
 
