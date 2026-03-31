@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using DLCS.Core.Types;
 using IIIF.Presentation.V3.Strings;
@@ -90,6 +91,11 @@ public class Adjunct : IDeliverable
     /// The reason why this adjunct exists.
     /// </summary>
     public string? Motivation { get; set; }
+    
+    /// <summary>
+    /// An additional set of features or functionality this adjunct provides
+    /// </summary>
+    public List<string>? Provides { get; set; }
 
     public Asset Asset { get; set; } = null!;
     

@@ -72,7 +72,7 @@ public static class DatabaseTestDataPopulation
         IIIFLinkType iiifLinkType = IIIFLinkType.SeeAlso,
         string profile = null, LanguageMap label = null,
         string[] language = null, string? externalId = null, DateTime? created = null,
-        long? size = null, string? motivation = null, string? origin = null)
+        long? size = null, string? motivation = null, string? origin = null, List<string> provides = null)
     {
         asset.Result.Entity.Adjuncts ??= [];
         externalId ??= origin == null ? "https://someHost.com/someUri" : null;
@@ -90,7 +90,8 @@ public static class DatabaseTestDataPopulation
             Origin = origin,
             Created = created ?? DateTime.UtcNow,
             Size = size,
-            Motivation = motivation
+            Motivation = motivation,
+            Provides = provides
         });
 
         return asset;
