@@ -4,9 +4,9 @@ using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
-using DLCS.Web.Requests;
 using Hydra;
-using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using AssetFamily = DLCS.HydraModel.AssetFamily;
 
 namespace API.Converters;
@@ -16,13 +16,19 @@ namespace API.Converters;
 /// </summary>
 public static class AssetConverter
 {
+    private static JsonSerializer jsonSerializer = new()
+    {
+        NullValueHandling = NullValueHandling.Ignore,
+    };
+
     /// <summary>
     /// Converts the EF model object to an API resource.
     /// </summary>
     /// <param name="dbAsset"></param>
     /// <param name="urlRoots">The domain name of the API and orchestrator applications</param>
+    /// <param name="includeAdjuncts">True if embedded adjuncts should be included in response</param>
     /// <returns><see cref="Image"/> hydra model</returns>
-    public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots)
+    public static Image ToHydra(this Asset dbAsset, UrlRoots urlRoots, bool includeAdjuncts = false)
     {
         if (dbAsset.Id.Customer != dbAsset.Customer || dbAsset.Id.Space != dbAsset.Space)
         {
@@ -84,7 +90,7 @@ public static class AssetConverter
             image.DeliveryChannels = dbAsset.ImageDeliveryChannels.Select(c => new DeliveryChannel
             {
                     Channel = c.Channel,
-                    Policy = c.DeliveryChannelPolicy.System 
+                    Policy = c.DeliveryChannelPolicy.System
                         ? c.DeliveryChannelPolicy.Name
                         : $"{urlRoots.BaseUrl}/customers/{c.DeliveryChannelPolicy.Customer}/deliveryChannelPolicies/{c.Channel}/{c.DeliveryChannelPolicy.Name}"
                 }).ToArray();
@@ -92,6 +98,14 @@ public static class AssetConverter
         else
         {
             image.DeliveryChannels = [];
+        }
+
+        if (includeAdjuncts)
+        {
+            // If we are including adjuncts - embed child adjuncts as full objects, or set empty array if none
+            image.Adjuncts = dbAsset.Adjuncts != null
+                ? JToken.FromObject(dbAsset.Adjuncts.Select(a => a.ToHydra(urlRoots)).ToArray(), jsonSerializer)
+                : new JArray();
         }
 
         return image;
@@ -370,117 +384,5 @@ public static class AssetConverter
         
         // A value of <= 0 is 'unset', meaning we store 0
         int GetUsableValue(int providedValue) => Math.Max(0, providedValue);
-    }
-
-    /// <summary>
-    /// We don't want to use the Hydra ImageQuery class inside the DLCS business logic, it's an HTTP layer JSON construct.
-    /// So we convert to a very similar object.
-    /// Other code might reference the Hydra class to build clients but won't reference this.
-    /// </summary>
-    private static AssetFilter ToAssetFilter(this ImageQuery imageQuery)
-    {
-        return new AssetFilter
-        {
-            Space = imageQuery.Space,
-            Reference1 = imageQuery.String1,
-            Reference2 = imageQuery.String2,
-            Reference3 = imageQuery.String3,
-            NumberReference1 = imageQuery.Number1,
-            NumberReference2 = imageQuery.Number2,
-            NumberReference3 = imageQuery.Number3,
-            Manifests = imageQuery.Manifests
-        };
-    }
-
-    public static ImageQuery ToImageQuery(this AssetFilter assetFilter)
-    {
-        return new ImageQuery
-        {
-            Space = assetFilter.Space,
-            String1 = assetFilter.Reference1,
-            String2 = assetFilter.Reference2,
-            String3 = assetFilter.Reference3,
-            Number1 = assetFilter.NumberReference1,
-            Number2 = assetFilter.NumberReference2,
-            Number3 = assetFilter.NumberReference3,
-            Manifests = assetFilter.Manifests
-        };
-    }
-
-    /// <summary>
-    /// Attempt to parse an AssetFilter from a supplied ImageQuery object on the query string.
-    /// </summary>
-    /// <param name="request"></param>
-    /// <param name="q">Supply a q; if not present will attempt to parse from request</param>
-    /// <returns></returns>
-    public static AssetFilter? GetAssetFilterFromQParam(this HttpRequest request, string? q = null)
-    {
-        q ??= request.GetFirstQueryParamValue("q");
-        if (q.HasText())
-        {
-            var imageQuery = ImageQuery.Parse(q);
-            if (imageQuery != null)
-            {
-                return imageQuery.ToAssetFilter();
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Inspect the request for string1, number1 etc metadata fields.
-    /// Create a new AssetFilter if present, or add to the one passed in.
-    /// </summary>
-    /// <param name="request"></param>
-    /// <param name="assetFilter"></param>
-    /// <returns>An AssetFilter, or null if none passed in and no query string params present.</returns>
-    public static AssetFilter? UpdateAssetFilterFromQueryStringParams(this HttpRequest request, AssetFilter? assetFilter)
-    {
-        var string1 = request.GetFirstQueryParamValue("string1");
-        if(string1.HasText())
-        {
-            assetFilter ??= new AssetFilter();
-            assetFilter.Reference1 = string1;
-        }
-        var string2 = request.GetFirstQueryParamValue("string2");
-        if(string2.HasText())
-        {
-            assetFilter ??= new AssetFilter();
-            assetFilter.Reference2 = string2;
-        }
-        var string3 = request.GetFirstQueryParamValue("string3");
-        if(string3.HasText())
-        {
-            assetFilter ??= new AssetFilter();
-            assetFilter.Reference3 = string3;
-        }
-
-        var number1 = request.GetFirstQueryParamValueAsInt("number1");
-        if (number1 != null)
-        {
-            assetFilter ??= new AssetFilter();
-            assetFilter.NumberReference1 = number1;
-        }
-        var number2 = request.GetFirstQueryParamValueAsInt("number2");
-        if (number2 != null)
-        {
-            assetFilter ??= new AssetFilter();
-            assetFilter.NumberReference2 = number2;
-        }
-        var number3 = request.GetFirstQueryParamValueAsInt("number3");
-        if (number3 != null)
-        {
-            assetFilter ??= new AssetFilter();
-            assetFilter.NumberReference3 = number3;
-        }
-        var manifests = request.GetFirstQueryParamValueAsArray("manifests");
-        if (manifests != null)
-        {
-            assetFilter ??= new AssetFilter();
-            assetFilter.Manifests = manifests;
-        }
-
-        return assetFilter;
     }
 }

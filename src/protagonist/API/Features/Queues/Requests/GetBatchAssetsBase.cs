@@ -1,23 +1,17 @@
-﻿using API.Infrastructure.Requests;
+﻿using API.Features.Assets.Query;
+using API.Infrastructure.Page;
+using API.Infrastructure.Requests;
 using DLCS.Model.Assets;
-using DLCS.Model.Page;
 using DLCS.Repository;
-using DLCS.Repository.Assets;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Queues.Requests;
 
-public abstract class GetBatchAssetsBase<T> : IRequestHandler<T, FetchEntityResult<PageOf<Asset>>>
+public abstract class GetBatchAssetsBase<T>(DlcsContext dlcsContext)
+    : IRequestHandler<T, FetchEntityResult<PageOf<Asset>>>
     where T : GetBatchAssets
 {
-    private readonly DlcsContext dlcsContext;
-
-    protected GetBatchAssetsBase(DlcsContext dlcsContext)
-    {
-        this.dlcsContext = dlcsContext;
-    }
-
     protected abstract IQueryable<Asset> GetBatchAssets(DlcsContext dlcsContext, T request);
 
     public async Task<FetchEntityResult<PageOf<Asset>>> Handle(
@@ -26,7 +20,7 @@ public abstract class GetBatchAssetsBase<T> : IRequestHandler<T, FetchEntityResu
         var result = await GetBatchAssets(dlcsContext, request).CreatePagedResult(
             request,
             i => i
-                .ApplyAssetFilter(request.AssetFilter, true)
+                .ApplyAssetFilter(request.AssetQueryModel.Filter, true)
                 .AsSingleQuery(),
             images => images.AsOrderedAssetQuery(request),
             cancellationToken);

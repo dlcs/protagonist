@@ -3,6 +3,7 @@ using DLCS.HydraModel.Converters;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace DLCS.HydraModel;
 
@@ -174,7 +175,7 @@ public class Image : DlcsResource
     [HydraLink(Description = "Adjuncts related to the asset",
         Range = "vocab:Adjunct", ReadOnly = true, WriteOnly = false, SetManually = false)]
     [JsonProperty(Order = 81, PropertyName = "adjuncts")]
-    public string? Adjuncts { get; set; }
+    public JToken? Adjuncts { get; set; }
     
     // TODO - this is used by Wellcome DDS but is not documented.
     // I think it should be a hydra link property

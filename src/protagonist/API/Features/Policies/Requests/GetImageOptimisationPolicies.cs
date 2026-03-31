@@ -1,5 +1,5 @@
-﻿using API.Infrastructure.Requests;
-using DLCS.Model.Page;
+﻿using API.Infrastructure.Page;
+using API.Infrastructure.Requests;
 using DLCS.Model.Policies;
 using DLCS.Repository;
 using MediatR;

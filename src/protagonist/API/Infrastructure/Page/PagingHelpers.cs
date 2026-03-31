@@ -1,11 +1,7 @@
-﻿using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using DLCS.Model.Page;
+﻿using API.Infrastructure.Requests;
 using Microsoft.EntityFrameworkCore;
 
-namespace DLCS.Repository;
+namespace API.Infrastructure.Page;
 
 public static class PagingHelpers
 {
@@ -36,7 +32,7 @@ public static class PagingHelpers
         {
             entityQuery = entityOperations(entityQuery);
         }
-        
+
         var result = new PageOf<T>
         {
             Page = request.Page,
@@ -51,7 +47,7 @@ public static class PagingHelpers
     /// <summary>
     /// Apply Skip/Take logic on IQueryable using paged request
     /// </summary>
-    public static IQueryable<T> WithPaging<T>(this IQueryable<T> query, IPagedRequest request)
+    private static IQueryable<T> WithPaging<T>(this IQueryable<T> query, IPagedRequest request)
         => query
             .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize);

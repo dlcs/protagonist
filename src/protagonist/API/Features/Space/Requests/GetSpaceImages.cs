@@ -1,11 +1,9 @@
-using System.Security.Claims;
-using API.Exceptions;
+using API.Features.Assets.Query;
+using API.Infrastructure.Page;
 using API.Infrastructure.Requests;
 using DLCS.Model.Assets;
-using DLCS.Model.Page;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
-using DLCS.Web.Auth;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,55 +12,32 @@ namespace API.Features.Space.Requests;
 /// <summary>
 /// Get a paged results of images in specified space.
 /// </summary>
-public class GetSpaceImages : 
-    IRequest<FetchEntityResult<PageOf<Asset>>>, 
-    IPagedRequest, 
-    IOrderableRequest, 
-    IAssetFilterableRequest
+public class GetSpaceImages(int spaceId, int customerId, AssetQueryModel assetQueryModel)
+    : IRequest<FetchEntityResult<PageOf<Asset>>>,
+        IPagedRequest,
+        IOrderableRequest,
+        IAssetFilterableRequest
 {
-    public GetSpaceImages(int spaceId, int? customerId = null, AssetFilter? assetFilter = null)
-    {
-        CustomerId = customerId;
-        SpaceId = spaceId;
-        AssetFilter = assetFilter;
-    }
-    
-    public int SpaceId { get; }
-    public int? CustomerId { get; }
+    public int SpaceId { get; } = spaceId;
+    public int CustomerId { get; } = customerId;
     public int Page { get; set; }
     public int PageSize { get; set; }
     public string? Field { get; set; }
     public bool Descending { get; set; }
-    
-    public AssetFilter? AssetFilter { get; }
+
+    public AssetQueryModel AssetQueryModel { get; } = assetQueryModel;
 }
 
-public class GetSpaceImagesHandler : IRequestHandler<GetSpaceImages, FetchEntityResult<PageOf<Asset>>>
+public class GetSpaceImagesHandler(DlcsContext dlcsContext) : IRequestHandler<GetSpaceImages, FetchEntityResult<PageOf<Asset>>>
 {
-    private readonly ClaimsPrincipal principal;
-    private readonly DlcsContext dlcsContext;
-    
-    public GetSpaceImagesHandler(
-        ClaimsPrincipal principal,
-        DlcsContext dlcsContext)
-    {
-        this.principal = principal;
-        this.dlcsContext = dlcsContext;
-    }
-    
     public async Task<FetchEntityResult<PageOf<Asset>>> Handle(GetSpaceImages request, CancellationToken cancellationToken)
     {
-        int? customerId = request.CustomerId ?? principal.GetCustomerId();
-        if (customerId == null)
-        {
-            throw new BadRequestException("No customer Id supplied");
-        }
-        
         var result = await dlcsContext.Images.AsNoTracking().CreatePagedResult(
             request,
             i => i
                 .Where(a => a.Customer == request.CustomerId && a.Space == request.SpaceId)
-                .ApplyAssetFilter(request.AssetFilter)
+                .IncludeRelated(request.AssetQueryModel.Include)
+                .ApplyAssetFilter(request.AssetQueryModel.Filter)
                 .IncludeDeliveryChannelsWithPolicy()
                 .AsSingleQuery(),
             images => images.AsOrderedAssetQuery(request),

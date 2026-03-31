@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
+using API.Features.Assets.Query;
 using API.Features.Image;
 using API.Features.Queues.Converters;
 using API.Features.Queues.Requests;
@@ -215,18 +216,17 @@ public class CustomerQueueController : HydraController
     public async Task<IActionResult> GetBatchImages([FromRoute] int customerId, [FromRoute] int batchId,
         [FromQuery] string? q = null, CancellationToken cancellationToken = default)
     {
-        var assetFilter = Request.GetAssetFilterFromQParam(q);
-        assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
-        if (q.HasText() && assetFilter == null)
+        var assetQueryModel = Request.GetAssetQuery();
+        if (q.HasText() && assetQueryModel.Filter == null)
         {
             return this.HydraProblem("Could not parse query", null, 400);
         }
 
-        var getCustomerRequest = new GetBatchImages(customerId, batchId, assetFilter);
+        var getCustomerRequest = new GetBatchImages(customerId, batchId, assetQueryModel);
 
         return await HandlePagedFetch<Asset, GetBatchImages, DLCS.HydraModel.Image>(
             getCustomerRequest,
-            image => image.ToHydra(GetUrlRoots()),
+            image => image.ToHydra(GetUrlRoots(), assetQueryModel.IncludesField(IncludeFields.Adjuncts)),
             errorTitle: "Get Batch Images failed",
             cancellationToken: cancellationToken
         );
@@ -262,18 +262,17 @@ public class CustomerQueueController : HydraController
     public async Task<IActionResult> GetBatchAssets([FromRoute] int customerId, [FromRoute] int batchId,
         [FromQuery] string? q = null, CancellationToken cancellationToken = default)
     {
-        var assetFilter = Request.GetAssetFilterFromQParam(q);
-        assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
-        if (q.HasText() && assetFilter == null)
+        var assetQueryModel = Request.GetAssetQuery();
+        if (q.HasText() && assetQueryModel.Filter == null)
         {
             return this.HydraProblem("Could not parse query", null, 400);
         }
 
-        var getCustomerRequest = new GetBatchAssets(customerId, batchId, assetFilter);
+        var getCustomerRequest = new GetBatchAssets(customerId, batchId, assetQueryModel);
 
         return await HandlePagedFetch<Asset, GetBatchAssets, DLCS.HydraModel.Image>(
             getCustomerRequest,
-            image => image.ToHydra(GetUrlRoots()),
+            image => image.ToHydra(GetUrlRoots(), assetQueryModel.IncludesField(IncludeFields.Adjuncts)),
             errorTitle: "Get Batch Assets failed",
             cancellationToken: cancellationToken
         );
