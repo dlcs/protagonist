@@ -37,10 +37,10 @@ public class ItemArrayOrHydraCollectionConverter<T> : JsonConverter<ItemArrayOrH
         {
             case JTokenType.Array:
                 var array = token.ToObject<T[]>(serializer);
-                return array == null ? null : new ItemArrayOrHydraCollection<T>(array);
+                return new ItemArrayOrHydraCollection<T>(array ?? []);
             case JTokenType.Object:
                 var items = ReadObjectCase((JObject)token, serializer);
-                return items is {Length:>0} ?  new ItemArrayOrHydraCollection<T>(items) : null;
+                return new ItemArrayOrHydraCollection<T>(items);
             default:
                 return null;
         }
@@ -51,7 +51,8 @@ public class ItemArrayOrHydraCollectionConverter<T> : JsonConverter<ItemArrayOrH
         if ((string?)obj["@type"] != "Collection")
         {
             // Not HydraCollection - most likely a single object provided
-            return [obj.ToObject<T>(serializer)!];
+            var single = obj.ToObject<T>(serializer);
+            return single == null ? [] : [single];
         }
 
         // Seems to be HydraCollection
@@ -64,7 +65,7 @@ public class ItemArrayOrHydraCollectionConverter<T> : JsonConverter<ItemArrayOrH
 
         return members.Type != JTokenType.Array 
             ? throw new JsonSerializationException("'members' must be an array.") 
-            : members.ToObject<T[]>(serializer)!;
+            : members.ToObject<T[]>(serializer) ?? [];
     }
 
 }

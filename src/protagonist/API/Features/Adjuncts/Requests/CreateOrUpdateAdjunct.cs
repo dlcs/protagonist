@@ -40,24 +40,32 @@ public class CreateOrUpdateAdjunctHandler(
     {
         // this is set from path to the same value for all, simplifying querying:
         var assetId = request.Adjuncts[0].AssetId;
+        
+        // we gather the id's provided as they will be used throughout:
         var adjunctIds = request.Adjuncts.Select(a => a.Id).ToArray();
+        
+        // preload any of the adjuncts that already exist (= should be updated)
+        // note that we "pretend" there are no existing ones if request is marked as "create only"
         var existing = request.CreateOnly
             ? [] // act as if no existing
             : await dbContext.Adjuncts
                 .Where(a => a.AssetId == assetId && adjunctIds.Contains(a.Id))
                 .ToDictionaryAsync(a => a.Id, cancellationToken);
 
+        // trip-flag that will determine result type
         var anyUpdates = false;
 
+        // We use a custom "wrapper" document for the Adjuncts being processed
+        // This reduces the complexity of preserving set of data for each adjunct in some sort of dictionaries here
         var adjuncts = new List<AdjunctDocument>(request.Adjuncts.Length);
         foreach (var adjunct in request.Adjuncts)
         {
             try
             {
                 var existingAdjunct = !request.CreateOnly && existing.TryGetValue(adjunct.Id, out var e) ? e : null;
-                anyUpdates =
-                    anyUpdates ||
-                    existingAdjunct != null; // true if at least one is updating existing - this or previous
+
+                // flag remains true if it was true (tripped)
+                anyUpdates = anyUpdates || existingAdjunct != null; // true if at least one is updating existing - this or previous
 
                 var processed = await HandleAdjunct(adjunct, existingAdjunct, cancellationToken);
                 adjuncts.Add(processed);
@@ -93,8 +101,7 @@ public class CreateOrUpdateAdjunctHandler(
         var currentAdjuncts = await dbContext.Adjuncts.AsNoTracking().Include(a => a.Asset)
             .Where(a => a.AssetId == assetId && adjunctIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, cancellationToken: cancellationToken);
-
-
+        
         List<string> failed = [];
 
         foreach (var adjunct in adjuncts)
@@ -116,7 +123,7 @@ public class CreateOrUpdateAdjunctHandler(
         {
             return ModifyEntityResult<Adjunct[]>.Failure(
                 $"Adjuncts with ids '{string.Join(", ", failed)}' for asset {assetId} failed submission for ingestion and will need to be resubmitted",
-                WriteResult.NotFound);
+                WriteResult.Error);
         }
         
         return ModifyEntityResult<Adjunct[]>.Success( adjuncts.Select(a => a.Processed).ToArray(),

@@ -62,11 +62,14 @@ public class AdjunctsController(
     }
     
     /// <summary>
-    /// Create an adjunct for an asset.
+    /// Create an adjunct, or adjuncts, for an asset.
     /// </summary>
-    /// <returns>A Hydra JSON-LD Adjunct object representing the adjuncts.</returns>
+    /// <returns>A Hydra JSON-LD Adjunct object representing the adjunct, or a HydraCollection if more than 1 submitted</returns>
     [HttpPost]
     [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
+    [ProducesResponseType(201, Type = typeof(HydraCollection<Adjunct>))]
+    [ProducesResponseType(200, Type = typeof(Adjunct))]
+    [ProducesResponseType(201, Type = typeof(Adjunct))]
     [ProducesResponseType(404, Type = typeof(Error))]
     public async Task<IActionResult> PostAdjunct(int customerId, int spaceId, string imageId, 
         [FromBody] ItemArrayOrHydraCollection<Adjunct> adjuncts, 
