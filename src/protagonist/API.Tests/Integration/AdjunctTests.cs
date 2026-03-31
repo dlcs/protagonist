@@ -849,12 +849,146 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Label.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.Origin.Should().Be("https://some-location.com/an-adjunct");
-        adjunct.PublicId.Should().Be("https://dlcs.digirati.io/adjuncts/99/1/PostAdjunct_CreatesHostedAdjunct/someAdjunctId");
+        adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/someAdjunctId");
         adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
         adjunct.Error.Should().BeNullOrEmpty("no errors yet");
         response.Headers.Location.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_CreatesMultipleHostedAdjuncts_AsArray()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        const string newAdjunctJson = """
+                                      [
+                                          {
+                                            "id": "someAdjunctId1",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct1",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          },
+                                          {
+                                            "id": "someAdjunctId2",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct2",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          }
+                                      ]
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var result = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+
+        result.Should().NotBeNull("A collection result is expected");
+        result.Members.Should().NotBeNullOrEmpty("two adjuncts are expected");
+
+        for(var i = 0; i < result.Members.Length; i++)
+        {
+            var adjunct = result.Members[i];
+            adjunct.Id.Should()
+                .Be(
+                    $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId{i+1}");
+            adjunct.IIIFLink.Should().Be("seeAlso");
+            adjunct.Label.First().Key.Should().Be("label");
+            adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
+            adjunct.Origin.Should().Be($"https://some-location.com/an-adjunct{i+1}");
+            adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/someAdjunctId{i+1}");
+            adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
+            adjunct.Error.Should().BeNullOrEmpty("no errors yet");
+        }
+        
+        response.Headers.Location.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_CreatesMultipleHostedAdjuncts_AsHydraCollection()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        const string newAdjunctJson = """
+                                      {
+                                          "@type": "Collection",
+                                          "members":
+                                              [
+                                                  {
+                                                    "id": "someAdjunctId1",
+                                                    "@type": "Image",
+                                                    "origin": "https://some-location.com/an-adjunct1",
+                                                    "iiifLink": "seeAlso",
+                                                    "mediaType": "a-mediaType",
+                                                    "label": {"label": ["value"]},
+                                                    "language": ["en"],
+                                                  },
+                                                  {
+                                                    "id": "someAdjunctId2",
+                                                    "@type": "Image",
+                                                    "origin": "https://some-location.com/an-adjunct2",
+                                                    "iiifLink": "seeAlso",
+                                                    "mediaType": "a-mediaType",
+                                                    "label": {"label": ["value"]},
+                                                    "language": ["en"],
+                                                  }
+                                              ]
+                                      }
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var result = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+
+        result.Should().NotBeNull("A collection result is expected");
+        result.Members.Should().NotBeNullOrEmpty("two adjuncts are expected");
+
+        for(var i = 0; i < result.Members.Length; i++)
+        {
+            var adjunct = result.Members[i];
+            adjunct.Id.Should()
+                .Be(
+                    $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId{i+1}");
+            adjunct.IIIFLink.Should().Be("seeAlso");
+            adjunct.Label.First().Key.Should().Be("label");
+            adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
+            adjunct.Origin.Should().Be($"https://some-location.com/an-adjunct{i+1}");
+            adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/someAdjunctId{i+1}");
+            adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
+            adjunct.Error.Should().BeNullOrEmpty("no errors yet");
+        }
+        
+        response.Headers.Location.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts");
     }
     
     [Fact]

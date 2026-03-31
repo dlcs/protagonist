@@ -12,6 +12,7 @@ using Hydra;
 using Hydra.Collections;
 using Hydra.Model;
 using MediatR;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -124,7 +125,7 @@ public abstract class HydraController : Controller
             
             return this.ModifyResultToHttpResult(result.Entity, result.Error, result.WriteResult, CollectionBuilder, instance, errorTitle);
 
-            HydraCollection<TLd> CollectionBuilder(T[] items) => new() { Members = items.Select(hydraBuilder).ToArray() };
+            HydraCollection<TLd> CollectionBuilder(T[] items) => new() {Id=Request.GetEncodedUrl(), Members = items.Select(hydraBuilder).ToArray() };
         }, errorTitle);
     }
 
