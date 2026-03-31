@@ -61,9 +61,9 @@ public static class AssetQueryConverter
 
     /// <summary>
     /// Inspect the request for string1, number1 etc metadata fields.
-    /// Create a new AssetFilter if present, or add to the one passed in.
+    /// Create a new <see cref="AssetFilter" /> if present, or add to the one passed in.
     /// </summary>
-    /// <returns>An AssetFilter, or null if none passed in and no query string params present.</returns>
+    /// <returns>An <see cref="AssetFilter" />, or null if none passed in and no query string params present.</returns>
     private static AssetFilter? UpdateAssetFilterFromQueryStringParams(this HttpRequest request,
         AssetFilter? assetFilter)
     {
@@ -118,7 +118,7 @@ public static class AssetQueryConverter
     /// Convert the Hydra <see cref="ImageQuery"/> to a <see cref="AssetFilter"/>.
     /// </summary>
     /// <remarks>
-    /// ImageQuery is a Hydra object, map to similar object for business logic use
+    /// <see cref="ImageQuery"/> is a Hydra object, map to similar object for business logic use
     /// </remarks>
     private static AssetFilter ToAssetFilter(this ImageQuery imageQuery) =>
         new()
