@@ -94,7 +94,7 @@ public class Adjunct : DlcsResource
     [RdfProperty(Description = "An additional set of features or functionality this adjunct provides.",
     Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 25, PropertyName = "provides")]
-    public List<string>? Provides { get; set; }
+    public string? Provides { get; set; }
     
     [RdfProperty(Description = "Whether the adjunct is currently being ingested.",
         Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]

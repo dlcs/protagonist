@@ -95,7 +95,7 @@ public class Adjunct : IDeliverable
     /// <summary>
     /// An additional set of features or functionality this adjunct provides
     /// </summary>
-    public List<string>? Provides { get; set; }
+    public string? Provides { get; set; }
 
     public Asset Asset { get; set; } = null!;
     

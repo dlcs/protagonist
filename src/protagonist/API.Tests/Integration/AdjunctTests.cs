@@ -67,7 +67,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
                                                 "mediaType": "a-mediaType",
                                                 "label": {"label": ["value"]},
                                                 "motivation": "a motivation",
-                                                "provides": ["translation"],
+                                                "provides": "translation",
                                                 "language": ["en"],
                                               }
                                       """;
@@ -91,7 +91,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.Motivation.Should().Be("a motivation");
-        adjunct.Provides.Should().OnlyContain(p => p == "translation");
+        adjunct.Provides.Should().Be("translation");
         
         response.Headers.Location.Should()
             .Be(
@@ -582,7 +582,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
         await dbContext.Images.AddTestAsset(assetId)
-            .WithTestAdjunct("someAdjunctId", created: DateTime.UtcNow.AddDays(-2), motivation: "something", provides: ["something"]);
+            .WithTestAdjunct("someAdjunctId", created: DateTime.UtcNow.AddDays(-2), motivation: "something", provides: "something");
         await dbContext.SaveChangesAsync();
         
         const string updateAdjunctJson = """
@@ -595,7 +595,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
                                                    "label": {"label": ["value"]},
                                                    "language": ["en"],
                                                    "motivation": "changed",
-                                                   "provides": ["changed"]
+                                                   "provides": "changed"
                                                  }
                                          """;
         
@@ -620,7 +620,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.Motivation.Should().Be("changed");
-        adjunct.Provides.Should().OnlyContain(p => p == "changed");
+        adjunct.Provides.Should().Be("changed");
         
         A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Update && r.After.AssetId == assetId), 

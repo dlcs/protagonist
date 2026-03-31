@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -11,10 +10,10 @@ namespace DLCS.Repository.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<List<string>>(
+            migrationBuilder.AddColumn<string>(
                 name: "Provides",
                 table: "Adjuncts",
-                type: "text[]",
+                type: "text",
                 nullable: true);
         }
 
