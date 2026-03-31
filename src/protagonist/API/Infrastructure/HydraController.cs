@@ -79,7 +79,43 @@ public abstract class HydraController : Controller
         {
             var result = await Mediator.Send(request, cancellationToken);
 
-            return this.ModifyResultToHttpResult(result, hydraBuilder, instance, errorTitle);
+            return this.ModifyResultToHttpResult(result.Entity, result.Error, result.WriteResult, hydraBuilder, instance, errorTitle);
+        }, errorTitle);
+    }
+    
+    /// <summary>
+    /// Handle an upsert request - this takes a IRequest which returns a ModifyEntityResult{T}.
+    /// The request is sent and result is transformed to an http hydra result.  
+    /// </summary>
+    /// <param name="request">IRequest to modify data</param>
+    /// <param name="hydraBuilder">Delegate to transform returned entity to a Hydra representation</param>
+    /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
+    /// <param name="errorTitle">
+    /// The value for <see cref="Error.Title" />. In some instances this will be prepended to the actual error name.
+    /// e.g. errorTitle + ": Conflict"
+    /// </param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <typeparam name="T">Type of entity being upserted</typeparam>
+    /// <returns>
+    /// ActionResult generated from ModifyEntityResult. This will be the Hydra model + 200/201 on success. Or a Hydra
+    /// error and appropriate status code if failed.
+    /// </returns>
+    protected async Task<IActionResult> HandleUpsert<T, TLd>(
+        IRequest<ModifyEntityResult<T[]>> request,
+        Func<T, TLd> hydraBuilder,
+        string? instance = null,
+        string? errorTitle = "Operation failed",
+        CancellationToken cancellationToken = default)
+        where T : class
+        where TLd : JsonLdBase
+    {
+        return await HandleHydraRequest(async () =>
+        {
+            var result = await Mediator.Send(request, cancellationToken);
+
+            return this.ModifyResultToHttpResult(result.Entity, result.Error, result.WriteResult, CollectionBuilder, instance, errorTitle);
+
+            HydraCollection<TLd> CollectionBuilder(T[] items) => new() { Members = items.Select(hydraBuilder).ToArray() };
         }, errorTitle);
     }
 

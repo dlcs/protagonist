@@ -138,7 +138,9 @@ public static class ControllerBaseX
     /// error and appropriate status code if failed.
     /// </summary>
     /// <param name="controller">Current controllerBase object</param>
-    /// <param name="entityResult">Result to transform</param>
+    /// <param name="entity">entity that was modified or null if n/a</param>
+    /// <param name="error">error if one happened, otherwise null</param>
+    /// <param name="result">the result of the write operation</param>
     /// <param name="hydraBuilder">Delegate to transform ModifyEntityResult.Entity to Hydra representation</param>
     /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
     /// <param name="errorTitle">
@@ -150,24 +152,24 @@ public static class ControllerBaseX
     /// ActionResult generated from ModifyEntityResult
     /// </returns>
     public static IActionResult ModifyResultToHttpResult<T>(this ControllerBase controller,
-        ModifyEntityResult<T> entityResult,
+        T? entity, string? error, WriteResult result,
         Func<T, JsonLdBase> hydraBuilder, string? instance,
         string? errorTitle)
         where T : class =>
-        entityResult.WriteResult switch
+        result switch
         {
-            WriteResult.Updated => controller.Ok(hydraBuilder(entityResult.Entity)),
-            WriteResult.Created => controller.HydraCreated(hydraBuilder(entityResult.Entity)),
-            WriteResult.NotFound => controller.HydraNotFound(entityResult.Error),
-            WriteResult.Error => controller.HydraProblem(entityResult.Error, instance, 500, errorTitle),
-            WriteResult.BadRequest => controller.HydraProblem(entityResult.Error, instance, 400, errorTitle),
-            WriteResult.Conflict => controller.HydraProblem(entityResult.Error, instance, 409, 
+            WriteResult.Updated => controller.Ok(hydraBuilder(entity!)),
+            WriteResult.Created => controller.HydraCreated(hydraBuilder(entity!)),
+            WriteResult.NotFound => controller.HydraNotFound(error),
+            WriteResult.Error => controller.HydraProblem(error, instance, 500, errorTitle),
+            WriteResult.BadRequest => controller.HydraProblem(error, instance, 400, errorTitle),
+            WriteResult.Conflict => controller.HydraProblem(error, instance, 409, 
                 $"{errorTitle}: Conflict"),
-            WriteResult.FailedValidation => controller.HydraProblem(entityResult.Error, instance, 400,
+            WriteResult.FailedValidation => controller.HydraProblem(error, instance, 400,
                 $"{errorTitle}: Validation failed"),
-            WriteResult.StorageLimitExceeded => controller.HydraProblem(entityResult.Error, instance, 507,
+            WriteResult.StorageLimitExceeded => controller.HydraProblem(error, instance, 507,
                 $"{errorTitle}: Storage limit exceeded"),
-            _ => controller.HydraProblem(entityResult.Error, instance, 500, errorTitle),
+            _ => controller.HydraProblem(error, instance, 500, errorTitle),
         };
 
     /// <summary>

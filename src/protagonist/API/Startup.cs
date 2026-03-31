@@ -11,6 +11,8 @@ using API.Settings;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
 using DLCS.Core.Settings;
+using DLCS.HydraModel;
+using DLCS.HydraModel.Converters;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Messaging;
@@ -117,6 +119,7 @@ public class Startup
             .AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ApplyHydraSerializationSettings();
+                ItemArrayOrHydraCollectionConverter<Adjunct>.Register(options.SerializerSettings);
             });
 
         services.AddSwaggerGenNewtonsoftSupport();
