@@ -83,7 +83,7 @@ public class CreateOrUpdateAdjunctHandler(
                 UniqueConstraintError => ModifyEntityResult<Adjunct[]>.Failure(
                     $"Create failed. Adjunct or adjuncts with id(s) in ({string.Join(',', adjuncts.Select(a => a.Processed.Id))}) already exists",
                     WriteResult.Conflict),
-                DbForeignKeyConstraintError => ModifyEntityResult<Adjunct[]>.Failure($"Asset with id {assetId} not found",
+                DbForeignKeyConstraintError => ModifyEntityResult<Adjunct[]>.Failure($"Asset with id '{assetId}' not found",
                     WriteResult.NotFound),
                 _ => ModifyEntityResult<Adjunct[]>.Failure($"Unknown database error saving adjuncts for {assetId}")
             };

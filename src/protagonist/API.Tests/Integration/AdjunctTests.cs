@@ -227,7 +227,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
-        error.Detail.Should().Be("Create failed. An adjunct with id 'someAdjunctId' already exists");
+        error.Detail.Should().Be("Create failed. Adjunct or adjuncts with id(s) in (someAdjunctId) already exists");
     }
     
     [Fact]
@@ -263,7 +263,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
-        error.Detail.Should().Be("Create failed. An adjunct with id 'someAdjunctId' already exists");
+        error.Detail.Should().Be("Create failed. Adjunct or adjuncts with id(s) in (someAdjunctId) already exists");
     }
     
     [Fact]
@@ -573,7 +573,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
-        error.Detail.Should().Be($"Create failed. An adjunct with id '{adjunctId}' already exists");
+        error.Detail.Should().Be($"Create failed. Adjunct or adjuncts with id(s) in ({adjunctId}) already exists");
     }
     
     [Fact]

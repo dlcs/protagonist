@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Text.Json;
 using Hydra;
 using Hydra.Collections;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace DLCS.HydraModel.Converters;
 
@@ -20,20 +23,48 @@ public class ItemArrayOrHydraCollectionConverter<T> : JsonConverter<ItemArrayOrH
     public override ItemArrayOrHydraCollection<T>? ReadJson(JsonReader reader, Type objectType, ItemArrayOrHydraCollection<T>? existingValue,
         bool hasExistingValue, JsonSerializer serializer)
     {
-        reader.Read();
-        switch (reader.TokenType)
+        // Sanity check -> fail fast
+        if (reader.TokenType == JsonToken.Null)
         {
-            case JsonToken.String:
-                var single = serializer.Deserialize<T>(reader);
-                return single == null ? null : new ItemArrayOrHydraCollection<T>(single);
-            case JsonToken.StartArray:
-                var array = serializer.Deserialize<T[]>(reader);
+            return null;
+        }
+
+        // Buffer the whole current JSON value - we will need it to differentiate HydraCollection<T> from just T
+        var token = JToken.Load(reader);
+        
+        // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault - we only care about array/object
+        switch (token.Type)
+        {
+            case JTokenType.Array:
+                var array = token.ToObject<T[]>(serializer);
                 return array == null ? null : new ItemArrayOrHydraCollection<T>(array);
-            case JsonToken.StartObject:
-                var hydra = serializer.Deserialize<HydraCollection<T>>(reader);
-                return hydra is not { Members: { } members } ? null : new ItemArrayOrHydraCollection<T>(members);
+            case JTokenType.Object:
+                var items = ReadObjectCase((JObject)token, serializer);
+                return items is {Length:>0} ?  new ItemArrayOrHydraCollection<T>(items) : null;
             default:
                 return null;
         }
     }
+    
+    private static T[] ReadObjectCase(JObject obj, JsonSerializer serializer)
+    {
+        if ((string?)obj["@type"] != "Collection")
+        {
+            // Not HydraCollection - most likely a single object provided
+            return [obj.ToObject<T>(serializer)!];
+        }
+
+        // Seems to be HydraCollection
+        var members = obj["members"];
+
+        if (members == null)
+        {
+            return [];
+        }
+
+        return members.Type != JTokenType.Array 
+            ? throw new JsonSerializationException("'members' must be an array.") 
+            : members.ToObject<T[]>(serializer)!;
+    }
+
 }
