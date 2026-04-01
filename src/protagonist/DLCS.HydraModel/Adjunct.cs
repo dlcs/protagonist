@@ -91,13 +91,18 @@ public class Adjunct : DlcsResource
     [JsonProperty(Order = 24, PropertyName = "motivation")]
     public string? Motivation { get; set; }
     
+    [RdfProperty(Description = "An additional set of features or functionality this adjunct provides.",
+    Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 25, PropertyName = "provides")]
+    public string? Provides { get; set; }
+    
     [RdfProperty(Description = "Whether the adjunct is currently being ingested.",
         Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 25, PropertyName = "ingesting")]
+    [JsonProperty(Order = 26, PropertyName = "ingesting")]
     public bool? Ingesting { get; set; }
     
     [RdfProperty(Description = "Reported errors with this adjunct.",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 26, PropertyName = "error")]
+    [JsonProperty(Order = 27, PropertyName = "error")]
     public string? Error { get; set; }
 }

@@ -90,6 +90,11 @@ public class Adjunct : IDeliverable
     /// The reason why this adjunct exists.
     /// </summary>
     public string? Motivation { get; set; }
+    
+    /// <summary>
+    /// An additional set of features or functionality this adjunct provides
+    /// </summary>
+    public string? Provides { get; set; }
 
     public Asset Asset { get; set; } = null!;
     

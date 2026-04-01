@@ -48,6 +48,7 @@ public static class AdjunctConverter
             Language = hydraAdjunct.Language,
             Size = hydraAdjunct.Size,
             Motivation = hydraAdjunct.Motivation,
+            Provides = hydraAdjunct.Provides,
         };
         
         if (hydraAdjunct.Origin is not null)
@@ -87,6 +88,7 @@ public static class AdjunctConverter
             Size = adjunct.Size,
             Error = adjunct.Error,
             Motivation = adjunct.Motivation,
+            Provides =  adjunct.Provides,
             Ingesting = adjunct.Ingesting
         };
 }
