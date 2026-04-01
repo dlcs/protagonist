@@ -96,6 +96,11 @@ public class Adjunct : IDeliverable
     /// </summary>
     public string? Provides { get; set; }
 
+    /// <summary>
+    /// The id of the AdjunctBatch this adjunct was most recently submitted in, if any.
+    /// </summary>
+    public int? Batch { get; set; }
+
     public Asset Asset { get; set; } = null!;
     
     public Adjunct Clone()
