@@ -1,7 +1,6 @@
 using System;
 using API.Converters;
 using API.Exceptions;
-using DLCS.Core.Enum;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using Adjunct = DLCS.HydraModel.Adjunct;
@@ -15,6 +14,119 @@ public class AdjunctConverterTests
     private const string AssetId = "test-asset";
     private const string AdjunctId = "test-adjunct";
     private const string BaseUrl = "https://dlcs.example";
+
+    // Tests for ToDlcsModel(hydraAdjunct, customerId) — parses Asset field internally
+
+    [Fact]
+    public void ToDlcsModel_ParseAssetId_ShortFormAsset_ConvertsCorrectly()
+    {
+        // Arrange
+        var hydraAdjunct = new Adjunct
+        {
+            ModelId = AdjunctId,
+            Asset = $"{Customer}/{Space}/{AssetId}",
+            Type = "AnnotationPage",
+            MediaType = "application/json",
+            IIIFLink = "seeAlso",
+            ExternalId = "https://example.com/adjunct",
+        };
+
+        // Act
+        var adjunct = hydraAdjunct.ToDlcsModel(Customer);
+
+        // Assert
+        adjunct.AssetId.Should().Be(new AssetId(Customer, Space, AssetId));
+        adjunct.Id.Should().Be(AdjunctId);
+    }
+
+    [Fact]
+    public void ToDlcsModel_ParseAssetId_FullUriAsset_ConvertsCorrectly()
+    {
+        // Arrange
+        var hydraAdjunct = new Adjunct
+        {
+            ModelId = AdjunctId,
+            Asset = $"https://dlcs.example/customers/{Customer}/spaces/{Space}/images/{AssetId}",
+            Type = "AnnotationPage",
+            MediaType = "application/json",
+            IIIFLink = "seeAlso",
+            ExternalId = "https://example.com/adjunct",
+        };
+
+        // Act
+        var adjunct = hydraAdjunct.ToDlcsModel(Customer);
+
+        // Assert
+        adjunct.AssetId.Should().Be(new AssetId(Customer, Space, AssetId));
+        adjunct.Id.Should().Be(AdjunctId);
+    }
+
+    [Fact]
+    public void ToDlcsModel_ParseAssetId_UsesSuppliedAdjunctId()
+    {
+        // Arrange
+        const string suppliedId = "my-supplied-id";
+        var hydraAdjunct = new Adjunct
+        {
+            ModelId = "original-id",
+            Asset = $"{Customer}/{Space}/{AssetId}",
+            Type = "AnnotationPage",
+            MediaType = "application/json",
+            IIIFLink = "seeAlso",
+            ExternalId = "https://example.com/adjunct",
+        };
+
+        // Act
+        var adjunct = hydraAdjunct.ToDlcsModel(Customer, suppliedId);
+
+        // Assert
+        adjunct.Id.Should().Be(suppliedId);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("not-a-valid-asset-ref")]
+    [InlineData("https://example.com/no/asset/path/here")]
+    public void ToDlcsModel_ParseAssetId_ThrowsBadRequestException_WhenAssetUnparseable(string asset)
+    {
+        // Arrange
+        var hydraAdjunct = new Adjunct
+        {
+            ModelId = AdjunctId,
+            Asset = asset,
+            Type = "AnnotationPage",
+            MediaType = "application/json",
+            IIIFLink = "seeAlso",
+            ExternalId = "https://example.com/adjunct",
+        };
+
+        // Act & Assert
+        var action = () => hydraAdjunct.ToDlcsModel(Customer);
+        action.Should().Throw<BadRequestException>();
+    }
+
+    [Fact]
+    public void ToDlcsModel_ParseAssetId_ThrowsBadRequestException_WhenAssetBelongsToDifferentCustomer()
+    {
+        // Arrange
+        const int differentCustomer = 1;
+        var hydraAdjunct = new Adjunct
+        {
+            ModelId = AdjunctId,
+            Asset = $"{Customer}/{Space}/{AssetId}", // Customer 99, not 1
+            Type = "AnnotationPage",
+            MediaType = "application/json",
+            IIIFLink = "seeAlso",
+            ExternalId = "https://example.com/adjunct",
+        };
+
+        // Act & Assert
+        var action = () => hydraAdjunct.ToDlcsModel(differentCustomer);
+        action.Should().Throw<BadRequestException>()
+            .WithMessage($"Asset '{Customer}/{Space}/{AssetId}' does not belong to customer {differentCustomer}");
+    }
 
     [Fact]
     public void ToDlcsModel_WithOrigin()
