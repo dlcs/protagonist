@@ -32,9 +32,9 @@ public static class BatchX
     /// <summary>
     /// Add a new <see cref="BatchAsset"/> to <see cref="Batch"/>
     /// </summary>
-    public static Batch AddBatchAsset(this Batch batch, AssetId assetId, BatchAssetStatus status = BatchAssetStatus.Waiting)
+    public static Batch AddBatchAsset(this Batch batch, AssetId assetId, BatchStatus status = BatchStatus.Waiting)
     {
-        (batch.BatchAssets ??= new List<BatchAsset>()).Add(new BatchAsset { AssetId = assetId, Status = status });
+        (batch.BatchAssets ??= []).Add(new BatchAsset { AssetId = assetId, Status = status });
         return batch;
     }
 }

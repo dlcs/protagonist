@@ -52,8 +52,8 @@ public class NamedQueryRepositoryTests
         var batch = dbContext.Batches.AddTestBatch(batchId1).Result;
         batch.Entity
             .AddBatchAsset(batchedAsset1)
-            .AddBatchAsset(batchedAsset2, BatchAssetStatus.Completed)
-            .AddBatchAsset(batchedAsset3, BatchAssetStatus.Error);
+            .AddBatchAsset(batchedAsset2, BatchStatus.Completed)
+            .AddBatchAsset(batchedAsset3, BatchStatus.Error);
         
         // Images with manifests - first with 2 and second with 2. 1 manifest is in both
         var manifestAsset1 = AssetId.FromString("99/3/1");

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DLCS.Repository.Migrations
 {
     /// <inheritdoc />
-    public partial class AddAdjunctBatchtables : Migration
+    public partial class AddAdjunctBatch : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -44,11 +44,14 @@ namespace DLCS.Repository.Migrations
                 {
                     BatchId = table.Column<int>(type: "integer", nullable: false),
                     AdjunctId = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    AdjunctAssetId = table.Column<string>(type: "text", nullable: false)
+                    AssetId = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Error = table.Column<string>(type: "text", nullable: true),
+                    Finished = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AdjunctBatchAdjuncts", x => new { x.BatchId, x.AdjunctId, x.AdjunctAssetId });
+                    table.PrimaryKey("PK_AdjunctBatchAdjuncts", x => new { x.BatchId, x.AdjunctId, x.AssetId });
                     table.ForeignKey(
                         name: "FK_AdjunctBatchAdjuncts_AdjunctBatches_BatchId",
                         column: x => x.BatchId,

@@ -146,10 +146,19 @@ namespace DLCS.Repository.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("AdjunctAssetId")
+                    b.Property<string>("AssetId")
                         .HasColumnType("text");
 
-                    b.HasKey("BatchId", "AdjunctId", "AdjunctAssetId");
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("Finished")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("BatchId", "AdjunctId", "AssetId");
 
                     b.ToTable("AdjunctBatchAdjuncts");
                 });

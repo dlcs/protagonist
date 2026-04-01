@@ -290,8 +290,8 @@ public class EngineAssetRepositoryTests
         batch.Entity
             .AddBatchAsset(assetId)
             .AddBatchAsset(waiting)
-            .AddBatchAsset(failing, BatchAssetStatus.Error)
-            .AddBatchAsset(complete, BatchAssetStatus.Completed);
+            .AddBatchAsset(failing, BatchStatus.Error)
+            .AddBatchAsset(complete, BatchStatus.Completed);
         await dbContext.Images.AddTestAsset(assetId, batch: batchId);
         await dbContext.Images.AddTestAsset(waiting, batch: batchId);
         await dbContext.Images.AddTestAsset(failing, batch: batchId);
@@ -321,7 +321,7 @@ public class EngineAssetRepositoryTests
         updatedItem.Completed.Should().Be(1);
         updatedItem.Finished.Should().BeNull();
 
-        updatedItem.BatchAssets.Single(ba => ba.AssetId == assetId).Status.Should().Be(BatchAssetStatus.Error);
+        updatedItem.BatchAssets.Single(ba => ba.AssetId == assetId).Status.Should().Be(BatchStatus.Error);
         A.CallTo(() =>
                 batchCompletedNotificationSender.SendBatchCompletedMessage(
                     A<Batch>._,
@@ -343,8 +343,8 @@ public class EngineAssetRepositoryTests
         batch.Entity
             .AddBatchAsset(assetId)
             .AddBatchAsset(waiting)
-            .AddBatchAsset(failing, BatchAssetStatus.Error)
-            .AddBatchAsset(complete, BatchAssetStatus.Completed);
+            .AddBatchAsset(failing, BatchStatus.Error)
+            .AddBatchAsset(complete, BatchStatus.Completed);
 
         var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
         await dbContext.Images.AddTestAsset(waiting, batch: batchId);
@@ -372,7 +372,7 @@ public class EngineAssetRepositoryTests
         updatedItem.Completed.Should().Be(2);
         updatedItem.Finished.Should().BeNull();
 
-        updatedItem.BatchAssets.Single(ba => ba.AssetId == assetId).Status.Should().Be(BatchAssetStatus.Completed);
+        updatedItem.BatchAssets.Single(ba => ba.AssetId == assetId).Status.Should().Be(BatchStatus.Completed);
         A.CallTo(() =>
                 batchCompletedNotificationSender.SendBatchCompletedMessage(
                     A<Batch>._,
@@ -392,7 +392,7 @@ public class EngineAssetRepositoryTests
         batch.Entity
             .AddBatchAsset(assetId)
             .AddBatchAsset(waiting)
-            .AddBatchAsset(failing, BatchAssetStatus.Error);
+            .AddBatchAsset(failing, BatchStatus.Error);
         var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
         await dbContext.Images.AddTestAsset(waiting, batch: batchId);
         await dbContext.Images.AddTestAsset(failing, batch: batchId);
@@ -418,7 +418,7 @@ public class EngineAssetRepositoryTests
         updatedBatch.Errors.Should().Be(1);
         updatedBatch.Completed.Should().Be(0);
         updatedBatch.Finished.Should().BeNull();
-        updatedBatch.BatchAssets.Single(ba => ba.AssetId == assetId).Status.Should().Be(BatchAssetStatus.Waiting);
+        updatedBatch.BatchAssets.Single(ba => ba.AssetId == assetId).Status.Should().Be(BatchStatus.Waiting);
 
         var updatedImage = await dbContext.Images.SingleAsync(i => i.Id == assetId);
         updatedImage.Finished.Should().BeNull();
@@ -443,8 +443,8 @@ public class EngineAssetRepositoryTests
         var batch = await dbContext.Batches.AddTestBatch(batchId, count: 3, errors: 1, completed: 1);
         batch.Entity
             .AddBatchAsset(assetId)
-            .AddBatchAsset(failing, BatchAssetStatus.Error)
-            .AddBatchAsset(complete, BatchAssetStatus.Completed);
+            .AddBatchAsset(failing, BatchStatus.Error)
+            .AddBatchAsset(complete, BatchStatus.Completed);
         
         var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
         await dbContext.Images.AddTestAsset(failing, batch: batchId);
@@ -491,8 +491,8 @@ public class EngineAssetRepositoryTests
             finished: batchFinishedDate);
         finishedBatch.Entity
             .AddBatchAsset(assetId)
-            .AddBatchAsset(failing, BatchAssetStatus.Error)
-            .AddBatchAsset(complete, BatchAssetStatus.Completed);
+            .AddBatchAsset(failing, BatchStatus.Error)
+            .AddBatchAsset(complete, BatchStatus.Completed);
         
         var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
         await dbContext.Images.AddTestAsset(failing, batch: batchId);

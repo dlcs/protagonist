@@ -896,7 +896,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.Family.Should().Be(expectedFamily);
         asset.BatchAssets!.Count.Should().Be(1);
-        asset.BatchAssets![0].Status.Should().Be(BatchAssetStatus.Waiting);
+        asset.BatchAssets![0].Status.Should().Be(BatchStatus.Waiting);
     }
     
     [Theory]
@@ -1090,7 +1090,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultAudio);
         
         asset.BatchAssets.Should().HaveCount(1);
-        asset.BatchAssets![0].Status.Should().Be(BatchAssetStatus.Waiting);
+        asset.BatchAssets![0].Status.Should().Be(BatchStatus.Waiting);
 
         var assetFromResponse = await response.ReadAsHydraResponseAsync<Image>();
         assetFromResponse.Batch.Should().NotBeNull();
@@ -1130,7 +1130,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "iiif-av" &&
                                                                 x.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.AvDefaultVideo);
         asset.BatchAssets.Should().HaveCount(1);
-        asset.BatchAssets![0].Status.Should().Be(BatchAssetStatus.Waiting);
+        asset.BatchAssets![0].Status.Should().Be(BatchStatus.Waiting);
         
         var assetFromResponse = await response.ReadAsHydraResponseAsync<Image>();
         assetFromResponse.Batch.Should().NotBeNull();
@@ -1916,7 +1916,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                                                                 dc.DeliveryChannelPolicy.Name == "default-video");
         asset.BatchAssets.Should().HaveCount(1);
-        asset.BatchAssets![0].Status.Should().Be(BatchAssetStatus.Waiting);
+        asset.BatchAssets![0].Status.Should().Be(BatchStatus.Waiting);
     }
     
     [Theory]
@@ -1956,7 +1956,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                                                                  dc.DeliveryChannelPolicy.Name == "default-video");
         asset.BatchAssets.Should().HaveCount(1);
-        asset.BatchAssets![0].Status.Should().Be(BatchAssetStatus.Waiting);
+        asset.BatchAssets![0].Status.Should().Be(BatchStatus.Waiting);
     }
     
     [Fact]
@@ -2021,7 +2021,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                                                                             dc.DeliveryChannelPolicy.Name == "default-video");
         asset.BatchAssets.Should().HaveCount(1);
-        asset.BatchAssets![0].Status.Should().Be(BatchAssetStatus.Waiting);
+        asset.BatchAssets![0].Status.Should().Be(BatchStatus.Waiting);
     }
     
     [Theory]
@@ -2061,7 +2061,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                                                                 dc.DeliveryChannelPolicy.Name == "default-audio");
         asset.BatchAssets.Should().HaveCount(1);
-        asset.BatchAssets![0].Status.Should().Be(BatchAssetStatus.Waiting);
+        asset.BatchAssets![0].Status.Should().Be(BatchStatus.Waiting);
     }
     
     [Fact]
@@ -2126,7 +2126,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                                                                             dc.DeliveryChannelPolicy.Name == "default-audio");
         asset.BatchAssets.Should().HaveCount(1);
-        asset.BatchAssets![0].Status.Should().Be(BatchAssetStatus.Waiting);
+        asset.BatchAssets![0].Status.Should().Be(BatchStatus.Waiting);
     }
     
     [Fact]

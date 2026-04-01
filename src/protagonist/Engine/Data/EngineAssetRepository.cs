@@ -130,12 +130,12 @@ public class EngineAssetRepository(
     {
         if (!string.IsNullOrEmpty(asset.Error))
         {
-            batchAsset.Status = BatchAssetStatus.Error;
+            batchAsset.Status = BatchStatus.Error;
             batchAsset.Error = asset.Error;
         }
         else
         {
-            batchAsset.Status = BatchAssetStatus.Completed;
+            batchAsset.Status = BatchStatus.Completed;
         }
         batchAsset.Finished = DateTime.UtcNow;
     }

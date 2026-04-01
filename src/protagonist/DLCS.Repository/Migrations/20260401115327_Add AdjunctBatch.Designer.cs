@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    [Migration("20260401105416_Add AdjunctBatch tables")]
-    partial class AddAdjunctBatchtables
+    [Migration("20260401115327_Add AdjunctBatch")]
+    partial class AddAdjunctBatch
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -146,10 +146,19 @@ namespace DLCS.Repository.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("AdjunctAssetId")
+                    b.Property<string>("AssetId")
                         .HasColumnType("text");
 
-                    b.HasKey("BatchId", "AdjunctId", "AdjunctAssetId");
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("Finished")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("BatchId", "AdjunctId", "AssetId");
 
                     b.ToTable("AdjunctBatchAdjuncts");
                 });

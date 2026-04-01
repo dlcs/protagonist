@@ -1199,7 +1199,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbBatch.BatchAssets.Should().HaveCount(3);
         dbBatch.BatchAssets.Should().AllSatisfy(ba =>
         {
-            ba.Status.Should().Be(BatchAssetStatus.Waiting);
+            ba.Status.Should().Be(BatchStatus.Waiting);
         });
 
         // Images exist with Batch set + File marked as complete

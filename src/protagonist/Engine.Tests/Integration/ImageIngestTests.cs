@@ -202,7 +202,7 @@ public class ImageIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var updatedBatch = await dbContext.Batches.Include(b => b.BatchAssets).SingleAsync(b => b.Id == batchId);
         updatedBatch.BatchAssets.Should()
-            .ContainSingle(b => b.Status == BatchAssetStatus.Completed);
+            .ContainSingle(b => b.Status == BatchStatus.Completed);
 
         var location = await dbContext.ImageLocations.SingleAsync(a => a.Id == assetId);
         location.Nas.Should().BeEmpty();

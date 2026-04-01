@@ -99,7 +99,7 @@ public class CreateBatchOfImagesHandler(
                     logger.LogDebug(
                         "Asset {AssetId} of Batch {BatchId} does not require engine notification. Marking as complete",
                         assetId, batch.Id);
-                    batch.AddBatchAsset(assetId, BatchAssetStatus.Completed);
+                    batch.AddBatchAsset(assetId, BatchStatus.Completed);
                     batch.Completed += 1;
                 }
             }

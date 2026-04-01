@@ -761,7 +761,7 @@ public partial class DlcsContext : DbContext
 
         modelBuilder.Entity<AdjunctBatchAdjunct>(entity =>
         {
-            entity.HasKey(e => new { e.BatchId, e.AdjunctId, e.AdjunctAssetId });
+            entity.HasKey(e => new { e.BatchId, e.AdjunctId, e.AssetId });
 
             entity.Property(e => e.AdjunctId).HasMaxLength(Adjunct.MaxIdLength);
 
