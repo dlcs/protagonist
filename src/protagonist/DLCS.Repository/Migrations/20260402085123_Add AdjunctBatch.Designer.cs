@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    [Migration("20260401115327_Add AdjunctBatch")]
+    [Migration("20260402085123_Add AdjunctBatch")]
     partial class AddAdjunctBatch
     {
         /// <inheritdoc />
@@ -87,6 +87,9 @@ namespace DLCS.Repository.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Profile")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Provides")
                         .HasColumnType("text");
 
                     b.Property<long?>("Size")

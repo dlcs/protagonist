@@ -80,7 +80,7 @@ public abstract class HydraController : Controller
         {
             var result = await Mediator.Send(request, cancellationToken);
 
-            return this.ModifyResultToHttpResult(result.Entity, result.Error, result.WriteResult, hydraBuilder, instance, errorTitle);
+            return this.ModifyResultToHttpResult(result, hydraBuilder, instance, errorTitle);
         }, errorTitle);
     }
 
@@ -118,8 +118,7 @@ public abstract class HydraController : Controller
 
             var collectionId = Request.GetJsonLdId();
 
-            return this.ModifyResultToHttpResult(result.Entity, result.Error, result.WriteResult, CollectionBuilder,
-                instance, errorTitle);
+            return this.ModifyResultToHttpResult(result, CollectionBuilder, instance, errorTitle);
 
             HydraCollection<TLd> CollectionBuilder(T[] items) => new()
             {
