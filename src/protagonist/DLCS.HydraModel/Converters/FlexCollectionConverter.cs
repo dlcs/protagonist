@@ -1,26 +1,30 @@
 ﻿using System;
-using System.Text.Json;
 using Hydra;
-using Hydra.Collections;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace DLCS.HydraModel.Converters;
 
-public class ItemArrayOrHydraCollectionConverter<T> : JsonConverter<ItemArrayOrHydraCollection<T>> where T : JsonLdBase
+/// <summary>
+/// This converter, activated for <see cref="FlexCollection{T}"/>, checks whether the incoming JSON is a single
+/// <typeparamref name="T"/> object, a JSON Array of <typeparamref name="T"/> objects, or a HydraCollection where
+/// the 1..N <typeparamref name="T"/> objects exist as an array under `member` property
+/// </summary>
+/// <typeparam name="T"></typeparam>
+public class FlexCollectionConverter<T> : JsonConverter<FlexCollection<T>> where T : JsonLdBase
 {
     public static void Register(JsonSerializerSettings settings)
     {
-        settings.Converters.Add(new ItemArrayOrHydraCollectionConverter<T>());
+        settings.Converters.Add(new FlexCollectionConverter<T>());
     }
     
     public override bool CanWrite => false;
 
-    public override void WriteJson(JsonWriter writer, ItemArrayOrHydraCollection<T>? value, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, FlexCollection<T>? value, JsonSerializer serializer)
         => throw new NotSupportedException();
 
-    public override ItemArrayOrHydraCollection<T>? ReadJson(JsonReader reader, Type objectType, ItemArrayOrHydraCollection<T>? existingValue,
+    public override FlexCollection<T>? ReadJson(JsonReader reader, Type objectType, FlexCollection<T>? existingValue,
         bool hasExistingValue, JsonSerializer serializer)
     {
         // Sanity check -> fail fast
@@ -37,10 +41,10 @@ public class ItemArrayOrHydraCollectionConverter<T> : JsonConverter<ItemArrayOrH
         {
             case JTokenType.Array:
                 var array = token.ToObject<T[]>(serializer);
-                return new ItemArrayOrHydraCollection<T>(array ?? []);
+                return new FlexCollection<T>(array ?? []);
             case JTokenType.Object:
                 var items = ReadObjectCase((JObject)token, serializer);
-                return new ItemArrayOrHydraCollection<T>(items);
+                return new FlexCollection<T>(items);
             default:
                 return null;
         }
@@ -56,7 +60,7 @@ public class ItemArrayOrHydraCollectionConverter<T> : JsonConverter<ItemArrayOrH
         }
 
         // Seems to be HydraCollection
-        var members = obj["members"];
+        var members = obj["member"];
 
         if (members == null)
         {
@@ -64,7 +68,7 @@ public class ItemArrayOrHydraCollectionConverter<T> : JsonConverter<ItemArrayOrH
         }
 
         return members.Type != JTokenType.Array 
-            ? throw new JsonSerializationException("'members' must be an array.") 
+            ? throw new JsonSerializationException("'member' must be an array.") 
             : members.ToObject<T[]>(serializer) ?? [];
     }
 

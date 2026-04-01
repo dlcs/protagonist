@@ -62,7 +62,9 @@ public class CreateOrUpdateAdjunctHandler(
         {
             try
             {
-                var existingAdjunct = !request.CreateOnly && existing.TryGetValue(adjunct.Id, out var e) ? e : null;
+                var existingAdjunct = !request.CreateOnly && existing.TryGetValue(adjunct.Id, out var maybeAdjunct)
+                    ? maybeAdjunct
+                    : null;
 
                 // flag remains true if it was true (tripped)
                 anyUpdates = anyUpdates || existingAdjunct != null; // true if at least one is updating existing - this or previous
@@ -102,7 +104,6 @@ public class CreateOrUpdateAdjunctHandler(
             .Where(a => a.AssetId == assetId && adjunctIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, cancellationToken: cancellationToken);
         
-        List<string> failed = [];
 
         foreach (var adjunct in adjuncts)
         {
@@ -111,13 +112,9 @@ public class CreateOrUpdateAdjunctHandler(
                 // this is a bit clunky, but we don't want to query individually for each - there could be a lot
                 adjunct.Processed = updated;
             }
-
-            var success = await TryIngestNotify(adjunct, cancellationToken);
-            if (!success)
-            {
-                failed.Add(adjunct.Processed.Id);
-            }
         }
+
+        var failed = await TryIngestNotify(adjuncts, cancellationToken);
 
         if (failed.Count != 0)
         {
@@ -130,27 +127,34 @@ public class CreateOrUpdateAdjunctHandler(
             anyUpdates ? WriteResult.Updated : WriteResult.Created);
     }
 
-    private async Task<bool> TryIngestNotify(AdjunctDocument adjunct, CancellationToken cancellationToken)
+    private async Task<List<string>> TryIngestNotify(ICollection<AdjunctDocument> adjuncts, CancellationToken cancellationToken)
     {
-        if (adjunct.ToBeIngested)
+        List<string> failed = [];
+        List<NotificationRecord<Adjunct>> notifications = [];
+        
+        foreach (var adjunct in adjuncts)
         {
-            var success = await notificationSender.SendIngestAdjunctRequest(adjunct.Processed, cancellationToken);
-            if (!success)
+            if (adjunct.ToBeIngested)
             {
-                return false;
+                var success = await notificationSender.SendIngestAdjunctRequest(adjunct.Processed, cancellationToken);
+                if (!success)
+                {
+                    failed.Add(adjunct.Processed.Id);
+                    continue;
+                }
             }
+
+
+            var adjunctModificationRecord = adjunct.IsUpdate
+                ? NotificationRecord<Adjunct>.Update(adjunct.Original!, adjunct.Processed, adjunct.ToBeIngested)
+                : NotificationRecord<Adjunct>.Create(adjunct.Processed);
+            
+            notifications.Add(adjunctModificationRecord);
         }
 
+        await deliverableNotificationSender.SendDeliverableModifiedMessage(notifications, cancellationToken);
 
-        var adjunctModificationRecord = adjunct.IsUpdate
-            ? NotificationRecord<Adjunct>.Update(adjunct.Original!, adjunct.Processed, adjunct.ToBeIngested)
-            : NotificationRecord<Adjunct>.Create(adjunct.Processed);
-
-        await deliverableNotificationSender.SendDeliverableModifiedMessage(adjunctModificationRecord,
-            cancellationToken);
-
-        // all good
-        return true;
+        return failed;
     }
 
     private async Task<AdjunctDocument> HandleAdjunct(Adjunct adjunct, Adjunct? dbAdjunct,

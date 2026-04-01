@@ -83,10 +83,11 @@ public abstract class HydraController : Controller
             return this.ModifyResultToHttpResult(result.Entity, result.Error, result.WriteResult, hydraBuilder, instance, errorTitle);
         }, errorTitle);
     }
-    
+
     /// <summary>
     /// Handle an upsert request - this takes a IRequest which returns a ModifyEntityResult{T}.
-    /// The request is sent and result is transformed to an http hydra result.  
+    /// The request is sent and result is transformed to an http hydra result.
+    /// This is a collection variant that returns <see cref="HydraCollection{TLd}"/>
     /// </summary>
     /// <param name="request">IRequest to modify data</param>
     /// <param name="hydraBuilder">Delegate to transform returned entity to a Hydra representation</param>
@@ -97,6 +98,7 @@ public abstract class HydraController : Controller
     /// </param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <typeparam name="T">Type of entity being upserted</typeparam>
+    /// <typeparam name="TLd">The <see cref="JsonLdBase"/>-derived type that will be used for response</typeparam>
     /// <returns>
     /// ActionResult generated from ModifyEntityResult. This will be the Hydra model + 200/201 on success. Or a Hydra
     /// error and appropriate status code if failed.
@@ -114,13 +116,19 @@ public abstract class HydraController : Controller
         {
             var result = await Mediator.Send(request, cancellationToken);
 
-            var collectionId = Request.GetEncodedUrl();
+            var collectionId = Request.GetJsonLdId();
 
             return this.ModifyResultToHttpResult(result.Entity, result.Error, result.WriteResult, CollectionBuilder,
                 instance, errorTitle);
 
             HydraCollection<TLd> CollectionBuilder(T[] items) => new()
-                { Id = collectionId, Members = items.Select(hydraBuilder).ToArray() };
+            {
+                Id = collectionId,
+                TotalItems = items.Length,
+                PageSize = items.Length,
+                WithContext = true,
+                Members = items.Select(hydraBuilder).ToArray()
+            };
         }, errorTitle);
     }
 

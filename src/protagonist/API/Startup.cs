@@ -119,7 +119,7 @@ public class Startup
             .AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ApplyHydraSerializationSettings();
-                ItemArrayOrHydraCollectionConverter<Adjunct>.Register(options.SerializerSettings);
+                FlexCollectionConverter<Adjunct>.Register(options.SerializerSettings);
             });
 
         services.AddSwaggerGenNewtonsoftSupport();

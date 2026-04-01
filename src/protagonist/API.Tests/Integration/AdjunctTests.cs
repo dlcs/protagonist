@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -86,6 +87,9 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         hydra.Should().NotBeNull();
         hydra.Members.Should().HaveCount(1);
+        hydra.PageSize.Should().Be(1);
+        hydra.TotalItems.Should().Be(1);
+        hydra.Type.Should().Be("Collection");
 
         var adjunct = hydra.Members![0];
         adjunct.Id.Should()
@@ -633,7 +637,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Provides.Should().Be("changed");
         
         A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
-            A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Update && r.After.AssetId == assetId), 
+            A<IReadOnlyCollection<NotificationRecord<DLCS.Model.Assets.Adjunct>>>.That.Matches(c => c.Count == 1 && c.Single().ChangeType == ChangeType.Update && c.Single().After.AssetId == assetId), 
             A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -690,7 +694,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbContext.Adjuncts.Any(a => a.AssetId == assetId && a.Id == adjunctId).Should()
             .BeTrue("Adjunct persisted to DB");
         A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
-            A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Create && r.After.AssetId == assetId), 
+            A<IReadOnlyCollection<NotificationRecord<DLCS.Model.Assets.Adjunct>>>.That.Matches(c => c.Count == 1  && c.Single().ChangeType == ChangeType.Create && c.Single().After.AssetId == assetId), 
             A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -884,6 +888,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Location.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts");
+
+        A.CallTo(() =>
+                IngestNotificationSender.SendIngestAdjunctRequest(
+                    A<DLCS.Model.Assets.Adjunct>.That.Matches(a => a.Id == "someAdjunctId"), A<CancellationToken>._))
+            .MustHaveHappened(1, Times.Exactly);
+
     }
     
     [Fact]
@@ -937,16 +947,22 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         for(var i = 0; i < result.Members.Length; i++)
         {
             var adjunct = result.Members[i];
+            var adjunctId = $"someAdjunctId{i + 1}";
             adjunct.Id.Should()
                 .Be(
-                    $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId{i+1}");
+                    $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
             adjunct.IIIFLink.Should().Be("seeAlso");
             adjunct.Label.First().Key.Should().Be("label");
             adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
             adjunct.Origin.Should().Be($"https://some-location.com/an-adjunct{i+1}");
-            adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/someAdjunctId{i+1}");
+            adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/{adjunctId}");
             adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
             adjunct.Error.Should().BeNullOrEmpty("no errors yet");
+            
+            A.CallTo(() =>
+                    IngestNotificationSender.SendIngestAdjunctRequest(
+                        A<DLCS.Model.Assets.Adjunct>.That.Matches(a =>a.AssetId == assetId && a.Id == adjunctId), A<CancellationToken>._))
+                .MustHaveHappened(1, Times.Exactly);
         }
         
         response.Headers.Location.Should()
@@ -969,7 +985,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         const string newAdjunctJson = """
                                       {
                                           "@type": "Collection",
-                                          "members":
+                                          "member":
                                               [
                                                   {
                                                     "id": "someAdjunctId1",
@@ -1009,16 +1025,23 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         for(var i = 0; i < result.Members.Length; i++)
         {
             var adjunct = result.Members[i];
+            var adjunctId = $"someAdjunctId{i + 1}";
+
             adjunct.Id.Should()
                 .Be(
-                    $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId{i+1}");
+                    $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
             adjunct.IIIFLink.Should().Be("seeAlso");
             adjunct.Label.First().Key.Should().Be("label");
             adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
             adjunct.Origin.Should().Be($"https://some-location.com/an-adjunct{i+1}");
-            adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/someAdjunctId{i+1}");
+            adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/{adjunctId}");
             adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
             adjunct.Error.Should().BeNullOrEmpty("no errors yet");
+            
+            A.CallTo(() =>
+                    IngestNotificationSender.SendIngestAdjunctRequest(
+                        A<DLCS.Model.Assets.Adjunct>.That.Matches(a =>a.AssetId == assetId && a.Id == adjunctId), A<CancellationToken>._))
+                .MustHaveHappened(1, Times.Exactly);
         }
         
         response.Headers.Location.Should()
@@ -1213,7 +1236,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         const string newAdjunctJson = """
                                       {
                                           "@type": "Collection",
-                                          "members": []
+                                          "member": []
                                       }
                                       """;
         

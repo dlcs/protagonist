@@ -72,7 +72,7 @@ public class AdjunctsController(
     [ProducesResponseType(201, Type = typeof(Adjunct))]
     [ProducesResponseType(404, Type = typeof(Error))]
     public async Task<IActionResult> PostAdjunct(int customerId, int spaceId, string imageId, 
-        [FromBody] ItemArrayOrHydraCollection<Adjunct> adjuncts, 
+        [FromBody] FlexCollection<Adjunct> adjuncts, 
         [FromServices] HydraAdjunctValidator validator, CancellationToken cancellationToken = default)
     {
         if (adjuncts.Items is not { Length: > 0 } hydraAdjuncts)
@@ -141,7 +141,7 @@ public class AdjunctsController(
         return await HandleUpsert(
             createOrUpdateRequest,
             a => a.ToHydra(GetUrlRoots()),
-            createOrUpdateRequest.Adjuncts[0].AssetId.ToString(),
+            new AssetId(customerId, spaceId, imageId).ToString(),
             "Create or update adjunct failed", cancellationToken);
     }
 }

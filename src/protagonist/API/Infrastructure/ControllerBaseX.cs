@@ -138,9 +138,9 @@ public static class ControllerBaseX
     /// error and appropriate status code if failed.
     /// </summary>
     /// <param name="controller">Current controllerBase object</param>
-    /// <param name="entity">entity that was modified or null if n/a</param>
-    /// <param name="error">error if one happened, otherwise null</param>
-    /// <param name="result">the result of the write operation</param>
+    /// <param name="entity">Entity that was modified or null if n/a</param>
+    /// <param name="error">Error if one happened, otherwise null</param>
+    /// <param name="result">The result of the write operation</param>
     /// <param name="hydraBuilder">Delegate to transform ModifyEntityResult.Entity to Hydra representation</param>
     /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
     /// <param name="errorTitle">
