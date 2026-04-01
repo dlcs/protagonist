@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using DLCS.Core.Types;
 using IIIF.Presentation.V3.Strings;
