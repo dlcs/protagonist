@@ -204,6 +204,7 @@ public class AdjunctConverterTests
         hydra.Error.Should().BeNull();
         hydra.Asset.Should().Be($"{BaseUrl}/customers/{Customer}/spaces/{Space}/images/{AssetId}");
         hydra.PublicId.Should().Be("https://example.com/external-adjunct");
+        hydra.Batch.Should().BeNull();
     }
 
     [Fact]
@@ -250,5 +251,26 @@ public class AdjunctConverterTests
         // Assert
         // Adjunct @id should follow pattern: /customers/{customer}/spaces/{space}/images/{asset}/adjuncts/{adjunct}
         hydra.Id.Should().Be($"{BaseUrl}/customers/{Customer}/spaces/{Space}/images/{AssetId}/adjuncts/{AdjunctId}");
+    }
+    
+    [Fact]
+    public void ToHydra_WithBatch_SetsBatchUri()
+    {
+        // Arrange
+        var domain = new DLCS.Model.Assets.Adjunct
+        {
+            Id = AdjunctId,
+            AssetId = new AssetId(Customer, Space, AssetId),
+            Type = "AnnotationPage",
+            MediaType = "application/json",
+            IIIFLink = IIIFLinkType.SeeAlso,
+            Batch = 4567,
+        };
+
+        // Act
+        var hydra = domain.ToHydra(new UrlRoots { BaseUrl = BaseUrl, ResourceRoot = "https://dlcs.orch/" });
+
+        // Assert
+        hydra.Batch.Should().Be("https://dlcs.example/customers/99/adjunctQueue/batches/4567");
     }
 }

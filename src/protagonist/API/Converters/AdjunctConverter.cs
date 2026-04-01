@@ -91,5 +91,8 @@ public static class AdjunctConverter
             Motivation = adjunct.Motivation,
             Provides =  adjunct.Provides,
             Ingesting = adjunct.Ingesting
+            Batch = adjunct.Batch.HasValue
+                ? $"{urlRoots.BaseUrl}/customers/{adjunct.AssetId.Customer}/adjunctQueue/batches/{adjunct.Batch}"
+                : null
         };
 }

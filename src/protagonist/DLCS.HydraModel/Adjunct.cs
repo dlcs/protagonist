@@ -110,4 +110,9 @@ public class Adjunct : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 27, PropertyName = "error")]
     public string? Error { get; set; }
+
+    [HydraLink(Description = "The AdjunctBatch this adjunct was most recently submitted in, if any.",
+        Range = Names.Hydra.Resource, ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 26, PropertyName = "batch")]
+    public string? Batch { get; set; }
 }
