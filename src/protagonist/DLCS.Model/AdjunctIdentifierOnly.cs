@@ -8,7 +8,7 @@ namespace DLCS.Model;
 /// </summary>
 public class AdjunctIdentifierOnly
 {
-    public AssetId Id { get; set; }
+    public string Id { get; set; }
 
     public List<string> Adjunct { get; set; }
 }

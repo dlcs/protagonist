@@ -1,12 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using API.Features.Adjuncts.Infrastructure;
 using API.Settings;
-using DLCS.Core.Collections;
 using DLCS.Model;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.Extensions.Options;
 
-namespace API.Features.Adjuncts.Validation;
+namespace API.Features.Customer.Validation;
 
 public class AdjunctIdListValidator : AbstractValidator<AdjunctIdentifierOnly[]?>
 {
@@ -16,17 +15,17 @@ public class AdjunctIdListValidator : AbstractValidator<AdjunctIdentifierOnly[]?
             .NotEmpty().WithMessage("Members cannot be empty");
         
         RuleFor(c => c)
-            .Must(m => m.IsNullOrEmpty() || m.SelectMany(a =>  new List<KeyValuePair<string, string>>()).Count() == m.Length)
+            .Must(m => m?.ConvertToDictionary().Any(kvp => kvp.Value.Distinct().Count() == kvp.Value.Count) ?? true)
             .WithMessage((_, mem) =>
             {
-                var dupes = mem!.Select(a => a.Id).GetDuplicates().ToList();
-                return $"Members contains {dupes.Count} duplicate Id(s): {string.Join(",", dupes)}";
+                var dupes = mem!.ConvertToDictionary().Where(kvp => kvp.Value.Distinct().Count() != kvp.Value.Count).ToList();
+                return $"Members contains {dupes.Count} duplicate Id(s): {string.Join(",", dupes.Select(d => $"asset Id: {d.Key} : adjunct id: {d.Value.First()}"))}";
             });
         
         var maxBatch = apiSettings.Value.MaxImageListSize;
         RuleFor(c => c)
-            .Must(m => (m?.Length ?? 0) <= maxBatch)
-            .WithMessage($"Maximum assets in single batch is {maxBatch}");
+            .Must(m => m.Flatten().Count() <= maxBatch)
+            .WithMessage($"Maximum adjuncts in single batch is {maxBatch}");
     }
     
     protected override bool PreValidate(ValidationContext<AdjunctIdentifierOnly[]?> context, ValidationResult result) 

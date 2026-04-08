@@ -118,6 +118,8 @@ public class AdjunctsController(
 
         return await HandleDelete(deleteRequest);
     }
+
+    private async Task<IActionResult> CreateOrUpdateAdjunct(int customerId, int spaceId, string imageId, Adjunct hydraAdjunct,
     
     private async Task<IActionResult> CreateOrUpdateAdjunct(int customerId, int spaceId, string imageId, Adjunct[] hydraAdjuncts,
         HydraAdjunctValidator validator, bool createOnly, CancellationToken cancellationToken)
