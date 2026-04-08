@@ -41,9 +41,9 @@ public class DeliveryChannelProcessor
         {
             try
             {
-                var deliveryChannelChanged = await SetImageDeliveryChannels(updatedAsset,
+                var requiresEngineNotification = await SetImageDeliveryChannels(updatedAsset,
                     deliveryChannelsBeforeProcessing ?? [], existingAsset != null);
-                return deliveryChannelChanged;
+                return requiresEngineNotification;
             }
             catch (InvalidOperationException ioEx)
             {
@@ -93,11 +93,11 @@ public class DeliveryChannelProcessor
             }
         }
 
-        // If 'none' specified then it's the only valid option
+        // If 'none' specified then it's the only valid option, and does not require processing by engine
         if (deliveryChannelsBeforeProcessing.Count(d => d.Channel == AssetDeliveryChannels.None) == 1)
         {
             await AddExplicitNoneChannel(asset);
-            return true;
+            return false;
         }
 
         // Iterate through DeliveryChannels specified in payload and make necessary update/delete/insert

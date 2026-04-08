@@ -110,9 +110,9 @@ public class AssetProcessor
             
             if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing != null || assetFromDatabase == null)
             {
-                var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(
+                var deliveryChannelsRequireEngineNotification = await deliveryChannelProcessor.ProcessImageDeliveryChannels(
                     assetFromDatabase, updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
-                if (deliveryChannelChanged)
+                if (deliveryChannelsRequireEngineNotification)
                 {
                     requiresEngineNotification = true;
                 }
