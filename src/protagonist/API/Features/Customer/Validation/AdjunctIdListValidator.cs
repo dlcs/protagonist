@@ -19,7 +19,7 @@ public class AdjunctIdListValidator : AbstractValidator<AdjunctIdentifierOnly[]?
             .WithMessage((_, mem) =>
             {
                 var dupes = mem!.ConvertToDictionary().Where(kvp => kvp.Value.Distinct().Count() != kvp.Value.Count).ToList();
-                return $"Members contains {dupes.Count} duplicate Id(s): {string.Join(",", dupes.Select(d => $"asset Id: {d.Key} : adjunct id: {d.Value.First()}"))}";
+                return $"Members contains {dupes.Count} duplicate Id(s): {string.Join(",", dupes.Select(d => $"asset Id: {d.Key} : adjunct id: {string.Join(',', d.Value.Distinct())}"))}";
             });
         
         var maxBatch = apiSettings.Value.MaxImageListSize;
