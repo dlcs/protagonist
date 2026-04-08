@@ -187,20 +187,17 @@ public class CustomerImagesController(IOptions<ApiSettings> settings, IMediator 
 
         var additionalDeletion = ImageCacheTypeConverter.ConvertToImageCacheType(deleteFrom, ',');
 
-        return await HandleHydraRequest(async () =>
+        var request =
+            new DeleteMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(),
+                customerId, additionalDeletion);
+        var deletedRows = await Mediator.Send(request, cancellationToken);
+
+        if (deletedRows == 0)
         {
-            var request =
-                new DeleteMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(),
-                    customerId, additionalDeletion);
-            var deletedRows = await Mediator.Send(request, cancellationToken);
+            return this.HydraProblem("No assets found", null, 400, "Delete images failed");
+        }
 
-            if (deletedRows == 0)
-            {
-                return this.HydraProblem("No assets found", null, 400, "Delete images failed");
-            }
-
-            // TODO - return a better message (or 204?). This is for backwards compat with Deliverator and
-            return Ok(new { message = "images deleted" });
-        }, "Delete images failed");
+        // TODO - return a better message (or 204?). This is for backwards compat with Deliverator and
+        return Ok(new { message = "images deleted" });
     }
 }

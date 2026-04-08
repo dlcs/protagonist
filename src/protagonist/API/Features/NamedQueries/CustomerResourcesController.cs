@@ -45,18 +45,15 @@ public class CustomerResourcesController : HydraController
         CancellationToken cancellationToken = default)
     {
         const string errorTitle = "Delete PDF failed";
-        return await HandleHydraRequest(async () =>
+        var deleteRequest = new DeletePdf(customerId, queryName, args);
+        var result = await Mediator.Send(deleteRequest, cancellationToken);
+
+        if (result == null)
         {
-            var deleteRequest = new DeletePdf(customerId, queryName, args);
-            var result = await Mediator.Send(deleteRequest, cancellationToken);
+            return this.HydraProblem("Unable to parse named query request", null, 400, errorTitle);
+        }
 
-            if (result == null)
-            {
-                return this.HydraProblem("Unable to parse named query request", null, 400, errorTitle);
-            }
-
-            // TODO - return a better message. This is for backwards compat
-            return Ok(new { success = result });
-        }, errorTitle);
+        // TODO - return a better message. This is for backwards compat
+        return Ok(new { success = result });
     }
 }

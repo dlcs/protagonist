@@ -302,15 +302,11 @@ public class CustomerQueueController : HydraController
     public async Task<IActionResult> TestBatch([FromRoute] int customerId, [FromRoute] int batchId,
         CancellationToken cancellationToken = default)
     {
-        return await HandleHydraRequest(async () =>
-        {
-            var testBatch = new TestBatch(customerId, batchId);
+        var testBatch = new TestBatch(customerId, batchId);
+        var response = await Mediator.Send(testBatch, cancellationToken);
 
-            var response = await Mediator.Send(testBatch, cancellationToken);
-
-            // TODO - return a better message. This is for backwards compat
-            return response == null ? this.HydraNotFound() : Ok(new { success = response });
-        }, "Test batch failed");
+        // TODO - return a better message. This is for backwards compat
+        return response == null ? this.HydraNotFound() : Ok(new { success = response });
     }
 
     /// <summary>

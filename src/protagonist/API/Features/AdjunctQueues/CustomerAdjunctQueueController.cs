@@ -40,19 +40,16 @@ public class CustomerAdjunctQueueController(
         var validationResult = await validator.ValidateAsync(adjuncts, cancellationToken);
         if (!validationResult.IsValid) return this.ValidationFailed(validationResult);
 
-        return await HandleHydraRequest(() =>
-        {
-            // Convert at controller boundary; ToDlcsModel(customerId) throws BadRequestException
-            // for invalid/mismatched asset refs
-            var dlcsAdjuncts = adjuncts.Members!
-                .Select(a => a.ToDlcsModel(customerId))
-                .ToArray();
+        // Convert at controller boundary; ToDlcsModel(customerId) throws BadRequestException
+        // for invalid/mismatched asset refs, caught by HydraExceptionFilter
+        var dlcsAdjuncts = adjuncts.Members!
+            .Select(a => a.ToDlcsModel(customerId))
+            .ToArray();
 
-            return HandleUpsert(
-                new CreateAdjunctBatch(customerId, dlcsAdjuncts),
-                batch => batch.ToHydra(GetUrlRoots().BaseUrl),
-                errorTitle: "Create adjunct batch failed",
-                cancellationToken: cancellationToken);
-        });
+        return await HandleUpsert(
+            new CreateAdjunctBatch(customerId, dlcsAdjuncts),
+            batch => batch.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Create adjunct batch failed",
+            cancellationToken: cancellationToken);
     }
 }

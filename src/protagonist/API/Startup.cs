@@ -114,8 +114,9 @@ public class Startup
                     .AllowCredentials());
         });
 
+        services.AddScoped<HydraExceptionFilter>();
         services
-            .AddControllers()
+            .AddControllers(options => options.Filters.Add<HydraExceptionFilter>())
             .AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ApplyHydraSerializationSettings();
