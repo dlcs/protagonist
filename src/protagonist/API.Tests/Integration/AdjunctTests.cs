@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -31,6 +32,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly HttpClient httpClient;
     private readonly DlcsContext dbContext;
     private static readonly IDeliverableNotificationSender DeliverableNotificationSender = A.Fake<IDeliverableNotificationSender>();
+    private static readonly IIngestNotificationSender IngestNotificationSender = A.Fake<IIngestNotificationSender>();
     
     public AdjunctTests(StorageFixture storageFixture, ProtagonistAppFactory<Startup> factory)
     {
@@ -44,6 +46,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                         "API-Test", o => { o.TimeProvider = TimeProvider.System;  });
                 services.AddSingleton(_ => DeliverableNotificationSender);
+                services.AddScoped(_ => IngestNotificationSender);
             }));
         dbContext = storageFixture.DbFixture.DbContext;
         storageFixture.DbFixture.CleanUp();
@@ -80,8 +83,15 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+        hydra.PageSize.Should().Be(1);
+        hydra.TotalItems.Should().Be(1);
+        hydra.Type.Should().Be("Collection");
+
+        var adjunct = hydra.Members![0];
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
@@ -95,7 +105,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         response.Headers.Location.Should()
             .Be(
-                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts");
     }
     
     [Fact]
@@ -227,7 +237,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
-        error.Detail.Should().Be("Create failed. An adjunct with id 'someAdjunctId' already exists");
+        error.Detail.Should().Be("Create failed. Adjunct or adjuncts with id(s) in (someAdjunctId) already exists");
     }
     
     [Fact]
@@ -263,7 +273,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
-        error.Detail.Should().Be("Create failed. An adjunct with id 'someAdjunctId' already exists");
+        error.Detail.Should().Be("Create failed. Adjunct or adjuncts with id(s) in (someAdjunctId) already exists");
     }
     
     [Fact]
@@ -573,7 +583,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
-        error.Detail.Should().Be($"Create failed. An adjunct with id '{adjunctId}' already exists");
+        error.Detail.Should().Be($"Create failed. Adjunct or adjuncts with id(s) in ({adjunctId}) already exists");
     }
     
     [Fact]
@@ -607,8 +617,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+
+        var adjunct = hydra.Members![0];
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
@@ -623,7 +637,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Provides.Should().Be("changed");
         
         A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
-            A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Update && r.After.AssetId == assetId), 
+            A<IReadOnlyCollection<NotificationRecord<DLCS.Model.Assets.Adjunct>>>.That.Matches(c => c.Count == 1 && c.Single().ChangeType == ChangeType.Update && c.Single().After.AssetId == assetId), 
             A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -658,8 +672,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+
+        var adjunct = hydra.Members![0];
         var expectedAdjunctId = $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}";
         adjunct.Id.Should().Be(expectedAdjunctId);
         adjunct.IIIFLink.Should().Be("seeAlso");
@@ -676,7 +694,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbContext.Adjuncts.Any(a => a.AssetId == assetId && a.Id == adjunctId).Should()
             .BeTrue("Adjunct persisted to DB");
         A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
-            A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Create && r.After.AssetId == assetId), 
+            A<IReadOnlyCollection<NotificationRecord<DLCS.Model.Assets.Adjunct>>>.That.Matches(c => c.Count == 1  && c.Single().ChangeType == ChangeType.Create && c.Single().After.AssetId == assetId), 
             A<CancellationToken>._)).MustHaveHappened();
     }
     
@@ -708,8 +726,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
-        
+        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+
+        var adjunct = hydra.Members![0];        
         var expectedAdjunctId = $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}";
         
         adjunct.Id.Should().Be(expectedAdjunctId);
@@ -755,8 +777,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
-        
+        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+
+        var adjunct = hydra.Members![0];        
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
@@ -816,9 +842,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-
+        
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
+        
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(true));
         
         const string newAdjunctJson = """
                                       {
@@ -840,8 +869,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+
+        var adjunct = hydra.Members![0];
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
@@ -849,12 +882,434 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Label.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.Origin.Should().Be("https://some-location.com/an-adjunct");
-        adjunct.PublicId.Should().Be("https://dlcs.digirati.io/adjuncts/99/1/PostAdjunct_CreatesHostedAdjunct/someAdjunctId");
+        adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/someAdjunctId");
         adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
         adjunct.Error.Should().BeNullOrEmpty("no errors yet");
         response.Headers.Location.Should()
             .Be(
-                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts");
+
+        A.CallTo(() =>
+                IngestNotificationSender.SendIngestAdjunctRequest(
+                    A<DLCS.Model.Assets.Adjunct>.That.Matches(a => a.Id == "someAdjunctId"), A<CancellationToken>._))
+            .MustHaveHappened(1, Times.Exactly);
+
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_CreatesMultipleHostedAdjuncts_AsArray()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(true));
+        
+        const string newAdjunctJson = """
+                                      [
+                                          {
+                                            "id": "someAdjunctId1",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct1",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          },
+                                          {
+                                            "id": "someAdjunctId2",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct2",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          }
+                                      ]
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var result = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+
+        result.Should().NotBeNull("A collection result is expected");
+        result.Members.Should().NotBeNullOrEmpty("two adjuncts are expected");
+
+        for(var i = 0; i < result.Members.Length; i++)
+        {
+            var adjunct = result.Members[i];
+            var adjunctId = $"someAdjunctId{i + 1}";
+            adjunct.Id.Should()
+                .Be(
+                    $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
+            adjunct.IIIFLink.Should().Be("seeAlso");
+            adjunct.Label.First().Key.Should().Be("label");
+            adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
+            adjunct.Origin.Should().Be($"https://some-location.com/an-adjunct{i+1}");
+            adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/{adjunctId}");
+            adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
+            adjunct.Error.Should().BeNullOrEmpty("no errors yet");
+            
+            A.CallTo(() =>
+                    IngestNotificationSender.SendIngestAdjunctRequest(
+                        A<DLCS.Model.Assets.Adjunct>.That.Matches(a =>a.AssetId == assetId && a.Id == adjunctId), A<CancellationToken>._))
+                .MustHaveHappened(1, Times.Exactly);
+        }
+        
+        response.Headers.Location.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_CreatesMultipleHostedAdjuncts_AsHydraCollection()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(true));
+
+        const string newAdjunctJson = """
+                                      {
+                                          "@type": "Collection",
+                                          "member":
+                                              [
+                                                  {
+                                                    "id": "someAdjunctId1",
+                                                    "@type": "Image",
+                                                    "origin": "https://some-location.com/an-adjunct1",
+                                                    "iiifLink": "seeAlso",
+                                                    "mediaType": "a-mediaType",
+                                                    "label": {"label": ["value"]},
+                                                    "language": ["en"],
+                                                  },
+                                                  {
+                                                    "id": "someAdjunctId2",
+                                                    "@type": "Image",
+                                                    "origin": "https://some-location.com/an-adjunct2",
+                                                    "iiifLink": "seeAlso",
+                                                    "mediaType": "a-mediaType",
+                                                    "label": {"label": ["value"]},
+                                                    "language": ["en"],
+                                                  }
+                                              ]
+                                      }
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var result = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+
+        result.Should().NotBeNull("A collection result is expected");
+        result.Members.Should().NotBeNullOrEmpty("two adjuncts are expected");
+
+        for(var i = 0; i < result.Members.Length; i++)
+        {
+            var adjunct = result.Members[i];
+            var adjunctId = $"someAdjunctId{i + 1}";
+
+            adjunct.Id.Should()
+                .Be(
+                    $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
+            adjunct.IIIFLink.Should().Be("seeAlso");
+            adjunct.Label.First().Key.Should().Be("label");
+            adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
+            adjunct.Origin.Should().Be($"https://some-location.com/an-adjunct{i+1}");
+            adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/{adjunctId}");
+            adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
+            adjunct.Error.Should().BeNullOrEmpty("no errors yet");
+            
+            A.CallTo(() =>
+                    IngestNotificationSender.SendIngestAdjunctRequest(
+                        A<DLCS.Model.Assets.Adjunct>.That.Matches(a =>a.AssetId == assetId && a.Id == adjunctId), A<CancellationToken>._))
+                .MustHaveHappened(1, Times.Exactly);
+        }
+        
+        response.Headers.Location.Should()
+            .Be(
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_FailsToCreateMultipleHostedAdjuncts_WhenEmptyArray()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        const string newAdjunctJson = """
+                                      [
+                                          
+                                      ]
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
+        (await tryRead.Should().ThrowAsync<DlcsException>())
+            .Which.Message.Should()
+            .Be("One or more adjuncts were expected in request body but found none");;
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_FailsToCreateMultipleHostedAdjuncts_WhenOneFailsValidation()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        // first is missing iiifLink:
+        const string newAdjunctJson = """
+                                      [
+                                          {
+                                            "id": "someAdjunctId1",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct1",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          },
+                                          {
+                                            "id": "someAdjunctId2",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct2",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          }
+                                      ]
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
+        (await tryRead.Should().ThrowAsync<DlcsException>())
+            .Which.Message.Should()
+            .Be("'iiifLink' is required");
+        
+        // verify db unchanged
+        dbContext.Adjuncts.Count(a=>a.AssetId == assetId).Should().Be(0, "no adjuncts for this asset should have been created");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_FailsToCreateMultipleHostedAdjuncts_WhenOneExists()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct("someAdjunctId2", origin:"https://some-location.com/an-adjunct1"); 
+        await dbContext.SaveChangesAsync();
+        
+        // second already exists
+        const string newAdjunctJson = """
+                                      [
+                                          {
+                                            "id": "someAdjunctId1",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct1",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          },
+                                          {
+                                            "id": "someAdjunctId2",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct2",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          }
+                                      ]
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        // NOTE: Post is "create only"!
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
+        (await tryRead.Should().ThrowAsync<DlcsException>())
+            .Which.Message.Should()
+            .Be("Create failed. Adjunct or adjuncts with id(s) in (someAdjunctId1,someAdjunctId2) already exists");
+        
+        // verify db unchanged
+        dbContext.Adjuncts.Count(a=>a.AssetId == assetId).Should().Be(1, "no additional adjuncts for this asset should have been created");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_FailsToCreateMultipleHostedAdjuncts_WhenAssetNotExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        
+        // second already exists
+        const string newAdjunctJson = """
+                                      [
+                                          {
+                                            "id": "someAdjunctId1",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct1",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          },
+                                          {
+                                            "id": "someAdjunctId2",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct2",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          }
+                                      ]
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        // NOTE: Post is "create only"!
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
+        (await tryRead.Should().ThrowAsync<DlcsException>())
+            .Which.Message.Should()
+            .Be($"Asset with id '{assetId}' not found");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_FailsToCreateMultipleHostedAdjuncts_WhenEmptyCollection()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.SaveChangesAsync();
+        
+        const string newAdjunctJson = """
+                                      {
+                                          "@type": "Collection",
+                                          "member": []
+                                      }
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
+        (await tryRead.Should().ThrowAsync<DlcsException>())
+            .Which.Message.Should()
+            .Be("One or more adjuncts were expected in request body but found none");
+    }
+    
+    [Fact]
+    public async Task PostAdjunct_FailsToCreateMultipleHostedAdjuncts_WhenIngestFail()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+        
+        // first works:
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>.That.Matches(a=>a.Id == "someAdjunctId1"), A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(true));
+
+        // second fails:
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>.That.Matches(a=>a.Id == "someAdjunctId2"), A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(false));
+        
+        const string newAdjunctJson = """
+                                      [
+                                          {
+                                            "id": "someAdjunctId1",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct1",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          },
+                                          {
+                                            "id": "someAdjunctId2",
+                                            "@type": "Image",
+                                            "origin": "https://some-location.com/an-adjunct2",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                          }
+                                      ]
+                                      """;
+        
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts";
+        var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
+
+        // Act
+        // NOTE: Post is "create only"!
+        var response = await httpClient.AsCustomer(assetId.Customer).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
+        (await tryRead.Should().ThrowAsync<DlcsException>())
+            .Which.Message.Should()
+            .Be($"Adjuncts with ids 'someAdjunctId2' for asset {assetId} failed submission for ingestion and will need to be resubmitted");
+        
+        // verify db status
+        dbContext.Adjuncts.Count(a=>a.AssetId == assetId).Should().Be(2, "creation in db worked, but we failed after saving");
     }
     
     [Fact]
@@ -865,6 +1320,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
+        
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(true));
+        
         const string adjunctId = "updateableAdjunct";
         const string adjunctOrigin = "https://example.com/an-adjunct";
         
@@ -890,8 +1349,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert 1
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+
+        var adjunct = hydra.Members![0];
         adjunct.Size.Should().BeNull("hosted adjunct's size will be determined and updated by the engine");
         adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
         adjunct.Error.Should().BeNullOrEmpty("no errors yet");
@@ -927,8 +1390,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert 2
         response.StatusCode.Should().Be(HttpStatusCode.OK); // not created, updated
-        adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+        hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+
+        adjunct = hydra.Members![0];
         adjunct.Size.Should().Be(1234L, "API preserves the size set by engine");
         adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for (re)ingestion");
         adjunct.Finished.Should().NotBeNull("API doesn't touch finished, as it now states for 'last finished'");
@@ -968,8 +1435,13 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert 1
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+
+        var adjunct = hydra.Members![0];
+        
         adjunct.Size.Should().Be(67, "we 'trust' external adjunct's submitted size declaration");
         adjunct.Ingesting.Should().NotBe(true, "the adjunct was NOT sent to engine for ingestion");
         adjunct.Error.Should().BeNullOrEmpty("not ingested");
@@ -999,8 +1471,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert 2
         response.StatusCode.Should().Be(HttpStatusCode.OK); // not created, updated
-        adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+        hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+
+        adjunct = hydra.Members![0];
         adjunct.Size.Should().Be(null, "API sets to null to signify it wasn't hosted previously - so no size for our purposes");
         adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
         adjunct.Finished.Should().NotBeNull("API doesn't touch finished, as it now states for 'last finished'");
@@ -1043,8 +1519,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert 1
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+
+        var adjunct = hydra.Members![0];
         adjunct.Size.Should().BeNull("hosted adjunct's size will be determined and updated by the engine");
         adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
         adjunct.Error.Should().BeNullOrEmpty("no errors yet");
@@ -1080,8 +1560,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert 2
         response.StatusCode.Should().Be(HttpStatusCode.OK); // not created, updated
-        adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
+        hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
+        hydra.Should().NotBeNull();
+        hydra.Members.Should().HaveCount(1);
+
+        adjunct = hydra.Members![0];
         adjunct.Size.Should().Be(69L, "as this is now external adjunct, ");
         adjunct.Ingesting.Should().NotBe(true, "the adjunct was NOT sent to engine for ingestion");
         adjunct.Finished.Should().NotBeNull("API doesn't touch finished, as it now states for 'last finished'");

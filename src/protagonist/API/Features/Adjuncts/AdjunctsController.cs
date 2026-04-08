@@ -62,17 +62,25 @@ public class AdjunctsController(
     }
     
     /// <summary>
-    /// Create an adjunct for an asset.
+    /// Create an adjunct, or adjuncts, for an asset.
     /// </summary>
-    /// <returns>A Hydra JSON-LD Adjunct object representing the adjuncts.</returns>
+    /// <returns>A Hydra JSON-LD Adjunct object representing the adjunct, or a HydraCollection if more than 1 submitted</returns>
     [HttpPost]
     [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
+    [ProducesResponseType(201, Type = typeof(HydraCollection<Adjunct>))]
+    [ProducesResponseType(200, Type = typeof(Adjunct))]
+    [ProducesResponseType(201, Type = typeof(Adjunct))]
     [ProducesResponseType(404, Type = typeof(Error))]
     public async Task<IActionResult> PostAdjunct(int customerId, int spaceId, string imageId, 
-        [FromBody] Adjunct hydraAdjunct, 
+        [FromBody] FlexCollection<Adjunct> adjuncts, 
         [FromServices] HydraAdjunctValidator validator, CancellationToken cancellationToken = default)
     {
-        return await CreateOrUpdateAdjunct(customerId, spaceId, imageId, hydraAdjunct, validator, true, cancellationToken);
+        if (adjuncts.Items is not { Length: > 0 } hydraAdjuncts)
+        {
+            return this.HydraProblem($"One or more adjuncts were expected in request body but found none", null, 400);
+        }
+        
+        return await CreateOrUpdateAdjunct(customerId, spaceId, imageId, hydraAdjuncts, validator, true, cancellationToken);
     }
 
     /// <summary>
@@ -93,7 +101,7 @@ public class AdjunctsController(
         
         hydraAdjunct.ModelId = adjunctId;
         
-        return await CreateOrUpdateAdjunct(customerId, spaceId, imageId, hydraAdjunct, validator, false, cancellationToken);
+        return await CreateOrUpdateAdjunct(customerId, spaceId, imageId, [hydraAdjunct], validator, false, cancellationToken);
     }
 
     /// <summary>
@@ -111,22 +119,29 @@ public class AdjunctsController(
         return await HandleDelete(deleteRequest);
     }
     
-    private async Task<IActionResult> CreateOrUpdateAdjunct(int customerId, int spaceId, string imageId, Adjunct hydraAdjunct,
+    private async Task<IActionResult> CreateOrUpdateAdjunct(int customerId, int spaceId, string imageId, Adjunct[] hydraAdjuncts,
         HydraAdjunctValidator validator, bool createOnly, CancellationToken cancellationToken)
     {
-        var validationResult = await validator.ValidateAsync(hydraAdjunct, cancellationToken);
-        if (!validationResult.IsValid)
+        foreach (var hydraAdjunct in hydraAdjuncts)
         {
-            return this.ValidationFailed(validationResult);
+            var validationResult = await validator.ValidateAsync(hydraAdjunct, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                return this.ValidationFailed(validationResult);
+            }
         }
 
+        var dlcsAdjuncts = hydraAdjuncts
+            .Select(a => a.ToDlcsModel(customerId, spaceId, imageId))
+            .ToArray();
+        
         var createOrUpdateRequest =
-            new CreateOrUpdateAdjunct(hydraAdjunct.ToDlcsModel(customerId, spaceId, imageId), createOnly);
-
+            new CreateOrUpdateAdjunct(dlcsAdjuncts, createOnly);
+        
         return await HandleUpsert(
             createOrUpdateRequest,
             a => a.ToHydra(GetUrlRoots()),
-            createOrUpdateRequest.Adjunct.Id,
+            new AssetId(customerId, spaceId, imageId).ToString(),
             "Create or update adjunct failed", cancellationToken);
     }
 }

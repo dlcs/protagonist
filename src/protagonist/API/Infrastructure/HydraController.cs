@@ -12,6 +12,7 @@ using Hydra;
 using Hydra.Collections;
 using Hydra.Model;
 using MediatR;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -79,7 +80,55 @@ public abstract class HydraController : Controller
         {
             var result = await Mediator.Send(request, cancellationToken);
 
-            return this.ModifyResultToHttpResult(result, hydraBuilder, instance, errorTitle);
+            return this.ModifyResultToHttpResult(result.Entity, result.Error, result.WriteResult, hydraBuilder, instance, errorTitle);
+        }, errorTitle);
+    }
+
+    /// <summary>
+    /// Handle an upsert request - this takes a IRequest which returns a ModifyEntityResult{T}.
+    /// The request is sent and result is transformed to an http hydra result.
+    /// This is a collection variant that returns <see cref="HydraCollection{TLd}"/>
+    /// </summary>
+    /// <param name="request">IRequest to modify data</param>
+    /// <param name="hydraBuilder">Delegate to transform returned entity to a Hydra representation</param>
+    /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
+    /// <param name="errorTitle">
+    /// The value for <see cref="Error.Title" />. In some instances this will be prepended to the actual error name.
+    /// e.g. errorTitle + ": Conflict"
+    /// </param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <typeparam name="T">Type of entity being upserted</typeparam>
+    /// <typeparam name="TLd">The <see cref="JsonLdBase"/>-derived type that will be used for response</typeparam>
+    /// <returns>
+    /// ActionResult generated from ModifyEntityResult. This will be the Hydra model + 200/201 on success. Or a Hydra
+    /// error and appropriate status code if failed.
+    /// </returns>
+    protected async Task<IActionResult> HandleUpsert<T, TLd>(
+        IRequest<ModifyEntityResult<T[]>> request,
+        Func<T, TLd> hydraBuilder,
+        string? instance = null,
+        string? errorTitle = "Operation failed",
+        CancellationToken cancellationToken = default)
+        where T : class
+        where TLd : JsonLdBase
+    {
+        return await HandleHydraRequest(async () =>
+        {
+            var result = await Mediator.Send(request, cancellationToken);
+
+            var collectionId = Request.GetJsonLdId();
+
+            return this.ModifyResultToHttpResult(result.Entity, result.Error, result.WriteResult, CollectionBuilder,
+                instance, errorTitle);
+
+            HydraCollection<TLd> CollectionBuilder(T[] items) => new()
+            {
+                Id = collectionId,
+                TotalItems = items.Length,
+                PageSize = items.Length,
+                WithContext = true,
+                Members = items.Select(hydraBuilder).ToArray()
+            };
         }, errorTitle);
     }
 
