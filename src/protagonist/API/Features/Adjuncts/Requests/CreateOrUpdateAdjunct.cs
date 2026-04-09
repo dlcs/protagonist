@@ -114,12 +114,12 @@ public class CreateOrUpdateAdjunctHandler(
             }
         }
 
-        var failed = await TryIngestNotify(adjuncts, cancellationToken);
+        var notifySuccess = await TryIngestNotify(adjuncts, cancellationToken);
 
-        if (failed.Count != 0)
+        if (!notifySuccess)
         {
             return ModifyEntityResult<Adjunct[]>.Failure(
-                $"Adjuncts with ids '{string.Join(", ", failed)}' for asset {assetId} failed submission for ingestion and will need to be resubmitted",
+                $"One or more adjuncts for asset {assetId} failed submission for ingestion and will need to be resubmitted",
                 WriteResult.Error);
         }
         
@@ -127,33 +127,31 @@ public class CreateOrUpdateAdjunctHandler(
             anyUpdates ? WriteResult.Updated : WriteResult.Created);
     }
 
-    private async Task<List<string>> TryIngestNotify(ICollection<AdjunctDocument> adjuncts, CancellationToken cancellationToken)
+    private async Task<bool> TryIngestNotify(ICollection<AdjunctDocument> adjuncts, CancellationToken cancellationToken)
     {
-        List<string> failed = [];
-        List<NotificationRecord<Adjunct>> notifications = [];
-        
-        foreach (var adjunct in adjuncts)
-        {
-            if (adjunct.ToBeIngested)
-            {
-                var success = await notificationSender.SendIngestAdjunctRequest(adjunct.Processed, cancellationToken);
-                if (!success)
-                {
-                    failed.Add(adjunct.Processed.Id);
-                    continue;
-                }
-            }
+        var toIngest = adjuncts
+            .Where(a => a.ToBeIngested)
+            .Select(a => a.Processed)
+            .ToList();
 
-            var adjunctModificationRecord = adjunct.IsUpdate
-                ? NotificationRecord<Adjunct>.Update(adjunct.Original!, adjunct.Processed, adjunct.ToBeIngested)
-                : NotificationRecord<Adjunct>.Create(adjunct.Processed);
-            
-            notifications.Add(adjunctModificationRecord);
+        if (toIngest.Count > 0)
+        {
+            var sent = await notificationSender.SendIngestAdjunctRequest(toIngest, cancellationToken);
+            if (sent != toIngest.Count)
+            {
+                return false;
+            }
         }
+
+        var notifications = adjuncts
+            .Select(a => a.IsUpdate
+                ? NotificationRecord<Adjunct>.Update(a.Original!, a.Processed, a.ToBeIngested)
+                : NotificationRecord<Adjunct>.Create(a.Processed))
+            .ToList();
 
         await deliverableNotificationSender.SendDeliverableModifiedMessage(notifications, cancellationToken);
 
-        return failed;
+        return true;
     }
 
 }

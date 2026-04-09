@@ -847,8 +847,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>._, A<CancellationToken>._))
-            .ReturnsLazily(_ => Task.FromResult(true));
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(1));
         
         const string newAdjunctJson = """
                                       {
@@ -892,9 +892,9 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 IngestNotificationSender.SendIngestAdjunctRequest(
-                    A<DLCS.Model.Assets.Adjunct>.That.Matches(a => a.Id == "someAdjunctId"), A<CancellationToken>._))
+                    A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Single().Id == "someAdjunctId"),
+                    A<CancellationToken>._))
             .MustHaveHappened(1, Times.Exactly);
-
     }
     
     [Fact]
@@ -906,8 +906,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>._, A<CancellationToken>._))
-            .ReturnsLazily(_ => Task.FromResult(true));
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(2));
         
         const string newAdjunctJson = """
                                       [
@@ -959,12 +959,13 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/{adjunctId}");
             adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
             adjunct.Error.Should().BeNullOrEmpty("no errors yet");
-            
-            A.CallTo(() =>
-                    IngestNotificationSender.SendIngestAdjunctRequest(
-                        A<DLCS.Model.Assets.Adjunct>.That.Matches(a =>a.AssetId == assetId && a.Id == adjunctId), A<CancellationToken>._))
-                .MustHaveHappened(1, Times.Exactly);
         }
+
+        A.CallTo(() =>
+                IngestNotificationSender.SendIngestAdjunctRequest(
+                    A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Count == 2),
+                    A<CancellationToken>._))
+            .MustHaveHappened(1, Times.Exactly);
         
         response.Headers.Location.Should()
             .Be(
@@ -980,8 +981,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>._, A<CancellationToken>._))
-            .ReturnsLazily(_ => Task.FromResult(true));
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(2));
 
         const string newAdjunctJson = """
                                       {
@@ -1038,12 +1039,13 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/{adjunctId}");
             adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
             adjunct.Error.Should().BeNullOrEmpty("no errors yet");
-            
-            A.CallTo(() =>
-                    IngestNotificationSender.SendIngestAdjunctRequest(
-                        A<DLCS.Model.Assets.Adjunct>.That.Matches(a =>a.AssetId == assetId && a.Id == adjunctId), A<CancellationToken>._))
-                .MustHaveHappened(1, Times.Exactly);
         }
+        
+        A.CallTo(() =>
+                IngestNotificationSender.SendIngestAdjunctRequest(
+                    A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Count == 2),
+                    A<CancellationToken>._))
+            .MustHaveHappened(1, Times.Exactly);
         
         response.Headers.Location.Should()
             .Be(
@@ -1264,13 +1266,9 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
         
-        // first works:
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>.That.Matches(a=>a.Id == "someAdjunctId1"), A<CancellationToken>._))
-            .ReturnsLazily(_ => Task.FromResult(true));
-
-        // second fails:
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>.That.Matches(a=>a.Id == "someAdjunctId2"), A<CancellationToken>._))
-            .ReturnsLazily(_ => Task.FromResult(false));
+        // Only 1 succeeded
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(1));
         
         const string newAdjunctJson = """
                                       [
@@ -1307,7 +1305,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
         (await tryRead.Should().ThrowAsync<DlcsException>())
             .Which.Message.Should()
-            .Be($"Adjuncts with ids 'someAdjunctId2' for asset {assetId} failed submission for ingestion and will need to be resubmitted");
+            .Be($"One or more adjuncts for asset {assetId} failed submission for ingestion and will need to be resubmitted");
         
         // verify db status
         dbContext.Adjuncts.Count(a=>a.AssetId == assetId).Should().Be(2, "creation in db worked, but we failed after saving");
@@ -1322,8 +1320,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
         
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<DLCS.Model.Assets.Adjunct>._, A<CancellationToken>._))
-            .ReturnsLazily(_ => Task.FromResult(true));
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(1));
         
         const string adjunctId = "updateableAdjunct";
         const string adjunctOrigin = "https://example.com/an-adjunct";
@@ -1410,6 +1408,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
+        
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(1));
+        
         const string adjunctId = "exToHostAdjunct";
         const string adjunctOrigin = "https://example.com/an-adjunct";
         const string externalUri = "https://example.com/some-external-id";
@@ -1493,6 +1495,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
+        
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(1));
+        
         const string adjunctId = "updateableAdjunct";
         const string adjunctOrigin = "https://example.com/an-adjunct";
         const string externalUri = "https://example.com/some-external-id";
