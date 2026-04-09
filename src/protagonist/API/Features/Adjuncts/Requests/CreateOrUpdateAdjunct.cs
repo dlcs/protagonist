@@ -7,7 +7,6 @@ using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Exceptions;
-using Hydra.Collections;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -30,6 +29,7 @@ public class CreateOrUpdateAdjunct(Adjunct[] adjuncts, bool createOnly) : IReque
 
 public class CreateOrUpdateAdjunctHandler(
     DlcsContext dbContext,
+    AdjunctUpsertService adjunctUpsertService,
     IIngestNotificationSender notificationSender,
     IDeliverableNotificationSender deliverableNotificationSender,
     ILogger<CreateOrUpdateAdjunctHandler> logger)
@@ -69,7 +69,7 @@ public class CreateOrUpdateAdjunctHandler(
                 // flag remains true if it was true (tripped)
                 anyUpdates = anyUpdates || existingAdjunct != null; // true if at least one is updating existing - this or previous
 
-                var processed = await HandleAdjunct(adjunct, existingAdjunct, cancellationToken);
+                var processed = await adjunctUpsertService.HandleAdjunct(adjunct, existingAdjunct, cancellationToken);
                 adjuncts.Add(processed);
             }
             catch (Exception exception)
@@ -144,7 +144,6 @@ public class CreateOrUpdateAdjunctHandler(
                 }
             }
 
-
             var adjunctModificationRecord = adjunct.IsUpdate
                 ? NotificationRecord<Adjunct>.Update(adjunct.Original!, adjunct.Processed, adjunct.ToBeIngested)
                 : NotificationRecord<Adjunct>.Create(adjunct.Processed);
@@ -157,87 +156,4 @@ public class CreateOrUpdateAdjunctHandler(
         return failed;
     }
 
-    private async Task<AdjunctDocument> HandleAdjunct(Adjunct adjunct, Adjunct? dbAdjunct,
-        CancellationToken cancellationToken)
-    {
-        // We can determine that immediately, remember for multiple uses below
-        var toBeIngested = adjunct.IsToBeIngested();
-        Adjunct? existingAdjunct = null;
-
-
-        if (dbAdjunct != null)
-        {
-            existingAdjunct = dbAdjunct.Clone();
-
-            if (!toBeIngested)
-            {
-                // This is external adjunct, and the size is irrelevant for size calculations,
-                // as this adjunct will not hit Engine - we copy whatever was submitted
-
-                dbAdjunct.Size = adjunct.Size;
-            }
-            else if (!dbAdjunct.IsToBeIngested())
-            {
-                // was external, now is hosted
-
-                // For hosted (ingested) adjuncts we let Engine handle this property
-                // as it becomes relevant to storage limits. However, if the pre-existing
-                // adjunct was EXTERNAL, the size doesn't count toward those limits.
-
-                // To ensure correct calculations in the engine, we will set Size to null.
-                // This will allow Engine to increase the total adjunct size by the size
-                // of new version of the adjunct, regardless what size the external one had.
-
-                dbAdjunct.Size = null;
-            }
-
-            dbAdjunct.MediaType = adjunct.MediaType;
-            dbAdjunct.IIIFLink = adjunct.IIIFLink;
-            dbAdjunct.Profile = adjunct.Profile;
-            dbAdjunct.Label = adjunct.Label;
-            dbAdjunct.Language = adjunct.Language;
-            dbAdjunct.ExternalId = adjunct.ExternalId;
-            dbAdjunct.Origin = adjunct.Origin;
-            dbAdjunct.Error = adjunct.Error;
-            dbAdjunct.Type = adjunct.Type;
-            dbAdjunct.Provides = adjunct.Provides;
-            dbAdjunct.Motivation = adjunct.Motivation;
-            dbAdjunct.Ingesting = adjunct.Ingesting;
-        }
-        else
-        {
-            dbAdjunct = adjunct;
-            dbAdjunct.Created = DateTime.UtcNow;
-
-            if (toBeIngested)
-            {
-                // Will be set by the Engine, disregard any submitted value
-                // See comments above for more details
-                dbAdjunct.Size = null;
-            }
-            // else it's external, and we don't care about the Size property in the context of processing - leave as is 
-
-            await dbContext.Adjuncts.AddAsync(dbAdjunct, cancellationToken);
-        }
-
-        if (!toBeIngested)
-        {
-            // It is either creation of new external, or updating external->external, or updating hosted->external
-            // In those cases we don't send to Engine for ingestion and finalizing is done in-API, so we set now()
-            dbAdjunct.Finished = DateTime.UtcNow;
-
-            // otherwise we leave it as either `null` for create or existing as "last finished" - in both cases
-            // Engine will set the property when done ingesting
-        }
-
-        return new AdjunctDocument(dbAdjunct, existingAdjunct);
-    }
-    
-    private class AdjunctDocument(Adjunct adjunct, Adjunct? existingAdjunct)
-    {
-        public bool ToBeIngested { get; } = adjunct.IsToBeIngested();
-        public bool IsUpdate => Original != null;
-        public Adjunct? Original { get; } = existingAdjunct;
-        public Adjunct Processed { get; set; } = adjunct;
-    }
 }
