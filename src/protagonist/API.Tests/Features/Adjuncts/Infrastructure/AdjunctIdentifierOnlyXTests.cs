@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using API.Features.Adjuncts.Infrastructure;
+using API.Features.Customer.Infrastructure;
 using DLCS.Model;
 
 namespace API.Tests.Features.Adjuncts.Infrastructure;
@@ -11,7 +11,7 @@ public class AdjunctIdentifierOnlyXTests
     public void ConvertToDictionary_ConvertsSingleAdjunctIdentifier()
     {
         // Arrange
-        List<AdjunctIdentifierOnly> adjunctIdentifiers =
+        List<AdjunctAssetIdentifier> adjunctIdentifiers =
         [
             new ()
             {
@@ -33,7 +33,7 @@ public class AdjunctIdentifierOnlyXTests
     public void ConvertToDictionary_ConvertsMultipleAdjunctIdentifier()
     {
         // Arrange
-        List<AdjunctIdentifierOnly> adjunctIdentifiers =
+        List<AdjunctAssetIdentifier> adjunctIdentifiers =
         [
             new ()
             {
@@ -62,7 +62,7 @@ public class AdjunctIdentifierOnlyXTests
     public void ConvertToDictionary_ConcatenatesMultipleAdjunctIdentifier()
     {
         // Arrange
-        List<AdjunctIdentifierOnly> adjunctIdentifiers =
+        List<AdjunctAssetIdentifier> adjunctIdentifiers =
         [
             new ()
             {
@@ -86,56 +86,5 @@ public class AdjunctIdentifierOnlyXTests
         adjunctDictionary.Keys.Count.Should().Be(1);
         adjunctDictionary.Keys.Should().Contain(adjunctIdentifiers[0].Id);
         adjunctDictionary.Values.Should().Contain(fullValues);
-    }
-    
-    [Fact]
-    public void Flatten_ConvertsSingleAdjunctIdentifier()
-    {
-        // Arrange
-        List<AdjunctIdentifierOnly> adjunctIdentifiers =
-        [
-            new ()
-            {
-                Id = "first",
-                Adjunct = [ "first", "second" ]
-            }
-        ];
-
-        // Act
-        var adjuncts = adjunctIdentifiers.Flatten().ToList();
-
-        // Assert
-        adjuncts.Count.Should().Be(2);
-        adjuncts.First().Should().Be(new KeyValuePair<string,string>("first", "first"));
-        adjuncts.Last().Should().Be(new KeyValuePair<string,string>("first", "second"));
-    }
-    
-    [Fact]
-    public void Flatten_ConvertsMultipleAdjunctIdentifier()
-    {
-        // Arrange
-        List<AdjunctIdentifierOnly> adjunctIdentifiers =
-        [
-            new ()
-            {
-                Id = "first",
-                Adjunct = [ "first", "second" ]
-            },
-            new ()
-            {
-                Id = "second",
-                Adjunct = [ "third", "fourth" ]
-            }
-        ];
-
-        // Act
-        var adjuncts = adjunctIdentifiers.Flatten().ToList();
-
-        // Assert
-        adjuncts.Count.Should().Be(4);
-        adjuncts.First().Should().Be(new KeyValuePair<string,string>("first", "first"));
-        adjuncts[1].Should().Be(new KeyValuePair<string,string>("first", "second"));
-        adjuncts[2].Should().Be(new KeyValuePair<string,string>("second", "third"));
-        adjuncts.Last().Should().Be(new KeyValuePair<string,string>("second", "fourth"));
     }
 }

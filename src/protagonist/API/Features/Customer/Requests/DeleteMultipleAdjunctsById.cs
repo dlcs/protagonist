@@ -12,6 +12,9 @@ using Microsoft.Extensions.Logging;
 
 namespace API.Features.Customer.Requests;
 
+/// <summary>
+/// Allows for the deletion of a list of adjuncts based on the id
+/// </summary>
 public class DeleteMultipleAdjunctsById(
     IDictionary<string, List<string>> adjuncts,
     int customerId,

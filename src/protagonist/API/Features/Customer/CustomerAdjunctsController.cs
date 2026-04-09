@@ -1,5 +1,5 @@
 ﻿using API.Converters;
-using API.Features.Adjuncts.Infrastructure;
+using API.Features.Customer.Infrastructure;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
@@ -14,7 +14,7 @@ using Microsoft.Extensions.Options;
 namespace API.Features.Customer;
 
 /// <summary>
-/// Controller for handling bulk requests for assets associated with a customer 
+/// Controller for handling bulk requests for adjuncts associated with a customer 
 /// </summary>
 [Route("/customers/{customerId}")]
 public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediator mediator)
@@ -42,11 +42,13 @@ public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediato
     public async Task<IActionResult> DeleteAdjuncts(
         [FromRoute] int customerId,
         [FromQuery] string? deleteFrom,
-        [FromBody] HydraCollection<AdjunctIdentifierOnly> adjunctIdentifiers,
+        [FromBody] HydraCollection<AdjunctAssetIdentifier> adjunctIdentifiers,
         [FromServices] AdjunctIdListValidator validator,
         CancellationToken cancellationToken = default)
     {
-        var validationResult = await validator.ValidateAsync(adjunctIdentifiers.Members, cancellationToken);
+        var adjunctIdentifiersDictionary = adjunctIdentifiers.Members?.ConvertToDictionary();
+        
+        var validationResult = await validator.ValidateAsync(adjunctIdentifiersDictionary, cancellationToken);
         if (!validationResult.IsValid)
         {
             return this.ValidationFailed(validationResult);
@@ -57,7 +59,7 @@ public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediato
         return await HandleHydraRequest(async () =>
         {
             var deleteRequest =
-                new DeleteMultipleAdjunctsById(adjunctIdentifiers.Members!.ConvertToDictionary(),
+                new DeleteMultipleAdjunctsById(adjunctIdentifiersDictionary,
                     customerId, additionalDeletion);
             var deletedRows = await Mediator.Send(deleteRequest, cancellationToken);
 

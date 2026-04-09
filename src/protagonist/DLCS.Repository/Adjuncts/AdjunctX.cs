@@ -9,9 +9,15 @@ namespace DLCS.Repository.Adjuncts;
 
 public static class AdjunctX
 {
+    /// <summary>
+    /// Fins an individual adjunct
+    /// </summary>
     public static IQueryable<Adjunct> FindAdjunct(this IQueryable<Adjunct> adjuncts, string adjunctId, AssetId assetId) =>
         adjuncts.Where(a => a.Id == adjunctId && a.AssetId == assetId);
 
+    /// <summary>
+    /// Finds adjuncts based on a set of adjuncts to search for
+    /// </summary>
     public static IQueryable<Adjunct> FindAdjuncts(this IQueryable<Adjunct> adjuncts,
         IDictionary<AssetId, List<string>> adjunctsToFind)
     {

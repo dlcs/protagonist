@@ -6,7 +6,7 @@ namespace DLCS.Model;
 /// <summary>
 /// An object that contains the minimal properties to identify an adjunct
 /// </summary>
-public class AdjunctIdentifierOnly
+public class AdjunctAssetIdentifier
 {
     public string Id { get; set; }
 

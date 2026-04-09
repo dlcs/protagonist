@@ -1,6 +1,6 @@
-﻿using API.Features.Customer.Validation;
+﻿using System.Collections.Generic;
+using API.Features.Customer.Validation;
 using API.Settings;
-using DLCS.Model;
 using FluentValidation.TestHelper;
 using Microsoft.Extensions.Options;
 using Test.Helpers.Data;
@@ -18,11 +18,9 @@ public class AdjunctIdListValidatorTests
     [Fact]
     public void Valid_WhenSingleAdjunct()
     {
-        var adjuncts = new AdjunctIdentifierOnly[1];
-        adjuncts[0] = new AdjunctIdentifierOnly
+        var adjuncts = new Dictionary<string, List<string>>
         {
-            Id = AssetIdGenerator.GetAssetId().ToString(),
-            Adjunct = ["first"]
+            {AssetIdGenerator.GetAssetId().ToString(), ["first"]}
         };
         
         var result = sut.TestValidate(adjuncts);
@@ -32,11 +30,9 @@ public class AdjunctIdListValidatorTests
     [Fact]
     public void Valid_WhenMultipleAdjunctSingleAsset()
     {
-        var adjuncts = new AdjunctIdentifierOnly[1];
-        adjuncts[0] = new AdjunctIdentifierOnly
+        var adjuncts = new Dictionary<string, List<string>>
         {
-            Id = AssetIdGenerator.GetAssetId().ToString(),
-            Adjunct = ["first", "second"]
+            {AssetIdGenerator.GetAssetId().ToString(), ["first", "second"]}
         };
         
         var result = sut.TestValidate(adjuncts);
@@ -46,16 +42,10 @@ public class AdjunctIdListValidatorTests
     [Fact]
     public void Valid_WhenSingleAdjunctMultipleAsset()
     {
-        var adjuncts = new AdjunctIdentifierOnly[2];
-        adjuncts[0] = new AdjunctIdentifierOnly
+        var adjuncts = new Dictionary<string, List<string>>
         {
-            Id = AssetIdGenerator.GetAssetId().ToString(),
-            Adjunct = ["first"]
-        };
-        adjuncts[1] = new AdjunctIdentifierOnly
-        {
-            Id = AssetIdGenerator.GetAssetId(asset: $"{nameof(Valid_WhenSingleAdjunctMultipleAsset)}_1").ToString(),
-            Adjunct = ["first"]
+            {AssetIdGenerator.GetAssetId().ToString(), ["first"]},
+            {AssetIdGenerator.GetAssetId(assetPostfix: "_1").ToString(), ["first"]}
         };
         
         var result = sut.TestValidate(adjuncts);
@@ -65,7 +55,7 @@ public class AdjunctIdListValidatorTests
     [Fact]
     public void Invalid_WhenNullValue()
     {
-        AdjunctIdentifierOnly[] adjuncts = null;
+        Dictionary<string, List<string>> adjuncts = null;
         
         var result = sut.TestValidate(adjuncts);
         result.ShouldHaveAnyValidationError();
@@ -74,7 +64,7 @@ public class AdjunctIdListValidatorTests
     [Fact]
     public void Invalid_WhenEmptyValue()
     {
-        AdjunctIdentifierOnly[] adjuncts = [];
+        Dictionary<string, List<string>> adjuncts = [];
         
         var result = sut.TestValidate(adjuncts);
         result.ShouldHaveAnyValidationError();
@@ -84,31 +74,9 @@ public class AdjunctIdListValidatorTests
     public void Invalid_WhenMultipleAdjunctRepeated()
     {
         var assetId = AssetIdGenerator.GetAssetId().ToString();
-        var adjuncts = new AdjunctIdentifierOnly[1];
-        adjuncts[0] = new AdjunctIdentifierOnly
+        var adjuncts = new Dictionary<string, List<string>>
         {
-            Id = assetId,
-            Adjunct = ["first", "first"]
-        };
-        
-        var result = sut.TestValidate(adjuncts);
-        result.ShouldHaveAnyValidationError().WithErrorMessage($"Members contains 1 duplicate Id(s): asset Id: {assetId} : adjunct id: first");
-    }
-    
-    [Fact]
-    public void Invalid_WhenMultipleAdjunctRepeatedAcrossMultipleDeclarations()
-    {
-        var assetId = AssetIdGenerator.GetAssetId().ToString();
-        var adjuncts = new AdjunctIdentifierOnly[2];
-        adjuncts[0] = new AdjunctIdentifierOnly
-        {
-            Id = assetId,
-            Adjunct = ["first"]
-        };
-        adjuncts[1] = new AdjunctIdentifierOnly
-        {
-            Id = assetId,
-            Adjunct = ["first"]
+            {assetId, ["first", "first"]}
         };
         
         var result = sut.TestValidate(adjuncts);
@@ -119,11 +87,9 @@ public class AdjunctIdListValidatorTests
     public void Invalid_WhenMoreAdjunctsThanBatchSize()
     {
         var assetId = AssetIdGenerator.GetAssetId().ToString();
-        var adjuncts = new AdjunctIdentifierOnly[1];
-        adjuncts[0] = new AdjunctIdentifierOnly
+        var adjuncts = new Dictionary<string, List<string>>
         {
-            Id = assetId,
-            Adjunct = ["first", "second", "third", "fourth", "fifth"]
+            {assetId, ["first", "second", "third", "fourth", "fifth"]}
         };
         
         var result = sut.TestValidate(adjuncts);
@@ -133,31 +99,13 @@ public class AdjunctIdListValidatorTests
     [Fact]
     public void Invalid_WhenMoreSingleAdjunctAssetsThanBatchSize()
     {
-        var adjuncts = new AdjunctIdentifierOnly[5];
-        adjuncts[0] = new AdjunctIdentifierOnly
+        var adjuncts = new Dictionary<string, List<string>>
         {
-            Id = AssetIdGenerator.GetAssetId().ToString(),
-            Adjunct = ["first"]
-        };
-        adjuncts[1] = new AdjunctIdentifierOnly
-        {
-            Id = AssetIdGenerator.GetAssetId(asset: $"{nameof(Valid_WhenSingleAdjunctMultipleAsset)}_1").ToString(),
-            Adjunct = ["first"]
-        };
-        adjuncts[2] = new AdjunctIdentifierOnly
-        {
-            Id = AssetIdGenerator.GetAssetId(asset: $"{nameof(Valid_WhenSingleAdjunctMultipleAsset)}_2").ToString(),
-            Adjunct = ["first"]
-        };
-        adjuncts[3] = new AdjunctIdentifierOnly
-        {
-            Id = AssetIdGenerator.GetAssetId(asset: $"{nameof(Valid_WhenSingleAdjunctMultipleAsset)}_3").ToString(),
-            Adjunct = ["first"]
-        };
-        adjuncts[4] = new AdjunctIdentifierOnly
-        {
-            Id = AssetIdGenerator.GetAssetId(asset: $"{nameof(Valid_WhenSingleAdjunctMultipleAsset)}_4").ToString(),
-            Adjunct = ["first"]
+            {AssetIdGenerator.GetAssetId().ToString(), ["first"]},
+            {AssetIdGenerator.GetAssetId(assetPostfix: "_1").ToString(), ["second"]},
+            {AssetIdGenerator.GetAssetId(assetPostfix: "_2").ToString(), ["third"]},
+            {AssetIdGenerator.GetAssetId(assetPostfix: "_3").ToString(), ["fourth"]},
+            {AssetIdGenerator.GetAssetId(assetPostfix: "_4").ToString(), ["fifth"]},
         };
         
         var result = sut.TestValidate(adjuncts);
