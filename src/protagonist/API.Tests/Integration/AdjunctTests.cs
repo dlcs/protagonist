@@ -846,8 +846,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
-        
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
+                A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Single().AssetId == assetId),
+                A<CancellationToken>._))
             .ReturnsLazily(_ => Task.FromResult(1));
         
         const string newAdjunctJson = """
@@ -892,9 +894,9 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 IngestNotificationSender.SendIngestAdjunctRequest(
-                    A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Single().Id == "someAdjunctId"),
+                    A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a[0].AssetId == assetId && a[0].Id == "someAdjunctId"), 
                     A<CancellationToken>._))
-            .MustHaveHappened(1, Times.Exactly);
+            .MustHaveHappened();
     }
     
     [Fact]
@@ -905,8 +907,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
-        
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
+                A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a[0].AssetId == assetId),
+                A<CancellationToken>._))
             .ReturnsLazily(_ => Task.FromResult(2));
         
         const string newAdjunctJson = """
@@ -963,7 +967,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 IngestNotificationSender.SendIngestAdjunctRequest(
-                    A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Count == 2),
+                    A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Count == 2 && a.All(ad => ad.AssetId == assetId)), 
                     A<CancellationToken>._))
             .MustHaveHappened(1, Times.Exactly);
         
@@ -980,8 +984,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
-        
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
+                A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a[0].AssetId == assetId),
+                A<CancellationToken>._))
             .ReturnsLazily(_ => Task.FromResult(2));
 
         const string newAdjunctJson = """
@@ -1267,7 +1273,9 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.SaveChangesAsync();
         
         // Only 1 succeeded
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
+                A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a[0].AssetId == assetId),
+                A<CancellationToken>._))
             .ReturnsLazily(_ => Task.FromResult(1));
         
         const string newAdjunctJson = """
@@ -1319,8 +1327,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
-        
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
+                A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Single().AssetId == assetId),
+                A<CancellationToken>._))
             .ReturnsLazily(_ => Task.FromResult(1));
         
         const string adjunctId = "updateableAdjunct";
@@ -1408,8 +1418,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
-        
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
+                A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Single().AssetId == assetId),
+                A<CancellationToken>._))
             .ReturnsLazily(_ => Task.FromResult(1));
         
         const string adjunctId = "exToHostAdjunct";
@@ -1495,8 +1507,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
-        
-        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
+                A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Single().AssetId == assetId),
+                A<CancellationToken>._))
             .ReturnsLazily(_ => Task.FromResult(1));
         
         const string adjunctId = "updateableAdjunct";

@@ -1,5 +1,7 @@
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
+using Microsoft.Extensions.Logging;
 
 namespace API.Features.Adjuncts;
 
@@ -7,7 +9,7 @@ namespace API.Features.Adjuncts;
 /// Handles the core create-vs-update logic for a single adjunct, shared between
 /// the single-adjunct and batch-adjunct handlers.
 /// </summary>
-public class AdjunctUpsertService(DlcsContext dbContext)
+public class AdjunctUpsertService(DlcsContext dbContext, ILogger<AdjunctUpsertService> logger)
 {
     /// <summary>
     /// Prepares an adjunct for persistence: either adds it as new to the EF context or
@@ -21,6 +23,7 @@ public class AdjunctUpsertService(DlcsContext dbContext)
     public async Task<AdjunctDocument> HandleAdjunct(Adjunct adjunct, Adjunct? dbAdjunct,
         CancellationToken cancellationToken)
     {
+        logger.LogDebug("Processing adjunct {AdjunctIdentifier}", adjunct.Identifier());
         var toBeIngested = adjunct.IsToBeIngested();
         Adjunct? existingAdjunct = null;
 

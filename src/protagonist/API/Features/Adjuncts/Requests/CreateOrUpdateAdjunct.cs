@@ -104,7 +104,6 @@ public class CreateOrUpdateAdjunctHandler(
             .Where(a => a.AssetId == assetId && adjunctIds.Contains(a.Id))
             .ToDictionaryAsync(a => a.Id, cancellationToken: cancellationToken);
         
-
         foreach (var adjunct in adjuncts)
         {
             if (currentAdjuncts.TryGetValue(adjunct.Processed.Id, out var updated))

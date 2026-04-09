@@ -1,6 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
+using API.Client;
 using API.Infrastructure;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Model.Messaging;
@@ -9,10 +14,12 @@ using DLCS.Web.Response;
 using FakeItEasy;
 using Hydra.Model;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
+using AdjunctBatch = DLCS.HydraModel.AdjunctBatch;
 
 namespace API.Tests.Integration;
 
@@ -20,7 +27,6 @@ namespace API.Tests.Integration;
 [Collection(StorageCollection.CollectionName)]
 public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
-    // TODO - remove / tweak as required. This was all copied from CustomerQueueTests
     private readonly HttpClient httpClient;
     private readonly DlcsContext dbContext;
     private static readonly IDeliverableNotificationSender DeliverableNotificationSender = A.Fake<IDeliverableNotificationSender>();
@@ -146,4 +152,264 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
         error.Detail.Should().Contain($"does not belong to customer {assetId.Customer}");
     }
+
+    [Fact]
+    public async Task PostAdjunctBatch_Returns404_WhenAssetDoesNotExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var json = $$"""
+                     {
+                       "member": [{
+                         "id": "adj-1",
+                         "asset": "{{assetId}}",
+                         "@type": "Image",
+                         "mediaType": "image/jpeg",
+                         "iiifLink": "seeAlso",
+                         "externalId": "https://example.com/adj"
+                       }]
+                     }
+                     """;
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .PostAsync($"/customers/{assetId.Customer}/adjunctQueue",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task PostAdjunctBatch_Returns201_WithBatch_ForSingleExternalAdjunct()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+
+        var json = $$"""
+                     {
+                       "member": [{
+                         "id": "adj-1",
+                         "asset": "{{assetId}}",
+                         "@type": "Image",
+                         "mediaType": "image/jpeg",
+                         "iiifLink": "seeAlso",
+                         "externalId": "https://example.com/adj"
+                       }]
+                     }
+                     """;
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .PostAsync($"/customers/{assetId.Customer}/adjunctQueue",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var batch = await response.ReadAsHydraResponseAsync<AdjunctBatch>();
+        batch.Count.Should().Be(1);
+        batch.Completed.Should().Be(1, "external adjuncts complete immediately");
+        batch.Errors.Should().Be(0);
+        batch.Finished.Should().NotBeNull("all adjuncts are external so batch is finished");
+
+        var batchId = ParseBatchId(batch);
+        var dbBatch = await dbContext.AdjunctBatches.AsNoTracking().SingleAsync(b => b.Id == batchId);
+        dbBatch.Count.Should().Be(1);
+        dbBatch.Completed.Should().Be(1);
+
+        var junctionRecord = await dbContext.AdjunctBatchAdjuncts.AsNoTracking().SingleAsync(a => a.BatchId == batchId);
+        junctionRecord.AdjunctId.Should().Be("adj-1");
+        junctionRecord.Status.Should().Be(DLCS.Model.Assets.BatchStatus.Completed);
+
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
+                A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+            .MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task PostAdjunctBatch_Returns201_WithBatch_ForSingleHostedAdjunct()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
+                A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+            .ReturnsLazily(_ => Task.FromResult(1));
+
+        var json = $$"""
+                     {
+                       "member": [{
+                         "id": "adj-hosted-1",
+                         "asset": "{{assetId}}",
+                         "@type": "Image",
+                         "mediaType": "image/jpeg",
+                         "iiifLink": "seeAlso",
+                         "origin": "https://example.com/source.jpg"
+                       }]
+                     }
+                     """;
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .PostAsync($"/customers/{assetId.Customer}/adjunctQueue",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var batch = await response.ReadAsHydraResponseAsync<AdjunctBatch>();
+        batch.Count.Should().Be(1);
+        batch.Completed.Should().Be(0, "hosted adjunct is not yet complete");
+        batch.Finished.Should().BeNull("batch is not finished until engine processes the adjunct");
+
+        var batchId = ParseBatchId(batch);
+        var junctionRecord = await dbContext.AdjunctBatchAdjuncts.AsNoTracking().SingleAsync(a => a.BatchId == batchId);
+        junctionRecord.AdjunctId.Should().Be("adj-hosted-1");
+        junctionRecord.Status.Should().Be(DLCS.Model.Assets.BatchStatus.Waiting);
+
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
+                A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Single().Id == "adj-hosted-1"),
+                A<CancellationToken>._))
+            .MustHaveHappened(1, Times.Exactly);
+    }
+
+    [Fact]
+    public async Task PostAdjunctBatch_Returns201_WithMixedExternalAndHosted_CountsCorrect()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+
+        A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
+                A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
+            .ReturnsLazily(call => Task.FromResult(
+                ((IReadOnlyList<DLCS.Model.Assets.Adjunct>)call.Arguments[0]!).Count));
+
+        var json = $$"""
+                     {
+                       "member": [
+                         {
+                           "id": "adj-ext",
+                           "asset": "{{assetId}}",
+                           "@type": "Image",
+                           "mediaType": "image/jpeg",
+                           "iiifLink": "seeAlso",
+                           "externalId": "https://example.com/ext.jpg"
+                         },
+                         {
+                           "id": "adj-hosted",
+                           "asset": "{{assetId}}",
+                           "@type": "Image",
+                           "mediaType": "image/jpeg",
+                           "iiifLink": "seeAlso",
+                           "origin": "https://example.com/source.jpg"
+                         }
+                       ]
+                     }
+                     """;
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .PostAsync($"/customers/{assetId.Customer}/adjunctQueue",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var batch = await response.ReadAsHydraResponseAsync<AdjunctBatch>();
+        batch.Count.Should().Be(2);
+        batch.Completed.Should().Be(1, "only the external adjunct completes immediately");
+        batch.Finished.Should().BeNull("one hosted adjunct is still pending");
+
+        var batchId = ParseBatchId(batch);
+        var junctionRecords = await dbContext.AdjunctBatchAdjuncts.AsNoTracking()
+            .Where(a => a.BatchId == batchId)
+            .ToListAsync();
+        junctionRecords.Should().HaveCount(2);
+        junctionRecords.Single(a => a.AdjunctId == "adj-ext").Status.Should().Be(DLCS.Model.Assets.BatchStatus.Completed);
+        junctionRecords.Single(a => a.AdjunctId == "adj-hosted").Status.Should().Be(DLCS.Model.Assets.BatchStatus.Waiting);
+    }
+
+    [Fact]
+    public async Task PostAdjunctBatch_Returns201_UpsertsExistingAdjunct()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct("adj-existing", externalId: "https://example.com/old.jpg");
+        await dbContext.SaveChangesAsync();
+
+        var json = $$"""
+                     {
+                       "member": [{
+                         "id": "adj-existing",
+                         "asset": "{{assetId}}",
+                         "@type": "Image",
+                         "mediaType": "image/png",
+                         "iiifLink": "seeAlso",
+                         "externalId": "https://example.com/new.jpg"
+                       }]
+                     }
+                     """;
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .PostAsync($"/customers/{assetId.Customer}/adjunctQueue",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var batchId = ParseBatchId(await response.ReadAsHydraResponseAsync<AdjunctBatch>());
+
+        var updatedAdjunct = await dbContext.Adjuncts.AsNoTracking()
+            .SingleAsync(a => a.AssetId == assetId && a.Id == "adj-existing");
+        updatedAdjunct.ExternalId.Should().Be(new Uri("https://example.com/new.jpg"));
+        updatedAdjunct.MediaType.Should().Be("image/png");
+        updatedAdjunct.Batch.Should().Be(batchId);
+    }
+
+    [Fact]
+    public async Task PostAdjunctBatch_Returns201_AdjunctHasBatchIdSet()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+
+        var json = $$"""
+                     {
+                       "member": [{
+                         "id": "adj-batch-fk",
+                         "asset": "{{assetId}}",
+                         "@type": "Image",
+                         "mediaType": "image/jpeg",
+                         "iiifLink": "seeAlso",
+                         "externalId": "https://example.com/adj"
+                       }]
+                     }
+                     """;
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .PostAsync($"/customers/{assetId.Customer}/adjunctQueue",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var batchId = ParseBatchId(await response.ReadAsHydraResponseAsync<AdjunctBatch>());
+
+        var adjunct = await dbContext.Adjuncts.AsNoTracking()
+            .SingleAsync(a => a.AssetId == assetId && a.Id == "adj-batch-fk");
+        adjunct.Batch.Should().Be(batchId, "adjunct should reference the created batch");
+    }
+
+    /// <summary>
+    /// Get the batch Id from the JSON-LD @id URL, e.g. ".../adjunctQueue/batches/42" → 42.
+    /// ModelId is [JsonIgnore] so cannot be read directly from the deserialized response.
+    /// </summary>
+    private static int ParseBatchId(AdjunctBatch batch)
+        => batch.GetLastPathElementAsInt()!.Value;
 }
