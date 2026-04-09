@@ -19,6 +19,11 @@ public interface IDeliverable : IOriginItem, ICloneable
     /// When the item has last finished processing
     /// </summary>
     DateTime? Finished { get; set; }
+    
+    /// <summary>
+    /// Last batch that this item was processed in
+    /// </summary>
+    public int? Batch { get; set; }
 
     /// <summary>
     /// Returns <see cref="AssetId"/> that is or is parent to this deliverable
