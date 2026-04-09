@@ -197,4 +197,65 @@ public class ImageDeliveryChannelXTests
 
         action.Should().ThrowExactly<InvalidOperationException>();
     }
+    
+    [Fact]
+    public void GetNoneChannel_ThrowIfNotFoundFalse_ReturnsNull_IfListNull()
+    {
+        List<ImageDeliveryChannel> idcs = null;
+        idcs.GetNoneChannel(false).Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetNoneChannel_ThrowIfNotFoundFalse_ReturnsNull_IfListEmpty()
+    {
+        var idcs = new List<ImageDeliveryChannel>();
+        idcs.GetNoneChannel(false).Should().BeNull();
+    }
+    
+    [Fact]
+    public void GetNoneChannel_ThrowIfNotFoundFalse_ReturnsNull_IfNoneNotFound()
+    {
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-av" } };
+        idcs.GetNoneChannel(false).Should().BeNull();
+    }
+    
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void GetNoneChannel_ReturnsNone_IfFound(bool throwIfNotFound)
+    {
+        var imageChannel = new ImageDeliveryChannel
+        {
+            Channel = "none", DeliveryChannelPolicyId = 12354
+        };
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-av" }, imageChannel };
+        idcs.GetNoneChannel(throwIfNotFound).Should().Be(imageChannel);
+    }
+    
+    [Fact]
+    public void GetNoneChannel_ThrowIfNotFoundTrue_Throws_IfListNull()
+    {
+        List<ImageDeliveryChannel> idcs = null;
+        Action action = () => idcs.GetNoneChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public void GetNoneChannel_ThrowIfNotFoundTrue_Throws_IfListEmpty()
+    {
+        var idcs = new List<ImageDeliveryChannel>();
+        Action action = () => idcs.GetNoneChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public void GetNoneChannel_ThrowIfNotFoundTrue_Throws_IfNoneNotFound()
+    {
+        var idcs = new List<ImageDeliveryChannel> { new() { Channel = "iiif-av" } };
+        Action action = () => idcs.GetNoneChannel(true);
+
+        action.Should().ThrowExactly<InvalidOperationException>();
+    }
 }
