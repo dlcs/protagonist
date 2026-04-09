@@ -1,15 +1,21 @@
-﻿using API.Converters;
+﻿using System.Collections.Generic;
+using AngleSharp.Attributes;
+using API.Converters;
+using API.Exceptions;
 using API.Features.Customer.Infrastructure;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Core.Types;
 using DLCS.Model;
 using Hydra.Collections;
 using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace API.Features.Customer;
 
@@ -17,7 +23,7 @@ namespace API.Features.Customer;
 /// Controller for handling bulk requests for adjuncts associated with a customer 
 /// </summary>
 [Route("/customers/{customerId}")]
-public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediator mediator)
+public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediator mediator, ILogger<CustomerAdjunctsController> logger)
     : HydraController(settings.Value, mediator)
 {
     /// <summary>
@@ -46,8 +52,18 @@ public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediato
         [FromServices] AdjunctIdListValidator validator,
         CancellationToken cancellationToken = default)
     {
-        var adjunctIdentifiersDictionary = adjunctIdentifiers.Members?.ConvertToDictionary();
+        Dictionary<AssetId, List<string>>? adjunctIdentifiersDictionary;
         
+        try
+        {
+            adjunctIdentifiersDictionary = adjunctIdentifiers.Members?.ConvertToDictionary(customerId);
+        }
+        catch (BadRequestException exception)
+        {
+            logger.LogError(exception, "BadRequestException when handling HydraRequest");
+            return this.HydraProblem(exception.Message, null, exception.StatusCode, exception.Label);
+        }
+
         var validationResult = await validator.ValidateAsync(adjunctIdentifiersDictionary, cancellationToken);
         if (!validationResult.IsValid)
         {
@@ -59,8 +75,7 @@ public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediato
         return await HandleHydraRequest(async () =>
         {
             var deleteRequest =
-                new DeleteMultipleAdjunctsById(adjunctIdentifiersDictionary,
-                    customerId, additionalDeletion);
+                new DeleteMultipleAdjunctsById(adjunctIdentifiersDictionary!, additionalDeletion);
             var deletedRows = await Mediator.Send(deleteRequest, cancellationToken);
 
             if (deletedRows == 0)
@@ -70,5 +85,6 @@ public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediato
 
             return NoContent();
         }, "Delete adjuncts failed");
+
     }
 }

@@ -1,13 +1,14 @@
 ﻿using System.Collections.Generic;
 using API.Infrastructure;
 using API.Settings;
+using DLCS.Core.Types;
 using FluentValidation;
 using FluentValidation.Results;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Customer.Validation;
 
-public class AdjunctIdListValidator : AbstractValidator<Dictionary<string, List<string>>?>
+public class AdjunctIdListValidator : AbstractValidator<Dictionary<AssetId, List<string>>?>
 {
     public AdjunctIdListValidator(IOptions<ApiSettings> apiSettings)
     {
@@ -28,7 +29,7 @@ public class AdjunctIdListValidator : AbstractValidator<Dictionary<string, List<
             .WithMessage($"Maximum adjuncts in single batch is {maxBatch}");
     }
     
-    protected override bool PreValidate(ValidationContext<Dictionary<string, List<string>>?> context, ValidationResult result)
+    protected override bool PreValidate(ValidationContext<Dictionary<AssetId, List<string>>?> context, ValidationResult result)
     {
         return context.PreValidate(result);
     }

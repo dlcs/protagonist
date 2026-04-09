@@ -277,7 +277,7 @@ public class CustomerAdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
-        error.Description.Should().Be("Asset id cannot belong to a different customer");
+        error.Description.Should().Be($"Asset id '{assetId}' cannot belong to a different customer");
         
         A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<IReadOnlyCollection<NotificationRecord<DLCS.Model.Assets.Adjunct>>>.That.Matches(r =>
