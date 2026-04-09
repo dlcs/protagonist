@@ -116,6 +116,12 @@ public class AssetProcessor
                 {
                     requiresEngineNotification = true;
                 }
+                // there's no need to do engine ingestion if there's a none channel
+                else if (requiresEngineNotification && updatedAsset.ImageDeliveryChannels.Count == 1 &&
+                         updatedAsset.ImageDeliveryChannels.GetNoneChannel() != null)
+                {
+                    requiresEngineNotification = false;
+                }
             }
 
             if (requiresEngineNotification)

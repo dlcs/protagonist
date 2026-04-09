@@ -47,6 +47,19 @@ public static class ImageDeliveryChannelX
         => GetChannel(imageDeliveryChannels, AssetDeliveryChannels.Image, "Image policy not found",
             throwIfNotFound);
     
+    /// <summary>
+    /// Get ImageDeliveryChannel record for None channel, optionally throwing if not found.
+    /// </summary>
+    /// <param name="imageDeliveryChannels">Collection of <see cref="DeliveryChannelPolicy"/></param>
+    /// <param name="throwIfNotFound">If true, and image not found, then exception will the thrown</param>
+    /// <returns><see cref="DeliveryChannelPolicy"/>, if found.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if image policy not found and throwIfNotFound = true</exception>
+    public static ImageDeliveryChannel? GetNoneChannel( //todo: test
+        this ICollection<ImageDeliveryChannel> imageDeliveryChannels,
+        bool throwIfNotFound = false)
+        => GetChannel(imageDeliveryChannels, AssetDeliveryChannels.None, "None policy not found",
+            throwIfNotFound);
+    
     private static ImageDeliveryChannel? GetChannel(
         this ICollection<ImageDeliveryChannel> imageDeliveryChannels,
         string channelName,

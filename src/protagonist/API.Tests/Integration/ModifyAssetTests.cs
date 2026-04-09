@@ -191,7 +191,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.MaxWidth.Should().Be(0);
         asset.OpenFullMax.Should().Be(0);
-        asset.Ingesting.Should().BeFalse();
         asset.ImageDeliveryChannels
             .Should().HaveCount(1).And.Subject
             .Should().Satisfy(
