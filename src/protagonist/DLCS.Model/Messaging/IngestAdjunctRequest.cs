@@ -8,7 +8,7 @@ namespace DLCS.Model.Messaging;
 /// Represents a request to ingest an adjunct.
 /// </summary>
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
-public class IngestAdjunctRequest(string id, AssetId assetId, DateTime? created)
+public class IngestAdjunctRequest(string id, AssetId assetId, DateTime? created, int? batchId = null)
 {
     public const string IngestType = "IngestAdjunct";
 
@@ -23,9 +23,14 @@ public class IngestAdjunctRequest(string id, AssetId assetId, DateTime? created)
     public string Id { get; } = id;
 
     /// <summary>
-    /// AssetId of the asset owning the adjunct 
+    /// AssetId of the asset owning the adjunct
     /// </summary>
     public AssetId AssetId { get; } = assetId;
+
+    /// <summary>
+    /// The id of the AdjunctBatch this adjunct was submitted as part of, if any.
+    /// </summary>
+    public int? BatchId { get; } = batchId;
 
     private string DebuggerDisplay =>
         $"{nameof(IngestAdjunctRequest)} at {Created} for Adjunct {Id}, AssetId {AssetId}";

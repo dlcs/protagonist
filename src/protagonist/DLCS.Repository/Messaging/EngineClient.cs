@@ -199,7 +199,7 @@ public class EngineClient(
     {
         object request = deliverable switch
         {
-            Adjunct adjunct => new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow),
+            Adjunct adjunct => new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow, adjunct.Batch),
             Asset asset => new IngestAssetRequest(asset.Id, DateTime.UtcNow, asset.Batch),
             _ => ThrowUnknownType(deliverable)
         };

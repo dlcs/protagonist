@@ -159,6 +159,46 @@ public class EngineClientTests
 
         capturedAttributes.Should().ContainKey(IngestType).WhoseValue.Should().Be(IngestAdjunctRequest.IngestType);
     }
+    
+    [Fact]
+    public async Task AsynchronousIngest_QueuesMessage_ForAdjunct_WithBatchId()
+    {
+        // Arrange
+        var adjunct = new Adjunct
+        {
+            Id = "adjunct-1",
+            AssetId = AssetId.FromString("99/1/ingest-asset"),
+            MediaType = "text/plain",
+            IIIFLink = IIIFLinkType.SeeAlso,
+            Type = "test-type",
+            Batch = 502,
+        };
+
+        var capturedJson = string.Empty;
+        var capturedAttributes = new Dictionary<string, string>();
+        A.CallTo(() => queueLookup.GetAdjunctsQueueName()).Returns("adjunct-queue");
+        A.CallTo(() => queueSender.QueueMessage("adjunct-queue", A<string>._, A<Dictionary<string, string>>._, A<CancellationToken>._))
+            .Invokes((string _, string message, IDictionary<string, string> attrs, CancellationToken _) =>
+            {
+                capturedJson = message;
+                foreach (var kvp in attrs) capturedAttributes[kvp.Key] = kvp.Value;
+            })
+            .Returns(true);
+
+        // Act
+        await sut.AsynchronousIngest(adjunct);
+
+        // Assert
+        A.CallTo(() => queueLookup.GetAdjunctsQueueName()).MustHaveHappenedOnceExactly();
+
+        var body = JsonSerializer.Deserialize<IngestAdjunctRequest>(capturedJson,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        body!.Id.Should().Be(adjunct.Id);
+        body.AssetId.Should().Be(adjunct.AssetId);
+        body.BatchId.Should().Be(adjunct.Batch);
+
+        capturedAttributes.Should().ContainKey(IngestType).WhoseValue.Should().Be(IngestAdjunctRequest.IngestType);
+    }
 
     [Fact]
     public async Task AsynchronousIngestBatch_Asset_UsesDefaultQueue_WhenNotPriority()
