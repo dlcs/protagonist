@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using API.Features.Customer.Validation;
 using API.Settings;
 using DLCS.Core.Types;
@@ -79,6 +80,36 @@ public class AdjunctIdListValidatorTests
         {
             {assetId, ["first", "first"]}
         };
+        
+        var result = sut.TestValidate(adjuncts);
+        result.ShouldHaveAnyValidationError().WithErrorMessage($"Members contains 1 duplicate Id(s): asset Id: {assetId} : adjunct id: first");
+    }
+    
+    [Fact]
+    public void Invalid_WhenMultipleAdjunctRepeatedWithAdditional()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        var adjuncts = new Dictionary<AssetId, List<string>>
+        {
+            {assetId, ["first", "first", "second"]}
+        };
+        
+        var result = sut.TestValidate(adjuncts);
+        result.ShouldHaveAnyValidationError().WithErrorMessage($"Members contains 1 duplicate Id(s): asset Id: {assetId} : adjunct id: first");
+    }
+    
+    [Fact]
+    public void Invalid_WhenMultipleAdjunctRepeatedWithSecondAdjunct()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        var adjuncts = new Dictionary<AssetId, List<string>>
+        {
+            {assetId, ["first", "first"]},
+            {AssetIdGenerator.GetAssetId(assetPostfix: "_1"), ["second"]}
+        };
+
+        var stuff3 = adjuncts.Any(kvp =>
+            kvp.Value.SelectMany(a => a).Distinct().Count() == kvp.Value.SelectMany(a => a).Count());
         
         var result = sut.TestValidate(adjuncts);
         result.ShouldHaveAnyValidationError().WithErrorMessage($"Members contains 1 duplicate Id(s): asset Id: {assetId} : adjunct id: first");

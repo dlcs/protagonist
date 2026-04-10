@@ -16,11 +16,12 @@ public class AdjunctIdListValidator : AbstractValidator<Dictionary<AssetId, List
             .NotEmpty().WithMessage("Members cannot be empty");
         
         RuleFor(c => c)
-            .Must(m => m?.Any(kvp => kvp.Value.Distinct().Count() == kvp.Value.Count) ?? true)
+            .Must(m => m?.All(kvp => kvp.Value.Distinct().Count() == kvp.Value.Count) ?? true)
             .WithMessage((_, mem) =>
             {
                 var dupes = mem!.Where(kvp => kvp.Value.Distinct().Count() != kvp.Value.Count).ToList();
-                return $"Members contains {dupes.Count} duplicate Id(s): {string.Join(",", dupes.Select(d => $"asset Id: {d.Key} : adjunct id: {string.Join(',', d.Value.Distinct())}"))}";
+                // duplicate grioup by causes only duplicate id's to be outputted, instead of all values
+                return $"Members contains {dupes.Count} duplicate Id(s): {string.Join(",", dupes.Select(d => $"asset Id: {d.Key} : adjunct id: {string.Join(',', d.Value.GroupBy(v => v).Where(v => v.Count() > 1).Select(v => v.Key))}"))}";
             });
         
         var maxBatch = apiSettings.Value.MaxImageListSize;
