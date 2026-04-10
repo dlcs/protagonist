@@ -1,4 +1,5 @@
-﻿using API.Settings;
+﻿using API.Infrastructure;
+using API.Settings;
 using DLCS.Core.Collections;
 using DLCS.Model;
 using FluentValidation;
@@ -33,11 +34,6 @@ public class ImageIdListValidator : AbstractValidator<IdentifierOnly[]?>
     
     protected override bool PreValidate(ValidationContext<IdentifierOnly[]?> context, ValidationResult result) 
     {
-        if (context.InstanceToValidate == null) 
-        {
-            result.Errors.Add(new ValidationFailure("", "Members cannot be null"));
-            return false;
-        }
-        return true;
+        return context.PreValidate(result);
     }
 }
