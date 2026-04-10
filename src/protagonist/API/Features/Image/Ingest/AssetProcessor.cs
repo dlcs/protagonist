@@ -116,7 +116,7 @@ public class AssetProcessor
                 {
                     requiresEngineNotification = true;
                 }
-                // there's no need to do engine ingestion if there's a none channel
+                // After processing delivery channels, the none channel was set - so no need to do ingestion
                 else if (requiresEngineNotification && updatedAsset.ImageDeliveryChannels.Count == 1 &&
                          updatedAsset.ImageDeliveryChannels.GetNoneChannel() != null)
                 {
@@ -139,6 +139,11 @@ public class AssetProcessor
             }
 
             var assetAfterSave = await assetRepository.Save(updatedAsset, assetFromDatabase != null, cancellationToken);
+
+            if (requiresEngineNotification == false && updatedAsset.ImageDeliveryChannels.GetNoneChannel() != null)
+            {
+                await deliveryChannelProcessor.AddDeliveryChannelPolicyDetails(updatedAsset);
+            }
 
             return new ProcessAssetResult
             {

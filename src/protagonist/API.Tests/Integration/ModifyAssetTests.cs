@@ -191,6 +191,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.MaxWidth.Should().Be(0);
         asset.OpenFullMax.Should().Be(0);
+        asset.Ingesting.Should().BeFalse();
         asset.ImageDeliveryChannels
             .Should().HaveCount(1).And.Subject
             .Should().Satisfy(
@@ -1605,12 +1606,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             }}]
         }}";
         
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<Asset>.That.Matches(r => r.Id == assetId),
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
-        
         // Act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
@@ -1620,6 +1615,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
+        asset.Ingesting.Should().BeFalse();
         asset.ImageDeliveryChannels
             .Should().HaveCount(1).And.Subject
             .Should().Satisfy(
@@ -2332,15 +2328,10 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<Asset>.That.Matches(r => r.Id == assetId),
-                    A<CancellationToken>._))
-            .MustHaveHappened();
 
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
+        asset.Ingesting.Should().BeFalse();
         asset.ImageDeliveryChannels
             .Should().HaveCount(1).And.Subject
             .Should().Satisfy(

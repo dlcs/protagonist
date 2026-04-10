@@ -1,4 +1,4 @@
-﻿﻿using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
@@ -8,19 +8,28 @@ using Microsoft.Extensions.Logging;
 
 namespace API.Features.Image.Ingest;
 
-public class DeliveryChannelProcessor
+public class DeliveryChannelProcessor(
+    IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository,
+    IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository,
+    ILogger<DeliveryChannelProcessor> logger)
 {
-    private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
-    private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
-    private readonly ILogger<DeliveryChannelProcessor> logger;
     private const string FileNonePolicy = "none";
 
-    public DeliveryChannelProcessor(IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository,
-        IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository, ILogger<DeliveryChannelProcessor> logger)
+    /// <summary>
+    /// Adds details of the delivery channel policy to the delivery channels
+    /// </summary>
+    public async Task AddDeliveryChannelPolicyDetails(Asset asset)
     {
-        this.defaultDeliveryChannelRepository = defaultDeliveryChannelRepository;
-        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
-        this.logger = logger;
+        foreach (var deliveryChannel in asset.ImageDeliveryChannels)
+        {
+            if (deliveryChannel.DeliveryChannelPolicy == null)
+            {
+                var deliveryChannelPolicy = await deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(asset.Customer,
+                    deliveryChannel.Channel, deliveryChannel.DeliveryChannelPolicyId);
+
+                deliveryChannel.DeliveryChannelPolicy = deliveryChannelPolicy;
+            }
+        }
     }
     
     /// <summary>
