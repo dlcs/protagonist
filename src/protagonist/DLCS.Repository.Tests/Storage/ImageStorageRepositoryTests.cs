@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading;
 using DLCS.Model.Assets;
 using DLCS.Repository.Storage;
-using Microsoft.EntityFrameworkCore;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
 
@@ -11,16 +10,12 @@ namespace DLCS.Repository.Tests.Storage;
 
 [Trait("Category", "Integration")]
 [Collection(DatabaseCollection.CollectionName)]
-public class ImageStorageRepositoryTests
+public class ImageStorageXTests
 {
     private readonly DlcsContext dbContext;
-    private readonly ImageStorageRepository sut;
-
-    public ImageStorageRepositoryTests(DlcsDatabaseFixture dbFixture)
+    public ImageStorageXTests(DlcsDatabaseFixture dbFixture)
     {
         dbContext = dbFixture.DbContext;
-        
-        sut = new ImageStorageRepository(dbContext);
         dbFixture.CleanUp();
     }
 
@@ -40,7 +35,7 @@ public class ImageStorageRepositoryTests
         };
 
         // act
-        await sut.UpsertImageStorageRecord(imageStorage, CancellationToken.None);
+        await dbContext.ImageStorages.UpsertImageStorageRecord(imageStorage, CancellationToken.None);
         await dbContext.SaveChangesAsync(CancellationToken.None);
 
         // assert
@@ -70,7 +65,7 @@ public class ImageStorageRepositoryTests
         dbContext.ChangeTracker.Clear();
         
         // act
-        await sut.UpsertImageStorageRecord(imageStorage, CancellationToken.None);
+        await dbContext.ImageStorages.UpsertImageStorageRecord(imageStorage, CancellationToken.None);
         await dbContext.SaveChangesAsync(CancellationToken.None);
 
         // assert

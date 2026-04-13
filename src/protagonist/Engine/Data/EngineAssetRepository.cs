@@ -4,6 +4,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Storage;
 using Microsoft.EntityFrameworkCore;
 
 namespace Engine.Data;
@@ -11,7 +12,6 @@ namespace Engine.Data;
 public class EngineAssetRepository(
     DlcsContext dlcsContext,
     IBatchCompletedNotificationSender batchCompletedNotificationSender,
-    IImageStorageRepository imageStorageRepository,
     ILogger<EngineAssetRepository> logger)
     : IEngineAssetRepository, IDapperContextRepository
 {
@@ -44,7 +44,9 @@ public class EngineAssetRepository(
                 }
             }
 
-            await imageStorageRepository.UpsertImageStorageRecord(imageStorage, cancellationToken);
+            await DlcsContext.ImageStorages.UpsertImageStorageRecord(imageStorage, cancellationToken);
+
+            //await imageStorageRepository.UpsertImageStorageRecord(imageStorage, cancellationToken);
             
             var updatedRows = hasBatch && deliverable is Asset asset
                 ? await BatchSave(asset, ingestFinished, cancellationToken)

@@ -133,7 +133,6 @@ public static class ServiceCollectionX
             .AddSingleton<ICredentialsRepository, DapperCredentialsRepository>()
             .AddScoped<IStorageRepository, CustomerStorageRepository>()
             .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
-            .AddScoped<IImageStorageRepository, ImageStorageRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>

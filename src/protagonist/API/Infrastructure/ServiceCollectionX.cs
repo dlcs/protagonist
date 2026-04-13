@@ -109,7 +109,6 @@ public static class ServiceCollectionX
             .AddScoped<IDefaultDeliveryChannelRepository, DefaultDeliveryChannelRepository>()
             .AddScoped<IDeliveryChannelPolicyRepository, DeliveryChannelPolicyRepository>()
             .AddScoped<IAvChannelPolicyOptionsRepository, AvChannelPolicyOptionsRepository>()
-            .AddScoped<IImageStorageRepository, ImageStorageRepository>()
             .AddDlcsContext(configuration);
 
     /// <summary>

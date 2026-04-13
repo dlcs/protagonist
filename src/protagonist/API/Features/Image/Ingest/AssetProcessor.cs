@@ -5,6 +5,8 @@ using API.Settings;
 using DLCS.Core;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
+using DLCS.Repository;
+using DLCS.Repository.Storage;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Image.Ingest;
@@ -17,7 +19,6 @@ public class AssetProcessor(
     IApiAssetRepository assetRepository,
     IStorageRepository storageRepository,
     DeliveryChannelProcessor deliveryChannelProcessor,
-    IImageStorageRepository imageStorageRepository,
     IOptionsMonitor<ApiSettings> apiSettings)
 {
     private readonly ApiSettings settings = apiSettings.CurrentValue;
@@ -121,8 +122,8 @@ public class AssetProcessor(
                         Space = updatedAsset.Space,
                         LastChecked = DateTime.UtcNow
                     };
-
-                    await imageStorageRepository.UpsertImageStorageRecord(imageStorage, cancellationToken);
+                    
+                    await assetRepository.UpsertImageStorageRecord(imageStorage, cancellationToken);
                 }
             }
 
