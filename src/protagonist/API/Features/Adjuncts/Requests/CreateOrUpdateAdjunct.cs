@@ -1,10 +1,7 @@
 ﻿using System.Collections.Generic;
-using API.Infrastructure;
-using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Assets;
-using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Exceptions;
 using MediatR;
@@ -30,8 +27,6 @@ public class CreateOrUpdateAdjunct(Adjunct[] adjuncts, bool createOnly) : IReque
 public class CreateOrUpdateAdjunctHandler(
     DlcsContext dbContext,
     AdjunctUpsertService adjunctUpsertService,
-    IIngestNotificationSender notificationSender,
-    IDeliverableNotificationSender deliverableNotificationSender,
     ILogger<CreateOrUpdateAdjunctHandler> logger)
     : IRequestHandler<CreateOrUpdateAdjunct, ModifyEntityResult<Adjunct[]>>
 {
@@ -113,9 +108,7 @@ public class CreateOrUpdateAdjunctHandler(
             }
         }
 
-        var notifySuccess = await TryIngestNotify(adjuncts, cancellationToken);
-
-        if (!notifySuccess)
+        if (!await adjunctUpsertService.SendNotifications(adjuncts, cancellationToken))
         {
             return ModifyEntityResult<Adjunct[]>.Failure(
                 $"One or more adjuncts for asset {assetId} failed submission for ingestion and will need to be resubmitted",
@@ -124,33 +117,6 @@ public class CreateOrUpdateAdjunctHandler(
         
         return ModifyEntityResult<Adjunct[]>.Success( adjuncts.Select(a => a.Processed).ToArray(),
             anyUpdates ? WriteResult.Updated : WriteResult.Created);
-    }
-
-    private async Task<bool> TryIngestNotify(ICollection<AdjunctDocument> adjuncts, CancellationToken cancellationToken)
-    {
-        var toIngest = adjuncts
-            .Where(a => a.ToBeIngested)
-            .Select(a => a.Processed)
-            .ToList();
-
-        if (toIngest.Count > 0)
-        {
-            var sent = await notificationSender.SendIngestAdjunctRequest(toIngest, cancellationToken);
-            if (sent != toIngest.Count)
-            {
-                return false;
-            }
-        }
-
-        var notifications = adjuncts
-            .Select(a => a.IsUpdate
-                ? NotificationRecord<Adjunct>.Update(a.Original!, a.Processed, a.ToBeIngested)
-                : NotificationRecord<Adjunct>.Create(a.Processed))
-            .ToList();
-
-        await deliverableNotificationSender.SendDeliverableModifiedMessage(notifications, cancellationToken);
-
-        return true;
     }
 
 }

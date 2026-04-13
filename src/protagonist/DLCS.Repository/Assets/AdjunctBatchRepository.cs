@@ -16,7 +16,7 @@ public class AdjunctBatchRepository(DlcsContext dlcsContext) : IAdjunctBatchRepo
     public async Task<AdjunctBatch> CreateBatch(int customerId, IReadOnlyList<Adjunct> adjuncts,
         CancellationToken cancellationToken)
     {
-        var externalCount = adjuncts.Count(a => !AdjunctX.IsToBeIngested(a));
+        var externalCount = adjuncts.Count(a => !a.IsToBeIngested());
         var allExternal = externalCount == adjuncts.Count;
 
         var utcNow = DateTime.UtcNow;

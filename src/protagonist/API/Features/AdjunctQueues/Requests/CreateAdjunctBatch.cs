@@ -2,12 +2,10 @@ using System.Collections.Generic;
 using System.Data;
 using API.Features.Adjuncts;
 using API.Infrastructure;
-using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Adjuncts;
 using MediatR;
@@ -29,8 +27,6 @@ public class CreateAdjunctBatchHandler(
     DlcsContext dbContext,
     IAdjunctBatchRepository adjunctBatchRepository,
     AdjunctUpsertService adjunctUpsertService,
-    IIngestNotificationSender notificationSender,
-    IDeliverableNotificationSender deliverableNotificationSender,
     ILogger<CreateAdjunctBatchHandler> logger)
     : IRequestHandler<CreateAdjunctBatch, ModifyEntityResult<AdjunctBatch>>
 {
@@ -52,20 +48,20 @@ public class CreateAdjunctBatchHandler(
             await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
 
         var adjunctDocs = new List<AdjunctDocument>(request.Adjuncts.Length);
+        AdjunctBatch? batch = null;
 
         try
         {
             foreach (var adjunct in request.Adjuncts)
             {
                 existing.TryGetValue((adjunct.AssetId, adjunct.Id), out var dbAdjunct);
-                var doc = await adjunctUpsertService.HandleAdjunct(adjunct, dbAdjunct, cancellationToken);
-                adjunctDocs.Add(doc);
+                adjunctDocs.Add(await adjunctUpsertService.HandleAdjunct(adjunct, dbAdjunct, cancellationToken));
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            var allAdjuncts = adjunctDocs.Select(d => d.Processed).ToList();
-            var batch = await adjunctBatchRepository.CreateBatch(request.CustomerId, allAdjuncts, cancellationToken);
+            batch = await adjunctBatchRepository.CreateBatch(request.CustomerId,
+                adjunctDocs.Select(d => d.Processed).ToList(), cancellationToken);
 
             foreach (var doc in adjunctDocs)
             {
@@ -77,10 +73,6 @@ public class CreateAdjunctBatchHandler(
 
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
-
-            await TryIngestNotify(adjunctDocs, cancellationToken);
-
-            return ModifyEntityResult<AdjunctBatch>.Success(batch, WriteResult.Created);
         }
         catch (Exception ex)
         {
@@ -89,6 +81,16 @@ public class CreateAdjunctBatchHandler(
             await transaction.RollbackAsync(CancellationToken.None);
             return ModifyEntityResult<AdjunctBatch>.Failure(ex.Message);
         }
+
+        // Post-commit: notifications cannot be rolled back; failures are logged, not surfaced as errors
+        if (!await adjunctUpsertService.SendNotifications(adjunctDocs, cancellationToken))
+        {
+            logger.LogWarning(
+                "Not all engine notifications sent for adjunct batch (customer {CustomerId}); some adjuncts may not be ingested",
+                request.CustomerId);
+        }
+
+        return ModifyEntityResult<AdjunctBatch>.Success(batch!, WriteResult.Created);
     }
     
     private async Task<ModifyEntityResult<AdjunctBatch>?> ValidateAssets(List<AssetId> assetIds, CancellationToken cancellationToken)
@@ -109,30 +111,4 @@ public class CreateAdjunctBatchHandler(
         return null;
     }
 
-    private async Task TryIngestNotify(ICollection<AdjunctDocument> adjuncts, CancellationToken cancellationToken)
-    {
-        var toIngest = adjuncts
-            .Where(a => a.ToBeIngested)
-            .Select(a => a.Processed)
-            .ToList();
-
-        if (toIngest.Count > 0)
-        {
-            var sent = await notificationSender.SendIngestAdjunctRequest(toIngest, cancellationToken);
-            if (sent != toIngest.Count)
-            {
-                logger.LogWarning(
-                    "Only {Sent}/{Total} engine notifications sent for adjunct batch; some adjuncts may not be ingested",
-                    sent, toIngest.Count);
-            }
-        }
-
-        var notifications = adjuncts
-            .Select(a => a.IsUpdate
-                ? NotificationRecord<Adjunct>.Update(a.Original!, a.Processed, a.ToBeIngested)
-                : NotificationRecord<Adjunct>.Create(a.Processed))
-            .ToList();
-
-        await deliverableNotificationSender.SendDeliverableModifiedMessage(notifications, cancellationToken);
-    }
 }

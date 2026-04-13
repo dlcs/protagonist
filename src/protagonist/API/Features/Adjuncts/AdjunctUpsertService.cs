@@ -1,5 +1,9 @@
-using DLCS.Core.Types;
+using System.Collections.Generic;
+using System.Linq;
+using API.Infrastructure;
+using API.Infrastructure.Messaging.General;
 using DLCS.Model.Assets;
+using DLCS.Model.Messaging;
 using DLCS.Repository;
 using Microsoft.Extensions.Logging;
 
@@ -9,7 +13,11 @@ namespace API.Features.Adjuncts;
 /// Handles the core create-vs-update logic for a single adjunct, shared between
 /// the single-adjunct and batch-adjunct handlers.
 /// </summary>
-public class AdjunctUpsertService(DlcsContext dbContext, ILogger<AdjunctUpsertService> logger)
+public class AdjunctUpsertService(
+    DlcsContext dbContext,
+    IIngestNotificationSender notificationSender,
+    IDeliverableNotificationSender deliverableNotificationSender,
+    ILogger<AdjunctUpsertService> logger)
 {
     /// <summary>
     /// Prepares an adjunct for persistence: either adds it as new to the EF context or
@@ -76,6 +84,34 @@ public class AdjunctUpsertService(DlcsContext dbContext, ILogger<AdjunctUpsertSe
         }
 
         return new AdjunctDocument(dbAdjunct, existingAdjunct);
+    }
+
+    /// <summary>
+    /// Sends engine ingest and deliverable-modified notifications for a processed set of adjuncts.
+    /// Returns <c>true</c> if all ingest notifications were dispatched; <c>false</c> if some were dropped.
+    /// </summary>
+    public async Task<bool> SendNotifications(ICollection<AdjunctDocument> adjuncts, CancellationToken cancellationToken)
+    {
+        var toIngest = adjuncts
+            .Where(a => a.ToBeIngested)
+            .Select(a => a.Processed)
+            .ToList();
+
+        bool allSent = true;
+        if (toIngest.Count > 0)
+        {
+            var sent = await notificationSender.SendIngestAdjunctRequest(toIngest, cancellationToken);
+            allSent = sent == toIngest.Count;
+        }
+
+        var notifications = adjuncts
+            .Select(a => a.IsUpdate
+                ? NotificationRecord<Adjunct>.Update(a.Original!, a.Processed, a.ToBeIngested)
+                : NotificationRecord<Adjunct>.Create(a.Processed))
+            .ToList();
+
+        await deliverableNotificationSender.SendDeliverableModifiedMessage(notifications, cancellationToken);
+        return allSent;
     }
 }
 
