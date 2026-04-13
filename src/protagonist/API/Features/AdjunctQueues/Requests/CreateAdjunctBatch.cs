@@ -9,6 +9,7 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
+using DLCS.Repository.Adjuncts;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -74,13 +75,10 @@ public class CreateAdjunctBatchHandler(
 
             foreach (var doc in adjunctDocs)
             {
-                dbContext.AdjunctBatchAdjuncts.Add(new AdjunctBatchAdjunct
-                {
-                    BatchId = batch.Id,
-                    AdjunctId = doc.Processed.Id,
-                    AssetId = doc.Processed.AssetId,
-                    Status = doc.ToBeIngested ? BatchStatus.Waiting : BatchStatus.Completed
-                });
+                batch.AddAdjunctBatchAdjunct(
+                    doc.Processed.Id,
+                    doc.Processed.AssetId,
+                    doc.ToBeIngested ? BatchStatus.Waiting : BatchStatus.Completed);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);

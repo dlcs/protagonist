@@ -493,11 +493,11 @@ public class EngineAssetRepositoryTests
             .AddBatchAsset(assetId)
             .AddBatchAsset(failing, BatchStatus.Error)
             .AddBatchAsset(complete, BatchStatus.Completed);
-        
+
         var entity = await dbContext.Images.AddTestAsset(assetId, batch: batchId);
         await dbContext.Images.AddTestAsset(failing, batch: batchId);
         await dbContext.Images.AddTestAsset(complete, batch: batchId);
-        
+
         var existingAsset = entity.Entity;
         await dbContext.SaveChangesAsync();
 
@@ -518,5 +518,243 @@ public class EngineAssetRepositoryTests
                     A<Batch>.That.Matches(b => b.Id == batchId),
                     A<CancellationToken>._))
             .MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task GetAdjunct_Null_IfNotFound()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        var adjunct = await sut.GetAdjunct("nonexistent", assetId);
+        adjunct.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAdjunct_ReturnsAdjunct_WithoutBatchAdjuncts_IfNoBatchIdProvided()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        const int batchId = -300;
+        const string adjunctId = "adj-nobatch";
+        var adjunctBatch = await dbContext.AdjunctBatches.AddTestAdjunctBatch(batchId);
+        adjunctBatch.Entity.AddAdjunctBatchAdjunct(adjunctId, assetId);
+        await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId);
+        await dbContext.SaveChangesAsync();
+
+        var adjunct = await sut.GetAdjunct(adjunctId, assetId);
+
+        adjunct.Should().NotBeNull();
+        adjunct.AdjunctBatchAdjuncts.Should().BeNullOrEmpty("No batch Id specified");
+    }
+
+    [Fact]
+    public async Task GetAdjunct_ReturnsAdjunct_WithMatchingBatchAdjunct_IfBatchIdSpecified()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        const int batchId = -301;
+        const int otherBatchId = -302;
+        const string adjunctId = "adj-withbatch";
+        var adjunctBatch = await dbContext.AdjunctBatches.AddTestAdjunctBatch(batchId);
+        var otherAdjunctBatch = await dbContext.AdjunctBatches.AddTestAdjunctBatch(otherBatchId);
+        adjunctBatch.Entity.AddAdjunctBatchAdjunct(adjunctId, assetId);
+        otherAdjunctBatch.Entity.AddAdjunctBatchAdjunct(adjunctId, assetId);
+        await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId);
+        await dbContext.SaveChangesAsync();
+
+        var adjunct = await sut.GetAdjunct(adjunctId, assetId, batchId);
+
+        adjunct.Should().NotBeNull();
+        adjunct.AdjunctBatchAdjuncts.Should().ContainSingle(ba => ba.BatchId == batchId,
+            "Only the specified batch record is returned");
+    }
+
+    [Fact]
+    public async Task GetAdjunct_ReturnsAdjunct_WithEmptyBatchAdjuncts_IfBatchIdSpecified_ButNoRecordFound()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string adjunctId = "adj-batchnotfound";
+        await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId);
+        await dbContext.SaveChangesAsync();
+
+        var adjunct = await sut.GetAdjunct(adjunctId, assetId, batchId: -999);
+
+        adjunct.Should().NotBeNull();
+        adjunct.AdjunctBatchAdjuncts.Should().BeNullOrEmpty("Batch Id specified but no matching record exists");
+    }
+
+    [Fact]
+    public async Task UpdateIngestedAdjunct_UpdatesAdjunctBatch_IfError()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        const int batchId = -310;
+        const string adjunctId = "adj-err";
+        const string waitingAdjunctId = "adj-err-wait";
+
+        var adjunctBatch = await dbContext.AdjunctBatches.AddTestAdjunctBatch(batchId, count: 2, errors: 0, completed: 0);
+        adjunctBatch.Entity
+            .AddAdjunctBatchAdjunct(adjunctId, assetId)
+            .AddAdjunctBatchAdjunct(waitingAdjunctId, assetId);
+        await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId).WithTestAdjunct(waitingAdjunctId);
+        await dbContext.SaveChangesAsync();
+
+        var adjunct = await sut.GetAdjunct(adjunctId, assetId, batchId);
+        adjunct.Error = "something went wrong";
+
+        // Act
+        var success = await sut.UpdateIngestedDeliverable(adjunct, null, null, true);
+
+        // Assert
+        success.Should().BeTrue();
+
+        var updatedBatch = await dbContext.AdjunctBatches
+            .Include(b => b.BatchAdjuncts)
+            .SingleAsync(b => b.Id == batchId);
+        updatedBatch.Errors.Should().Be(1);
+        updatedBatch.Completed.Should().Be(0);
+        updatedBatch.Finished.Should().BeNull();
+        updatedBatch.BatchAdjuncts.Single(ba => ba.AdjunctId == adjunctId).Status.Should().Be(BatchStatus.Error);
+    }
+
+    [Fact]
+    public async Task UpdateIngestedAdjunct_UpdatesAdjunctBatch_IfComplete()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        const int batchId = -311;
+        const string adjunctId = "adj-comp";
+        const string waitingAdjunctId = "adj-comp-wait";
+
+        var adjunctBatch = await dbContext.AdjunctBatches.AddTestAdjunctBatch(batchId, count: 2, errors: 0, completed: 0);
+        adjunctBatch.Entity
+            .AddAdjunctBatchAdjunct(adjunctId, assetId)
+            .AddAdjunctBatchAdjunct(waitingAdjunctId, assetId);
+        await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId).WithTestAdjunct(waitingAdjunctId);
+        await dbContext.SaveChangesAsync();
+
+        var adjunct = await sut.GetAdjunct(adjunctId, assetId, batchId);
+
+        // Act
+        var success = await sut.UpdateIngestedDeliverable(adjunct, null, null, true);
+
+        // Assert
+        success.Should().BeTrue();
+
+        var updatedBatch = await dbContext.AdjunctBatches
+            .Include(b => b.BatchAdjuncts)
+            .SingleAsync(b => b.Id == batchId);
+        updatedBatch.Errors.Should().Be(0);
+        updatedBatch.Completed.Should().Be(1);
+        updatedBatch.Finished.Should().BeNull();
+        updatedBatch.BatchAdjuncts.Single(ba => ba.AdjunctId == adjunctId).Status.Should().Be(BatchStatus.Completed);
+    }
+
+    [Fact]
+    public async Task UpdateIngestedAdjunct_DoesNotUpdateAdjunctBatch_IfIngestNotFinished()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        const int batchId = -312;
+        const string adjunctId = "adj-notfinished";
+        const string waitingAdjunctId = "adj-notfinished-wait";
+
+        var adjunctBatch = await dbContext.AdjunctBatches.AddTestAdjunctBatch(batchId, count: 2, errors: 0, completed: 0);
+        adjunctBatch.Entity
+            .AddAdjunctBatchAdjunct(adjunctId, assetId)
+            .AddAdjunctBatchAdjunct(waitingAdjunctId, assetId);
+        await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId).WithTestAdjunct(waitingAdjunctId);
+        await dbContext.SaveChangesAsync();
+
+        var adjunct = await sut.GetAdjunct(adjunctId, assetId, batchId);
+        adjunct.Ingesting = true;
+
+        // Act
+        var success = await sut.UpdateIngestedDeliverable(adjunct, null, null, false);
+
+        // Assert
+        success.Should().BeTrue();
+
+        var updatedBatch = await dbContext.AdjunctBatches
+            .Include(b => b.BatchAdjuncts)
+            .SingleAsync(b => b.Id == batchId);
+        updatedBatch.Errors.Should().Be(0);
+        updatedBatch.Completed.Should().Be(0);
+        updatedBatch.Finished.Should().BeNull();
+        updatedBatch.BatchAdjuncts.Single(ba => ba.AdjunctId == adjunctId).Status.Should().Be(BatchStatus.Waiting);
+
+        var updatedAdjunct = await dbContext.Adjuncts.SingleAsync(a => a.Id == adjunctId && a.AssetId == assetId);
+        updatedAdjunct.Finished.Should().BeNull();
+        updatedAdjunct.Ingesting.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(-320, "")]
+    [InlineData(-321, "error")]
+    public async Task UpdateIngestedAdjunct_MarksAdjunctBatchAsComplete_IfCompletedAndError_EqualsCount(int batchId, string error)
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: batchId.ToString());
+        var adjunctId = $"adj-{batchId}";
+        var failingAdjunctId = $"adj-{batchId}-fail";
+        var completedAdjunctId = $"adj-{batchId}-comp";
+
+        var adjunctBatch = await dbContext.AdjunctBatches.AddTestAdjunctBatch(batchId, count: 3, errors: 1, completed: 1);
+        adjunctBatch.Entity
+            .AddAdjunctBatchAdjunct(adjunctId, assetId)
+            .AddAdjunctBatchAdjunct(failingAdjunctId, assetId, BatchStatus.Error)
+            .AddAdjunctBatchAdjunct(completedAdjunctId, assetId, BatchStatus.Completed);
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct(adjunctId)
+            .WithTestAdjunct(failingAdjunctId)
+            .WithTestAdjunct(completedAdjunctId);
+        await dbContext.SaveChangesAsync();
+
+        var adjunct = await sut.GetAdjunct(adjunctId, assetId, batchId);
+        adjunct.Error = error;
+
+        // Act
+        var success = await sut.UpdateIngestedDeliverable(adjunct, null, null, true);
+
+        // Assert
+        success.Should().BeTrue();
+
+        var updatedBatch = await dbContext.AdjunctBatches.SingleAsync(b => b.Id == batchId);
+        updatedBatch.Finished.Should().NotBeNull();
+    }
+
+    [Theory]
+    [InlineData(-330, "")]
+    [InlineData(-331, "error")]
+    public async Task UpdateIngestedAdjunct_DoesNotFinishAdjunctBatch_IfAlreadyComplete(int batchId, string error)
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId(assetPostfix: batchId.ToString());
+        var adjunctId = $"adj-{batchId}";
+        var failingAdjunctId = $"adj-{batchId}-fail";
+        var completedAdjunctId = $"adj-{batchId}-comp";
+
+        var batchFinishedDate = DateTime.UtcNow.AddDays(-10);
+        var adjunctBatch = await dbContext.AdjunctBatches.AddTestAdjunctBatch(batchId, count: 3, errors: 1, completed: 1,
+            finished: batchFinishedDate);
+        adjunctBatch.Entity
+            .AddAdjunctBatchAdjunct(adjunctId, assetId)
+            .AddAdjunctBatchAdjunct(failingAdjunctId, assetId, BatchStatus.Error)
+            .AddAdjunctBatchAdjunct(completedAdjunctId, assetId, BatchStatus.Completed);
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct(adjunctId)
+            .WithTestAdjunct(failingAdjunctId)
+            .WithTestAdjunct(completedAdjunctId);
+        await dbContext.SaveChangesAsync();
+
+        var adjunct = await sut.GetAdjunct(adjunctId, assetId, batchId);
+        adjunct.Error = error;
+
+        // Act
+        var success = await sut.UpdateIngestedDeliverable(adjunct, null, null, true);
+
+        // Assert
+        success.Should().BeTrue();
+
+        var updatedBatch = await dbContext.AdjunctBatches.SingleAsync(b => b.Id == batchId);
+        updatedBatch.Finished.Should()
+            .BeCloseTo(batchFinishedDate, TimeSpan.FromSeconds(2), "Finished date is not modified");
     }
 }
