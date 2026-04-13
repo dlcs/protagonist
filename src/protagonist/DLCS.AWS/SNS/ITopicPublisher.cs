@@ -19,6 +19,13 @@ public interface ITopicPublisher
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Asynchronously publishes a message to the Batch completed topic for an AdjunctBatch
+    /// </summary>
+    /// <returns>Boolean representing the overall success/failure status of request</returns>
+    public Task<bool> PublishToAdjunctBatchCompletedTopic(AdjunctBatchCompletedNotification message,
+        CancellationToken cancellationToken);
+
+    /// <summary>
     /// Asynchronously publishes a message to deliverable modified SNS
     /// </summary>
     /// <param name="messages">A collection of notifications to send</param>

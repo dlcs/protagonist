@@ -7,5 +7,5 @@ public interface IBatchCompletedNotificationSender
     /// <summary>
     /// Broadcast batch completed notification
     /// </summary>
-    Task SendBatchCompletedMessage(Batch completedBatch, CancellationToken cancellationToken = default);
+    Task SendBatchCompletedMessage(IDeliverableBatch completedBatch, CancellationToken cancellationToken = default);
 }

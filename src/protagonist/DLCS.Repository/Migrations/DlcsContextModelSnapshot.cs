@@ -162,7 +162,7 @@ namespace DLCS.Repository.Migrations
 
                     b.HasIndex("AdjunctId", "AssetId");
 
-                    b.ToTable("AdjunctBatchAdjuncts", (string)null);
+                    b.ToTable("AdjunctBatchAdjuncts");
                 });
 
             modelBuilder.Entity("DLCS.Model.Assets.Asset", b =>

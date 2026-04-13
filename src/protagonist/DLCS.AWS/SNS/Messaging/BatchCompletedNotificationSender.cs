@@ -3,23 +3,23 @@ using Microsoft.Extensions.Logging;
 
 namespace DLCS.AWS.SNS.Messaging;
 
-public class BatchCompletedNotificationSender : IBatchCompletedNotificationSender
+public class BatchCompletedNotificationSender(
+    ITopicPublisher topicPublisher,
+    ILogger<BatchCompletedNotificationSender> logger)
+    : IBatchCompletedNotificationSender
 {
-    private readonly ITopicPublisher topicPublisher;
-    private readonly ILogger<BatchCompletedNotificationSender> logger;
-    
-    public BatchCompletedNotificationSender(ITopicPublisher topicPublisher, 
-        ILogger<BatchCompletedNotificationSender> logger)
+    public async Task SendBatchCompletedMessage(IDeliverableBatch batch, CancellationToken cancellationToken = default)
     {
-        this.topicPublisher = topicPublisher;
-        this.logger = logger;
-    }
+        logger.LogDebug("Sending notification of creation of batch {Type} {Batch}", batch.GetType().Name, batch.Id);
 
-    public async Task SendBatchCompletedMessage(Batch batch, CancellationToken cancellationToken = default)
-    {
-        logger.LogDebug("Sending notification of creation of batch {Batch}", batch.Id);
-        
-        var batchCompletedNotification = new BatchCompletedNotification(batch);
-        await topicPublisher.PublishToBatchCompletedTopic(batchCompletedNotification, cancellationToken);
+        switch (batch)
+        {
+            case Batch b:
+                await topicPublisher.PublishToBatchCompletedTopic(new BatchCompletedNotification(b), cancellationToken);
+                break;
+            case AdjunctBatch ab:
+                await topicPublisher.PublishToAdjunctBatchCompletedTopic(new AdjunctBatchCompletedNotification(ab), cancellationToken);
+                break;
+        }
     }
 }

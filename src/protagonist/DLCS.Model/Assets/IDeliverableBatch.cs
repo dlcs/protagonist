@@ -7,6 +7,7 @@ namespace DLCS.Model.Assets;
 /// </summary>
 public interface IDeliverableBatch
 {
+    int Id { get; set; }
     int Customer { get; set; }
     DateTime Submitted { get; set; }
     int Count { get; set; }
