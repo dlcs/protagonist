@@ -51,7 +51,8 @@ public class DeliverableNotificationSender(
             },
             [typeof(Adjunct)] = new(StringComparer.OrdinalIgnoreCase)
             {
-                nameof(Adjunct.Asset)
+                nameof(Adjunct.Asset),
+                nameof(Adjunct.AdjunctBatchAdjuncts)
             }
         };
 

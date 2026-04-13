@@ -38,7 +38,7 @@ public class AdjunctIngester(
 {
     public async Task<IngestResult> Ingest(IngestAdjunctRequest request, CancellationToken cancellationToken = default)
     {
-        var adjunct = await engineAssetRepository.GetAdjunct(request.Id, request.AssetId, cancellationToken);
+        var adjunct = await engineAssetRepository.GetAdjunct(request.Id, request.AssetId, request.BatchId, cancellationToken);
         
         if (adjunct == null)
         {

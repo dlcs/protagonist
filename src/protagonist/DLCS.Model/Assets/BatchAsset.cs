@@ -6,7 +6,7 @@ namespace DLCS.Model.Assets;
 /// <summary>
 /// A record of all images that were part of a batch
 /// </summary>
-public class BatchAsset
+public class BatchAsset : IDeliverableBatchItem
 {
     public int BatchId { get; set; }
     public AssetId AssetId { get; set; } = null!;

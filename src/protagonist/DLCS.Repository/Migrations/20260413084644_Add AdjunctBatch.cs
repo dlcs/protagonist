@@ -44,7 +44,7 @@ namespace DLCS.Repository.Migrations
                 {
                     BatchId = table.Column<int>(type: "integer", nullable: false),
                     AdjunctId = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    AssetId = table.Column<string>(type: "text", nullable: false),
+                    AssetId = table.Column<string>(type: "character varying(500)", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     Error = table.Column<string>(type: "text", nullable: true),
                     Finished = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
@@ -58,12 +58,23 @@ namespace DLCS.Repository.Migrations
                         principalTable: "AdjunctBatches",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AdjunctBatchAdjuncts_Adjuncts_AdjunctId_AssetId",
+                        columns: x => new { x.AdjunctId, x.AssetId },
+                        principalTable: "Adjuncts",
+                        principalColumns: new[] { "Id", "AssetId" },
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Adjuncts_Batch",
                 table: "Adjuncts",
                 column: "Batch");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AdjunctBatchAdjuncts_AdjunctId_AssetId",
+                table: "AdjunctBatchAdjuncts",
+                columns: new[] { "AdjunctId", "AssetId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AdjunctBatchesByCustomerSubmitted",

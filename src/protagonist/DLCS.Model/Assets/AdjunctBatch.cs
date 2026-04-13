@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace DLCS.Model.Assets;
 
-public class AdjunctBatch
+public class AdjunctBatch : IDeliverableBatch
 {
     public int Id { get; set; }
     public int Customer { get; set; }

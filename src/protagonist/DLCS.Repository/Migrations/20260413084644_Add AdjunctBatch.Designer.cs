@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    [Migration("20260402085123_Add AdjunctBatch")]
+    [Migration("20260413084644_Add AdjunctBatch")]
     partial class AddAdjunctBatch
     {
         /// <inheritdoc />
@@ -150,7 +150,7 @@ namespace DLCS.Repository.Migrations
                         .HasColumnType("character varying(200)");
 
                     b.Property<string>("AssetId")
-                        .HasColumnType("text");
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("Error")
                         .HasColumnType("text");
@@ -162,6 +162,8 @@ namespace DLCS.Repository.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("BatchId", "AdjunctId", "AssetId");
+
+                    b.HasIndex("AdjunctId", "AssetId");
 
                     b.ToTable("AdjunctBatchAdjuncts");
                 });
@@ -1252,6 +1254,12 @@ namespace DLCS.Repository.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DLCS.Model.Assets.Adjunct", null)
+                        .WithMany("AdjunctBatchAdjuncts")
+                        .HasForeignKey("AdjunctId", "AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Batch");
                 });
 
@@ -1311,6 +1319,11 @@ namespace DLCS.Repository.Migrations
                         .IsRequired();
 
                     b.Navigation("DeliveryChannelPolicy");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.Adjunct", b =>
+                {
+                    b.Navigation("AdjunctBatchAdjuncts");
                 });
 
             modelBuilder.Entity("DLCS.Model.Assets.AdjunctBatch", b =>
