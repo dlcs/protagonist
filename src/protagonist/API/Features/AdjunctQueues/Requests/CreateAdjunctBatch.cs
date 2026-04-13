@@ -37,23 +37,17 @@ public class CreateAdjunctBatchHandler(
     public async Task<ModifyEntityResult<AdjunctBatch>> Handle(CreateAdjunctBatch request,
         CancellationToken cancellationToken)
     {
-        var assetIds = request.Adjuncts.Select(a => a.AssetId).Distinct().ToList();
+        var adjunctByAsset = request.Adjuncts.ToLookup(a => a.AssetId, a => a.Id);
+        var assetIds = adjunctByAsset.Select(grp => grp.Key).ToList();
         
         var validationError = await ValidateAssets(assetIds, cancellationToken);
         if (validationError != null) return validationError;
 
-        // Preload existing adjuncts across all assets in this batch, keyed by (AssetId, Id).
-        // We query by assetId + adjunctId independently (EF can't do tuple IN), then post-filter
-        // to the exact (AssetId, Id) pairs in the request to avoid tracking unrelated adjuncts.
-        // TODO - revisit this once we have the linqKit query from bulk delete
-        var adjunctIds = request.Adjuncts.Select(a => a.Id).ToList();
-        var requestPairs = request.Adjuncts.Select(a => (a.AssetId, a.Id)).ToHashSet();
         var existing = (await dbContext.Adjuncts
-            .Where(a => assetIds.Contains(a.AssetId) && adjunctIds.Contains(a.Id))
-            .ToListAsync(cancellationToken))
-            .Where(a => requestPairs.Contains((a.AssetId, a.Id)))
+                .FindAdjuncts(adjunctByAsset)
+                .ToListAsync(cancellationToken))
             .ToDictionary(a => (a.AssetId, a.Id));
-
+        
         await using var transaction =
             await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
 
