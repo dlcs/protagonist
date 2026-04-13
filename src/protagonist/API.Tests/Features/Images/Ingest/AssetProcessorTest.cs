@@ -8,6 +8,7 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Storage;
+using DLCS.Repository.Storage;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Settings;
@@ -31,13 +32,14 @@ public class AssetProcessorTest
         assetRepository = A.Fake<IApiAssetRepository>();
         defaultDeliveryChannelRepository = A.Fake<IDefaultDeliveryChannelRepository>();
         deliveryChannelPolicyRepository = A.Fake<IDeliveryChannelPolicyRepository>();
+        var imageStorageRepository = A.Fake<IImageStorageRepository>();
 
         var deliveryChannelProcessor = new DeliveryChannelProcessor(defaultDeliveryChannelRepository, deliveryChannelPolicyRepository,
             new NullLogger<DeliveryChannelProcessor>());
         
         var optionsMonitor = OptionsHelpers.GetOptionsMonitor(apiSettings);
 
-        sut = new AssetProcessor(assetRepository, storageRepository, deliveryChannelProcessor, optionsMonitor);
+        sut = new AssetProcessor(assetRepository, storageRepository, deliveryChannelProcessor, imageStorageRepository, optionsMonitor);
     }
     
     [Fact]

@@ -105,6 +105,15 @@ public class IngestExecutor(
     {
         var sw = Stopwatch.StartNew();
         var context = new IngestionContext(asset);
+        
+        // If the asset has the `none` delivery channel specified, skip processing and mark the ingest as being complete
+        if (asset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
+        {
+            context.WithStorage();
+            await assetRepository.UpdateIngestedDeliverable(context.Asset, null, context.ImageStorage,
+                true, cancellationToken);
+            return new IngestResult(asset.Id, IngestResultStatus.Success);
+        }
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
         {

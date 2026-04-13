@@ -204,6 +204,33 @@ public class IngestExecutorTests
         result.Status.Should().Be(status);
         secondWorker.Called.Should().BeFalse();
     }
+    
+    [Fact]
+    public async Task IngestAsset_SkipsProcessing_IfAssetHasNoneDeliveryChannel()
+    {
+        // Arrange
+        var asset = new Asset
+        {
+            Id = AssetIdGenerator.GetAssetId(),
+            ImageDeliveryChannels =
+            [
+                new ImageDeliveryChannel
+                {
+                    Channel = AssetDeliveryChannels.None
+                }
+            ]
+        };
+        
+        // Act
+        var result = await sut.IngestAsset(asset, customerOriginStrategy);
+
+        // Assert we receive success and an empty ImageStorage record is created
+        result.Status.Should().Be(IngestResultStatus.Success);
+        A.CallTo(() => repo.UpdateIngestedDeliverable(asset, null,
+                A<ImageStorage?>.That.Matches(s => s!.ThumbnailSize == 0L && s.Size == 0L), true,
+                A<CancellationToken>._))
+            .MustHaveHappened();
+    }
 }
 
 public class FakeWorker : IAssetIngesterWorker

@@ -197,6 +197,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .Should().Satisfy(
                 i => i.Channel == AssetDeliveryChannels.None &&
                      i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.None);
+        var imageStorage = dbContext.ImageStorages.Single(x => x.Id == assetId);
+        imageStorage.Size.Should().Be(0);
+        imageStorage.ThumbnailSize.Should().Be(0);
     }
     
     [Fact]
@@ -2304,6 +2307,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
                 }
             ]);
+        await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 100L);
         
         await dbContext.SaveChangesAsync();
         
@@ -2337,6 +2341,9 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .Should().Satisfy(
                 i => i.Channel == AssetDeliveryChannels.None &&
                      i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.None);
+        var imageStorage = dbContext.ImageStorages.Single(x => x.Id == asset.Id);
+        imageStorage.Size.Should().Be(0L);
+        imageStorage.ThumbnailSize.Should().Be(0L);
     }
     
     [Fact]

@@ -1546,7 +1546,10 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var model = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.CustomerQueue>();
         var assetInDatabase = dbContext.Images.First(a => a.Batch == model.Id.GetLastPathElementAsInt());
         assetInDatabase.Id.Should().Be(assetId);
-
+        var imageStorage = dbContext.ImageStorages.Single(i => i.Id == assetId);
+        imageStorage.Size.Should().Be(0L);
+        imageStorage.ThumbnailSize.Should().Be(0L);
+        
         // Items not queued for processing
         A.CallTo(() =>
             EngineClient.AsynchronousIngestBatch(

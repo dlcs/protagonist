@@ -32,11 +32,11 @@ public class DeliveryChannelPolicyRepository(
     {
         var deliveryChannelPolicies = await RetrieveFromCache(customerId);
 
-        return deliveryChannelPolicies.First(dcp => dcp.Id == policyId && dcp.Channel == channel);
+        return deliveryChannelPolicies.Single(dcp => dcp.Id == policyId && dcp.Channel == channel);
     }
 
     private async Task<List<DeliveryChannelPolicy>> RetrieveFromCache(int customerId)
-    {
+    { 
         var key = CacheKeys.DeliveryChannelPolicies(customerId);
 
         var deliveryChannelPolicies = await appCache.GetOrAddAsync(key, async () =>

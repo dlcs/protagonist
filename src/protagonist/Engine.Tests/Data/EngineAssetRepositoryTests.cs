@@ -1,6 +1,7 @@
 using DLCS.AWS.SNS.Messaging;
 using DLCS.Model.Assets;
 using DLCS.Repository;
+using DLCS.Repository.Storage;
 using Engine.Data;
 using Engine.Tests.Integration.Infrastructure;
 using FakeItEasy;
@@ -30,7 +31,8 @@ public class EngineAssetRepositoryTests
         batchCompletedNotificationSender = A.Fake<IBatchCompletedNotificationSender>(); 
         
         contextForTests = new DlcsContext(optionsBuilder.Options);
-        sut = new EngineAssetRepository(contextForTests, batchCompletedNotificationSender,
+        var imageStorageRepository = new ImageStorageRepository(contextForTests);
+        sut = new EngineAssetRepository(contextForTests, batchCompletedNotificationSender, imageStorageRepository,
             new NullLogger<EngineAssetRepository>());
         dbFixture.CleanUp();
     }

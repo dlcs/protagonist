@@ -14,23 +14,6 @@ public class DeliveryChannelProcessor(
     ILogger<DeliveryChannelProcessor> logger)
 {
     private const string FileNonePolicy = "none";
-
-    /// <summary>
-    /// Adds details of the delivery channel policy to the delivery channels
-    /// </summary>
-    public async Task AddDeliveryChannelPolicyDetails(Asset asset)
-    {
-        foreach (var deliveryChannel in asset.ImageDeliveryChannels)
-        {
-            if (deliveryChannel.DeliveryChannelPolicy == null)
-            {
-                var deliveryChannelPolicy = await deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(asset.Customer,
-                    deliveryChannel.Channel, deliveryChannel.DeliveryChannelPolicyId);
-
-                deliveryChannel.DeliveryChannelPolicy = deliveryChannelPolicy;
-            }
-        }
-    }
     
     /// <summary>
     /// Update updatedAsset.ImageDeliveryChannels, adding/removing/updating as required to match channels specified in

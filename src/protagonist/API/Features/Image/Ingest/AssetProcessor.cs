@@ -13,24 +13,14 @@ namespace API.Features.Image.Ingest;
 /// Class that encapsulates logic for creating or updating assets.
 /// The logic here is shared for when ingesting a single asset and ingesting a batch of assets.
 /// </summary>
-public class AssetProcessor
+public class AssetProcessor(
+    IApiAssetRepository assetRepository,
+    IStorageRepository storageRepository,
+    DeliveryChannelProcessor deliveryChannelProcessor,
+    IImageStorageRepository imageStorageRepository,
+    IOptionsMonitor<ApiSettings> apiSettings)
 {
-    private readonly IApiAssetRepository assetRepository;
-    private readonly IStorageRepository storageRepository;
-    private readonly DeliveryChannelProcessor deliveryChannelProcessor;
-    private readonly ApiSettings settings;
-    
-    public AssetProcessor(
-        IApiAssetRepository assetRepository,
-        IStorageRepository storageRepository,
-        DeliveryChannelProcessor deliveryChannelProcessor,
-        IOptionsMonitor<ApiSettings> apiSettings)
-    {
-        this.assetRepository = assetRepository;
-        this.storageRepository = storageRepository;
-        this.deliveryChannelProcessor = deliveryChannelProcessor;
-        settings = apiSettings.CurrentValue;
-    }
+    private readonly ApiSettings settings = apiSettings.CurrentValue;
 
     /// <summary>
     /// Process an asset - including validation and handling Update or Insert logic and get ready for ingestion
@@ -116,11 +106,23 @@ public class AssetProcessor
                 {
                     requiresEngineNotification = true;
                 }
-                // After processing delivery channels, the none channel was set - so no need to do ingestion
-                else if (requiresEngineNotification && updatedAsset.ImageDeliveryChannels.Count == 1 &&
-                         updatedAsset.ImageDeliveryChannels.GetNoneChannel() != null)
+
+                if (updatedAsset.ImageDeliveryChannels.Count == 1 &&
+                    updatedAsset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
                 {
+                    // no need to notify the engine with the none channel
                     requiresEngineNotification = false;
+                    
+                    // no engine notification, so 0 out the image storage record
+                    var imageStorage = new ImageStorage
+                    {
+                        Id = updatedAsset.GetAssetId(),
+                        Customer = updatedAsset.Customer,
+                        Space = updatedAsset.Space,
+                        LastChecked = DateTime.UtcNow
+                    };
+
+                    await imageStorageRepository.UpsertImageStorageRecord(imageStorage, cancellationToken);
                 }
             }
 
@@ -139,11 +141,6 @@ public class AssetProcessor
             }
 
             var assetAfterSave = await assetRepository.Save(updatedAsset, assetFromDatabase != null, cancellationToken);
-
-            if (requiresEngineNotification == false && updatedAsset.ImageDeliveryChannels.GetNoneChannel() != null)
-            {
-                await deliveryChannelProcessor.AddDeliveryChannelPolicyDetails(updatedAsset);
-            }
 
             return new ProcessAssetResult
             {

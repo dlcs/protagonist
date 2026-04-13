@@ -1,5 +1,4 @@
 using DLCS.AWS.SNS.Messaging;
-using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
@@ -12,6 +11,7 @@ namespace Engine.Data;
 public class EngineAssetRepository(
     DlcsContext dlcsContext,
     IBatchCompletedNotificationSender batchCompletedNotificationSender,
+    IImageStorageRepository imageStorageRepository,
     ILogger<EngineAssetRepository> logger)
     : IEngineAssetRepository, IDapperContextRepository
 {
@@ -44,7 +44,7 @@ public class EngineAssetRepository(
                 }
             }
 
-            await UpsertImageStorage(assetId, imageStorage, cancellationToken);
+            await imageStorageRepository.UpsertImageStorageRecord(imageStorage, cancellationToken);
             
             var updatedRows = hasBatch && deliverable is Asset asset
                 ? await BatchSave(asset, ingestFinished, cancellationToken)
@@ -96,23 +96,6 @@ public class EngineAssetRepository(
             .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
         return imageSize;
-    }
-    
-    private async Task UpsertImageStorage(AssetId assetId, ImageStorage? imageStorage,
-        CancellationToken cancellationToken)
-    {
-        if (imageStorage != null)
-        {
-            if (await DlcsContext.ImageStorages.AnyAsync(l => l.Id == assetId, cancellationToken))
-            {
-                DlcsContext.ImageStorages.Attach(imageStorage);
-                DlcsContext.Entry(imageStorage).State = EntityState.Modified;
-            }
-            else
-            {
-                DlcsContext.ImageStorages.Add(imageStorage);
-            }
-        }
     }
     
     private async Task<bool> NonBatchedSave(CancellationToken cancellationToken)
