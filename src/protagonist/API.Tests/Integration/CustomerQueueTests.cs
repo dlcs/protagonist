@@ -1507,6 +1507,69 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 A<CancellationToken>._)).MustHaveHappened();
     }
     
+    [Fact]
+    public async Task Post_CreateBatch_201_RaisesImmediateBatchNotificationWhenOnlyNoneChannel()
+    {
+        const int customerId = 99;
+        var assetId = AssetIdGenerator.GetAssetId();
+        
+        // Arrange
+        var hydraImageBody = $$"""
+        {
+            "@context": "http://www.w3.org/ns/hydra/context.jsonld",
+            "@type": "Collection",
+            "member": [
+                {
+                  "id": "{{assetId.Asset}}",
+                  "origin": "https://example.org/image.tiff",
+                  "space": 1,
+                  "deliveryChannels": [
+                    {
+                        "channel": "none",
+                        "policy": "none"
+                    }],
+                  "mediaType": "image/tiff"
+                }
+            ]
+        }
+        """;
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        var model = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.CustomerQueue>();
+        var assetInDatabase = dbContext.Images.First(a => a.Batch == model.Id.GetLastPathElementAsInt());
+        assetInDatabase.Id.Should().Be(assetId);
+        var imageStorage = dbContext.ImageStorages.Single(i => i.Id == assetId);
+        imageStorage.Size.Should().Be(0L);
+        imageStorage.ThumbnailSize.Should().Be(0L);
+        
+        // Items not queued for processing
+        A.CallTo(() =>
+            EngineClient.AsynchronousIngestBatch(
+                A<IReadOnlyCollection<Asset>>.That.Matches(i => i.First().Id == assetId), true,
+                A<CancellationToken>._)).MustNotHaveHappened();
+        
+        // deliverable notification happens immediately
+        A.CallTo(() => deliverableNotificationSender.SendDeliverableModifiedMessage(
+            A<IReadOnlyCollection<NotificationRecord<Asset>>>.That.Matches(ca =>
+                ca.Any(a => a.After.Id == assetId)),
+            A<CancellationToken>._)).MustHaveHappened();
+        
+        // Batch notification happens immediately
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == model.Id.GetLastPathElementAsInt()),
+                    A<CancellationToken>._))
+            .MustHaveHappened();
+    }
+    
     
     [Fact]
     public async Task Post_TestBatch_404_IfBatchNotFoundForCustomer()
@@ -1638,7 +1701,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         A.CallTo(() =>
                 NotificationSender.SendBatchCompletedMessage(
-                    A<Batch>._,
+                    A<Batch>.That.Matches(b => b.Id == dbBatch.Id),
                     A<CancellationToken>._))
             .MustNotHaveHappened();
     }

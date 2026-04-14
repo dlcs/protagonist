@@ -5,6 +5,8 @@ using API.Settings;
 using DLCS.Core;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
+using DLCS.Repository;
+using DLCS.Repository.Storage;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Image.Ingest;
@@ -13,24 +15,13 @@ namespace API.Features.Image.Ingest;
 /// Class that encapsulates logic for creating or updating assets.
 /// The logic here is shared for when ingesting a single asset and ingesting a batch of assets.
 /// </summary>
-public class AssetProcessor
+public class AssetProcessor(
+    IApiAssetRepository assetRepository,
+    IStorageRepository storageRepository,
+    DeliveryChannelProcessor deliveryChannelProcessor,
+    IOptionsMonitor<ApiSettings> apiSettings)
 {
-    private readonly IApiAssetRepository assetRepository;
-    private readonly IStorageRepository storageRepository;
-    private readonly DeliveryChannelProcessor deliveryChannelProcessor;
-    private readonly ApiSettings settings;
-    
-    public AssetProcessor(
-        IApiAssetRepository assetRepository,
-        IStorageRepository storageRepository,
-        DeliveryChannelProcessor deliveryChannelProcessor,
-        IOptionsMonitor<ApiSettings> apiSettings)
-    {
-        this.assetRepository = assetRepository;
-        this.storageRepository = storageRepository;
-        this.deliveryChannelProcessor = deliveryChannelProcessor;
-        settings = apiSettings.CurrentValue;
-    }
+    private readonly ApiSettings settings = apiSettings.CurrentValue;
 
     /// <summary>
     /// Process an asset - including validation and handling Update or Insert logic and get ready for ingestion
@@ -110,11 +101,20 @@ public class AssetProcessor
             
             if (assetBeforeProcessing.DeliveryChannelsBeforeProcessing != null || assetFromDatabase == null)
             {
-                var deliveryChannelChanged = await deliveryChannelProcessor.ProcessImageDeliveryChannels(
+                var deliveryChannelsRequireEngineNotification = await deliveryChannelProcessor.ProcessImageDeliveryChannels(
                     assetFromDatabase, updatedAsset, assetBeforeProcessing.DeliveryChannelsBeforeProcessing);
-                if (deliveryChannelChanged)
+                if (deliveryChannelsRequireEngineNotification)
                 {
                     requiresEngineNotification = true;
+                }
+
+                if (updatedAsset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
+                {
+                    // no need to notify the engine with the none channel
+                    requiresEngineNotification = false;
+                    
+                    // no engine notification, so 0 out the image storage record
+                    await assetRepository.ResetImageStorage(updatedAsset.GetAssetId(), cancellationToken);
                 }
             }
 

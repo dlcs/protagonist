@@ -178,11 +178,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 ""policy"": ""none""
             }}]
         }}";
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<Asset>.That.Matches(r => r.Id == assetId),
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
         
         // act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
@@ -196,11 +191,15 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.Id.Should().Be(assetId);
         asset.MaxWidth.Should().Be(0);
         asset.OpenFullMax.Should().Be(0);
+        asset.Ingesting.Should().BeFalse();
         asset.ImageDeliveryChannels
             .Should().HaveCount(1).And.Subject
             .Should().Satisfy(
                 i => i.Channel == AssetDeliveryChannels.None &&
                      i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.None);
+        var imageStorage = dbContext.ImageStorages.Single(x => x.Id == assetId);
+        imageStorage.Size.Should().Be(0);
+        imageStorage.ThumbnailSize.Should().Be(0);
     }
     
     [Fact]
@@ -1610,12 +1609,6 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             }}]
         }}";
         
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<Asset>.That.Matches(r => r.Id == assetId),
-                    A<CancellationToken>._))
-            .Returns(HttpStatusCode.OK);
-        
         // Act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(99).PutAsync(assetId.ToApiResourcePath(), content);
@@ -1625,6 +1618,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
+        asset.Ingesting.Should().BeFalse();
         asset.ImageDeliveryChannels
             .Should().HaveCount(1).And.Subject
             .Should().Satisfy(
@@ -2313,6 +2307,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
                     DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ThumbsDefault
                 }
             ]);
+        await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 100L);
         
         await dbContext.SaveChangesAsync();
         
@@ -2337,20 +2332,18 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
-        A.CallTo(() =>
-                EngineClient.SynchronousIngest(
-                    A<Asset>.That.Matches(r => r.Id == assetId),
-                    A<CancellationToken>._))
-            .MustHaveHappened();
 
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.Id.Should().Be(assetId);
+        asset.Ingesting.Should().BeFalse();
         asset.ImageDeliveryChannels
             .Should().HaveCount(1).And.Subject
             .Should().Satisfy(
                 i => i.Channel == AssetDeliveryChannels.None &&
                      i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.None);
+        var imageStorage = dbContext.ImageStorages.Single(x => x.Id == asset.Id);
+        imageStorage.Size.Should().Be(0L);
+        imageStorage.ThumbnailSize.Should().Be(0L);
     }
     
     [Fact]

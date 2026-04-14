@@ -9,6 +9,7 @@ using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
+using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Messaging;
 using DLCS.Model.Spaces;
 using DLCS.Repository;
@@ -49,34 +50,17 @@ public class CreateOrUpdateImage : IRequest<ModifyEntityResult<Asset>>
     }
 }
 
-public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, ModifyEntityResult<Asset>>
+public class CreateOrUpdateImageHandler(
+    ISpaceRepository spaceRepository,
+    IApiAssetRepository assetRepository,
+    IBatchRepository batchRepository,
+    IIngestNotificationSender ingestNotificationSender,
+    IDeliverableNotificationSender deliverableNotificationSender,
+    DlcsContext dlcsContext,
+    IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository,
+    AssetProcessor assetProcessor)
+    : IRequestHandler<CreateOrUpdateImage, ModifyEntityResult<Asset>>
 {
-    private readonly ISpaceRepository spaceRepository;
-    private readonly IApiAssetRepository assetRepository;
-    private readonly IBatchRepository batchRepository;
-    private readonly IIngestNotificationSender ingestNotificationSender;
-    private readonly IDeliverableNotificationSender deliverableNotificationSender;
-    private readonly DlcsContext dlcsContext;
-    private readonly AssetProcessor assetProcessor;
-
-    public CreateOrUpdateImageHandler(
-        ISpaceRepository spaceRepository,
-        IApiAssetRepository assetRepository,
-        IBatchRepository batchRepository,
-        IIngestNotificationSender ingestNotificationSender,
-        IDeliverableNotificationSender deliverableNotificationSender,
-        DlcsContext dlcsContext,
-        AssetProcessor assetProcessor)
-    {
-        this.spaceRepository = spaceRepository;
-        this.assetRepository = assetRepository;
-        this.batchRepository = batchRepository;
-        this.ingestNotificationSender = ingestNotificationSender;
-        this.deliverableNotificationSender = deliverableNotificationSender;
-        this.dlcsContext = dlcsContext;
-        this.assetProcessor = assetProcessor;
-    }
-    
     public async Task<ModifyEntityResult<Asset>> Handle(CreateOrUpdateImage request, CancellationToken cancellationToken)
     {
         var assetBeforeProcessing = request.AssetBeforeProcessing;
@@ -141,6 +125,18 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         if (processAssetResult.RequiresEngineNotification)
         {
             return await IngestAndGenerateResult(assetAfterSave, existingAsset != null, cancellationToken);
+        }
+
+        // this adds in additional information that's used to hydrate the hydra model.  This is done here as if it's done before
+        // the DB save it acts like creating a new DCP and fails due to conflicts.
+        if (assetAfterSave.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
+        {
+            var deliveryChannel = assetAfterSave.ImageDeliveryChannels.Single();
+            
+            var deliveryChannelPolicy = await deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(assetAfterSave.Customer,
+                deliveryChannel.Channel, deliveryChannel.DeliveryChannelPolicyId);
+
+            deliveryChannel.DeliveryChannelPolicy = deliveryChannelPolicy;
         }
 
         return modifyEntityResult;

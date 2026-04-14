@@ -34,4 +34,11 @@ public interface IApiAssetRepository
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Returns asset after saving</returns>
     public Task<Asset> Save(Asset asset, bool isUpdate, CancellationToken cancellationToken);
+    
+    /// <summary>
+    /// Resets an image storage record to an empty record
+    /// </summary>
+    /// <param name="assetId">The asset id to reset the image storage record for</param>
+    /// <param name="cancellationToken">A cancellationToken</param>
+    public Task ResetImageStorage(AssetId assetId, CancellationToken cancellationToken);
 }

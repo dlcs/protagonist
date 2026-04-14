@@ -5,6 +5,7 @@ using API.Features.Image.Ingest;
 using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.Core;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
@@ -33,31 +34,16 @@ public class CreateBatchOfImages : IRequest<ModifyEntityResult<Batch>>
     }
 }
 
-public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, ModifyEntityResult<Batch>>
+public class CreateBatchOfImagesHandler(
+    DlcsContext dlcsContext,
+    IBatchRepository batchRepository,
+    AssetProcessor assetProcessor,
+    IIngestNotificationSender ingestNotificationSender,
+    IDeliverableNotificationSender deliverableNotificationSender,
+    IBatchCompletedNotificationSender  batchCompletedNotificationSender,
+    ILogger<CreateBatchOfImagesHandler> logger)
+    : IRequestHandler<CreateBatchOfImages, ModifyEntityResult<Batch>>
 {
-    private readonly DlcsContext dlcsContext;
-    private readonly IBatchRepository batchRepository;
-    private readonly AssetProcessor assetProcessor;
-    private readonly IIngestNotificationSender ingestNotificationSender;
-    private readonly IDeliverableNotificationSender deliverableNotificationSender;
-    private readonly ILogger<CreateBatchOfImagesHandler> logger;
-
-    public CreateBatchOfImagesHandler(
-        DlcsContext dlcsContext,
-        IBatchRepository batchRepository,
-        AssetProcessor assetProcessor,
-        IIngestNotificationSender ingestNotificationSender,
-        IDeliverableNotificationSender deliverableNotificationSender,
-        ILogger<CreateBatchOfImagesHandler> logger)
-    {
-        this.dlcsContext = dlcsContext;
-        this.batchRepository = batchRepository;
-        this.assetProcessor = assetProcessor;
-        this.ingestNotificationSender = ingestNotificationSender;
-        this.deliverableNotificationSender = deliverableNotificationSender;
-        this.logger = logger;
-    }
-    
     public async Task<ModifyEntityResult<Batch>> Handle(CreateBatchOfImages request,
         CancellationToken cancellationToken)
     {
@@ -110,14 +96,18 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 }
                 else
                 {
-                    // NOTE(DG) - I think this code block is no longer accessible as alwaysReingest:true is sent to
-                    // the assetProcessor
                     logger.LogDebug(
                         "Asset {AssetId} of Batch {BatchId} does not require engine notification. Marking as complete",
                         assetId, batch.Id);
                     batch.AddBatchAsset(assetId, BatchAssetStatus.Completed);
                     batch.Completed += 1;
                 }
+            }
+            
+            // complete batch if nothing requires notification in the engine
+            if (batch.Completed == batch.Count)
+            {
+                batch.Finished = DateTime.UtcNow;
             }
 
             await dlcsContext.SaveChangesAsync(cancellationToken);
@@ -146,14 +136,18 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
 
             return ModifyEntityResult<Batch>.Failure(failureMessage, failureType ?? WriteResult.Error);
         }
-        else
+
+        // Raise notifications
+        logger.LogDebug("Batch {BatchId} created - sending engine notifications", batch.Id);
+        await ingestNotificationSender.SendIngestAssetsRequest(engineNotificationList, request.IsPriority,
+            cancellationToken);
+
+        if (batch.Finished.HasValue)
         {
-            // Raise notifications
-            logger.LogDebug("Batch {BatchId} created - sending engine notifications", batch.Id);
-            await ingestNotificationSender.SendIngestAssetsRequest(engineNotificationList, request.IsPriority,
-                cancellationToken);
+            logger.LogDebug("Batch {BatchId} completed - sending batch completed notification", batch.Id);
+            await batchCompletedNotificationSender.SendBatchCompletedMessage(batch, cancellationToken);
         }
-        
+
         return ModifyEntityResult<Batch>.Success(batch, WriteResult.Created);
     }
 

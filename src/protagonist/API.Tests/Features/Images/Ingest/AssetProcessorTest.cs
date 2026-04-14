@@ -4,6 +4,7 @@ using API.Features.Assets;
 using API.Features.Image;
 using API.Features.Image.Ingest;
 using API.Settings;
+using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;

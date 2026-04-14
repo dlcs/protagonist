@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using API.Features.DeliveryChannels.Helpers;
 using DLCS.Core.Caching;
 using DLCS.Model.DeliveryChannels;
@@ -10,29 +11,34 @@ using Microsoft.Extensions.Options;
 
 namespace API.Features.DeliveryChannels.DataAccess;
 
-public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
+public class DeliveryChannelPolicyRepository(
+    IAppCache appCache,
+    ILogger<DeliveryChannelPolicyRepository> logger,
+    IOptions<CacheSettings> cacheOptions,
+    DlcsContext dlcsContext)
+    : IDeliveryChannelPolicyRepository
 {
-    private readonly IAppCache appCache;
-    private readonly CacheSettings cacheSettings;
-    private readonly ILogger<DeliveryChannelPolicyRepository> logger;
-    private readonly DlcsContext dlcsContext;
+    private readonly CacheSettings cacheSettings = cacheOptions.Value;
     private const int AdminCustomer = 1;
-
-    public DeliveryChannelPolicyRepository(IAppCache appCache,
-        ILogger<DeliveryChannelPolicyRepository> logger,
-        IOptions<CacheSettings> cacheOptions,
-        DlcsContext dlcsContext)
-    {
-        this.appCache = appCache;
-        this.logger = logger;
-        cacheSettings = cacheOptions.Value;
-        this.dlcsContext = dlcsContext;
-    }
 
     public async Task<DeliveryChannelPolicy> RetrieveDeliveryChannelPolicy(int customerId, string channel, string policy)
     {
+        var deliveryChannelPolicies = await RetrieveFromCache(customerId);
+
+        return deliveryChannelPolicies.RetrieveDeliveryChannel(customerId, channel, policy);
+    }
+    
+    public async Task<DeliveryChannelPolicy> RetrieveDeliveryChannelPolicy(int customerId, string channel, int policyId)
+    {
+        var deliveryChannelPolicies = await RetrieveFromCache(customerId);
+
+        return deliveryChannelPolicies.Single(dcp => dcp.Id == policyId && dcp.Channel == channel);
+    }
+
+    private async Task<List<DeliveryChannelPolicy>> RetrieveFromCache(int customerId)
+    { 
         var key = CacheKeys.DeliveryChannelPolicies(customerId);
-        
+
         var deliveryChannelPolicies = await appCache.GetOrAddAsync(key, async () =>
         {
             logger.LogDebug("Refreshing {CacheKey} from database", key);
@@ -44,7 +50,6 @@ public class DeliveryChannelPolicyRepository : IDeliveryChannelPolicyRepository
 
             return defaultDeliveryChannels;
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
-
-        return deliveryChannelPolicies.RetrieveDeliveryChannel(customerId, channel, policy);
+        return deliveryChannelPolicies;
     }
 }

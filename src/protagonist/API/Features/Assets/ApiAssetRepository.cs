@@ -7,6 +7,7 @@ using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Entities;
+using DLCS.Repository.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -142,5 +143,18 @@ public class ApiAssetRepository : IApiAssetRepository
         await dlcsContext.SaveChangesAsync(cancellationToken);
         assetCachingHelper.RemoveAssetFromCache(asset.Id);
         return asset;
+    }
+
+    public async Task ResetImageStorage(AssetId assetId, CancellationToken cancellationToken)
+    {
+        var imageStorage = new ImageStorage
+        {
+            Id = assetId,
+            Customer = assetId.Customer,
+            Space = assetId.Space,
+            LastChecked = DateTime.UtcNow
+        };
+        
+        await dlcsContext.ImageStorages.UpsertImageStorageRecord(imageStorage, cancellationToken);
     }
 }
