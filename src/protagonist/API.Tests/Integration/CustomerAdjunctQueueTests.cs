@@ -8,6 +8,8 @@ using System.Threading;
 using API.Client;
 using API.Infrastructure;
 using API.Tests.Integration.Infrastructure;
+using DLCS.AWS.SNS.Messaging;
+using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Web.Response;
@@ -31,6 +33,7 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
     private readonly DlcsContext dbContext;
     private static readonly IDeliverableNotificationSender DeliverableNotificationSender = A.Fake<IDeliverableNotificationSender>();
     private static readonly IIngestNotificationSender IngestNotificationSender = A.Fake<IIngestNotificationSender>();
+    private static readonly IBatchCompletedNotificationSender BatchCompletedNotificationSender = A.Fake<IBatchCompletedNotificationSender>();
 
     public CustomerAdjunctQueueTests(StorageFixture storageFixture, ProtagonistAppFactory<Startup> factory)
     {
@@ -44,6 +47,7 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
                             "API-Test", o => { });
                     services.AddSingleton(_ => DeliverableNotificationSender);
                     services.AddScoped(_ => IngestNotificationSender);
+                    services.AddScoped(_ => BatchCompletedNotificationSender);
                 }));
         dbContext = storageFixture.DbFixture.DbContext;
         storageFixture.DbFixture.CleanUp();
@@ -226,6 +230,9 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
                 A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>._, A<CancellationToken>._))
             .MustNotHaveHappened();
+        A.CallTo(() => BatchCompletedNotificationSender.SendBatchCompletedMessage(
+                A<DLCS.Model.Assets.AdjunctBatch>.That.Matches(b => b.Id == batchId), A<CancellationToken>._))
+            .MustHaveHappened(1, Times.Exactly);
     }
 
     [Fact]
@@ -274,6 +281,9 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
                 A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Single().Id == "adj-hosted-1"),
                 A<CancellationToken>._))
             .MustHaveHappened(1, Times.Exactly);
+        A.CallTo(() => BatchCompletedNotificationSender.SendBatchCompletedMessage(
+                A<DLCS.Model.Assets.AdjunctBatch>.That.Matches(b => b.Id == batchId), A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
 
     [Fact]
@@ -331,6 +341,9 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         junctionRecords.Should().HaveCount(2);
         junctionRecords.Single(a => a.AdjunctId == "adj-ext").Status.Should().Be(DLCS.Model.Assets.BatchStatus.Completed);
         junctionRecords.Single(a => a.AdjunctId == "adj-hosted").Status.Should().Be(DLCS.Model.Assets.BatchStatus.Waiting);
+        A.CallTo(() => BatchCompletedNotificationSender.SendBatchCompletedMessage(
+                A<DLCS.Model.Assets.AdjunctBatch>.That.Matches(b => b.Id == batchId), A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
 
     [Fact]

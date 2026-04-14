@@ -10,7 +10,7 @@ public class BatchCompletedNotificationSender(
 {
     public async Task SendBatchCompletedMessage(IDeliverableBatch batch, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("Sending notification of creation of batch {Type} {Batch}", batch.GetType().Name, batch.Id);
+        logger.LogDebug("Sending notification of completion of batch {Type} {Batch}", batch.GetType().Name, batch.Id);
 
         switch (batch)
         {
