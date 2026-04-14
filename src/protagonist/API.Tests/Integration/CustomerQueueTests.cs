@@ -1557,7 +1557,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 A<CancellationToken>._)).MustNotHaveHappened();
         
         // deliverable notification happens immediately
-        A.CallTo(() => deliverableNotificationSender.SendDeliverableModifiedMessage(
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<IReadOnlyCollection<NotificationRecord<Asset>>>.That.Matches(ca =>
                 ca.Any(a => a.After.Id == assetId)),
             A<CancellationToken>._)).MustHaveHappened();
