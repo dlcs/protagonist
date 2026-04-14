@@ -128,36 +128,13 @@ public class EngineAssetRepository(
             return rowCount > 0;
         }
 
-        switch (deliverable)
+        return deliverable switch
         {
-            case Asset asset:
-            {
-                var batchAsset = asset.BatchAssets!.Single();
-                batchAsset.FinishBatchItem(asset);
-                var updatedRows = await DlcsContext.SaveChangesAsync(cancellationToken);
-
-                var finishedBatch = await TryFinishBatch<Batch>(batchAsset.BatchId);
-                if (finishedBatch != null)
-                {
-                    updatedRows++;
-                    await batchCompletedNotificationSender.SendBatchCompletedMessage(finishedBatch, cancellationToken);
-                }
-
-                return updatedRows > 0;
-            }
-            case Adjunct adjunct:
-            {
-                var batchAdjunct = adjunct.AdjunctBatchAdjuncts!.Single();
-                batchAdjunct.FinishBatchItem(adjunct);
-                var updatedRows = await DlcsContext.SaveChangesAsync(cancellationToken);
-
-                await TryFinishBatch<AdjunctBatch>(batchAdjunct.BatchId);
-
-                return updatedRows > 0;
-            }
-            default:
-                throw new ArgumentOutOfRangeException(nameof(deliverable), deliverable, null);
-        }
+            Asset asset => await FinishBatchedItem<Batch>(asset.BatchAssets!.Single(), asset, cancellationToken),
+            Adjunct adjunct => await FinishBatchedItem<AdjunctBatch>(adjunct.AdjunctBatchAdjuncts!.Single(), adjunct,
+                cancellationToken),
+            _ => throw new ArgumentOutOfRangeException(nameof(deliverable), deliverable, null)
+        };
     }
     
     private static void UpdateDeliverable(IDeliverable deliverable, bool ingestFinished)
@@ -166,6 +143,22 @@ public class EngineAssetRepository(
         {
             deliverable.MarkAsFinished();
         }
+    }
+
+    private async Task<bool> FinishBatchedItem<T>(IDeliverableBatchItem batchItem, IDeliverable deliverable,
+        CancellationToken cancellationToken) where T : IDeliverableBatch
+    {
+        batchItem.FinishBatchItem(deliverable);
+        var updatedRows = await DlcsContext.SaveChangesAsync(cancellationToken);
+
+        var finishedBatch = await TryFinishBatch<T>(batchItem.BatchId);
+        if (finishedBatch != null)
+        {
+            updatedRows++;
+            await batchCompletedNotificationSender.SendBatchCompletedMessage(finishedBatch, cancellationToken);
+        }
+
+        return updatedRows > 0;
     }
 
     private async Task<T?> TryFinishBatch<T>(int batchId) where T : IDeliverableBatch

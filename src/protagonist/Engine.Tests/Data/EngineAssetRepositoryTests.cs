@@ -612,6 +612,11 @@ public class EngineAssetRepositoryTests
         updatedBatch.Completed.Should().Be(0);
         updatedBatch.Finished.Should().BeNull();
         updatedBatch.BatchAdjuncts.Single(ba => ba.AdjunctId == adjunctId).Status.Should().Be(BatchStatus.Error);
+        A.CallTo(() =>
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<AdjunctBatch>._,
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
 
     [Fact]
@@ -645,6 +650,11 @@ public class EngineAssetRepositoryTests
         updatedBatch.Completed.Should().Be(1);
         updatedBatch.Finished.Should().BeNull();
         updatedBatch.BatchAdjuncts.Single(ba => ba.AdjunctId == adjunctId).Status.Should().Be(BatchStatus.Completed);
+        A.CallTo(() =>
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<AdjunctBatch>._,
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
 
     [Fact]
@@ -683,6 +693,11 @@ public class EngineAssetRepositoryTests
         var updatedAdjunct = await dbContext.Adjuncts.SingleAsync(a => a.Id == adjunctId && a.AssetId == assetId);
         updatedAdjunct.Finished.Should().BeNull();
         updatedAdjunct.Ingesting.Should().BeTrue();
+        A.CallTo(() =>
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<AdjunctBatch>._,
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
 
     [Theory]
@@ -718,6 +733,11 @@ public class EngineAssetRepositoryTests
 
         var updatedBatch = await dbContext.AdjunctBatches.SingleAsync(b => b.Id == batchId);
         updatedBatch.Finished.Should().NotBeNull();
+        A.CallTo(() =>
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<AdjunctBatch>.That.Matches(b => b.Id == batchId),
+                    A<CancellationToken>._))
+            .MustHaveHappened(1, Times.Exactly);
     }
 
     [Theory]
@@ -756,5 +776,10 @@ public class EngineAssetRepositoryTests
         var updatedBatch = await dbContext.AdjunctBatches.SingleAsync(b => b.Id == batchId);
         updatedBatch.Finished.Should()
             .BeCloseTo(batchFinishedDate, TimeSpan.FromSeconds(2), "Finished date is not modified");
+        A.CallTo(() =>
+                batchCompletedNotificationSender.SendBatchCompletedMessage(
+                    A<AdjunctBatch>.That.Matches(b => b.Id == batchId),
+                    A<CancellationToken>._))
+            .MustNotHaveHappened();
     }
 }
