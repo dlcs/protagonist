@@ -15,8 +15,6 @@ public class AdjunctConverterTests
     private const string AdjunctId = "test-adjunct";
     private const string BaseUrl = "https://dlcs.example";
 
-    // Tests for ToDlcsModel(hydraAdjunct, customerId) — parses Asset field internally
-
     [Fact]
     public void ToDlcsModel_ParseAssetId_ShortFormAsset_ConvertsCorrectly()
     {

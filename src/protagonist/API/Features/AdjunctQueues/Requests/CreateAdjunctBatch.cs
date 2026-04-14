@@ -34,11 +34,11 @@ public class CreateAdjunctBatchHandler(
         CancellationToken cancellationToken)
     {
         var adjunctByAsset = request.Adjuncts.ToLookup(a => a.AssetId, a => a.Id);
-        var assetIds = adjunctByAsset.Select(grp => grp.Key).ToList();
         
-        var validationError = await ValidateAssets(assetIds, cancellationToken);
+        var validationError = await ValidateAssets(adjunctByAsset, cancellationToken);
         if (validationError != null) return validationError;
 
+        // Load any existing adjuncts into a dictionary for ease of lookup
         var existing = (await dbContext.Adjuncts
                 .FindAdjuncts(adjunctByAsset)
                 .ToListAsync(cancellationToken))
@@ -48,21 +48,24 @@ public class CreateAdjunctBatchHandler(
             await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
 
         var adjunctDocs = new List<AdjunctDocument>(request.Adjuncts.Length);
-        AdjunctBatch? batch = null;
+        AdjunctBatch? batch;
 
         try
         {
+            // Upsert each adjunct in the batch
             foreach (var adjunct in request.Adjuncts)
             {
                 existing.TryGetValue((adjunct.AssetId, adjunct.Id), out var dbAdjunct);
                 adjunctDocs.Add(await adjunctUpsertService.HandleAdjunct(adjunct, dbAdjunct, cancellationToken));
             }
 
-            await dbContext.SaveChangesAsync(cancellationToken);
-
+            // Once all adjuncts are upserted, create the batch + assign the BatchId to each adjunct
+            logger.LogDebug("Creating batch for {CustomerId} with {AdjunctCount} adjuncts", request.CustomerId,
+                adjunctDocs.Count);
             batch = await adjunctBatchRepository.CreateBatch(request.CustomerId,
                 adjunctDocs.Select(d => d.Processed).ToList(), cancellationToken);
 
+            // And finally create the batch-adjunct historical record
             foreach (var doc in adjunctDocs)
             {
                 batch.AddAdjunctBatchAdjunct(
@@ -82,26 +85,28 @@ public class CreateAdjunctBatchHandler(
             return ModifyEntityResult<AdjunctBatch>.Failure(ex.Message);
         }
 
-        // Post-commit: notifications cannot be rolled back; failures are logged, not surfaced as errors
+        // Post transaction commit: notifications cannot be rolled back; failures are logged, not surfaced as errors
         if (!await adjunctUpsertService.SendNotifications(adjunctDocs, cancellationToken))
         {
             logger.LogWarning(
-                "Not all engine notifications sent for adjunct batch (customer {CustomerId}); some adjuncts may not be ingested",
-                request.CustomerId);
+                "Not all engine notifications sent for adjunct batch {BatchId} (customer {CustomerId}); some adjuncts may not be ingested",
+                batch.Id, request.CustomerId);
         }
 
-        return ModifyEntityResult<AdjunctBatch>.Success(batch!, WriteResult.Created);
+        return ModifyEntityResult<AdjunctBatch>.Success(batch, WriteResult.Created);
     }
-    
-    private async Task<ModifyEntityResult<AdjunctBatch>?> ValidateAssets(List<AssetId> assetIds, CancellationToken cancellationToken)
+
+    private async Task<ModifyEntityResult<AdjunctBatch>?> ValidateAssets(ILookup<AssetId, string> adjunctByAsset,
+        CancellationToken cancellationToken)
     {
+        var assetIds = adjunctByAsset.Select(grp => grp.Key).ToList();
         var existingAssetIds = await dbContext.Images
             .Where(a => assetIds.Contains(a.Id))
             .Select(a => a.Id)
             .ToListAsync(cancellationToken);
 
         var missingAssets = assetIds.Except(existingAssetIds).ToList();
-        if (missingAssets.Count != 0)
+        if (missingAssets.Count > 0)
         {
             return ModifyEntityResult<AdjunctBatch>.Failure(
                 $"Assets not found: {string.Join(", ", missingAssets)}",
@@ -110,5 +115,4 @@ public class CreateAdjunctBatchHandler(
 
         return null;
     }
-
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
@@ -88,8 +89,8 @@ public class AdjunctUpsertService(
 
     /// <summary>
     /// Sends engine ingest and deliverable-modified notifications for a processed set of adjuncts.
-    /// Returns <c>true</c> if all ingest notifications were dispatched; <c>false</c> if some were dropped.
     /// </summary>
+    /// <returns>True if all notifications were sent successfully.</returns>   
     public async Task<bool> SendNotifications(ICollection<AdjunctDocument> adjuncts, CancellationToken cancellationToken)
     {
         var toIngest = adjuncts
@@ -106,7 +107,7 @@ public class AdjunctUpsertService(
 
         var notifications = adjuncts
             .Select(a => a.IsUpdate
-                ? NotificationRecord<Adjunct>.Update(a.Original!, a.Processed, a.ToBeIngested)
+                ? NotificationRecord<Adjunct>.Update(a.Original, a.Processed, a.ToBeIngested)
                 : NotificationRecord<Adjunct>.Create(a.Processed))
             .ToList();
 
@@ -121,7 +122,11 @@ public class AdjunctUpsertService(
 public class AdjunctDocument(Adjunct adjunct, Adjunct? existingAdjunct)
 {
     public bool ToBeIngested { get; } = adjunct.IsToBeIngested();
+    
+    [MemberNotNullWhen(true, nameof(Original))]
     public bool IsUpdate => Original != null;
+    
     public Adjunct? Original { get; } = existingAdjunct;
+    
     public Adjunct Processed { get; set; } = adjunct;
 }
