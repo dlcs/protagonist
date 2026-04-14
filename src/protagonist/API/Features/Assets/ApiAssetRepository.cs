@@ -145,6 +145,16 @@ public class ApiAssetRepository : IApiAssetRepository
         return asset;
     }
 
-    public async Task UpsertImageStorageRecord(ImageStorage imageStorage, CancellationToken cancellationToken) =>
+    public async Task ResetImageStorage(AssetId assetId, CancellationToken cancellationToken)
+    {
+        var imageStorage = new ImageStorage
+        {
+            Id = assetId,
+            Customer = assetId.Customer,
+            Space = assetId.Space,
+            LastChecked = DateTime.UtcNow
+        };
+        
         await dlcsContext.ImageStorages.UpsertImageStorageRecord(imageStorage, cancellationToken);
+    }
 }

@@ -108,22 +108,13 @@ public class AssetProcessor(
                     requiresEngineNotification = true;
                 }
 
-                if (updatedAsset.ImageDeliveryChannels.Count == 1 &&
-                    updatedAsset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
+                if (updatedAsset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
                 {
                     // no need to notify the engine with the none channel
                     requiresEngineNotification = false;
                     
                     // no engine notification, so 0 out the image storage record
-                    var imageStorage = new ImageStorage
-                    {
-                        Id = updatedAsset.GetAssetId(),
-                        Customer = updatedAsset.Customer,
-                        Space = updatedAsset.Space,
-                        LastChecked = DateTime.UtcNow
-                    };
-                    
-                    await assetRepository.UpsertImageStorageRecord(imageStorage, cancellationToken);
+                    await assetRepository.ResetImageStorage(updatedAsset.GetAssetId(), cancellationToken);
                 }
             }
 

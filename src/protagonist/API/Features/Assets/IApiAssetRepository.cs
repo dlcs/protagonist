@@ -36,9 +36,9 @@ public interface IApiAssetRepository
     public Task<Asset> Save(Asset asset, bool isUpdate, CancellationToken cancellationToken);
     
     /// <summary>
-    /// Upserts an image storage record associated with an asset
+    /// Resets an image storage record to an empty record
     /// </summary>
-    /// <param name="imageStorage">The image storage record to update</param>
+    /// <param name="assetId">The asset id to reset the image storage record for</param>
     /// <param name="cancellationToken">A cancellationToken</param>
-    public Task UpsertImageStorageRecord(ImageStorage imageStorage, CancellationToken cancellationToken);
+    public Task ResetImageStorage(AssetId assetId, CancellationToken cancellationToken);
 }

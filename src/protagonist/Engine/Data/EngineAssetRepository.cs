@@ -45,8 +45,6 @@ public class EngineAssetRepository(
             }
 
             await DlcsContext.ImageStorages.UpsertImageStorageRecord(imageStorage, cancellationToken);
-
-            //await imageStorageRepository.UpsertImageStorageRecord(imageStorage, cancellationToken);
             
             var updatedRows = hasBatch && deliverable is Asset asset
                 ? await BatchSave(asset, ingestFinished, cancellationToken)

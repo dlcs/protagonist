@@ -11,7 +11,6 @@ using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Storage;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
-using Test.Helpers.Integration;
 using Test.Helpers.Settings;
 using CustomerStorage = DLCS.Model.Storage.CustomerStorage;
 using StoragePolicy = DLCS.Model.Storage.StoragePolicy;

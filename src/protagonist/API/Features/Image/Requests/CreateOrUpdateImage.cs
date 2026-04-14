@@ -127,6 +127,8 @@ public class CreateOrUpdateImageHandler(
             return await IngestAndGenerateResult(assetAfterSave, existingAsset != null, cancellationToken);
         }
 
+        // this adds in additional information that's used to hydrate the hydra model.  This is done here as if it's done before
+        // the DB save it acts like creating a new DCP and fails due to conflicts.
         if (assetAfterSave.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
         {
             var deliveryChannel = assetAfterSave.ImageDeliveryChannels.Single();
