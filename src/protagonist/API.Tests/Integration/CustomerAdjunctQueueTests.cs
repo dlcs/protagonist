@@ -419,6 +419,90 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         adjunct.Batch.Should().Be(batchId, "adjunct should reference the created batch");
     }
 
+    [Fact]
+    public async Task GetAdjunctBatch_Returns404_WhenBatchNotFound()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/999999");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetAdjunctBatch_Returns404_WhenBatchBelongsToDifferentCustomer()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+
+        // Create a batch owned by a different customer directly in DB
+        var otherCustomerBatch = new DLCS.Model.Assets.AdjunctBatch
+        {
+            Customer = assetId.Customer + 1,
+            Submitted = DateTime.UtcNow,
+            Count = 0,
+            Completed = 0,
+            Errors = 0
+        };
+        dbContext.AdjunctBatches.Add(otherCustomerBatch);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/{otherCustomerBatch.Id}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetAdjunctBatch_Returns200_WithBatchDetails()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+
+        var json = $$"""
+                     {
+                       "member": [{
+                         "id": "adj-get-test",
+                         "asset": "{{assetId}}",
+                         "@type": "Image",
+                         "mediaType": "image/jpeg",
+                         "iiifLink": "seeAlso",
+                         "externalId": "https://example.com/adj"
+                       }]
+                     }
+                     """;
+
+        var postResponse = await httpClient.AsCustomer(assetId.Customer)
+            .PostAsync($"/customers/{assetId.Customer}/adjunctQueue",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+        postResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var createdBatch = await postResponse.ReadAsHydraResponseAsync<AdjunctBatch>();
+        var batchId = ParseBatchId(createdBatch);
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/{batchId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var batch = await response.ReadAsHydraResponseAsync<AdjunctBatch>();
+        batch.Count.Should().Be(createdBatch.Count);
+        batch.Completed.Should().Be(createdBatch.Completed);
+        batch.Errors.Should().Be(createdBatch.Errors);
+        batch.Finished.Should().Be(createdBatch.Finished);
+        ParseBatchId(batch).Should().Be(batchId);
+    }
+
     /// <summary>
     /// Get the batch Id from the JSON-LD @id URL, e.g. ".../adjunctQueue/batches/42" → 42.
     /// ModelId is [JsonIgnore] so cannot be read directly from the deserialized response.
