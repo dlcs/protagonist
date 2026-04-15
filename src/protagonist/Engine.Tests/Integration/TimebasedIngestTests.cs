@@ -146,7 +146,7 @@ public class TimebasedIngestTests : IClassFixture<ProtagonistAppFactory<Startup>
         savedBatch.Finished.Should().BeNull();
         savedBatch.BatchAssets.Should()
             .ContainSingle(
-                ba => ba.AssetId == assetId && !ba.Finished.HasValue && ba.Status == BatchAssetStatus.Waiting,
+                ba => ba.AssetId == assetId && !ba.Finished.HasValue && ba.Status == BatchStatus.Waiting,
                 "BatchAsset is not marked as complete");
     }
     

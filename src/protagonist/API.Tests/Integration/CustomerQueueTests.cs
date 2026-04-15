@@ -40,7 +40,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
     private static readonly IEngineClient EngineClient = A.Fake<IEngineClient>();
-    private static readonly IDeliverableNotificationSender deliverableNotificationSender = A.Fake<IDeliverableNotificationSender>();
+    private static readonly IDeliverableNotificationSender DeliverableNotificationSender = A.Fake<IDeliverableNotificationSender>();
     private static readonly IBatchCompletedNotificationSender NotificationSender = A.Fake<IBatchCompletedNotificationSender>();
     
     public CustomerQueueTests(DlcsDatabaseFixture dbFixture, ProtagonistAppFactory<Startup> factory)
@@ -52,7 +52,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             {
                 services.AddSingleton(NotificationSender);
                 services.AddScoped<IEngineClient>(_ => EngineClient);
-                services.AddScoped<IDeliverableNotificationSender>(_ => deliverableNotificationSender);
+                services.AddScoped<IDeliverableNotificationSender>(_ => DeliverableNotificationSender);
                 services.AddAuthentication("API-Test")
                     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
                         "API-Test", _ => { });
@@ -1199,7 +1199,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbBatch.BatchAssets.Should().HaveCount(3);
         dbBatch.BatchAssets.Should().AllSatisfy(ba =>
         {
-            ba.Status.Should().Be(BatchAssetStatus.Waiting);
+            ba.Status.Should().Be(BatchStatus.Waiting);
         });
 
         // Images exist with Batch set + File marked as complete
@@ -1225,7 +1225,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             EngineClient.AsynchronousIngestBatch(
                 A<IReadOnlyCollection<Asset>>.That.Matches(i => i.Count == 3), false,
                 A<CancellationToken>._)).MustHaveHappened();
-        A.CallTo(() => deliverableNotificationSender.SendDeliverableModifiedMessage(
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<IReadOnlyCollection<NotificationRecord<Asset>>>.That.Matches(i => i.Count == 3),
             A<CancellationToken>._)).MustHaveHappened();
     }
@@ -1286,7 +1286,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             EngineClient.AsynchronousIngestBatch(
                 A<IReadOnlyCollection<Asset>>.That.Matches(ca => ca.Any(a => a.Customer == customerId)), false,
                 A<CancellationToken>._)).MustNotHaveHappened();
-        A.CallTo(() => deliverableNotificationSender.SendDeliverableModifiedMessage(
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<IReadOnlyCollection<NotificationRecord<Asset>>>.That.Matches(ca =>
                 ca.Any(a => a.After.Customer == customerId)),
             A<CancellationToken>._)).MustNotHaveHappened();
@@ -1557,7 +1557,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 A<CancellationToken>._)).MustNotHaveHappened();
         
         // deliverable notification happens immediately
-        A.CallTo(() => deliverableNotificationSender.SendDeliverableModifiedMessage(
+        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<IReadOnlyCollection<NotificationRecord<Asset>>>.That.Matches(ca =>
                 ca.Any(a => a.After.Id == assetId)),
             A<CancellationToken>._)).MustHaveHappened();

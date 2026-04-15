@@ -7,23 +7,19 @@ namespace DLCS.AWS.Tests.SQS;
 
 public class SqsQueueLookupTests
 {
-    private readonly SqsQueueLookup sut;
-
-    public SqsQueueLookupTests()
+    private readonly SqsQueueLookup sut = new(Options.Create(new AWSSettings
     {
-        sut = new SqsQueueLookup(Options.Create(new AWSSettings
+        Region = "eu-west-1",
+        SQS = new SQSSettings
         {
-            Region = "eu-west-1",
-            SQS = new SQSSettings
-            {
-                PriorityImageQueueName = "test-priority",
-                ImageQueueName = "test-image",
-                TimebasedQueueName = "test-timebased",
-                FileQueueName = "test-file"
-            }
-        }));
-    }
-    
+            PriorityImageQueueName = "test-priority",
+            ImageQueueName = "test-image",
+            TimebasedQueueName = "test-timebased",
+            FileQueueName = "test-file",
+            AdjunctQueueName = "test-adjunct",
+        }
+    }));
+
     [Fact]
     public void GetQueueNameForFamily_Image_Correct()
     {
@@ -66,5 +62,15 @@ public class SqsQueueLookupTests
         
         // Assert
         result.Should().Be("test-file");
+    }
+    
+    [Fact]
+    public void GetAdjunctsQueueName_Correct()
+    {
+        // Act
+        var result = sut.GetAdjunctsQueueName();
+        
+        // Assert
+        result.Should().Be("test-adjunct");
     }
 }

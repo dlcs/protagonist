@@ -64,6 +64,7 @@ public static class ControllerBaseX
     /// <summary>
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
     /// </summary>
+    /// <param name="controller">Current controller.</param>
     /// <param name="statusCode">The value for <see cref="Error.Status" />.</param>
     /// <param name="detail">The value for <see cref="Error.Detail" />.</param>
     /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
@@ -76,22 +77,8 @@ public static class ControllerBaseX
         string? instance = null,
         int? statusCode = null,
         string? title = null,
-        string? type = null)
-    {
-        var hydraError = new Error
-        {
-            Detail = detail,
-            Instance = instance ?? controller.Request.GetDisplayUrl(),
-            Status = statusCode ?? 500,
-            Title = title,
-            ErrorTypeUri = type,
-        };
-
-        return new ObjectResult(hydraError)
-        {
-            StatusCode = hydraError.Status
-        };
-    }
+        string? type = null) => HydraResponseBuilder.CreateHydraErrorResult(detail,
+        instance ?? controller.Request.GetDisplayUrl(), statusCode ?? 500, title, type);
 
     /// <summary>
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
@@ -138,9 +125,7 @@ public static class ControllerBaseX
     /// error and appropriate status code if failed.
     /// </summary>
     /// <param name="controller">Current controllerBase object</param>
-    /// <param name="entity">Entity that was modified or null if n/a</param>
-    /// <param name="error">Error if one happened, otherwise null</param>
-    /// <param name="result">The result of the write operation</param>
+    /// <param name="entityResult">Result to transform</param>
     /// <param name="hydraBuilder">Delegate to transform ModifyEntityResult.Entity to Hydra representation</param>
     /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
     /// <param name="errorTitle">
@@ -152,24 +137,24 @@ public static class ControllerBaseX
     /// ActionResult generated from ModifyEntityResult
     /// </returns>
     public static IActionResult ModifyResultToHttpResult<T>(this ControllerBase controller,
-        T? entity, string? error, WriteResult result,
+        ModifyEntityResult<T> entityResult,
         Func<T, JsonLdBase> hydraBuilder, string? instance,
         string? errorTitle)
         where T : class =>
-        result switch
+        entityResult.WriteResult switch
         {
-            WriteResult.Updated => controller.Ok(hydraBuilder(entity!)),
-            WriteResult.Created => controller.HydraCreated(hydraBuilder(entity!)),
-            WriteResult.NotFound => controller.HydraNotFound(error),
-            WriteResult.Error => controller.HydraProblem(error, instance, 500, errorTitle),
-            WriteResult.BadRequest => controller.HydraProblem(error, instance, 400, errorTitle),
-            WriteResult.Conflict => controller.HydraProblem(error, instance, 409, 
+            WriteResult.Updated => controller.Ok(hydraBuilder(entityResult.Entity!)),
+            WriteResult.Created => controller.HydraCreated(hydraBuilder(entityResult.Entity!)),
+            WriteResult.NotFound => controller.HydraNotFound(entityResult.Error),
+            WriteResult.Error => controller.HydraProblem(entityResult.Error, instance, 500, errorTitle),
+            WriteResult.BadRequest => controller.HydraProblem(entityResult.Error, instance, 400, errorTitle),
+            WriteResult.Conflict => controller.HydraProblem(entityResult.Error, instance, 409, 
                 $"{errorTitle}: Conflict"),
-            WriteResult.FailedValidation => controller.HydraProblem(error, instance, 400,
+            WriteResult.FailedValidation => controller.HydraProblem(entityResult.Error, instance, 400,
                 $"{errorTitle}: Validation failed"),
-            WriteResult.StorageLimitExceeded => controller.HydraProblem(error, instance, 507,
+            WriteResult.StorageLimitExceeded => controller.HydraProblem(entityResult.Error, instance, 507,
                 $"{errorTitle}: Storage limit exceeded"),
-            _ => controller.HydraProblem(error, instance, 500, errorTitle),
+            _ => controller.HydraProblem(entityResult.Error, instance, 500, errorTitle),
         };
 
     /// <summary>

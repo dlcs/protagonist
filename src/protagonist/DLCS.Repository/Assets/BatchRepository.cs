@@ -9,15 +9,8 @@ namespace DLCS.Repository.Assets;
 /// <summary>
 /// Implementation of <see cref="IBatchRepository"/> using EFCore
 /// </summary>
-public class BatchRepository : IDapperContextRepository, IBatchRepository
+public class BatchRepository(DlcsContext dlcsContext) : IBatchRepository
 {
-    public DlcsContext DlcsContext { get; }
-
-    public BatchRepository(DlcsContext dlcsContext)
-    {
-        DlcsContext = dlcsContext;
-    }
-
     /// <inheritdoc />
     public async Task<Batch> CreateBatch(int customerId, IReadOnlyList<Asset> assets,
         CancellationToken cancellationToken, Action<Batch>? postCreate = null)
@@ -34,8 +27,8 @@ public class BatchRepository : IDapperContextRepository, IBatchRepository
         };
         
         postCreate?.Invoke(batch);
-        DlcsContext.Batches.Add(batch);
-        await DlcsContext.SaveChangesAsync(cancellationToken);
+        dlcsContext.Batches.Add(batch);
+        await dlcsContext.SaveChangesAsync(cancellationToken);
 
         foreach (var asset in assets)
         {

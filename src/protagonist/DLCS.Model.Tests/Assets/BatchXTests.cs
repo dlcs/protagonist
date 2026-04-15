@@ -16,14 +16,14 @@ public class BatchXTests
 
         var ba = batch.BatchAssets.Single();
         ba.Finished.Should().BeNull();
-        ba.Status.Should().Be(BatchAssetStatus.Waiting);
+        ba.Status.Should().Be(BatchStatus.Waiting);
     }
     
     [Theory]
-    [InlineData(BatchAssetStatus.Waiting)]
-    [InlineData(BatchAssetStatus.Error)]
-    [InlineData(BatchAssetStatus.Completed)]
-    public void AddBatchAsset_Adds_WithSpecifiedStatus(BatchAssetStatus status)
+    [InlineData(BatchStatus.Waiting)]
+    [InlineData(BatchStatus.Error)]
+    [InlineData(BatchStatus.Completed)]
+    public void AddBatchAsset_Adds_WithSpecifiedStatus(BatchStatus status)
     {
         var batch = new Batch { BatchAssets = null };
         var assetId = new AssetId(99, 100, "hi");

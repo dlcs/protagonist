@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Reflection;
+using API.Features.Adjuncts;
 using API.Features.Assets;
 using API.Features.Customer;
 using API.Features.DeliveryChannels.DataAccess;
@@ -99,6 +100,8 @@ public static class ServiceCollectionX
             .AddScoped<IApiAssetRepository, ApiAssetRepository>()
             .AddScoped<ISpaceRepository, SpaceRepository>()
             .AddScoped<IBatchRepository, BatchRepository>()
+            .AddScoped<IAdjunctBatchRepository, AdjunctBatchRepository>()
+            .AddScoped<AdjunctUpsertService>()
             .AddScoped<IEntityCounterRepository, EntityCounterRepository>()
             .AddScoped<ICustomerQueueRepository, CustomerQueueRepository>()
             .AddScoped<IStorageRepository, CustomerStorageRepository>()

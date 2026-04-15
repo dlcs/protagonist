@@ -268,38 +268,32 @@ public class ImageController : HydraController
     public async Task<IActionResult> GetAssetMetadata([FromRoute] int customerId, [FromRoute] int spaceId,
         [FromRoute] string imageId, CancellationToken cancellationToken)
     {
-        return await HandleHydraRequest(async () =>
-        {
-            var getMetadata = new GetAssetMetadata(customerId, spaceId, imageId);
-            var entityResult = await Mediator.Send(getMetadata, cancellationToken);
-
-            return this.FetchResultToHttpResult(entityResult, getMetadata.AssetId.ToString(), "Error getting metadata");
-        });
+        var getMetadata = new GetAssetMetadata(customerId, spaceId, imageId);
+        var entityResult = await Mediator.Send(getMetadata, cancellationToken);
+        return this.FetchResultToHttpResult(entityResult, getMetadata.AssetId.ToString(), "Error getting metadata");
     }
 
     private Task<IActionResult> PutOrPatchAsset(int customerId, int spaceId, string imageId,
-        DLCS.HydraModel.Image hydraAsset, CancellationToken cancellationToken) =>
-        HandleHydraRequest(() =>
-        {
-            var assetId = new AssetId(customerId, spaceId, imageId);
-            var asset = hydraAsset.ToDlcsModel(customerId, spaceId, imageId);
-            asset.Id = assetId;
+        DLCS.HydraModel.Image hydraAsset, CancellationToken cancellationToken)
+    {
+        var assetId = new AssetId(customerId, spaceId, imageId);
+        var asset = hydraAsset.ToDlcsModel(customerId, spaceId, imageId);
+        asset.Id = assetId;
 
-            // In the special case where we were passed ImageWithFile from the PostImageWithFileBytes action, 
-            // it was a POST - but we should revisit that as the direct image ingest should be a PUT as well I think
-            // See https://github.com/dlcs/protagonist/issues/338
-            var method = hydraAsset is ImageWithFile ? "PUT" : Request.Method;
+        // In the special case where we were passed ImageWithFile from the PostImageWithFileBytes action,
+        // it was a POST - but we should revisit that as the direct image ingest should be a PUT as well I think
+        // See https://github.com/dlcs/protagonist/issues/338
+        var method = hydraAsset is ImageWithFile ? "PUT" : Request.Method;
 
-            var assetBeforeProcessing = new AssetBeforeProcessing(asset, hydraAsset.DeliveryChannels.ToInterimModel());
+        var assetBeforeProcessing = new AssetBeforeProcessing(asset, hydraAsset.DeliveryChannels.ToInterimModel());
+        var createOrUpdateRequest = new CreateOrUpdateImage(assetBeforeProcessing, method);
 
-            var createOrUpdateRequest = new CreateOrUpdateImage(assetBeforeProcessing, method);
-
-            return HandleUpsert(
-                createOrUpdateRequest,
-                a => a.ToHydra(GetUrlRoots()),
-                assetId.ToString(),
-                "Upsert asset failed", cancellationToken);
-        });
+        return HandleUpsert(
+            createOrUpdateRequest,
+            a => a.ToHydra(GetUrlRoots()),
+            assetId.ToString(),
+            "Upsert asset failed", cancellationToken);
+    }
 
     private async Task<IActionResult> PutOrPatchAssetWithFileBytes(int customerId, int spaceId, string imageId,
         ImageWithFile hydraAsset, CancellationToken cancellationToken)

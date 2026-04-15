@@ -33,5 +33,13 @@ public interface IIngestNotificationSender
     Task<HttpStatusCode> SendImmediateIngestAssetRequest(Asset assetToIngest, 
         CancellationToken cancellationToken = default);
 
-    Task<bool> SendIngestAdjunctRequest(Assets.Adjunct adjunctToIngest, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Enqueue a message that an adjunct needs to be ingested.
+    /// </summary>
+    Task<bool> SendIngestAdjunctRequest(Adjunct adjunctToIngest, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Enqueue a message for every adjunct that is to be ingested, returning the number of messages sent
+    /// </summary>
+    Task<int> SendIngestAdjunctRequest(IReadOnlyList<Adjunct> adjuncts, CancellationToken cancellationToken = default);
 }

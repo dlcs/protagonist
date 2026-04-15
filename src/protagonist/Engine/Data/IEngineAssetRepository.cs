@@ -27,13 +27,15 @@ public interface IEngineAssetRepository
     ValueTask<Asset?> GetAsset(AssetId assetId, int? batchId, CancellationToken cancellationToken = default);
     
     /// <summary>
-    /// Get the adjunct with the id, for the specified asset.
+    /// Get the adjunct with the id, for the specified asset. If <paramref name="batchId"/> is provided, the
+    /// matching <see cref="AdjunctBatchAdjunct"/> record is included.
     /// </summary>
     /// <param name="id">Adjunct id - unique only within asset</param>
     /// <param name="assetId">Asset that owns the adjunct</param>
+    /// <param name="batchId">Optional batch id; if provided loads the matching AdjunctBatchAdjunct</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns></returns>
-    ValueTask<Adjunct?> GetAdjunct(string id, AssetId assetId, CancellationToken cancellationToken = default);
+    Task<Adjunct?> GetAdjunct(string id, AssetId assetId, int? batchId = null, CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Get the <see cref="ImageStorage"/> for the specified <paramref name="assetId"/>

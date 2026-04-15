@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Core.Enum;
@@ -11,15 +12,42 @@ namespace API.Converters;
 public static class AdjunctConverter
 {
     /// <summary>
+    /// This will create a DLCS <see cref="DLCS.Model.Assets.Adjunct"/> from a hydra <see cref="DLCS.HydraModel.Adjunct"/>.
+    /// The assetId will be determined from the hydra object.
+    /// </summary>
+    /// <param name="hydraAdjunct">The incoming request</param>
+    /// <param name="customerId">Who this Adjunct belongs to</param>
+    /// <param name="adjunctId">
+    /// The potential id of the adjunct. If not supplied, will be determined from Hydra object.
+    /// </param>
+    /// <returns>A <see cref="DLCS.Model.Assets.Adjunct"/> representation of the adjunct</returns>
+    public static Adjunct ToDlcsModel(this DLCS.HydraModel.Adjunct hydraAdjunct, int customerId, string? adjunctId = null)
+    {
+        if (!TryParseAssetId(hydraAdjunct.Asset, out var assetId))
+        {
+            throw new BadRequestException(
+                $"Could not parse asset reference '{hydraAdjunct.Asset}' for adjunct '{hydraAdjunct.ModelId}'. " +
+                "Use short form 'customer/space/assetId' or a fully qualified URI");
+        }
+        
+        if (assetId.Customer != customerId)
+        {
+            throw new BadRequestException($"Asset '{assetId}' does not belong to customer {customerId}");
+        }
+        
+        return hydraAdjunct.ToDlcsModel(customerId, assetId.Space, assetId.Asset, adjunctId);
+    }
+    
+    /// <summary>
     /// This will create a DLCS <see cref="DLCS.Model.Assets.Adjunct"/> from a hydra <see cref="DLCS.HydraModel.Adjunct"/>
     /// </summary>
     /// <param name="hydraAdjunct">The incoming request</param>
-    /// <param name="customerId">Required: an assertion of who this Asset belongs to</param>
-    /// <param name="spaceId">Required: an assertion of the Space it's in. If not supplied will be determined from Hydra object.</param>
-    /// <param name="assetId">Required: The asset id this adjunct is associated with</param>
+    /// <param name="customerId">Who this Adjunct belongs to</param>
+    /// <param name="spaceId">Space the Adjunct is in</param>
+    /// <param name="assetId">The asset id this adjunct is associated with</param>
     /// <param name="adjunctId">
-    /// Optional: The potential id of the adjunct.
-    /// If not supplied, will be determined from Hydra object.</param>
+    /// The potential id of the adjunct. If not supplied, will be determined from Hydra object.
+    /// </param>
     /// <returns>A <see cref="DLCS.Model.Assets.Adjunct"/> representation of the adjunct</returns>
     public static Adjunct ToDlcsModel(this DLCS.HydraModel.Adjunct hydraAdjunct, int customerId, int spaceId,
         string assetId, string? adjunctId = null)
@@ -71,7 +99,7 @@ public static class AdjunctConverter
     /// <param name="adjunct">The DLCS adjunct to convert</param>
     /// <param name="urlRoots">The base address used to create FQDN paths</param>
     /// <returns>A hydra <see cref="DLCS.HydraModel.Adjunct"/> representation of the adjunct</returns>
-    public static DLCS.HydraModel.Adjunct ToHydra(this Adjunct adjunct, UrlRoots urlRoots) 
+    public static DLCS.HydraModel.Adjunct ToHydra(this Adjunct adjunct, UrlRoots urlRoots)
         => new(urlRoots.BaseUrl, adjunct.AssetId.Customer, adjunct.AssetId.Space, adjunct.AssetId.Asset, adjunct.Id)
         {
             Type = adjunct.Type,
@@ -80,6 +108,7 @@ public static class AdjunctConverter
             Profile = adjunct.Profile,
             Label = adjunct.Label,
             Language = adjunct.Language,
+            Asset = $"{urlRoots.BaseUrl}/customers/{adjunct.AssetId.Customer}/spaces/{adjunct.AssetId.Space}/images/{adjunct.AssetId.Asset}",
             ExternalId = adjunct.ExternalId?.ToString(),
             Origin = adjunct.Origin,
             PublicId = adjunct.ExternalId?.ToString() ??  $"{urlRoots.ResourceRoot}adjuncts/{adjunct.AssetId.Customer}/{adjunct.AssetId.Space}/{adjunct.AssetId.Asset}/{adjunct.Id}",
@@ -89,6 +118,56 @@ public static class AdjunctConverter
             Error = adjunct.Error,
             Motivation = adjunct.Motivation,
             Provides =  adjunct.Provides,
-            Ingesting = adjunct.Ingesting
+            Ingesting = adjunct.Ingesting,
+            Batch = adjunct.Batch.HasValue
+                ? $"{urlRoots.BaseUrl}/customers/{adjunct.AssetId.Customer}/adjunctQueue/batches/{adjunct.Batch}"
+                : null,
         };
+    
+    /// <summary>
+    /// Attempts to parse an asset reference from a short form ("customer/space/assetId") or full URI.
+    /// </summary>
+    private static bool TryParseAssetId(string? assetField, [NotNullWhen(true)] out AssetId? assetId)
+    {
+        assetId = null;
+
+        if (string.IsNullOrWhiteSpace(assetField)) return false;
+
+        // Try full URI: extract /customers/{c}/spaces/{s}/images/{i}
+        if (Uri.TryCreate(assetField, UriKind.Absolute, out var uri))
+        {
+            var parts = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var customersIdx = Array.FindIndex(parts,
+                p => p.Equals("customers", StringComparison.OrdinalIgnoreCase));
+            if (customersIdx >= 0 && customersIdx + 5 < parts.Length
+                                  && parts[customersIdx + 2].Equals("spaces", StringComparison.OrdinalIgnoreCase)
+                                  && parts[customersIdx + 4].Equals("images", StringComparison.OrdinalIgnoreCase)
+                                  && int.TryParse(parts[customersIdx + 1], out var customer)
+                                  && int.TryParse(parts[customersIdx + 3], out var space))
+            {
+                try
+                {
+                    assetId = new AssetId(customer, space, parts[customersIdx + 5]);
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        // Try short form: customer/space/assetId
+        try
+        {
+            assetId = AssetId.FromString(assetField);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

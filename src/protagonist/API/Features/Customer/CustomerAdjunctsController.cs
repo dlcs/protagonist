@@ -52,18 +52,7 @@ public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediato
         [FromServices] AdjunctIdListValidator validator,
         CancellationToken cancellationToken = default)
     {
-        Dictionary<AssetId, List<string>>? adjunctIdentifiersDictionary;
-        
-        try
-        {
-            adjunctIdentifiersDictionary = adjunctIdentifiers.Members?.ConvertToDictionary(customerId);
-        }
-        catch (BadRequestException exception)
-        {
-            logger.LogError(exception, "BadRequestException when handling HydraRequest");
-            return this.HydraProblem(exception.Message, null, exception.StatusCode, exception.Label);
-        }
-
+        var adjunctIdentifiersDictionary = adjunctIdentifiers.Members?.ConvertToDictionary(customerId);
         var validationResult = await validator.ValidateAsync(adjunctIdentifiersDictionary, cancellationToken);
         if (!validationResult.IsValid)
         {
@@ -72,19 +61,15 @@ public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediato
 
         var additionalDeletion = ImageCacheTypeConverter.ConvertToImageCacheType(deleteFrom, ',');
 
-        return await HandleHydraRequest(async () =>
+        var deleteRequest =
+            new DeleteMultipleAdjunctsById(adjunctIdentifiersDictionary!, additionalDeletion);
+        var deletedRows = await Mediator.Send(deleteRequest, cancellationToken);
+
+        if (deletedRows == 0)
         {
-            var deleteRequest =
-                new DeleteMultipleAdjunctsById(adjunctIdentifiersDictionary!, additionalDeletion);
-            var deletedRows = await Mediator.Send(deleteRequest, cancellationToken);
+            return this.HydraProblem("No adjuncts found", null, 400, "Delete adjuncts failed");
+        }
 
-            if (deletedRows == 0)
-            {
-                return this.HydraProblem("No adjuncts found", null, 400, "Delete adjuncts failed");
-            }
-
-            return NoContent();
-        }, "Delete adjuncts failed");
-
+        return NoContent();
     }
 }

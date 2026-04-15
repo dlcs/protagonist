@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using DLCS.Core.Types;
 using IIIF.Presentation.V3.Strings;
@@ -96,7 +97,17 @@ public class Adjunct : IDeliverable
     /// </summary>
     public string? Provides { get; set; }
 
+    /// <summary>
+    /// The id of the AdjunctBatch this adjunct was most recently submitted in, if any.
+    /// </summary>
+    public int? Batch { get; set; }
+
     public Asset Asset { get; set; } = null!;
+
+    /// <summary>
+    /// Historical records linking this Adjunct to an AdjunctBatch.
+    /// </summary>
+    public List<AdjunctBatchAdjunct>? AdjunctBatchAdjuncts { get; set; }
     
     public Adjunct Clone()
     {
