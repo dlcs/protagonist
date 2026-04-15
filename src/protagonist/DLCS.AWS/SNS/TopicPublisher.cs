@@ -37,31 +37,17 @@ public class TopicPublisher(
     }
 
     /// <inheritdoc />
-    public async Task<bool> PublishToBatchCompletedTopic(BatchCompletedNotification message, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrEmpty(snsSettings.BatchCompletedTopicArn))
-        {
-            logger.LogWarning("Batch Completed Topic Arn is not set - cannot send BatchCompletedNotification");
-            return false;
-        }
-        
-        var request = new PublishRequest
-        {
-            TopicArn = snsSettings.BatchCompletedTopicArn,
-            Message = JsonSerializer.Serialize(message, settings),
-            MessageAttributes = new Dictionary<string, MessageAttributeValue>()
-            {
-                {"CustomerId", new MessageAttributeValue
-                {
-                    StringValue = message.Customer.ToString(),
-                    DataType = "String"
-                }}
-            } 
-        };
+    public Task<bool> PublishToBatchCompletedTopic(BatchCompletedNotification message,
+        CancellationToken cancellationToken)
+        => PublishBatchCompleted(message, snsSettings.BatchCompletedTopicArn,
+            nameof(snsSettings.BatchCompletedTopicArn), cancellationToken);
 
-        return await TryPublishRequest(request, cancellationToken);
-    }
-    
+    /// <inheritdoc />
+    public Task<bool> PublishToAdjunctBatchCompletedTopic(AdjunctBatchCompletedNotification message,
+        CancellationToken cancellationToken)
+        => PublishBatchCompleted(message, snsSettings.AdjunctBatchCompletedTopicArn,
+            nameof(snsSettings.AdjunctBatchCompletedTopicArn), cancellationToken);
+
     /// <inheritdoc />
     public async Task<bool> PublishToDeliverableModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages,
         DeliverableTopicType topicType, CancellationToken cancellationToken = default)
@@ -153,18 +139,33 @@ public class TopicPublisher(
     }
 
     private static Dictionary<string, MessageAttributeValue> GetMessageAttributes(Dictionary<string, string> attributes)
+        => attributes.ToDictionary(
+            attribute => attribute.Key,
+            attribute => new MessageAttributeValue { DataType = "String", StringValue = attribute.Value });
+
+    private async Task<bool> PublishBatchCompleted(IBatchCompletedNotification message, string? topicArn, string topicName,
+        CancellationToken cancellationToken)
     {
-        var messageAttributes = new Dictionary<string, MessageAttributeValue>();
-        foreach (var attribute in attributes)
+        if (string.IsNullOrEmpty(topicArn))
         {
-            messageAttributes.Add(attribute.Key,
-                new MessageAttributeValue
-                {
-                    DataType = "String",
-                    StringValue = attribute.Value
-                });
+            logger.LogWarning("{TopicName} is not set - cannot publish batch completed notification", topicName);
+            return false;
         }
 
-        return messageAttributes;
+        var request = new PublishRequest
+        {
+            TopicArn = topicArn,
+            Message = JsonSerializer.Serialize(message, settings),
+            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+            {
+                ["CustomerId"] = new()
+                {
+                    StringValue = message.Customer.ToString(),
+                    DataType = "String"
+                },
+            }
+        };
+
+        return await TryPublishRequest(request, cancellationToken);
     }
 }

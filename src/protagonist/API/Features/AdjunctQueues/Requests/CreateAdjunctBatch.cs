@@ -3,6 +3,7 @@ using System.Data;
 using API.Features.Adjuncts;
 using API.Infrastructure;
 using API.Infrastructure.Requests;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -27,6 +28,7 @@ public class CreateAdjunctBatchHandler(
     DlcsContext dbContext,
     IAdjunctBatchRepository adjunctBatchRepository,
     AdjunctUpsertService adjunctUpsertService,
+    IBatchCompletedNotificationSender batchCompletedNotificationSender,
     ILogger<CreateAdjunctBatchHandler> logger)
     : IRequestHandler<CreateAdjunctBatch, ModifyEntityResult<AdjunctBatch>>
 {
@@ -91,6 +93,11 @@ public class CreateAdjunctBatchHandler(
             logger.LogWarning(
                 "Not all engine notifications sent for adjunct batch {BatchId} (customer {CustomerId}); some adjuncts may not be ingested",
                 batch.Id, request.CustomerId);
+        }
+
+        if (batch.Finished.HasValue)
+        {
+            await batchCompletedNotificationSender.SendBatchCompletedMessage(batch, cancellationToken);
         }
 
         return ModifyEntityResult<AdjunctBatch>.Success(batch, WriteResult.Created);

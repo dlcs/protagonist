@@ -3,6 +3,7 @@ using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SNS;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using FakeItEasy;
@@ -273,6 +274,134 @@ public class TopicPublisherTests
         result.Should().Be(expected);
     }
     
+    [Fact]
+    public async Task PublishToBatchCompletedTopic_ReturnsFalse_IfNoArn()
+    {
+        // Arrange
+        var notification = new BatchCompletedNotification(new Batch { Id = 1, Customer = 99 });
+        var settings = Options.Create(new AWSSettings { SNS = new SNSSettings() });
+        var noArnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+
+        // Act
+        var result = await noArnSut.PublishToBatchCompletedTopic(notification, CancellationToken.None);
+
+        // Assert
+        result.Should().BeFalse("Missing Arn should result in failure");
+        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task PublishToBatchCompletedTopic_PublishesToCorrectArn_WithCustomerIdAttribute()
+    {
+        // Arrange
+        const string arn = "arn:aws:sns:us-east-1:000000000000:batchCompleted";
+        var batch = new Batch { Id = 1, Customer = 99, Count = 5, Completed = 5, Errors = 0, Submitted = DateTime.UtcNow };
+        var notification = new BatchCompletedNotification(batch);
+        var settings = Options.Create(new AWSSettings
+        {
+            SNS = new SNSSettings { BatchCompletedTopicArn = arn }
+        });
+        var arnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+
+        // Act
+        await arnSut.PublishToBatchCompletedTopic(notification, CancellationToken.None);
+
+        // Assert
+        A.CallTo(() => snsClient.PublishAsync(
+            A<PublishRequest>.That.Matches(r =>
+                r.TopicArn == arn &&
+                r.MessageAttributes["CustomerId"].StringValue == "99"),
+            A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Accepted, true)]
+    [InlineData(HttpStatusCode.OK, true)]
+    [InlineData(HttpStatusCode.BadRequest, false)]
+    [InlineData(HttpStatusCode.InternalServerError, false)]
+    public async Task PublishToBatchCompletedTopic_ReturnsSuccessDependentOnStatusCode(HttpStatusCode statusCode, bool expected)
+    {
+        // Arrange
+        var notification = new BatchCompletedNotification(new Batch { Id = 1, Customer = 99 });
+        var settings = Options.Create(new AWSSettings
+        {
+            SNS = new SNSSettings { BatchCompletedTopicArn = "arn:aws:sns:us-east-1:000000000000:batchCompleted" }
+        });
+        var arnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._))
+            .Returns(new PublishResponse { HttpStatusCode = statusCode });
+
+        // Act
+        var result = await arnSut.PublishToBatchCompletedTopic(notification, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task PublishToAdjunctBatchCompletedTopic_ReturnsFalse_IfNoArn()
+    {
+        // Arrange
+        var notification = new AdjunctBatchCompletedNotification(new AdjunctBatch { Id = 1, Customer = 99 });
+        var settings = Options.Create(new AWSSettings { SNS = new SNSSettings() });
+        var noArnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+
+        // Act
+        var result = await noArnSut.PublishToAdjunctBatchCompletedTopic(notification, CancellationToken.None);
+
+        // Assert
+        result.Should().BeFalse("Missing Arn should result in failure");
+        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._)).MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task PublishToAdjunctBatchCompletedTopic_PublishesToCorrectArn_WithCustomerIdAttribute()
+    {
+        // Arrange
+        const string arn = "arn:aws:sns:us-east-1:000000000000:adjunctBatchCompleted";
+        var batch = new AdjunctBatch { Id = 2, Customer = 99, Count = 3, Completed = 3, Errors = 0, Submitted = DateTime.UtcNow };
+        var notification = new AdjunctBatchCompletedNotification(batch);
+        var settings = Options.Create(new AWSSettings
+        {
+            SNS = new SNSSettings { AdjunctBatchCompletedTopicArn = arn }
+        });
+        var arnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+
+        // Act
+        await arnSut.PublishToAdjunctBatchCompletedTopic(notification, CancellationToken.None);
+
+        // Assert
+        A.CallTo(() => snsClient.PublishAsync(
+            A<PublishRequest>.That.Matches(r =>
+                r.TopicArn == arn &&
+                r.MessageAttributes["CustomerId"].StringValue == "99"),
+            A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.Accepted, true)]
+    [InlineData(HttpStatusCode.OK, true)]
+    [InlineData(HttpStatusCode.BadRequest, false)]
+    [InlineData(HttpStatusCode.InternalServerError, false)]
+    public async Task PublishToAdjunctBatchCompletedTopic_ReturnsSuccessDependentOnStatusCode(HttpStatusCode statusCode, bool expected)
+    {
+        // Arrange
+        var notification = new AdjunctBatchCompletedNotification(new AdjunctBatch { Id = 1, Customer = 99 });
+        var settings = Options.Create(new AWSSettings
+        {
+            SNS = new SNSSettings { AdjunctBatchCompletedTopicArn = "arn:aws:sns:us-east-1:000000000000:adjunctBatchCompleted" }
+        });
+        var arnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._))
+            .Returns(new PublishResponse { HttpStatusCode = statusCode });
+
+        // Act
+        var result = await arnSut.PublishToAdjunctBatchCompletedTopic(notification, CancellationToken.None);
+
+        // Assert
+        result.Should().Be(expected);
+    }
+
     [Fact]
     public async Task PublishToAssetModifiedTopicBatch_FailsToPublishTopic_WhenArnNotParsed()
     {
