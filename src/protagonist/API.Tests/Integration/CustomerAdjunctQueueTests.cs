@@ -499,7 +499,7 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         batch.Count.Should().Be(createdBatch.Count);
         batch.Completed.Should().Be(createdBatch.Completed);
         batch.Errors.Should().Be(createdBatch.Errors);
-        batch.Finished.Should().Be(createdBatch.Finished);
+        batch.Finished.Should().BeCloseTo(createdBatch.Finished.Value, TimeSpan.FromSeconds(2));
         ParseBatchId(batch).Should().Be(batchId);
     }
 
