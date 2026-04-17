@@ -51,7 +51,10 @@ public class AdjunctBatch : DlcsResource
     [JsonProperty(Order = 15, PropertyName = "finished")]
     public DateTime? Finished { get; set; }
 
-    [HydraLink(Description = "Collection of adjuncts currently claimed by this batch",
+    /* TODO - the following 2 Hydra link properties are not implemented yet - they will be added in future PR.
+     Leaving these commented out for now until implemented as they are working as-is but added too early
+     
+     [HydraLink(Description = "Collection of adjuncts currently claimed by this batch",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 20, PropertyName = "currentAdjuncts")]
     public string? CurrentAdjuncts { get; set; }
@@ -59,5 +62,5 @@ public class AdjunctBatch : DlcsResource
     [HydraLink(Description = "All adjuncts historically associated with this batch",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 21, PropertyName = "adjuncts")]
-    public string? Adjuncts { get; set; }
+    public string? Adjuncts { get; set; }*/
 }

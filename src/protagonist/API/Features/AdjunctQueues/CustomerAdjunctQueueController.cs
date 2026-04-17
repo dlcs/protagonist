@@ -17,13 +17,36 @@ namespace API.Features.AdjunctQueues;
 /// <summary>
 /// Controller for handling requests relating to adjunct queue batches
 /// </summary>
-[Route("/customers/{customerId}/adjunctQueue")]
+[Route("/customers/{customerId:int}/adjunctQueue")]
 [ApiController]
 public class CustomerAdjunctQueueController(
     IOptions<ApiSettings> options,
     IMediator mediator)
     : HydraController(options.Value, mediator)
 {
+    /// <summary>
+    /// Get details of specified adjunct batch.
+    /// </summary>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="batchId">Id of adjunct batch to load</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Hydra JSON-LD AdjunctBatch object</returns>
+    [HttpGet]
+    [Route("batches/{batchId:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(AdjunctBatch))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
+    public async Task<IActionResult> GetAdjunctBatch(
+        [FromRoute] int customerId,
+        [FromRoute] int batchId,
+        CancellationToken cancellationToken)
+    {
+        return await HandleFetch(
+            new GetAdjunctBatch(customerId, batchId),
+            batch => batch.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Get adjunct batch failed",
+            cancellationToken: cancellationToken);
+    }
+
     /// <summary>
     /// Submit a batch of adjuncts to the adjunct queue.
     /// </summary>
