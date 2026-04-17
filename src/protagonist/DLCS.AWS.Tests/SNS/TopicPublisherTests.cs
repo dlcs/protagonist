@@ -313,6 +313,35 @@ public class TopicPublisherTests
                 r.MessageAttributes["CustomerId"].StringValue == "99"),
             A<CancellationToken>._)).MustHaveHappenedOnceExactly();
     }
+    
+    [Fact]
+    public async Task PublishToBatchCompletedTopic_Correctly_Serialises()
+    {
+        // Arrange
+        const string arn = "arn:aws:sns:us-east-1:000000000000:batchCompleted";
+        var batch = new Batch
+        {
+            Id = 1, Customer = 99, Count = 5, Completed = 5, Errors = 0, Submitted = DateTime.UtcNow, Superseded = true
+        };
+        var notification = new BatchCompletedNotification(batch);
+        var settings = Options.Create(new AWSSettings
+        {
+            SNS = new SNSSettings { BatchCompletedTopicArn = arn }
+        });
+        var arnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+
+        // Act
+        await arnSut.PublishToBatchCompletedTopic(notification, CancellationToken.None);
+
+        // Check that 'superseded' is correctly serialised to the message, this is on concrete type only, not interface
+        // so verifies that it's not only the interface props that are being serialised. 
+        A.CallTo(() => snsClient.PublishAsync(
+            A<PublishRequest>.That.Matches(r =>
+                r.TopicArn == arn &&
+                r.MessageAttributes["CustomerId"].StringValue == "99" &&
+                r.Message.Contains("superseded")),
+            A<CancellationToken>._)).MustHaveHappenedOnceExactly();
+    }
 
     [Theory]
     [InlineData(HttpStatusCode.Accepted, true)]

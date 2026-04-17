@@ -151,11 +151,11 @@ public class TopicPublisher(
             logger.LogWarning("{TopicName} is not set - cannot publish batch completed notification", topicName);
             return false;
         }
-
+        
         var request = new PublishRequest
         {
             TopicArn = topicArn,
-            Message = JsonSerializer.Serialize(message, settings),
+            Message = JsonSerializer.Serialize(message, message.GetType(), settings),
             MessageAttributes = new Dictionary<string, MessageAttributeValue>
             {
                 ["CustomerId"] = new()
