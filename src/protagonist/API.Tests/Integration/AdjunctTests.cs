@@ -618,12 +618,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
-
-        hydra.Should().NotBeNull();
-        hydra.Members.Should().HaveCount(1);
-
-        var adjunct = hydra.Members![0];
+        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
@@ -673,12 +668,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
-
-        hydra.Should().NotBeNull();
-        hydra.Members.Should().HaveCount(1);
-
-        var adjunct = hydra.Members![0];
+        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
         var expectedAdjunctId = $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}";
         adjunct.Id.Should().Be(expectedAdjunctId);
         adjunct.IIIFLink.Should().Be("seeAlso");
@@ -727,12 +717,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
-
-        hydra.Should().NotBeNull();
-        hydra.Members.Should().HaveCount(1);
-
-        var adjunct = hydra.Members![0];        
+        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
         var expectedAdjunctId = $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}";
         
         adjunct.Id.Should().Be(expectedAdjunctId);
@@ -778,12 +763,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
-
-        hydra.Should().NotBeNull();
-        hydra.Members.Should().HaveCount(1);
-
-        var adjunct = hydra.Members![0];        
+        var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
         adjunct.Id.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
@@ -1399,12 +1379,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert 2
         response.StatusCode.Should().Be(HttpStatusCode.OK); // not created, updated
-        hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+        adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
 
-        hydra.Should().NotBeNull();
-        hydra.Members.Should().HaveCount(1);
-
-        adjunct = hydra.Members![0];
         adjunct.Size.Should().Be(1234L, "API preserves the size set by engine");
         adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for (re)ingestion");
         adjunct.Finished.Should().NotBeNull("API doesn't touch finished, as it now states for 'last finished'");
@@ -1486,12 +1462,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert 2
         response.StatusCode.Should().Be(HttpStatusCode.OK); // not created, updated
-        hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+        adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
 
-        hydra.Should().NotBeNull();
-        hydra.Members.Should().HaveCount(1);
-
-        adjunct = hydra.Members![0];
         adjunct.Size.Should().Be(null, "API sets to null to signify it wasn't hosted previously - so no size for our purposes");
         adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
         adjunct.Finished.Should().NotBeNull("API doesn't touch finished, as it now states for 'last finished'");
@@ -1581,12 +1553,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert 2
         response.StatusCode.Should().Be(HttpStatusCode.OK); // not created, updated
-        hydra = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
+        adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
 
-        hydra.Should().NotBeNull();
-        hydra.Members.Should().HaveCount(1);
-
-        adjunct = hydra.Members![0];
         adjunct.Size.Should().Be(69L, "as this is now external adjunct, ");
         adjunct.Ingesting.Should().NotBe(true, "the adjunct was NOT sent to engine for ingestion");
         adjunct.Finished.Should().NotBeNull("API doesn't touch finished, as it now states for 'last finished'");
