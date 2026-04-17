@@ -31,9 +31,9 @@ public class AdjunctUpdatedHandler(
 
             if (adjunctAfter == null)
             {
-                logger.LogInformation("Adjunct {Asset}/{Id} was not found in the database for use in after calculation",
+                logger.LogInformation("Adjunct {Asset}/{Id} not in database, aborting",
                     adjunctBefore.AssetId, adjunctBefore.Id);
-                return false;
+                return true;
             }
             
             logger.LogDebug("Processing update adjunct notification for {Asset}/{Id}", adjunctBefore.AssetId, adjunctBefore.Id);
@@ -51,6 +51,6 @@ public class AdjunctUpdatedHandler(
     }
 
     // We only cleanup when the adjunct has moved from hosted to unhosted
-    private bool NoCleanupRequired(DLCS.Model.Assets.Adjunct adjunctBefore, DLCS.Model.Assets.Adjunct adjunctAfter) =>
+    private static bool NoCleanupRequired(DLCS.Model.Assets.Adjunct adjunctBefore, DLCS.Model.Assets.Adjunct adjunctAfter) =>
         adjunctBefore.ExternalId != null || !adjunctAfter.Origin.IsNullOrEmpty();
 }
