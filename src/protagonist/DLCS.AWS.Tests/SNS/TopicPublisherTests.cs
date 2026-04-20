@@ -310,7 +310,8 @@ public class TopicPublisherTests
         A.CallTo(() => snsClient.PublishAsync(
             A<PublishRequest>.That.Matches(r =>
                 r.TopicArn == arn &&
-                r.MessageAttributes["CustomerId"].StringValue == "99"),
+                r.MessageAttributes["CustomerId"].StringValue == "99" &&
+                r.MessageAttributes["Type"].StringValue == "Batch"),
             A<CancellationToken>._)).MustHaveHappenedOnceExactly();
     }
     
@@ -403,7 +404,8 @@ public class TopicPublisherTests
         A.CallTo(() => snsClient.PublishAsync(
             A<PublishRequest>.That.Matches(r =>
                 r.TopicArn == arn &&
-                r.MessageAttributes["CustomerId"].StringValue == "99"),
+                r.MessageAttributes["CustomerId"].StringValue == "99" &&
+                r.MessageAttributes["Type"].StringValue == "AdjunctBatch"),
             A<CancellationToken>._)).MustHaveHappenedOnceExactly();
     }
 
