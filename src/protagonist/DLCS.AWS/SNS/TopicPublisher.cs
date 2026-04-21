@@ -4,6 +4,7 @@ using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
 using DLCS.Core;
+using DLCS.Model.Assets;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -151,7 +152,7 @@ public class TopicPublisher(
             logger.LogWarning("{TopicName} is not set - cannot publish batch completed notification", topicName);
             return false;
         }
-        
+
         var request = new PublishRequest
         {
             TopicArn = topicArn,
@@ -161,6 +162,11 @@ public class TopicPublisher(
                 ["CustomerId"] = new()
                 {
                     StringValue = message.Customer.ToString(),
+                    DataType = "String"
+                },
+                ["Type"] = new()
+                {
+                    StringValue = message is AdjunctBatchCompletedNotification ? nameof(AdjunctBatch) : nameof(Batch),
                     DataType = "String"
                 },
             }
