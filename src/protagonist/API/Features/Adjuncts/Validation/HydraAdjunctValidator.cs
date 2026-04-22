@@ -44,7 +44,7 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
         
         RuleFor(a => a.ModelId)
             .Must(a => !apiSettings.Value.DoesResourceIdContainRestrictedCharacters(a))
-            .WithMessage($"Adjunct id contains at least one of the following restricted characters. Invalid values are: {new string(apiSettings.Value.RestrictedResourceIdCharacters)}");
+            .WithMessage($"Adjunct id contains at least one of the following restricted characters. Invalid values are: {apiSettings.Value.RestrictedResourceIdCharacterString}");
         
         RuleFor(a => a.Type)
             .NotEmpty()

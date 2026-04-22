@@ -14,7 +14,8 @@ public class AdjunctIdListValidatorTests
     private readonly AdjunctIdListValidator sut = new(Options.Create(
         new ApiSettings
         {
-            MaxImageListSize = 4
+            MaxImageListSize = 4,
+            RestrictedResourceIdCharacterString = "\\ /"
         }));
     
     [Fact]
@@ -142,5 +143,23 @@ public class AdjunctIdListValidatorTests
         
         var result = sut.TestValidate(adjuncts);
         result.ShouldHaveAnyValidationError().WithErrorMessage("Maximum adjuncts in single batch is 4");
+    }
+    
+    [Theory]
+    [InlineData(" space")]
+    [InlineData("slash\\")]
+    [InlineData("other/slash")]
+    public void Invalid_WhenAdjunctContainsInvalidCharacters(string invalidId)
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        var adjuncts = new Dictionary<AssetId, List<string>>
+        {
+            {assetId, ["first", "second", invalidId]}
+        };
+        
+        var result = sut.TestValidate(adjuncts);
+        result.ShouldHaveAnyValidationError()
+            .WithErrorMessage(
+                "Adjunct id contains at least one of the following restricted characters. Invalid values are: \\ /");
     }
 }
