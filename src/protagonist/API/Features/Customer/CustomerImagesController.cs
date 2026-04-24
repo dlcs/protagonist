@@ -61,11 +61,13 @@ public class CustomerImagesController(IOptions<ApiSettings> settings, IMediator 
             return this.ValidationFailed(validationResult);
         }
 
-        var request = new GetMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(), customerId);
+        var assetQueryModel = Request.GetAssetQuery();
+        var request = new GetMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(), customerId,
+            assetQueryModel.Include);
 
         return await HandleListFetch<Asset, GetMultipleImagesById, DLCS.HydraModel.Image>(
             request,
-            a => a.ToHydra(GetUrlRoots()),
+            a => a.ToHydra(GetUrlRoots(), assetQueryModel.IncludesField(IncludeFields.Adjuncts)),
             "Get customer images failed",
             cancellationToken: cancellationToken);
     }

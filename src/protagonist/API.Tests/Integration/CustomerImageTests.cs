@@ -119,7 +119,98 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         collection.PageSize.Should().Be(3);
         collection.TotalItems.Should().Be(3);
     }
-    
+
+    [Fact]
+    public async Task Post_AllImages_Adjuncts_IsUriString_WhenNoIncludeParam()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct("adj1");
+        await dbContext.SaveChangesAsync();
+
+        const string allImagesJson = @"{{ ""@type"": ""Collection"", ""member"": [ {{ ""id"": ""{0}"" }} ] }}";
+        var content = new StringContent(string.Format(allImagesJson, assetId.ToString()), Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync("/customers/99/allImages", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        var asset = collection.Members.Single(m => m.ModelId == assetId.Asset);
+        asset.Adjuncts!.Type.Should().Be(JTokenType.String);
+        asset.Adjuncts.ToString().Should().EndWith($"/images/{assetId.Asset}/adjuncts");
+    }
+
+    [Fact]
+    public async Task Post_AllImages_Adjuncts_IsUriString_WhenUnknownIncludeParam()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct("adj1");
+        await dbContext.SaveChangesAsync();
+
+        const string allImagesJson = @"{{ ""@type"": ""Collection"", ""member"": [ {{ ""id"": ""{0}"" }} ] }}";
+        var content = new StringContent(string.Format(allImagesJson, assetId.ToString()), Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync("/customers/99/allImages?include=something", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        var asset = collection.Members.Single(m => m.ModelId == assetId.Asset);
+        asset.Adjuncts!.Type.Should().Be(JTokenType.String);
+    }
+
+    [Fact]
+    public async Task Post_AllImages_Adjuncts_IsEmptyArray_WhenIncludeAdjunctsButNoneExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+
+        const string allImagesJson = @"{{ ""@type"": ""Collection"", ""member"": [ {{ ""id"": ""{0}"" }} ] }}";
+        var content = new StringContent(string.Format(allImagesJson, assetId.ToString()), Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync("/customers/99/allImages?include=adjuncts", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        var asset = collection.Members.Single(m => m.ModelId == assetId.Asset);
+        asset.Adjuncts!.Type.Should().Be(JTokenType.Array);
+        ((JArray)asset.Adjuncts).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Post_AllImages_Adjuncts_IsInlineArray_WhenIncludeAdjunctsAndAdjunctsExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct("adj1")
+            .WithTestAdjunct("adj2");
+        await dbContext.SaveChangesAsync();
+
+        const string allImagesJson = @"{{ ""@type"": ""Collection"", ""member"": [ {{ ""id"": ""{0}"" }} ] }}";
+        var content = new StringContent(string.Format(allImagesJson, assetId.ToString()), Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync("/customers/99/allImages?include=adjuncts", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        var asset = collection.Members.Single(m => m.ModelId == assetId.Asset);
+        asset.Adjuncts!.Type.Should().Be(JTokenType.Array);
+        ((JArray)asset.Adjuncts).Should().HaveCount(2);
+    }
+
     [Fact]
     public async Task Post_DeleteImages_400_IfInvalidFormatId()
     {

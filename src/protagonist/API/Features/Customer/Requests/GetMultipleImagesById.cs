@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using API.Features.Assets.Query;
 using API.Features.Customer.Validation;
 using API.Infrastructure.Requests;
 using DLCS.Model.Assets;
@@ -12,16 +13,12 @@ namespace API.Features.Customer.Requests;
 /// <summary>
 /// Get a list of all images whose id is in ImageIds list
 /// </summary>
-public class GetMultipleImagesById : IRequest<FetchEntityResult<IReadOnlyCollection<Asset>>>
+public class GetMultipleImagesById(IReadOnlyCollection<string> assetIds, int customerId, AssetInclude? include)
+    : IRequest<FetchEntityResult<IReadOnlyCollection<Asset>>>
 {
-    public IReadOnlyCollection<string> AssetIds { get; }
-    public int CustomerId { get; }
-
-    public GetMultipleImagesById(IReadOnlyCollection<string> assetIds, int customerId)
-    {
-        AssetIds = assetIds;
-        CustomerId = customerId;
-    }
+    public IReadOnlyCollection<string> AssetIds { get; } = assetIds;
+    public int CustomerId { get; } = customerId;
+    public AssetInclude? Include { get; } = include;
 }
 
 public class GetMultipleImagesByIdHandler 
@@ -42,6 +39,7 @@ public class GetMultipleImagesByIdHandler
         var results = await dlcsContext.Images.AsNoTracking()
             .Where(i => i.Customer == request.CustomerId && assetIds.Contains(i.Id))
             .IncludeDeliveryChannelsWithPolicy()
+            .IncludeRelated(request.Include)
             .AsSingleQuery()
             .ToListAsync(cancellationToken);
 
