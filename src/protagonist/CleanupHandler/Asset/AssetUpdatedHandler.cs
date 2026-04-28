@@ -49,12 +49,12 @@ public class AssetUpdatedHandler(
 
             if (assetAfter == null)
             {
-                logger.LogInformation("Asset {AssetId} was not found in the database for use in after calculation",
+                logger.LogInformation("Asset {AssetId} not in database, aborting",
                     assetBefore.Id);
-                return false;
+                return true;
             }
             
-            logger.LogDebug("Processing update DLCS.Model.Assets.Asset notification for {AssetId}", assetBefore.Id);
+            logger.LogDebug("Processing update Asset notification for {AssetId}", assetBefore.Id);
 
             if (NoCleanupRequired(message, assetAfter, assetBefore))
             {
@@ -73,7 +73,7 @@ public class AssetUpdatedHandler(
 
             if (handlerSettings.AssetModifiedSettings.DryRun)
             {
-                logger.LogInformation("Dry run enabled. DLCS.Model.Assets.Asset {AssetId} will log deletions, but not remove them",
+                logger.LogInformation("Dry run enabled. Asset {AssetId} will log deletions, but not remove them",
                     assetBefore.Id);
             }
 
@@ -208,7 +208,7 @@ public class AssetUpdatedHandler(
                 CleanupFileDeliveryChannel(assetAfter, s3Objects.objectsToRemove);
                 break;
             default:
-                logger.LogDebug("policy {PolicyName} does not require any changes for asset {AssetId}",
+                logger.LogDebug("Policy {PolicyName} does not require any changes for asset {AssetId}",
                     deliveryChannelRemoved.DeliveryChannelPolicy.Name, assetAfter.Id);
                 break;
         }

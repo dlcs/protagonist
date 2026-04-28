@@ -77,7 +77,7 @@ public class AdjunctUpdatedHandlerTests
     }
     
     [Fact]
-    public async Task Handle_ReturnsFalse_IfNoMatchingAdjunct()
+    public async Task Handle_ReturnsFalse_IfNoDeliverableBeforeUpdate_InMessage()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -108,6 +108,46 @@ public class AdjunctUpdatedHandlerTests
         
         // Assert
         response.Should().BeFalse();
+        A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_ReturnsTrue_IfAdjunctNotFoundInDatabase()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var adjunctId = "someAdjunct";
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+        
+        var adjunct = new Adjunct
+        {
+            Id = adjunctId,
+            MediaType = "a-mediaType",
+            IIIFLink = IIIFLinkType.Annotations,
+            Type = "a-type",
+            AssetId = assetId,
+            Origin = "https://some.origin"
+        };
+        var cleanupRequest = new DeliverableUpdatedNotification<Adjunct>
+        {
+            DeliverableBeforeUpdate = adjunct,
+            DeliverableAfterUpdate = adjunct
+        };
+        
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+        
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonNode.Parse(serialized)!.AsObject()
+        };
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
         A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustNotHaveHappened();
     }
     

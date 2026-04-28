@@ -156,6 +156,27 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
     
+    [Fact]
+    public async Task Handle_ReturnsTrue_IfAssetNotInDatabase()
+    {
+        // Arrange
+        var requestDetails = CreateMinimalRequestDetails([imageDeliveryChannelFile], []);
+        
+        A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(A<AssetId>._))
+            .Returns<Asset?>(null);
+        
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(requestDetails.queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        A.CallTo(() =>
+                bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>.That.Matches(o => o[0].Key == "1/99/foo/original")))
+            .MustNotHaveHappened();
+        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
+    }
+    
     // removed
     
     [Fact]
