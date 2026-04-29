@@ -72,7 +72,7 @@ public static class AssetPreparer
     /// </param>
     /// <param name="isBatchUpdate">True if this is part of batch creation - allows Batch value to be set.</param>
     /// <param name="disallowedCharacters">List of characters that are not allowed to be used in AssetId</param>
-    /// <param name="isNoneChannel">Whther this asset is being delivered by the none channel</param>
+    /// <param name="isNoneChannel">Whether this asset is being delivered by the none channel only</param>
     /// <returns>A validation result</returns>
     public static AssetPreparationResult PrepareAssetForUpsert(
         Asset? existingAsset,
@@ -97,8 +97,8 @@ public static class AssetPreparer
         // For "none" delivery channel, fill in placeholder origin/mediaType if absent
         if (isNoneChannel)
         {
-           updateAsset.Origin ??= AssetDeliveryChannels.NoneChannelOriginPlaceholder;
-           updateAsset.MediaType ??= AssetDeliveryChannels.NoneChannelMediaTypePlaceholder;
+            updateAsset.Origin ??= AssetDeliveryChannels.NoneChannelOriginPlaceholder;
+            updateAsset.MediaType ??= AssetDeliveryChannels.NoneChannelMediaTypePlaceholder;
         }
 
         bool reCalculateFamily = false;

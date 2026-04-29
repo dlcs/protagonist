@@ -81,9 +81,11 @@ public class AssetProcessor(
             }
 
             var existingAsset = assetFromDatabase?.Clone();
+            var isNoneChannel = assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Length > 0 &&
+                                assetBeforeProcessing.DeliveryChannelsBeforeProcessing.All(dcp => dcp.Channel == AssetDeliveryChannels.None);
             var assetPreparationResult =
                 AssetPreparer.PrepareAssetForUpsert(assetFromDatabase, assetBeforeProcessing.Asset, false, isBatchUpdate,
-                    settings.RestrictedResourceIdCharacters, assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Any(dcp => dcp.Channel == AssetDeliveryChannels.None) ?? false);
+                    settings.RestrictedResourceIdCharacters, isNoneChannel);
 
             if (!assetPreparationResult.Success)
             {

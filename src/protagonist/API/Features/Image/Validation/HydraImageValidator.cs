@@ -21,18 +21,18 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleSet("create", () =>
         {
             RuleFor(a => a.MediaType).NotEmpty()
-                .When(a => !a.DeliveryChannels?.Any(dc => dc.Channel == AssetDeliveryChannels.None) ?? true)
+                .When(a => !IsNoneOnly(a))
                 .WithMessage("Media type must be specified");
         });
 
         RuleFor(a => a.Origin)
-            .Must(o => o != AssetDeliveryChannels.NoneChannelOriginPlaceholder)
-            .When(a => !(a.DeliveryChannels?.All(dc => dc.Channel == AssetDeliveryChannels.None) ?? false))
+            .Must(o => !string.Equals(o, AssetDeliveryChannels.NoneChannelOriginPlaceholder, StringComparison.OrdinalIgnoreCase))
+            .When(a => !IsNoneOnly(a))
             .WithMessage($"'{AssetDeliveryChannels.NoneChannelOriginPlaceholder}' is not a valid origin");
 
         RuleFor(a => a.MediaType)
-            .Must(m => m != AssetDeliveryChannels.NoneChannelMediaTypePlaceholder)
-            .When(a => !(a.DeliveryChannels?.All(dc => dc.Channel == AssetDeliveryChannels.None) ?? false))
+            .Must(m => !string.Equals(m, AssetDeliveryChannels.NoneChannelMediaTypePlaceholder, StringComparison.OrdinalIgnoreCase))
+            .When(a => !IsNoneOnly(a))
             .WithMessage($"'{AssetDeliveryChannels.NoneChannelMediaTypePlaceholder}' is not a valid mediaType");
 
         When(a => !a.DeliveryChannels.IsNullOrEmpty(), ImageDeliveryChannelDependantValidation);
@@ -68,6 +68,10 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleFor(a => a.Finished).Empty().WithMessage("Should not include finished");
         RuleFor(a => a.Created).Empty().WithMessage("Should not include created");
     }
+
+    private static bool IsNoneOnly(DLCS.HydraModel.Image a) =>
+        a.DeliveryChannels?.Length > 0 &&
+        a.DeliveryChannels.All(dc => dc.Channel == AssetDeliveryChannels.None);
 
     private void ImageDeliveryChannelDependantValidation()
     {

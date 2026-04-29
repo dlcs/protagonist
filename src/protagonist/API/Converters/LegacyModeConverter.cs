@@ -33,11 +33,9 @@ public static class LegacyModeConverter
         if (image.MediaType.IsNullOrEmpty())
         {
             logger?.LogLegacyUsage("Null or empty media type");
-            
-            var contentType = image.Origin.Split('.').Last();
-            image.MediaType = MIMEHelper.GetContentTypeForExtension(contentType) ??
-                              throw new BadRequestException(
-                                  "Media type is omitted and could not be inferred from origin. This is required when legacy mode is enabled");
+            var contentType = image.Origin?.Split('.').Last() ?? string.Empty;
+
+            image.MediaType = MIMEHelper.GetContentTypeForExtension(contentType) ?? MIMEHelper.UnknownImage;
             image.Family ??= AssetFamily.Image;
         }
         
