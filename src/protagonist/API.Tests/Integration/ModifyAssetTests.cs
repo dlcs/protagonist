@@ -3250,6 +3250,22 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task Put_LegacyMode_BadRequest_WhenMediaTypeOmittedUnknownOriginExtension()
+    {
+        // legacy mode cannot specify deliveryChannels, so none-optional logic does not apply - mediaType is still required
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.unknown""
+        }}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     private byte[] StreamToBytes(Stream input)
     {
         using MemoryStream ms = new MemoryStream();
