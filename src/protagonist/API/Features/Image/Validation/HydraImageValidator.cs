@@ -20,9 +20,21 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         
         RuleSet("create", () =>
         {
-            RuleFor(a => a.MediaType).NotEmpty().WithMessage("Media type must be specified");
+            RuleFor(a => a.MediaType).NotEmpty()
+                .When(a => !a.DeliveryChannels?.Any(dc => dc.Channel == AssetDeliveryChannels.None) ?? true)
+                .WithMessage("Media type must be specified");
         });
-        
+
+        RuleFor(a => a.Origin)
+            .Must(o => o != AssetDeliveryChannels.NoneChannelOriginPlaceholder)
+            .When(a => !(a.DeliveryChannels?.All(dc => dc.Channel == AssetDeliveryChannels.None) ?? false))
+            .WithMessage($"'{AssetDeliveryChannels.NoneChannelOriginPlaceholder}' is not a valid origin");
+
+        RuleFor(a => a.MediaType)
+            .Must(m => m != AssetDeliveryChannels.NoneChannelMediaTypePlaceholder)
+            .When(a => !(a.DeliveryChannels?.All(dc => dc.Channel == AssetDeliveryChannels.None) ?? false))
+            .WithMessage($"'{AssetDeliveryChannels.NoneChannelMediaTypePlaceholder}' is not a valid mediaType");
+
         When(a => !a.DeliveryChannels.IsNullOrEmpty(), ImageDeliveryChannelDependantValidation);
         
         RuleFor(a => a.MaxUnauthorised)

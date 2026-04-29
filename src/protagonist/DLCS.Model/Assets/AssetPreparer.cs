@@ -64,21 +64,23 @@ public static class AssetPreparer
     /// </remarks>
     /// <param name="existingAsset">If this is an update, the current version of the asset</param>
     /// <param name="updateAsset">
-    /// The new or updated asset - this is the submitted list of changes
+    ///     The new or updated asset - this is the submitted list of changes
     /// </param>
     /// <param name="allowNonApiUpdates">
-    /// Permit setting of fields that would not be allowed on API calls. Use with caution - all values submitted will
-    /// be saved as this effectively drops validation.
+    ///     Permit setting of fields that would not be allowed on API calls. Use with caution - all values submitted will
+    ///     be saved as this effectively drops validation.
     /// </param>
     /// <param name="isBatchUpdate">True if this is part of batch creation - allows Batch value to be set.</param>
     /// <param name="disallowedCharacters">List of characters that are not allowed to be used in AssetId</param>
+    /// <param name="isNoneChannel">Whther this asset is being delivered by the none channel</param>
     /// <returns>A validation result</returns>
     public static AssetPreparationResult PrepareAssetForUpsert(
         Asset? existingAsset,
         Asset updateAsset,
         bool allowNonApiUpdates,
         bool isBatchUpdate,
-        char[] disallowedCharacters)
+        char[] disallowedCharacters,
+        bool isNoneChannel = false)
     {
         bool requiresReingest = existingAsset == null;
         
@@ -91,6 +93,13 @@ public static class AssetPreparer
         // Validate there are no issues
         var prepareAssetForUpsert = ValidateRequests(existingAsset, updateAsset, allowNonApiUpdates, isBatchUpdate, disallowedCharacters);
         if (prepareAssetForUpsert != null) return prepareAssetForUpsert;
+        
+        // For "none" delivery channel, fill in placeholder origin/mediaType if absent
+        if (isNoneChannel)
+        {
+           updateAsset.Origin ??= AssetDeliveryChannels.NoneChannelOriginPlaceholder;
+           updateAsset.MediaType ??= AssetDeliveryChannels.NoneChannelMediaTypePlaceholder;
+        }
 
         bool reCalculateFamily = false;
         if (existingAsset != null)

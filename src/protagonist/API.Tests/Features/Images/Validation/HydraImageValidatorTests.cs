@@ -2,6 +2,7 @@
 using API.Features.Image.Validation;
 using API.Settings;
 using DLCS.HydraModel;
+using DLCS.Model.Assets;
 using FluentValidation.TestHelper;
 using Microsoft.Extensions.Options;
 
@@ -338,5 +339,20 @@ public class HydraImageValidatorTests
         };
         var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.MaxWidth);
+    }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void MediaType_NullOrEmpty_OnCreateWhenNoneDeliveryChannel(string mediaType)
+    {
+        var model = new Image
+        {
+            MediaType = mediaType,
+            DeliveryChannels = [new DeliveryChannel {Channel = AssetDeliveryChannels.None }]
+        };
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
+        result.ShouldNotHaveValidationErrorFor(a => a.MediaType);
     }
 }

@@ -1,21 +1,15 @@
-﻿using System.Collections.Generic;
-using AngleSharp.Attributes;
-using API.Converters;
-using API.Exceptions;
+﻿using API.Converters;
 using API.Features.Customer.Infrastructure;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Infrastructure;
 using API.Settings;
-using DLCS.Core.Types;
 using DLCS.Model;
 using Hydra.Collections;
 using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Serilog;
 
 namespace API.Features.Customer;
 
@@ -23,7 +17,8 @@ namespace API.Features.Customer;
 /// Controller for handling bulk requests for adjuncts associated with a customer 
 /// </summary>
 [Route("/customers/{customerId}")]
-public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediator mediator, ILogger<CustomerAdjunctsController> logger)
+[ApiController]
+public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediator mediator)
     : HydraController(settings.Value, mediator)
 {
     /// <summary>

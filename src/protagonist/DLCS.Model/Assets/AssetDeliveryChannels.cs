@@ -13,6 +13,9 @@ public static class AssetDeliveryChannels
     public const string None = "none";
     public const string Default = "default";
 
+    public const string NoneChannelOriginPlaceholder = "https://example.org/origin";
+    public const string NoneChannelMediaTypePlaceholder = "example/example";
+
     /// <summary>
     /// All possible delivery channels
     /// </summary>
