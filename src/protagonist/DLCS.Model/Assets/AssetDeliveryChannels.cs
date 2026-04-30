@@ -78,8 +78,13 @@ public static class AssetDeliveryChannels
     public static bool IsNoneOnly(IEnumerable<string>? channels)
     {
         if (channels == null) return false;
-        var list = channels.ToList();
-        return list.Count > 0 && list.All(c => c == None);
+        var isNoneOnly = false;
+        foreach (var channel in channels)
+        {
+            isNoneOnly = true;
+            if (channel != None) return false;
+        }
+        return isNoneOnly;
     }
 
     /// <summary>
