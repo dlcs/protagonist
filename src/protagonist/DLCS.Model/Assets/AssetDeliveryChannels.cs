@@ -73,18 +73,14 @@ public static class AssetDeliveryChannels
         => !asset.HasDeliveryChannel(deliveryChannel);
     
     /// <summary>
-    /// Checks if all specified channels are the 'none' channel (and at least one is present)
+    /// Checks if the 'none' channel is the only channel specified (exactly one entry, equal to 'none')
     /// </summary>
     public static bool IsNoneOnly(IEnumerable<string>? channels)
     {
         if (channels == null) return false;
-        var isNoneOnly = false;
-        foreach (var channel in channels)
-        {
-            isNoneOnly = true;
-            if (channel != None) return false;
-        }
-        return isNoneOnly;
+        
+        using var e = channels.GetEnumerator();
+        return e.MoveNext() && e.Current == None && !e.MoveNext();
     }
 
     /// <summary>

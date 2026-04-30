@@ -345,7 +345,7 @@ public class HydraImageValidatorTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void MediaType_NullOrEmpty_OnCreateWhenNoneDeliveryChannel(string mediaType)
+    public void MediaType_CanBeNullOrEmpty_OnCreateWhenNoneDeliveryChannel(string mediaType)
     {
         var model = new Image
         {
@@ -354,5 +354,33 @@ public class HydraImageValidatorTests
         };
         var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
         result.ShouldNotHaveValidationErrorFor(a => a.MediaType);
+    }
+    
+    [Fact]
+    public void PlaceHolderValues_NotAllowed_WhenNotNoneChannel()
+    {
+        var model = new Image
+        {
+            MediaType = AssetDeliveryChannels.NoneChannelMediaTypePlaceholder,
+            Origin = AssetDeliveryChannels.NoneChannelOriginPlaceholder,
+            DeliveryChannels = [new DeliveryChannel {Channel = AssetDeliveryChannels.Image }]
+        };
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default"));
+        result.ShouldHaveValidationErrorFor(a => a.MediaType).WithErrorMessage("'example/example' is not a valid mediaType");
+        result.ShouldHaveValidationErrorFor(a => a.Origin).WithErrorMessage("'https://example.org/origin' is not a valid origin");
+    }
+    
+    [Fact]
+    public void PlaceHolderValues_Allowed_WhenNoneChannel()
+    {
+        var model = new Image
+        {
+            MediaType = AssetDeliveryChannels.NoneChannelMediaTypePlaceholder,
+            Origin = AssetDeliveryChannels.NoneChannelOriginPlaceholder,
+            DeliveryChannels = [new DeliveryChannel {Channel = AssetDeliveryChannels.None }]
+        };
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default"));
+        result.ShouldNotHaveValidationErrorFor(a => a.MediaType);
+        result.ShouldNotHaveValidationErrorFor(a => a.Origin);
     }
 }

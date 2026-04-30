@@ -20,7 +20,8 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         
         RuleSet("create", () =>
         {
-            RuleFor(a => a.MediaType).NotEmpty()
+            RuleFor(a => a.MediaType)
+                .NotEmpty()
                 .When(a => !IsNoneOnly(a))
                 .WithMessage("Media type must be specified");
         });
@@ -69,7 +70,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleFor(a => a.Created).Empty().WithMessage("Should not include created");
     }
     
-    static bool IsNoneOnly(DLCS.HydraModel.Image image)
+    private static bool IsNoneOnly(DLCS.HydraModel.Image image)
         => AssetDeliveryChannels.IsNoneOnly(image.DeliveryChannels?.Select(dc => dc.Channel));
 
     private void ImageDeliveryChannelDependantValidation()
