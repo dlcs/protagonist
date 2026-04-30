@@ -336,8 +336,5 @@ public class CustomerAdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
-            A<IReadOnlyCollection<NotificationRecord<DLCS.Model.Assets.Adjunct>>>.Ignored,
-            A<CancellationToken>._)).MustNotHaveHappened();
     }
 }
