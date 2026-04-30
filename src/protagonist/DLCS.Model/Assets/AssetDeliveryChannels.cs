@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
 
@@ -71,6 +72,16 @@ public static class AssetDeliveryChannels
     public static bool DoesNotHaveDeliveryChannel(this Asset asset, string deliveryChannel)
         => !asset.HasDeliveryChannel(deliveryChannel);
     
+    /// <summary>
+    /// Checks if all specified channels are the 'none' channel (and at least one is present)
+    /// </summary>
+    public static bool IsNoneOnly(IEnumerable<string>? channels)
+    {
+        if (channels == null) return false;
+        var list = channels.ToList();
+        return list.Count > 0 && list.All(c => c == None);
+    }
+
     /// <summary>
     /// Checks if string is a valid delivery channel
     /// </summary>
