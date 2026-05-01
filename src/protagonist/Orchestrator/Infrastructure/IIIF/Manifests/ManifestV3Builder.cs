@@ -569,7 +569,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                     AssetPath = $"{adjunct.AssetId.Asset}/{adjunct.Id}",
                     RoutePrefix = AdjunctRoutePrefix,
                     CustomerPathValue = adjunct.AssetId.Customer.ToString(),
-                }),
+                }, includeQueryParams: false),
                 _ => null
             };
     }
