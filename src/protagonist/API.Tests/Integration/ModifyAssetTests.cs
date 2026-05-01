@@ -3123,6 +3123,133 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(api);
     }
     
+    [Fact]
+    public async Task Put_NoneChannel_CreatesAsset_WhenOriginOmitted()
+    {
+        // origin is optional for none delivery channel, defaults to https://example.org/origin
+        var customerAndSpace = await CreateCustomerAndSpace();
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, customerAndSpace.space);
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [{{
+                ""channel"": ""none"",
+                ""policy"": ""none""
+            }}]
+        }}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var asset = dbContext.Images.Single(x => x.Id == assetId);
+        asset.Origin.Should().Be("https://example.org/origin");
+    }
+
+    [Fact]
+    public async Task Put_NoneChannel_CreatesAsset_WhenMediaTypeOmitted()
+    {
+        // mediaType is optional for none delivery channel, defaults to example/example
+        var customerAndSpace = await CreateCustomerAndSpace();
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, customerAndSpace.space);
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""deliveryChannels"": [{{
+                ""channel"": ""none"",
+                ""policy"": ""none""
+            }}]
+        }}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var asset = dbContext.Images.Single(x => x.Id == assetId);
+        asset.MediaType.Should().Be("example/example");
+    }
+
+    [Fact]
+    public async Task Put_NoneChannel_CreatesAsset_WhenBothOriginAndMediaTypeOmitted()
+    {
+        // both origin and mediaType are optional for none delivery channel
+        var customerAndSpace = await CreateCustomerAndSpace();
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, customerAndSpace.space);
+        var hydraImageBody = @"{
+            ""@type"": ""Image"",
+            ""deliveryChannels"": [{
+                ""channel"": ""none"",
+                ""policy"": ""none""
+            }]
+        }";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var asset = dbContext.Images.Single(x => x.Id == assetId);
+        asset.Origin.Should().Be("https://example.org/origin");
+        asset.MediaType.Should().Be("example/example");
+    }
+
+    [Fact]
+    public async Task Put_BadRequest_WhenOriginIsNonePlaceholder_AndDeliveryChannelIsNotNone()
+    {
+        // https://example.org/origin is not a valid origin for non-none delivery channels
+        var customerAndSpace = await CreateCustomerAndSpace();
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, customerAndSpace.space);
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/origin"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [{{
+                ""channel"": ""iiif-img""
+            }}]
+        }}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Put_BadRequest_WhenMediaTypeIsNonePlaceholder_AndDeliveryChannelIsNotNone()
+    {
+        // example/example is not a valid mediaType for non-none delivery channels
+        var customerAndSpace = await CreateCustomerAndSpace();
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, customerAndSpace.space);
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""mediaType"": ""example/example"",
+            ""deliveryChannels"": [{{
+                ""channel"": ""iiif-img""
+            }}]
+        }}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Put_LegacyMode_BadRequest_WhenOriginOmitted()
+    {
+        // legacy mode cannot specify deliveryChannels, so none-optional logic does not apply - origin is still required
+        var assetId = AssetIdGenerator.GetAssetId(LegacyModeHelpers.LegacyCustomer, LegacyModeHelpers.LegacySpace);
+        var hydraImageBody = @"{
+            ""@type"": ""Image"",
+            ""mediaType"": ""image/tiff""
+        }";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(LegacyModeHelpers.LegacyCustomer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     private byte[] StreamToBytes(Stream input)
     {
         using MemoryStream ms = new MemoryStream();

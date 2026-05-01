@@ -137,4 +137,34 @@ public class AssetDeliveryChannelsTests
 
         asset.HasAnyDeliveryChannel(AssetDeliveryChannels.All).Should().BeFalse();
     }
+    
+    [Fact]
+    public void IsNoneOnly_True_IfOnlyNoneChannel()
+    {
+        AssetDeliveryChannels.IsNoneOnly(["none"]).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsNoneOnly_False_IfNull()
+    {
+        AssetDeliveryChannels.IsNoneOnly(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsNoneOnly_False_IfEmpty()
+    {
+        AssetDeliveryChannels.IsNoneOnly([]).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("iiif-img")]
+    [InlineData("file")]
+    [InlineData("iiif-av")]
+    [InlineData("thumbs")]
+    [InlineData("none,iiif-img")]
+    [InlineData("none,none")]
+    public void IsNoneOnly_False_IfInvalidChannelCombinations(string channelsCsv)
+    {
+        AssetDeliveryChannels.IsNoneOnly(channelsCsv.Split(',')).Should().BeFalse();
+    }
 }

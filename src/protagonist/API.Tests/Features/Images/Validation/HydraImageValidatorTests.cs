@@ -2,6 +2,7 @@
 using API.Features.Image.Validation;
 using API.Settings;
 using DLCS.HydraModel;
+using DLCS.Model.Assets;
 using FluentValidation.TestHelper;
 using Microsoft.Extensions.Options;
 
@@ -338,5 +339,48 @@ public class HydraImageValidatorTests
         };
         var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.MaxWidth);
+    }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void MediaType_CanBeNullOrEmpty_OnCreateWhenNoneDeliveryChannel(string mediaType)
+    {
+        var model = new Image
+        {
+            MediaType = mediaType,
+            DeliveryChannels = [new DeliveryChannel {Channel = AssetDeliveryChannels.None }]
+        };
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
+        result.ShouldNotHaveValidationErrorFor(a => a.MediaType);
+    }
+    
+    [Fact]
+    public void PlaceHolderValues_NotAllowed_WhenNotNoneChannel()
+    {
+        var model = new Image
+        {
+            MediaType = AssetDeliveryChannels.NoneChannelMediaTypePlaceholder,
+            Origin = AssetDeliveryChannels.NoneChannelOriginPlaceholder,
+            DeliveryChannels = [new DeliveryChannel {Channel = AssetDeliveryChannels.Image }]
+        };
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default"));
+        result.ShouldHaveValidationErrorFor(a => a.MediaType).WithErrorMessage("'example/example' is not a valid mediaType");
+        result.ShouldHaveValidationErrorFor(a => a.Origin).WithErrorMessage("'https://example.org/origin' is not a valid origin");
+    }
+    
+    [Fact]
+    public void PlaceHolderValues_Allowed_WhenNoneChannel()
+    {
+        var model = new Image
+        {
+            MediaType = AssetDeliveryChannels.NoneChannelMediaTypePlaceholder,
+            Origin = AssetDeliveryChannels.NoneChannelOriginPlaceholder,
+            DeliveryChannels = [new DeliveryChannel {Channel = AssetDeliveryChannels.None }]
+        };
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default"));
+        result.ShouldNotHaveValidationErrorFor(a => a.MediaType);
+        result.ShouldNotHaveValidationErrorFor(a => a.Origin);
     }
 }

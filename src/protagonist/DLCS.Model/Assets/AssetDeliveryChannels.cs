@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using DLCS.Core.Collections;
 
@@ -12,6 +13,9 @@ public static class AssetDeliveryChannels
     public const string File = "file";
     public const string None = "none";
     public const string Default = "default";
+
+    public const string NoneChannelOriginPlaceholder = "https://example.org/origin";
+    public const string NoneChannelMediaTypePlaceholder = "example/example";
 
     /// <summary>
     /// All possible delivery channels
@@ -68,6 +72,17 @@ public static class AssetDeliveryChannels
     public static bool DoesNotHaveDeliveryChannel(this Asset asset, string deliveryChannel)
         => !asset.HasDeliveryChannel(deliveryChannel);
     
+    /// <summary>
+    /// Checks if the 'none' channel is the only channel specified (exactly one entry, equal to 'none')
+    /// </summary>
+    public static bool IsNoneOnly(IEnumerable<string>? channels)
+    {
+        if (channels == null) return false;
+        
+        using var e = channels.GetEnumerator();
+        return e.MoveNext() && e.Current == None && !e.MoveNext();
+    }
+
     /// <summary>
     /// Checks if string is a valid delivery channel
     /// </summary>

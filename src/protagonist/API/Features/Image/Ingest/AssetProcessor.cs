@@ -5,8 +5,6 @@ using API.Settings;
 using DLCS.Core;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
-using DLCS.Repository;
-using DLCS.Repository.Storage;
 using Microsoft.Extensions.Options;
 
 namespace API.Features.Image.Ingest;
@@ -83,9 +81,11 @@ public class AssetProcessor(
             }
 
             var existingAsset = assetFromDatabase?.Clone();
+            var isNoneChannel = AssetDeliveryChannels.IsNoneOnly(
+                assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Select(dcp => dcp.Channel));
             var assetPreparationResult =
                 AssetPreparer.PrepareAssetForUpsert(assetFromDatabase, assetBeforeProcessing.Asset, false, isBatchUpdate,
-                    settings.RestrictedResourceIdCharacters);
+                    settings.RestrictedResourceIdCharacters, isNoneChannel);
 
             if (!assetPreparationResult.Success)
             {

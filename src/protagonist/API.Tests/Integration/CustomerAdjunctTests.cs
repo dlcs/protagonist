@@ -294,7 +294,7 @@ public class CustomerAdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>
         var deleteAdjunctsJson = $$"""
                                    {
                                        "@type": "Collection",
-                                       "member": [ 
+                                       "member": [
                                          { "id": "this/is/not/a/valid/asset/id", "adjunct": [ "{{adjunctId}}" ] }
                                        ]
                                    };
@@ -310,10 +310,31 @@ public class CustomerAdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
         error.Description.Should().Be("AssetId 'this/is/not/a/valid/asset/id' is invalid. Must be in format customer/space/asset");
-        
+
         A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
             A<IReadOnlyCollection<NotificationRecord<DLCS.Model.Assets.Adjunct>>>.That.Matches(r =>
                 r.First().ChangeType == ChangeType.Delete && r.First().Before.Id == adjunctId),
             A<CancellationToken>._)).MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task DeleteMultipleAdjuncts_Returns400_WhenMemberBodyContainsInvalidPropertyNames()
+    {
+        // Arrange - payload uses "idx" instead of "id" and "adjunctx" instead of "adjunct",
+        const string deleteAdjunctsJson = """
+                                          {
+                                              "member": [
+                                                { "idx": "1/1/foo", "adjunctx": ["ocr.txt", "mets.xml"] }
+                                              ]
+                                          }
+                                          """;
+
+        var content = new StringContent(deleteAdjunctsJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(99).PostAsync("/customers/99/deleteAdjuncts", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 }

@@ -34,7 +34,7 @@ public static class LegacyModeConverter
         {
             logger?.LogLegacyUsage("Null or empty media type");
             var contentType = image.Origin?.Split('.').Last() ?? string.Empty;
-         
+
             image.MediaType = MIMEHelper.GetContentTypeForExtension(contentType) ?? MIMEHelper.UnknownImage;
             image.Family ??= AssetFamily.Image;
         }
