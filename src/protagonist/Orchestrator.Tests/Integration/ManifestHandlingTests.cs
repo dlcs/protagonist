@@ -868,4 +868,39 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         canvas.Rendering.Should().BeEquivalentTo(expectedRendering);
         canvas.Annotations.Should().BeEquivalentTo(expectedAnnos);
     }
+    
+    [Fact]
+    public async Task Get_V3ManifestWithAdjuncts_AdjunctIdsDoNotContainQueryParameters()
+    {
+        // Arrange - verify that including a query-parameter on the request doesn't make it's way to generated ids for 
+        // hosted adjuncts - this isn't exhaustively testing all types of adjunct as they use same id generation
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images
+            .AddTestAsset(id, imageDeliveryChannels: imageDeliveryChannels)
+            .WithTestAdjunct("seeAlso1", type: "Dataset", mediaType: "text/xml", iiifLinkType: IIIFLinkType.SeeAlso,
+                profile: "http://www.loc.gov/standards/alto/v3/alto.xsd", label: new LanguageMap("en", "METS-ALTO XML"),
+                origin: "https://mets.example/1", language: ["en-GB"]);
+        
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        List<ExternalResource> expectedSeeAlso =
+        [
+            new("Dataset")
+            {
+                Id = $"http://localhost/adjuncts/{id}/seeAlso1", Label = new LanguageMap("en", "METS-ALTO XML"),
+                Profile = "http://www.loc.gov/standards/alto/v3/alto.xsd", Format = "text/xml", Language = ["en-GB"]
+            },
+        ];
+
+        var path = $"iiif-manifest/v3/{id}?query=param";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+            
+        // Assert
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        var canvas = manifest.Items!.Single();
+        
+        canvas.SeeAlso.Should().BeEquivalentTo(expectedSeeAlso);
+    }
 }
