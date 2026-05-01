@@ -6,6 +6,7 @@ using DLCS.Core;
 using DLCS.Model;
 using DLCS.Model.Auth;
 using DLCS.Model.Processing;
+using DLCS.Model.Spaces;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Exceptions;
@@ -95,6 +96,19 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
                 new Queue { Customer = newCustomerId, Name = QueueNames.Default, Size = 0 },
                 new Queue { Customer = newCustomerId, Name = QueueNames.Priority, Size = 0 }
             );
+
+            // Create space 0 for stub assets
+            await dbContext.Spaces.AddAsync(new DLCS.Model.Spaces.Space
+            {
+                Customer = newCustomerId,
+                Id = 0,
+                Name = "stub-space",
+                Created = DateTime.UtcNow,
+                ImageBucket = string.Empty,
+                Tags = Array.Empty<string>(),
+                Roles = Array.Empty<string>(),
+                MaxUnauthorised = -1
+            }, cancellationToken);
 
             await dbContext.SaveChangesAsync(cancellationToken);
 

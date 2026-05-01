@@ -37,7 +37,7 @@ public class DefaultDeliveryChannelsController : HydraController
     public async Task<IActionResult> GetCustomerDefaultDeliveryChannels(
         [FromRoute] int customerId,
         CancellationToken cancellationToken,
-        [FromRoute] int space = 0)
+        [FromRoute] int? space = null)
     {
         var getCustomerDefaultDeliveryChannels = new GetDefaultDeliveryChannels(customerId, space);
 
@@ -61,11 +61,11 @@ public class DefaultDeliveryChannelsController : HydraController
         [FromRoute] int customerId,
         Guid defaultDeliveryChannelId,
         CancellationToken cancellationToken,
-        [FromRoute] int space = 0)
+        [FromRoute] int? space = null)
     {
         var getCustomerDefaultDeliveryChannel = new GetDefaultDeliveryChannel(
-            customerId, 
-            space, 
+            customerId,
+            space,
             defaultDeliveryChannelId);
 
         return await HandleFetch(
@@ -88,7 +88,7 @@ public class DefaultDeliveryChannelsController : HydraController
         [FromBody] DefaultDeliveryChannel defaultDeliveryChannel,
         [FromServices] HydraDefaultDeliveryChannelValidator validator,
         CancellationToken cancellationToken,
-        [FromRoute] int space = 0)
+        [FromRoute] int? space = null)
     {
         var validationResult = await validator.ValidateAsync(defaultDeliveryChannel, cancellationToken);
         if (!validationResult.IsValid)
@@ -100,9 +100,9 @@ public class DefaultDeliveryChannelsController : HydraController
         {
             var command = new CreateDefaultDeliveryChannel(customerId,
                 space,
-                defaultDeliveryChannel.Policy,
-                defaultDeliveryChannel.Channel,
-                defaultDeliveryChannel.MediaType);
+                defaultDeliveryChannel.Policy!,
+                defaultDeliveryChannel.Channel!,
+                defaultDeliveryChannel.MediaType!);
             
             return await HandleUpsert(command,
                 s => s.ToHydra(GetUrlRoots().BaseUrl),
@@ -127,7 +127,7 @@ public class DefaultDeliveryChannelsController : HydraController
         [FromServices] HydraDefaultDeliveryChannelValidator validator,
         Guid defaultDeliveryChannelId,
         CancellationToken cancellationToken,
-        [FromRoute] int space = 0)
+        [FromRoute] int? space = null)
     {
         var validationResult = await validator.ValidateAsync(defaultDeliveryChannel, cancellationToken);
         if (!validationResult.IsValid)
@@ -135,11 +135,11 @@ public class DefaultDeliveryChannelsController : HydraController
             return this.ValidationFailed(validationResult);
         }
 
-        var command = new UpdateDefaultDeliveryChannel(customerId, 
-            space, 
-            defaultDeliveryChannel.Policy,
-            defaultDeliveryChannel.Channel,
-            defaultDeliveryChannel.MediaType, 
+        var command = new UpdateDefaultDeliveryChannel(customerId,
+            space,
+            defaultDeliveryChannel.Policy!,
+            defaultDeliveryChannel.Channel!,
+            defaultDeliveryChannel.MediaType!,
             defaultDeliveryChannelId);
 
         return await HandleUpsert(command, 
@@ -160,10 +160,10 @@ public class DefaultDeliveryChannelsController : HydraController
         [FromRoute] int customerId,
         Guid defaultDeliveryChannelId,
         CancellationToken cancellationToken,
-        [FromRoute] int space = 0)
+        [FromRoute] int? space = null)
     {
         var deleteCustomerDefaultDeliveryChannel = new DeleteDefaultDeliveryChannel(
-            customerId, 
+            customerId,
             space,
             defaultDeliveryChannelId);
     

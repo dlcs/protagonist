@@ -20,7 +20,7 @@ public class DefaultDeliveryChannel
     /// <summary>
     /// The space this delivery channel will be applied to
     /// </summary>
-    public int Space { get; set; }
+    public int? Space { get; set; }
     
     /// <summary>
     /// The media type this policy will apply to.  This value can use wildcards

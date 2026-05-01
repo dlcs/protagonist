@@ -688,7 +688,6 @@ public partial class DlcsContext : DbContext
         {
             entity.HasIndex(e => new {e.Customer, e.Space, e.MediaType, e.DeliveryChannelPolicyId}).IsUnique();
             entity.Property(e => e.Customer).IsRequired();
-            entity.Property(e => e.Space).IsRequired();
             entity.Property(e => e.DeliveryChannelPolicyId).IsRequired();
             
             entity.Property(e => e.MediaType).IsRequired().HasMaxLength(255);

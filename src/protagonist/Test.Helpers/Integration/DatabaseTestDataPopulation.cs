@@ -165,7 +165,7 @@ public static class DatabaseTestDataPopulation
 
     public static Task AddTestDefaultDeliveryChannels(this DbSet<DefaultDeliveryChannel> defaultDeliveryChannels,
         int customerId) =>
-        defaultDeliveryChannels.AddRangeAsync(defaultDeliveryChannels.Where(d => d.Customer == 1 && d.Space == 0)
+        defaultDeliveryChannels.AddRangeAsync(defaultDeliveryChannels.Where(d => d.Customer == 1 && (d.Space == null || d.Space == 0))
             .Select(x => new DefaultDeliveryChannel
             {
                 Customer = customerId,

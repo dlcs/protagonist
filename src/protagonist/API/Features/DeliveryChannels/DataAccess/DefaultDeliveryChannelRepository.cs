@@ -87,7 +87,7 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
             return defaultDeliveryChannels;
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
 
-        return defaultDeliveryChannels.Where(d => d.Space == space || d.Space == 0).ToList();
+        return defaultDeliveryChannels.Where(d => d.Space == space || d.Space == null).ToList();
     }
     
     private async Task<List<DefaultDeliveryChannel>> OrderedDefaultDeliveryChannels(int space, int customerId, string? channel = null)

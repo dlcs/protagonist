@@ -49,9 +49,12 @@ public class CreateBatchOfImagesHandler(
     {
         var priorityValidation = ValidatePriorityQueueRequest(request);
         if (priorityValidation != null) return priorityValidation;
-        
+
         var spaceValidation = await ValidateAllSpaces(request, cancellationToken);
-        if (spaceValidation != null) return spaceValidation; 
+        if (spaceValidation != null) return spaceValidation;
+
+        var space0Validation = ValidateSpace0DeliveryChannels(request);
+        if (space0Validation != null) return space0Validation;
 
         bool updateFailed = false;
         var failureMessage = string.Empty;
@@ -149,6 +152,20 @@ public class CreateBatchOfImagesHandler(
         }
 
         return ModifyEntityResult<Batch>.Success(batch, WriteResult.Created);
+    }
+
+    private static ModifyEntityResult<Batch>? ValidateSpace0DeliveryChannels(CreateBatchOfImages request)
+    {
+        var hasInvalidSpace0Asset = request.AssetsBeforeProcessing.Any(a =>
+            a.Asset.Space == 0 &&
+            a.DeliveryChannelsBeforeProcessing != null &&
+            !AssetDeliveryChannels.IsNoneOnly(a.DeliveryChannelsBeforeProcessing.Select(dc => dc.Channel)));
+
+        if (!hasInvalidSpace0Asset) return null;
+
+        return ModifyEntityResult<Batch>.Failure(
+            "Assets in space 0 must use the 'none' delivery channel only",
+            WriteResult.FailedValidation);
     }
 
     private ModifyEntityResult<Batch>? ValidatePriorityQueueRequest(CreateBatchOfImages request)

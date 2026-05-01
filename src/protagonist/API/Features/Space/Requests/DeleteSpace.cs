@@ -35,6 +35,11 @@ public class DeleteSpaceHandler : IRequestHandler<DeleteSpace, ResultMessage<Del
     
     public async Task<ResultMessage<DeleteResult>> Handle(DeleteSpace request, CancellationToken cancellationToken)
     {
+        if (request.SpaceId == 0)
+        {
+            return new ResultMessage<DeleteResult>("Space 0 cannot be deleted", DeleteResult.Conflict);
+        }
+
         logger.LogDebug("Deleting Space {SpaceId}", request.SpaceId);
         var deleteResult = await spaceRepository.DeleteSpace(request.CustomerId, request.SpaceId, cancellationToken);
 

@@ -18,15 +18,15 @@ public class CreateDefaultDeliveryChannel : IRequest<ModifyEntityResult<DefaultD
 {
     public int Customer { get; }
     
-    public int Space { get; }
-    
+    public int? Space { get; }
+
     public string Policy { get; }
-    
+
     public string Channel { get; }
-    
+
     public string MediaType { get; }
-    
-    public CreateDefaultDeliveryChannel(int customer, int space, string policy, string channel, string mediaType)
+
+    public CreateDefaultDeliveryChannel(int customer, int? space, string policy, string channel, string mediaType)
     {
         Customer = customer;
         Policy = policy;
@@ -51,6 +51,9 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
     public async Task<ModifyEntityResult<DefaultDeliveryChannel>> Handle(
         CreateDefaultDeliveryChannel request, CancellationToken cancellationToken)
     {
+        var spaceZeroError = DefaultDeliveryChannelHelper.GetSpaceZeroErrorMessage(request.Space, SpaceZeroOperation.Create);
+        if (spaceZeroError != null) return ModifyEntityResult<DefaultDeliveryChannel>.Failure(spaceZeroError, WriteResult.BadRequest);
+
         var defaultDeliveryChannel = new DefaultDeliveryChannel()
         {
             Customer = request.Customer,
@@ -72,17 +75,32 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
             return ModifyEntityResult<DefaultDeliveryChannel>.Failure("Failed to find linked delivery channel policy", WriteResult.BadRequest);
         }
 
+        var space = request.Space;
+        var duplicate = await dbContext.DefaultDeliveryChannels.AnyAsync(
+            d => d.Customer == request.Customer &&
+                 d.Space == space &&
+                 d.MediaType == request.MediaType &&
+                 d.DeliveryChannelPolicyId == defaultDeliveryChannel.DeliveryChannelPolicyId,
+            cancellationToken);
+
+        if (duplicate)
+        {
+            return ModifyEntityResult<DefaultDeliveryChannel>.Failure(
+                $"A default delivery channel for the requested media type '{defaultDeliveryChannel.MediaType}' already exists",
+                WriteResult.Conflict);
+        }
+
         dbContext.DefaultDeliveryChannels.Add(defaultDeliveryChannel);
 
         try
         {
             await dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (ex.GetDatabaseError() is UniqueConstraintError)
+        catch (DbUpdateException ex)
         {
             return ModifyEntityResult<DefaultDeliveryChannel>.Failure(
-                $"A default delivery channel for the requested media type '{defaultDeliveryChannel.MediaType}' already exists",
-                WriteResult.Conflict);
+                $"Unknown error trying to save the default delivery channel",
+                WriteResult.Error);
         }
 
         return ModifyEntityResult<DefaultDeliveryChannel>.Success(defaultDeliveryChannel, WriteResult.Created);

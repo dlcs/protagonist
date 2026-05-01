@@ -49,7 +49,7 @@ public class DefaultDeliveryChannelRepositoryTests
        
        dbContext.DefaultDeliveryChannels.Add(new DefaultDeliveryChannel
        {
-           Space = 0,
+           Space = null,
            Customer = 2,
            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
            MediaType = "image/*"

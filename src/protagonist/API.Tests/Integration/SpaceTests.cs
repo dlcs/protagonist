@@ -562,8 +562,38 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange & Act
         int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Updates_Name");
         var deleteResponse = await httpClient.AsCustomer().DeleteAsync($"/customers/{customerId}/spaces/456453");
-        
+
         // Assert
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeleteSpace_Returns_Conflict_ForSpaceZero()
+    {
+        // Arrange
+        const int customerId = 99;
+
+        // Act
+        var deleteResponse = await httpClient.AsCustomer(customerId).DeleteAsync($"/customers/{customerId}/spaces/0");
+
+        // Assert
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task GetSpaces_DoesNotReturn_SpaceZero()
+    {
+        // Arrange
+        var customerId = await EnsureCustomerForSpaceTests("GetSpaces_DoesNotReturn_SpaceZero");
+        var spacesUrl = $"/customers/{customerId}/spaces";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId.Value).GetAsync(spacesUrl);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var space = await response.ReadAsHydraResponseAsync<HydraCollection<Space>>();
+        space.Members.Should().NotContain(s => s.ModelId == 0);
+        space.TotalItems.Should().Be(0, "new customer has no user-created spaces, only stub-space which is excluded");
     }
 }
