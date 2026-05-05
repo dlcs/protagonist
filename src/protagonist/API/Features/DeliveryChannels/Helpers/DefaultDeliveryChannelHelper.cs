@@ -9,5 +9,5 @@ public static class DefaultDeliveryChannelHelper
     /// The <paramref name="operation"/> controls which message is returned.
     /// </summary>
     public static string? GetSpaceZeroErrorMessage(int? space, SpaceZeroOperation operation)
-        => space == 0 ? $"Default delivery channels for space 0 cannot be changed for the {operation.ToString().ToLower()} operation" : null;
+        => space == 0 ? $"Default delivery channels for space 0 cannot be changed for the {operation.ToString().ToLowerInvariant()} operation" : null;
 }

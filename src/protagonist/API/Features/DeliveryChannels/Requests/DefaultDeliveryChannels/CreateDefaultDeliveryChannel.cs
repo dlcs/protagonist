@@ -8,6 +8,7 @@ using DLCS.Repository;
 using DLCS.Repository.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace API.Features.DeliveryChannels.Requests.DefaultDeliveryChannels;
 
@@ -42,10 +43,12 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
     ModifyEntityResult<DefaultDeliveryChannel>>
 {
     private readonly DlcsContext dbContext;
+    private readonly ILogger<CreateDefaultDeliveryChannelHandler> logger;
 
-    public CreateDefaultDeliveryChannelHandler(DlcsContext dbContext)
+    public CreateDefaultDeliveryChannelHandler(DlcsContext dbContext, ILogger<CreateDefaultDeliveryChannelHandler> logger)
     {
         this.dbContext = dbContext;
+        this.logger = logger;
     }
 
     public async Task<ModifyEntityResult<DefaultDeliveryChannel>> Handle(
@@ -96,10 +99,18 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
         {
             await dbContext.SaveChangesAsync(cancellationToken);
         }
+        catch (DbUpdateException ex) when (ex.GetDatabaseError() is UniqueConstraintError)
+        {
+            // Race condition: duplicate slipped through the pre-check
+            return ModifyEntityResult<DefaultDeliveryChannel>.Failure(
+                $"A default delivery channel for the requested media type '{defaultDeliveryChannel.MediaType}' already exists",
+                WriteResult.Conflict);
+        }
         catch (DbUpdateException ex)
         {
+            logger.LogError(ex, "Failed to save default delivery channel for customer {Customer}", request.Customer);
             return ModifyEntityResult<DefaultDeliveryChannel>.Failure(
-                $"Unknown error trying to save the default delivery channel",
+                "Unknown error trying to save the default delivery channel",
                 WriteResult.Error);
         }
 

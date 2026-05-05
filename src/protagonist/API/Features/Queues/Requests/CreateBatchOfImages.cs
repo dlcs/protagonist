@@ -157,9 +157,9 @@ public class CreateBatchOfImagesHandler(
     private static ModifyEntityResult<Batch>? ValidateSpace0DeliveryChannels(CreateBatchOfImages request)
     {
         var hasInvalidSpace0Asset = request.AssetsBeforeProcessing.Any(a =>
-            a.Asset.Space == 0 &&
-            a.DeliveryChannelsBeforeProcessing != null &&
-            !AssetDeliveryChannels.IsNoneOnly(a.DeliveryChannelsBeforeProcessing.Select(dc => dc.Channel)));
+            !AssetDeliveryChannels.IsValidForSpaceZero(
+                a.Asset.Space,
+                a.DeliveryChannelsBeforeProcessing?.Select(dc => dc.Channel)));
 
         if (!hasInvalidSpace0Asset) return null;
 

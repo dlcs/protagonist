@@ -32,18 +32,32 @@ WHERE NOT EXISTS (
 );
 ");
 
-            // Add 'none' default delivery channel for customer 1 space 0 (the template used for new customers)
-            migrationBuilder.InsertData(
-                table: "DefaultDeliveryChannels",
-                columns: new[] { "Id", "Customer", "DeliveryChannelPolicyId", "MediaType", "Space" },
-                values: new object[] { Guid.NewGuid(), 1, Ids.None, "*/*", 0 });
+            // Add 'none' default delivery channel at space 0 for customer 1 (template for new customers).
+            migrationBuilder.Sql(@"
+INSERT INTO ""DefaultDeliveryChannels"" (""Id"", ""Customer"", ""DeliveryChannelPolicyId"", ""MediaType"", ""Space"")
+SELECT gen_random_uuid(), 1, " + Ids.None + @", '*/*', 0
+WHERE NOT EXISTS (
+    SELECT 1 FROM ""DefaultDeliveryChannels"" ddc
+    WHERE ddc.""Customer"" = 1
+      AND ddc.""Space"" = 0
+      AND ddc.""MediaType"" = '*/*'
+      AND ddc.""DeliveryChannelPolicyId"" = " + Ids.None + @"
+);
+");
 
-            // Add 'none' default delivery channel for all existing non-customer-1 customers
+            // Add 'none' default delivery channel at space 0 for all other existing customers
             migrationBuilder.Sql(@"
 INSERT INTO ""DefaultDeliveryChannels"" (""Id"", ""Customer"", ""DeliveryChannelPolicyId"", ""MediaType"", ""Space"")
 SELECT gen_random_uuid(), c.""Id"", " + Ids.None + @", '*/*', 0
 FROM ""Customers"" c
-WHERE c.""Id"" != 1;
+WHERE c.""Id"" != 1
+  AND NOT EXISTS (
+    SELECT 1 FROM ""DefaultDeliveryChannels"" ddc
+    WHERE ddc.""Customer"" = c.""Id""
+      AND ddc.""Space"" = 0
+      AND ddc.""MediaType"" = '*/*'
+      AND ddc.""DeliveryChannelPolicyId"" = " + Ids.None + @"
+);
 ");
         }
 

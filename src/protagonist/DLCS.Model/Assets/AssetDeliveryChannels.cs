@@ -84,6 +84,13 @@ public static class AssetDeliveryChannels
     }
 
     /// <summary>
+    /// Returns true if the asset's delivery channels are valid for space 0 (only 'none' allowed),
+    /// or if the asset is not in space 0.
+    /// </summary>
+    public static bool IsValidForSpaceZero(int space, IEnumerable<string>? channels)
+        => space != 0 || channels == null || IsNoneOnly(channels);
+
+    /// <summary>
     /// Checks if string is a valid delivery channel
     /// </summary>
     public static bool IsValidChannel(string? deliveryChannel)
