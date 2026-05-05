@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO.Enumeration;
 using DLCS.Core.Caching;
+using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
 using DLCS.Repository;
@@ -31,9 +32,17 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
 
     public async Task<List<DeliveryChannelPolicy>> MatchedDeliveryChannels(string mediaType, int space, int customerId)
     {
-        var completedMatch = new List<DeliveryChannelPolicy>();
         
         var orderedDefaultDeliveryChannels = await OrderedDefaultDeliveryChannels(space, customerId);
+
+        // this is the stub asset space, which is handled differently
+        if (space == AssetDeliveryChannels.StubAssetSpace)
+        {
+            return orderedDefaultDeliveryChannels.Where(dc => dc.Space == AssetDeliveryChannels.StubAssetSpace)
+                .Select(dc => dc.DeliveryChannelPolicy).ToList();
+        } 
+        
+        var completedMatch = new List<DeliveryChannelPolicy>();
         
         foreach (var defaultDeliveryChannel in orderedDefaultDeliveryChannels)
         {

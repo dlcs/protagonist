@@ -24,8 +24,8 @@ namespace DLCS.Repository.Migrations
 
             // Add space 0 (stub-space) for all existing customers that don't already have one
             migrationBuilder.Sql(@"
-INSERT INTO ""Spaces"" (""Id"", ""Customer"", ""Name"", ""Created"", ""ImageBucket"", ""Tags"", ""Roles"", ""MaxUnauthorised"")
-SELECT 0, c.""Id"", 'stub-space', NOW(), '', ARRAY[]::text[], ARRAY[]::text[], -1
+INSERT INTO ""Spaces"" (""Id"", ""Customer"", ""Name"", ""Created"", ""ImageBucket"", ""Tags"", ""Roles"", ""MaxUnauthorised"", ""Keep"", ""Transform"")
+SELECT 0, c.""Id"", 'stub-space', NOW(), '', ARRAY[]::text[], ARRAY[]::text[], -1, false, false
 FROM ""Customers"" c
 WHERE NOT EXISTS (
     SELECT 1 FROM ""Spaces"" s WHERE s.""Customer"" = c.""Id"" AND s.""Id"" = 0

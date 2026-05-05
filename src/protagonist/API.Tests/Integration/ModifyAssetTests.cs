@@ -255,6 +255,44 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == AssetDeliveryChannels.None);
     }
+    
+    [Fact]
+    public async Task Put_UpdateAsset_InSpaceZero_WithNoSpecifiedDeliveryChannel_UpdatesAssetWithNoneChannelSuccessfully()
+    {
+        // Arrange
+        var customerAndSpace = await CreateCustomerAndSpace();
+        var assetId = AssetIdGenerator.GetAssetId(customer: customerAndSpace.customer, space: AssetDeliveryChannels.StubAssetSpace);
+    
+        var noneDeliveryChannel = new List<ImageDeliveryChannel>
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.None,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.None
+            }
+        };
+        
+        await dbContext.Images.AddTestAsset(assetId, customer: customerAndSpace.customer, space: AssetDeliveryChannels.StubAssetSpace, 
+            origin: $"https://example.org/{assetId.Asset}.tiff", imageDeliveryChannels: noneDeliveryChannel);
+        
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff""
+        }}";
+
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == AssetDeliveryChannels.None);
+    }
 
     [Fact]
     public async Task Put_NewImageAsset_Creates_Asset_WithDeliveryChannelsSetToDefault()
