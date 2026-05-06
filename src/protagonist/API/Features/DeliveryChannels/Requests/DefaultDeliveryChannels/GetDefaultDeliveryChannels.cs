@@ -12,9 +12,9 @@ public class GetDefaultDeliveryChannels: IRequest<FetchEntityResult<PageOf<Defau
     public int Page { get; set; }
     public int PageSize { get; set; }
     public int Customer { get; }
-    public int Space { get; }
-    
-    public GetDefaultDeliveryChannels(int customer, int space)
+    public int? Space { get; }
+
+    public GetDefaultDeliveryChannels(int customer, int? space)
     {
         Customer = customer;
         Space = space;

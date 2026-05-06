@@ -16,15 +16,21 @@ public static class LegacyModeConverter
 {
     internal static void LogLegacyUsage(this ILogger logger, string message, params object?[] args)
         => logger.LogWarning("LEGACY USE:" + message, args);
-    
+
     /// <summary>
     /// Converts from legacy format to new format
     /// </summary>
     /// <param name="image">The image to convert should be emulated and translated into delivery channels</param>
+    /// <param name="space">The space this image is attached to</param>
     /// <returns>A converted image</returns>
-    public static T VerifyAndConvertToModernFormat<T>(T image, ILogger? logger = null)
+    public static T VerifyAndConvertToModernFormat<T>(T image, int space, ILogger? logger = null)
         where T : Image
     {
+        if (space == AssetDeliveryChannels.StubAssetSpace)
+        {
+            throw new BadRequestException("The stub asset space is not valid when legacy mode is enabled");
+        }
+        
         if (image.Origin.IsNullOrEmpty())
         {
             throw new BadRequestException("An origin is required when legacy mode is enabled");  

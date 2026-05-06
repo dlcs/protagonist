@@ -8,6 +8,7 @@ using DLCS.Repository;
 using DLCS.Repository.Exceptions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace API.Features.DeliveryChannels.Requests.DefaultDeliveryChannels;
 
@@ -18,15 +19,15 @@ public class CreateDefaultDeliveryChannel : IRequest<ModifyEntityResult<DefaultD
 {
     public int Customer { get; }
     
-    public int Space { get; }
-    
+    public int? Space { get; }
+
     public string Policy { get; }
-    
+
     public string Channel { get; }
-    
+
     public string MediaType { get; }
-    
-    public CreateDefaultDeliveryChannel(int customer, int space, string policy, string channel, string mediaType)
+
+    public CreateDefaultDeliveryChannel(int customer, int? space, string policy, string channel, string mediaType)
     {
         Customer = customer;
         Policy = policy;
@@ -42,15 +43,20 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
     ModifyEntityResult<DefaultDeliveryChannel>>
 {
     private readonly DlcsContext dbContext;
+    private readonly ILogger<CreateDefaultDeliveryChannelHandler> logger;
 
-    public CreateDefaultDeliveryChannelHandler(DlcsContext dbContext)
+    public CreateDefaultDeliveryChannelHandler(DlcsContext dbContext, ILogger<CreateDefaultDeliveryChannelHandler> logger)
     {
         this.dbContext = dbContext;
+        this.logger = logger;
     }
 
     public async Task<ModifyEntityResult<DefaultDeliveryChannel>> Handle(
         CreateDefaultDeliveryChannel request, CancellationToken cancellationToken)
     {
+        var spaceZeroError = DefaultDeliveryChannelHelper.GetSpaceZeroErrorMessage(request.Space);
+        if (spaceZeroError != null) return ModifyEntityResult<DefaultDeliveryChannel>.Failure(spaceZeroError, WriteResult.BadRequest);
+
         var defaultDeliveryChannel = new DefaultDeliveryChannel()
         {
             Customer = request.Customer,
@@ -72,6 +78,21 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
             return ModifyEntityResult<DefaultDeliveryChannel>.Failure("Failed to find linked delivery channel policy", WriteResult.BadRequest);
         }
 
+        var space = request.Space;
+        var duplicate = await dbContext.DefaultDeliveryChannels.AnyAsync(
+            d => d.Customer == request.Customer &&
+                 d.Space == space &&
+                 d.MediaType == request.MediaType &&
+                 d.DeliveryChannelPolicyId == defaultDeliveryChannel.DeliveryChannelPolicyId,
+            cancellationToken);
+
+        if (duplicate)
+        {
+            return ModifyEntityResult<DefaultDeliveryChannel>.Failure(
+                $"A default delivery channel for the requested media type '{defaultDeliveryChannel.MediaType}' already exists",
+                WriteResult.Conflict);
+        }
+
         dbContext.DefaultDeliveryChannels.Add(defaultDeliveryChannel);
 
         try
@@ -80,9 +101,17 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
         }
         catch (DbUpdateException ex) when (ex.GetDatabaseError() is UniqueConstraintError)
         {
+            // Race condition: duplicate slipped through the pre-check
             return ModifyEntityResult<DefaultDeliveryChannel>.Failure(
                 $"A default delivery channel for the requested media type '{defaultDeliveryChannel.MediaType}' already exists",
                 WriteResult.Conflict);
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Failed to save default delivery channel for customer {Customer}", request.Customer);
+            return ModifyEntityResult<DefaultDeliveryChannel>.Failure(
+                "Unknown error trying to save the default delivery channel",
+                WriteResult.Error);
         }
 
         return ModifyEntityResult<DefaultDeliveryChannel>.Success(defaultDeliveryChannel, WriteResult.Created);

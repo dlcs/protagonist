@@ -101,7 +101,7 @@ public class ImageController : HydraController
         {
             try
             {
-                hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
+                hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset, spaceId);
             }
             catch (APIException apiEx)
             {

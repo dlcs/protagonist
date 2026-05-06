@@ -701,6 +701,75 @@ public class DefaultDeliveryChannelsTests : IClassFixture<ProtagonistAppFactory<
     }
     
     [Fact]
+    public async Task Post_CreateDefaultDeliveryChannel_ForSpaceZero_Returns400()
+    {
+        // Arrange
+        const int customerId = 1;
+        var path = $"customers/{customerId}/spaces/0/defaultDeliveryChannels";
+
+        string newDefaultDeliveryChannelJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
+        {
+            MediaType = "image/tiff",
+            Policy = "default",
+            Channel = "iiif-img"
+        });
+
+        // Act
+        var content = new StringContent(newDefaultDeliveryChannelJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        var data = JsonConvert.DeserializeObject<Error>(await response.Content.ReadAsStringAsync());
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        data!.Description.Should().Contain("space 0");
+    }
+
+    [Fact]
+    public async Task Put_UpdateDefaultDeliveryChannel_ForSpaceZero_Returns400()
+    {
+        // Arrange
+        const int customerId = 1;
+        var existingDdc = dlcsContext.DefaultDeliveryChannels.First(d => d.Customer == customerId && d.Space == 0);
+        var path = $"customers/{customerId}/spaces/0/defaultDeliveryChannels/{existingDdc.Id}";
+
+        string updateJson = JsonConvert.SerializeObject(new DefaultDeliveryChannel()
+        {
+            MediaType = "image/*",
+            Policy = "default",
+            Channel = "iiif-img"
+        });
+
+        // Act
+        var content = new StringContent(updateJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        var data = JsonConvert.DeserializeObject<Error>(await response.Content.ReadAsStringAsync());
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        data!.Description.Should().Contain("space 0");
+    }
+
+    [Fact]
+    public async Task Delete_DeleteDefaultDeliveryChannel_ForSpaceZero_Returns409()
+    {
+        // Arrange
+        const int customerId = 1;
+        var existingDdc = dlcsContext.DefaultDeliveryChannels.First(d => d.Customer == customerId && d.Space == 0);
+        var path = $"customers/{customerId}/spaces/0/defaultDeliveryChannels/{existingDdc.Id}";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).DeleteAsync(path);
+
+        var data = JsonConvert.DeserializeObject<Error>(await response.Content.ReadAsStringAsync());
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        data!.Description.Should().Contain("space 0");
+    }
+
+    [Fact]
     public async Task Delete_DeleteADefaultDeliveryChannelForCustomerAndSpace_200()
     {
         // Arrange

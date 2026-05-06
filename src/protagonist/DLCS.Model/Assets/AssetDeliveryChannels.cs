@@ -16,6 +16,8 @@ public static class AssetDeliveryChannels
 
     public const string NoneChannelOriginPlaceholder = "https://example.org/origin";
     public const string NoneChannelMediaTypePlaceholder = "example/example";
+    
+    public const int StubAssetSpace = 0;
 
     /// <summary>
     /// All possible delivery channels

@@ -203,6 +203,98 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Put_Asset_InSpaceZero_WithNonNoneDeliveryChannel_Returns400()
+    {
+        // Arrange
+        var customerAndSpace = await CreateCustomerAndSpace();
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, 0);
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"": ""iiif-img"",
+                ""policy"": ""default""
+            }}]
+        }}";
+
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Put_Asset_InSpaceZero_WithNoneDeliveryChannel_CreatesAsset()
+    {
+        // Arrange
+        var customerAndSpace = await CreateCustomerAndSpace();
+        var assetId = new AssetId(customerAndSpace.customer, 0, nameof(Put_Asset_InSpaceZero_WithNoneDeliveryChannel_CreatesAsset));
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff"",
+            ""deliveryChannels"": [
+            {{
+                ""channel"": ""none"",
+                ""policy"": ""none""
+            }}]
+        }}";
+
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == AssetDeliveryChannels.None);
+    }
+    
+    [Fact]
+    public async Task Put_UpdateAsset_InSpaceZero_WithNoSpecifiedDeliveryChannel_UpdatesAssetWithNoneChannelSuccessfully()
+    {
+        // Arrange
+        var customerAndSpace = await CreateCustomerAndSpace();
+        var assetId = AssetIdGenerator.GetAssetId(customer: customerAndSpace.customer, space: AssetDeliveryChannels.StubAssetSpace);
+    
+        var noneDeliveryChannel = new List<ImageDeliveryChannel>
+        {
+            new()
+            {
+                Channel = AssetDeliveryChannels.None,
+                DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.None
+            }
+        };
+        
+        await dbContext.Images.AddTestAsset(assetId, customer: customerAndSpace.customer, space: AssetDeliveryChannels.StubAssetSpace, 
+            origin: $"https://example.org/{assetId.Asset}.tiff", imageDeliveryChannels: noneDeliveryChannel);
+        
+        await dbContext.SaveChangesAsync();
+        
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""family"": ""I"",
+            ""mediaType"": ""image/tiff""
+        }}";
+
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == AssetDeliveryChannels.None);
+    }
+
+    [Fact]
     public async Task Put_NewImageAsset_Creates_Asset_WithDeliveryChannelsSetToDefault()
     {
         var customerAndSpace = await CreateCustomerAndSpace();

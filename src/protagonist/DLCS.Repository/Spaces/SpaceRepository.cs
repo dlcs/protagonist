@@ -158,9 +158,9 @@ public class SpaceRepository : ISpaceRepository
         var result = new PageOfSpaces
         {
             Page = page,
-            Total = await dlcsContext.Spaces.CountAsync(s => s.Customer == customerId, cancellationToken: cancellationToken),
+            Total = await dlcsContext.Spaces.CountAsync(s => s.Customer == customerId && s.Id != 0, cancellationToken: cancellationToken),
             Spaces = await dlcsContext.Spaces.AsNoTracking()
-                .Where(s => s.Customer == customerId)
+                .Where(s => s.Customer == customerId && s.Id != 0)
                 .AsOrderedSpaceQuery(orderBy, descending)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)

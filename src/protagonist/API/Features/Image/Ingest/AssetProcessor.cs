@@ -107,15 +107,15 @@ public class AssetProcessor(
                 {
                     requiresEngineNotification = true;
                 }
-
-                if (updatedAsset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
-                {
-                    // no need to notify the engine with the none channel
-                    requiresEngineNotification = false;
+            }
+            
+            if (updatedAsset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
+            {
+                // no need to notify the engine with the none channel
+                requiresEngineNotification = false;
                     
-                    // no engine notification, so 0 out the image storage record
-                    await assetRepository.ResetImageStorage(updatedAsset.GetAssetId(), cancellationToken);
-                }
+                // no engine notification, so 0 out the image storage record
+                await assetRepository.ResetImageStorage(updatedAsset.GetAssetId(), cancellationToken);
             }
 
             if (requiresEngineNotification)

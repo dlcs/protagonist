@@ -1922,4 +1922,46 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
             dc => dc.Channel == AssetDeliveryChannels.Timebased &&
                   dc.DeliveryChannelPolicy.Name == "default-audio");
     }
+
+    [Fact]
+    public async Task Post_CreateBatch_400_IfSpaceZeroAssetHasNonNoneDeliveryChannel()
+    {
+        // Arrange
+        const int customerId = 1900;
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, 0, "stub-assets");
+        await dbContext.Spaces.AddTestSpace(customerId, 1);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.Queues.AddAsync(new Queue { Customer = customerId, Name = "default", Size = 0 });
+        await dbContext.SaveChangesAsync();
+
+        var hydraImageBody = @"{
+    ""@context"": ""http://www.w3.org/ns/hydra/context.jsonld"",
+    ""@type"": ""Collection"",
+    ""member"": [
+        {
+          ""id"": ""stub-asset"",
+          ""origin"": ""https://example.org/image.jpg"",
+          ""space"": 0,
+          ""family"": ""I"",
+          ""mediaType"": ""image/jpeg"",
+          ""deliveryChannels"": [
+            {
+              ""channel"": ""iiif-img"",
+              ""policy"": ""default""
+            }
+          ]
+        }
+    ]
+}";
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }

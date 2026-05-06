@@ -17,21 +17,21 @@ public class UpdateDefaultDeliveryChannel : IRequest<ModifyEntityResult<DefaultD
 {
     public int Customer { get; }
 
-    public int Space { get; }
-    
+    public int? Space { get; }
+
     public string Policy { get; }
-    
+
     public string Channel { get; }
-    
+
     public string MediaType { get; }
-    
+
     public Guid Id { get; }
 
     public UpdateDefaultDeliveryChannel(
-        int customerId, 
-        int space, 
-        string policy, 
-        string channel, 
+        int customerId,
+        int? space,
+        string policy,
+        string channel,
         string mediaType,
         Guid id)
     {
@@ -41,7 +41,6 @@ public class UpdateDefaultDeliveryChannel : IRequest<ModifyEntityResult<DefaultD
         Policy = policy;
         Channel = channel;
         Id = id;
-        Space = space;
     }
 
     public string[] InvalidatedCacheKeys => CacheKeys.DefaultDeliveryChannels(Customer).AsArray();
@@ -58,6 +57,9 @@ public class UpdateDefaultDeliveryChannelHandler : IRequestHandler<UpdateDefault
     
     public async Task<ModifyEntityResult<DefaultDeliveryChannel>> Handle(UpdateDefaultDeliveryChannel request, CancellationToken cancellationToken)
     {
+        var spaceZeroError = DefaultDeliveryChannelHelper.GetSpaceZeroErrorMessage(request.Space);
+        if (spaceZeroError != null) return ModifyEntityResult<DefaultDeliveryChannel>.Failure(spaceZeroError, WriteResult.BadRequest);
+
         var defaultDeliveryChannel = await dbContext.DefaultDeliveryChannels.SingleOrDefaultAsync(
             d => d.Customer == request.Customer && d.Id == request.Id, cancellationToken);
         

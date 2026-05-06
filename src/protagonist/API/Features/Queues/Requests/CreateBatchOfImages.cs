@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data;
+using API.Features.DeliveryChannels.Helpers;
 using API.Features.Image;
 using API.Features.Image.Ingest;
 using API.Infrastructure;
@@ -49,9 +50,12 @@ public class CreateBatchOfImagesHandler(
     {
         var priorityValidation = ValidatePriorityQueueRequest(request);
         if (priorityValidation != null) return priorityValidation;
-        
+
         var spaceValidation = await ValidateAllSpaces(request, cancellationToken);
-        if (spaceValidation != null) return spaceValidation; 
+        if (spaceValidation != null) return spaceValidation;
+
+        var space0Validation = SpaceZeroValidator.Validate(request);
+        if (space0Validation != null) return space0Validation;
 
         bool updateFailed = false;
         var failureMessage = string.Empty;
@@ -149,6 +153,17 @@ public class CreateBatchOfImagesHandler(
         }
 
         return ModifyEntityResult<Batch>.Success(batch, WriteResult.Created);
+    }
+
+    private static ModifyEntityResult<Batch>? ValidateSpaceZeroDeliveryChannels(CreateBatchOfImages request)
+    {
+        var hasInvalidSpaceZeroAsset = request.AssetsBeforeProcessing.Any(a => !a.IsValidForSpaceZero());
+
+        if (!hasInvalidSpaceZeroAsset) return null;
+
+        return ModifyEntityResult<Batch>.Failure(
+            "Assets in space 0 can only use the 'none' delivery channel",
+            WriteResult.FailedValidation);
     }
 
     private ModifyEntityResult<Batch>? ValidatePriorityQueueRequest(CreateBatchOfImages request)
