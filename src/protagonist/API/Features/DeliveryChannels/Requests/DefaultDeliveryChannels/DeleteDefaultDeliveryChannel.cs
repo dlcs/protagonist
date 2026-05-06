@@ -41,7 +41,7 @@ public class DeleteDefaultDeliveryChannelHandler : IRequestHandler<DeleteDefault
 
     public async Task<DeleteEntityResult> Handle(DeleteDefaultDeliveryChannel request, CancellationToken cancellationToken)
     {
-        var spaceZeroError = DefaultDeliveryChannelHelper.GetSpaceZeroErrorMessage(request.Space, SpaceZeroOperation.Delete);
+        var spaceZeroError = DefaultDeliveryChannelHelper.GetSpaceZeroErrorMessage(request.Space);
         if (spaceZeroError != null) return DeleteEntityResult.Failure(spaceZeroError, DeleteResult.Conflict);
 
         var defaultDeliveryChannel = await dbContext.DefaultDeliveryChannels.SingleOrDefaultAsync(

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Data;
+using API.Features.DeliveryChannels.Helpers;
 using API.Features.Image;
 using API.Features.Image.Ingest;
 using API.Infrastructure;
@@ -53,7 +54,7 @@ public class CreateBatchOfImagesHandler(
         var spaceValidation = await ValidateAllSpaces(request, cancellationToken);
         if (spaceValidation != null) return spaceValidation;
 
-        var space0Validation = ValidateSpace0DeliveryChannels(request);
+        var space0Validation = SpaceZeroValidator.Validate(request);
         if (space0Validation != null) return space0Validation;
 
         bool updateFailed = false;
@@ -154,14 +155,11 @@ public class CreateBatchOfImagesHandler(
         return ModifyEntityResult<Batch>.Success(batch, WriteResult.Created);
     }
 
-    private static ModifyEntityResult<Batch>? ValidateSpace0DeliveryChannels(CreateBatchOfImages request)
+    private static ModifyEntityResult<Batch>? ValidateSpaceZeroDeliveryChannels(CreateBatchOfImages request)
     {
-        var hasInvalidSpace0Asset = request.AssetsBeforeProcessing.Any(a =>
-            !AssetDeliveryChannels.IsValidForSpaceZero(
-                a.Asset.Space,
-                a.DeliveryChannelsBeforeProcessing?.Select(dc => dc.Channel)));
+        var hasInvalidSpaceZeroAsset = request.AssetsBeforeProcessing.Any(a => !a.IsValidForSpaceZero());
 
-        if (!hasInvalidSpace0Asset) return null;
+        if (!hasInvalidSpaceZeroAsset) return null;
 
         return ModifyEntityResult<Batch>.Failure(
             "Assets in space 0 can only use the 'none' delivery channel",

@@ -2,6 +2,7 @@ using System.Data;
 using System.Net;
 using API.Exceptions;
 using API.Features.Assets;
+using API.Features.DeliveryChannels.Helpers;
 using API.Features.Image.Ingest;
 using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
@@ -75,16 +76,10 @@ public class CreateOrUpdateImageHandler(
                 $"Target space for asset does not exist: {assetBeforeProcessing.Asset.Customer}/{assetBeforeProcessing.Asset.Space}",
                 WriteResult.FailedValidation);
         }
-
-        if (!AssetDeliveryChannels.IsValidForSpaceZero(
-                assetBeforeProcessing.Asset.Space,
-                assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Select(dc => dc.Channel)))
-        {
-            return ModifyEntityResult<Asset>.Failure(
-                "Assets in space 0 can only use the 'none' delivery channel",
-                WriteResult.FailedValidation);
-        }
-
+        
+        var space0Validation = SpaceZeroValidator.Validate(request);
+        if (space0Validation != null) return space0Validation;
+        
         await using var transaction = 
             await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         

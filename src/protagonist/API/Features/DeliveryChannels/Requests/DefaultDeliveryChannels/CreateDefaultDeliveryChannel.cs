@@ -54,7 +54,7 @@ public class CreateDefaultDeliveryChannelHandler : IRequestHandler<CreateDefault
     public async Task<ModifyEntityResult<DefaultDeliveryChannel>> Handle(
         CreateDefaultDeliveryChannel request, CancellationToken cancellationToken)
     {
-        var spaceZeroError = DefaultDeliveryChannelHelper.GetSpaceZeroErrorMessage(request.Space, SpaceZeroOperation.Create);
+        var spaceZeroError = DefaultDeliveryChannelHelper.GetSpaceZeroErrorMessage(request.Space);
         if (spaceZeroError != null) return ModifyEntityResult<DefaultDeliveryChannel>.Failure(spaceZeroError, WriteResult.BadRequest);
 
         var defaultDeliveryChannel = new DefaultDeliveryChannel()
