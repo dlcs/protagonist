@@ -193,7 +193,7 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var spaceZero = await dbContext.Spaces.SingleOrDefaultAsync(s => s.Customer == newCustomerId && s.Id == 0);
         spaceZero.Should().NotBeNull();
-        spaceZero!.Name.Should().Be("stub-space");
+        spaceZero!.Name.Should().Be("stub-assets");
     }
 
     [Fact]

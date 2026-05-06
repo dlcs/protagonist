@@ -1929,7 +1929,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         const int customerId = 1900;
         await dbContext.Customers.AddTestCustomer(customerId);
-        await dbContext.Spaces.AddTestSpace(customerId, 0, "stub-space");
+        await dbContext.Spaces.AddTestSpace(customerId, 0, "stub-assets");
         await dbContext.Spaces.AddTestSpace(customerId, 1);
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
         await dbContext.Queues.AddAsync(new Queue { Customer = customerId, Name = "default", Size = 0 });

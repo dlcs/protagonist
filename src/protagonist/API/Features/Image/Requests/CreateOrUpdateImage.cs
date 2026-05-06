@@ -81,7 +81,7 @@ public class CreateOrUpdateImageHandler(
                 assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Select(dc => dc.Channel)))
         {
             return ModifyEntityResult<Asset>.Failure(
-                "Assets in space 0 must use the 'none' delivery channel only",
+                "Assets in space 0 can only use the 'none' delivery channel",
                 WriteResult.FailedValidation);
         }
 

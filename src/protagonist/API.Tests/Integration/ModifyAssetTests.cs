@@ -207,7 +207,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var customerAndSpace = await CreateCustomerAndSpace();
-        var assetId = new AssetId(customerAndSpace.customer, 0, nameof(Put_Asset_InSpaceZero_WithNonNoneDeliveryChannel_Returns400));
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, 0);
         var hydraImageBody = $@"{{
             ""@type"": ""Image"",
             ""origin"": ""https://example.org/{assetId.Asset}.tiff"",

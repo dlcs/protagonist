@@ -22,10 +22,10 @@ namespace DLCS.Repository.Migrations
             // Existing Space=0 rows were the customer-wide defaults; move them to NULL
             migrationBuilder.Sql(@"UPDATE ""DefaultDeliveryChannels"" SET ""Space"" = NULL WHERE ""Space"" = 0;");
 
-            // Add space 0 (stub-space) for all existing customers that don't already have one
+            // Add space 0 (stub-assets) for all existing customers that don't already have one
             migrationBuilder.Sql(@"
 INSERT INTO ""Spaces"" (""Id"", ""Customer"", ""Name"", ""Created"", ""ImageBucket"", ""Tags"", ""Roles"", ""MaxUnauthorised"", ""Keep"", ""Transform"")
-SELECT 0, c.""Id"", 'stub-space', NOW(), '', ARRAY[]::text[], ARRAY[]::text[], -1, false, false
+SELECT 0, c.""Id"", 'stub-assets', NOW(), '', ARRAY[]::text[], ARRAY[]::text[], -1, false, false
 FROM ""Customers"" c
 WHERE NOT EXISTS (
     SELECT 1 FROM ""Spaces"" s WHERE s.""Customer"" = c.""Id"" AND s.""Id"" = 0
@@ -69,9 +69,9 @@ DELETE FROM ""DefaultDeliveryChannels""
 WHERE ""DeliveryChannelPolicyId"" = " + Ids.None + @" AND ""Space"" = 0 AND ""MediaType"" = '*/*';
 ");
 
-            // Remove space 0 for all customers (stub-space entries added by this migration)
+            // Remove space 0 for all customers (stub-assets entries added by this migration)
             migrationBuilder.Sql(@"
-DELETE FROM ""Spaces"" WHERE ""Id"" = 0 AND ""Name"" = 'stub-space';
+DELETE FROM ""Spaces"" WHERE ""Id"" = 0 AND ""Name"" = 'stub-assets';
 ");
 
             // Restore NULL back to 0 for the customer-wide defaults

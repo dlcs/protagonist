@@ -102,7 +102,7 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
             {
                 Customer = newCustomerId,
                 Id = 0,
-                Name = "stub-space",
+                Name = "stub-assets",
                 Created = DateTime.UtcNow,
                 ImageBucket = string.Empty,
                 Tags = Array.Empty<string>(),

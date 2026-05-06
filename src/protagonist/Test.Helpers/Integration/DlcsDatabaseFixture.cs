@@ -121,7 +121,7 @@ public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
             Next = 1
         });
         await DbContext.Spaces.AddAsync(new Space
-            { Created = DateTime.UtcNow, Id = 0, Customer = customer, Name = "stub-space", ImageBucket = string.Empty, Tags = Array.Empty<string>(), Roles = Array.Empty<string>(), MaxUnauthorised = -1 });
+            { Created = DateTime.UtcNow, Id = 0, Customer = customer, Name = "stub-assets", ImageBucket = string.Empty, Tags = Array.Empty<string>(), Roles = Array.Empty<string>(), MaxUnauthorised = -1 });
         await DbContext.Spaces.AddAsync(new Space
             { Created = DateTime.UtcNow, Id = 1, Customer = customer, Name = "space-1" });
         await DbContext.ThumbnailPolicies.AddAsync(new ThumbnailPolicy

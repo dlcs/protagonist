@@ -594,6 +594,6 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var space = await response.ReadAsHydraResponseAsync<HydraCollection<Space>>();
         space.Members.Should().NotContain(s => s.ModelId == 0);
-        space.TotalItems.Should().Be(0, "new customer has no user-created spaces, only stub-space which is excluded");
+        space.TotalItems.Should().Be(0, "new customer has no user-created spaces, only stub-assets which is excluded");
     }
 }

@@ -32,10 +32,11 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
 
     public async Task<List<DeliveryChannelPolicy>> MatchedDeliveryChannels(string mediaType, int space, int customerId)
     {
-        
         var orderedDefaultDeliveryChannels = await OrderedDefaultDeliveryChannels(space, customerId);
 
-        // this is the stub asset space, which is handled differently
+        // this is the stub asset space, which is handled differently as it's used to hold assets
+        // without any delivery channels which is effectively used to store adjuncts that can be outputted on
+        // named queries
         if (space == AssetDeliveryChannels.StubAssetSpace)
         {
             return orderedDefaultDeliveryChannels.Where(dc => dc.Space == AssetDeliveryChannels.StubAssetSpace)

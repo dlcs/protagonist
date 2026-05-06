@@ -164,7 +164,7 @@ public class CreateBatchOfImagesHandler(
         if (!hasInvalidSpace0Asset) return null;
 
         return ModifyEntityResult<Batch>.Failure(
-            "Assets in space 0 must use the 'none' delivery channel only",
+            "Assets in space 0 can only use the 'none' delivery channel",
             WriteResult.FailedValidation);
     }
 
