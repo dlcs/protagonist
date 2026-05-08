@@ -42,7 +42,8 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
         RuleForEach(c => c.Members).ChildRules(members =>
         {
             members.RuleFor(a => a.ModelId).NotEmpty().WithMessage("Asset Id cannot be empty");
-            members.RuleFor(a => a.Space).GreaterThanOrEqualTo(0).WithMessage("Space must be 0 or greater");
+            members.RuleFor(a => a.Space).NotNull().WithMessage("Space must be specified");
+            members.RuleFor(a => a.Space).GreaterThanOrEqualTo(0).When(a => a.Space.HasValue).WithMessage("Space must be 0 or greater");
             members.RuleFor(a => a.MediaType)
                 .NotEmpty()
                 .Unless(a => AssetDeliveryChannels.IsNoneOnly(a.DeliveryChannels?.Select(dc => dc.Channel)) ||

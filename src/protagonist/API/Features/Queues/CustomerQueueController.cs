@@ -445,9 +445,9 @@ public class CustomerQueueController : HydraController
         {
             for (int i = 0; i < members.Count; i++)
             {
-                if (Settings.LegacyModeEnabledForSpace(customerId, members[i].Space))
+                if (Settings.LegacyModeEnabledForSpace(customerId, members[i].Space.GetValueOrDefault()))
                 {
-                    members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(members[i], members[i].Space);
+                    members[i] = LegacyModeConverter.VerifyAndConvertToModernFormat(members[i], members[i].Space.GetValueOrDefault());
                 }
             }
         }

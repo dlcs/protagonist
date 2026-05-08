@@ -136,12 +136,23 @@ public class QueuePostValidatorTests
     }
 
     [Fact]
+    public void Member_Space_NotProvided_Invalid()
+    {
+        var sut = GetSut();
+        var model = new HydraCollection<Image> { Members = new[] { new Image { ModelId = "foo" } } };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].Space")
+            .WithErrorMessage("Space must be specified");
+    }
+
+    [Fact]
     public void Member_Space_Negative_Invalid()
     {
         var sut = GetSut();
         var model = new HydraCollection<Image> { Members = new[] { new Image { Space = -1, ModelId = "foo", MediaType = "image/jpeg" } } };
         var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("Members[0].Space");
+        result.ShouldHaveValidationErrorFor("Members[0].Space")
+            .WithErrorMessage("Space must be 0 or greater");
     }
 
     [Fact]

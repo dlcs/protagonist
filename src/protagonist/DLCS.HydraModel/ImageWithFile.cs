@@ -13,7 +13,7 @@ public class ImageWithFile : Image
     
     public byte[]? File { get; set; }
     
-    public Image ToImage() => new Image(BaseUrl, CustomerId, Space, ModelId!)
+    public Image ToImage() => new Image(BaseUrl, CustomerId, Space.GetValueOrDefault(), ModelId!)
     {
         StorageIdentifier = StorageIdentifier,
         Created = Created,

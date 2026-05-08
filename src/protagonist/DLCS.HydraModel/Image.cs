@@ -38,7 +38,7 @@ public class Image : DlcsResource
     public string? ModelId { get; set; }
     
     [JsonProperty(Order = 10, PropertyName = "space")]
-    public int Space { get; set; }
+    public int? Space { get; set; }
 
     [RdfProperty(Description = "image service URI - where the IIIF Image API is exposed for this image",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
