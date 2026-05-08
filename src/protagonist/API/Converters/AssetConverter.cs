@@ -268,7 +268,7 @@ public static class AssetConverter
         }
         else if (hydraImage.Space < 0)
         {
-            throw new BadRequestException("No Space provided for this Asset.");
+            throw new BadRequestException("Space must be 0 or greater.");
         }
         
         if (modelId.IsNullOrEmpty())

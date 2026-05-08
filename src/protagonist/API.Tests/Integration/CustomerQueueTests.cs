@@ -2002,7 +2002,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var model = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.CustomerQueue>();
         var assetInDatabase = dbContext.Images
             .Include(a => a.ImageDeliveryChannels)
-            .First(a => a.Batch == model.Id.GetLastPathElementAsInt());
+            .Single(a => a.Batch == model.Id.GetLastPathElementAsInt());
         assetInDatabase.Id.Should().Be(assetId);
         assetInDatabase.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.None);
 

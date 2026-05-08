@@ -134,6 +134,30 @@ public class QueuePostValidatorTests
         result.ShouldNotHaveValidationErrorFor("Members[0].Space");
         result.ShouldNotHaveValidationErrorFor("Members[0].MediaType");
     }
+
+    [Fact]
+    public void Member_Space_Negative_Invalid()
+    {
+        var sut = GetSut();
+        var model = new HydraCollection<Image> { Members = new[] { new Image { Space = -1, ModelId = "foo", MediaType = "image/jpeg" } } };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].Space");
+    }
+
+    [Fact]
+    public void Member_MediaType_Required_ForSpaceZero_WhenDeliveryChannelsPresent()
+    {
+        var sut = GetSut();
+        var model = new HydraCollection<Image>
+        {
+            Members = new[]
+            {
+                new Image { Space = 0, ModelId = "foo", DeliveryChannels = [new DeliveryChannel { Channel = "file" }] }
+            }
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].MediaType");
+    }
     
     [Theory]
     [InlineData(null)]

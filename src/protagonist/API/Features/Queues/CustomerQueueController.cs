@@ -425,9 +425,9 @@ public class CustomerQueueController : HydraController
     private static DeliveryChannelsBeforeProcessing[]? GetDeliveryChannelsForAsset(DLCS.HydraModel.Image image)
     {
         // Space 0 assets with no delivery channels are stub assets - treat as 'none' channel implicitly
-        if (image.Space == 0 && image.DeliveryChannels.IsNullOrEmpty())
+        if (image.Space == AssetDeliveryChannels.StubAssetSpace && image.DeliveryChannels.IsNullOrEmpty())
         {
-            return [new DeliveryChannelsBeforeProcessing(AssetDeliveryChannels.None, "none")];
+            return [new DeliveryChannelsBeforeProcessing(AssetDeliveryChannels.None, AssetDeliveryChannels.None)];
         }
         return image.DeliveryChannels.ToInterimModel();
     }

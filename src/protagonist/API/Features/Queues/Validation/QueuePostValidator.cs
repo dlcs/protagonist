@@ -42,11 +42,11 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
         RuleForEach(c => c.Members).ChildRules(members =>
         {
             members.RuleFor(a => a.ModelId).NotEmpty().WithMessage("Asset Id cannot be empty");
-            members.RuleFor(a => a.Space).GreaterThanOrEqualTo(0).WithMessage("Space cannot be empty");
+            members.RuleFor(a => a.Space).GreaterThanOrEqualTo(0).WithMessage("Space must be 0 or greater");
             members.RuleFor(a => a.MediaType)
                 .NotEmpty()
-                .When(a => !AssetDeliveryChannels.IsNoneOnly(a.DeliveryChannels?.Select(dc => dc.Channel)) &&
-                           !(a.Space == 0 && a.DeliveryChannels.IsNullOrEmpty()))
+                .Unless(a => AssetDeliveryChannels.IsNoneOnly(a.DeliveryChannels?.Select(dc => dc.Channel)) ||
+                             (a.Space == AssetDeliveryChannels.StubAssetSpace && a.DeliveryChannels.IsNullOrEmpty()))
                 .WithMessage("Media type must be specified");
         });
     }
