@@ -260,17 +260,15 @@ public static class AssetConverter
         {
             throw new BadRequestException("Asserted space does not agree with supplied space.");
         }
-        
-        if (hydraImage.Space <= 0)
+
+        if (hydraImage.Space == 0 && spaceId.HasValue)
         {
-            if (spaceId.HasValue)
-            {
-                hydraImage.Space = spaceId.Value;
-            }
-            else
-            {
-                throw new BadRequestException("No Space provided for this Asset.");
-            }
+            // Space was not explicitly provided in body; take space from route if available
+            hydraImage.Space = spaceId.Value;
+        }
+        else if (hydraImage.Space < 0)
+        {
+            throw new BadRequestException("No Space provided for this Asset.");
         }
         
         if (modelId.IsNullOrEmpty())

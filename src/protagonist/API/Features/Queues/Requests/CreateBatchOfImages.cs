@@ -155,17 +155,6 @@ public class CreateBatchOfImagesHandler(
         return ModifyEntityResult<Batch>.Success(batch, WriteResult.Created);
     }
 
-    private static ModifyEntityResult<Batch>? ValidateSpaceZeroDeliveryChannels(CreateBatchOfImages request)
-    {
-        var hasInvalidSpaceZeroAsset = request.AssetsBeforeProcessing.Any(a => !a.IsValidForSpaceZero());
-
-        if (!hasInvalidSpaceZeroAsset) return null;
-
-        return ModifyEntityResult<Batch>.Failure(
-            "Assets in space 0 can only use the 'none' delivery channel",
-            WriteResult.FailedValidation);
-    }
-
     private ModifyEntityResult<Batch>? ValidatePriorityQueueRequest(CreateBatchOfImages request)
     {
         if (!request.IsPriority) return null;

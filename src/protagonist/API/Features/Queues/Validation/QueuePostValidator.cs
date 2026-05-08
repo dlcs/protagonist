@@ -1,6 +1,7 @@
 ﻿using API.Features.Image.Validation;
 using API.Settings;
 using DLCS.Core.Collections;
+using DLCS.Model.Assets;
 using FluentValidation;
 using Hydra.Collections;
 using Microsoft.Extensions.Options;
@@ -33,15 +34,20 @@ public class QueuePostValidator : AbstractValidator<HydraCollection<DLCS.HydraMo
             .Must(m => (m?.Length ?? 0) <= maxBatch)
             .WithMessage($"Maximum assets in single batch is {maxBatch}");
 
-        RuleForEach(c => c.Members).SetValidator(new HydraImageValidator(apiSettings),
-            "default", "create");
-        
+        RuleForEach(c => c.Members).SetValidator(new HydraImageValidator(apiSettings), "default");
+
         // In addition to above validation, batched updates must have ModelId + Space as this can't be taken from
-        // path
+        // path. MediaType is required unless the asset is a 'none' channel or a space-0 stub asset (which gets
+        // 'none' assigned implicitly)
         RuleForEach(c => c.Members).ChildRules(members =>
         {
             members.RuleFor(a => a.ModelId).NotEmpty().WithMessage("Asset Id cannot be empty");
-            members.RuleFor(a => a.Space).NotEmpty().WithMessage("Space cannot be empty");
+            members.RuleFor(a => a.Space).GreaterThanOrEqualTo(0).WithMessage("Space cannot be empty");
+            members.RuleFor(a => a.MediaType)
+                .NotEmpty()
+                .When(a => !AssetDeliveryChannels.IsNoneOnly(a.DeliveryChannels?.Select(dc => dc.Channel)) &&
+                           !(a.Space == 0 && a.DeliveryChannels.IsNullOrEmpty()))
+                .WithMessage("Media type must be specified");
         });
     }
 }

@@ -126,12 +126,13 @@ public class QueuePostValidatorTests
     }
     
     [Fact]
-    public void Member_Space_Default()
+    public void Member_Space_Default_Valid()
     {
         var sut = GetSut();
-        var model = new HydraCollection<Image> { Members = new[] { new Image { Space = 0 } } };
+        var model = new HydraCollection<Image> { Members = new[] { new Image { Space = 0, ModelId = "foo" } } };
         var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("Members[0].Space");
+        result.ShouldNotHaveValidationErrorFor("Members[0].Space");
+        result.ShouldNotHaveValidationErrorFor("Members[0].MediaType");
     }
     
     [Theory]
@@ -141,7 +142,7 @@ public class QueuePostValidatorTests
     public void Member_MediaType_NullOrEmpty(string mediaType)
     {
         var sut = GetSut();
-        var model = new HydraCollection<Image> { Members = new[] { new Image { MediaType = mediaType } } };
+        var model = new HydraCollection<Image> { Members = new[] { new Image { MediaType = mediaType, Space = 1 } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].MediaType");
     }
