@@ -80,10 +80,16 @@ public static class AssetDeliveryChannels
     public static bool IsNoneOnly(IEnumerable<string>? channels)
     {
         if (channels == null) return false;
-        
+
         using var e = channels.GetEnumerator();
         return e.MoveNext() && e.Current == None && !e.MoveNext();
     }
+
+    /// <summary>
+    /// Checks if an asset is a stub asset: in space 0 with no delivery channels specified
+    /// </summary>
+    public static bool IsStubAsset(int? space, IEnumerable<string>? channels)
+        => space == StubAssetSpace && channels.IsNullOrEmpty();
 
     /// <summary>
     /// Checks if string is a valid delivery channel

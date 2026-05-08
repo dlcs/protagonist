@@ -257,6 +257,26 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
+    public async Task Put_CreateAsset_InSpaceZero_WithNoDeliveryChannel_CreatesAssetWithNoneChannelAndPlaceholders()
+    {
+        // Arrange - minimal stub asset payload: no origin, no mediaType, no deliveryChannels
+        var customerAndSpace = await CreateCustomerAndSpace();
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, 0);
+        var hydraImageBody = @"{ ""@type"": ""Image"" }";
+
+        // Act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var asset = dbContext.Images.Include(i => i.ImageDeliveryChannels).Single(x => x.Id == assetId);
+        asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == AssetDeliveryChannels.None);
+        asset.Origin.Should().Be(AssetDeliveryChannels.NoneChannelOriginPlaceholder);
+        asset.MediaType.Should().Be(AssetDeliveryChannels.NoneChannelMediaTypePlaceholder);
+    }
+
+    [Fact]
     public async Task Put_UpdateAsset_InSpaceZero_WithNoSpecifiedDeliveryChannel_UpdatesAssetWithNoneChannelSuccessfully()
     {
         // Arrange

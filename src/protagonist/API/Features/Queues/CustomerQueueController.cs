@@ -418,18 +418,8 @@ public class CustomerQueueController : HydraController
     {
         var assetsBeforeProcessing = images.Members!
             .Select(i => new AssetBeforeProcessing(i.ToDlcsModel(customerId),
-                GetDeliveryChannelsForAsset(i))).ToList();
+                i.DeliveryChannels.ToInterimModel())).ToList();
         return assetsBeforeProcessing;
-    }
-
-    private static DeliveryChannelsBeforeProcessing[]? GetDeliveryChannelsForAsset(DLCS.HydraModel.Image image)
-    {
-        // Space 0 assets with no delivery channels are stub assets - treat as 'none' channel implicitly
-        if (image.Space == AssetDeliveryChannels.StubAssetSpace && image.DeliveryChannels.IsNullOrEmpty())
-        {
-            return [new DeliveryChannelsBeforeProcessing(AssetDeliveryChannels.None, AssetDeliveryChannels.None)];
-        }
-        return image.DeliveryChannels.ToInterimModel();
     }
     
     /// <summary>

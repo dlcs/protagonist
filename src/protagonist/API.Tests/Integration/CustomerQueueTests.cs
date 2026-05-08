@@ -1972,6 +1972,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         const int customerId = 1901;
         var assetId = AssetIdGenerator.GetAssetId(customerId, 0);
         await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
         await dbContext.Spaces.AddTestSpace(customerId, 0, "stub-assets");
         await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
         await dbContext.Queues.AddAsync(new Queue { Customer = customerId, Name = "default", Size = 0 });

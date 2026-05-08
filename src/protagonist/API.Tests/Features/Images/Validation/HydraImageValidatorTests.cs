@@ -355,6 +355,21 @@ public class HydraImageValidatorTests
         var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
         result.ShouldNotHaveValidationErrorFor(a => a.MediaType);
     }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void MediaType_CanBeNullOrEmpty_OnCreateWhenStubAsset(string mediaType)
+    {
+        var model = new Image
+        {
+            MediaType = mediaType,
+            Space = AssetDeliveryChannels.StubAssetSpace
+        };
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
+        result.ShouldNotHaveValidationErrorFor(a => a.MediaType);
+    }
     
     [Fact]
     public void PlaceHolderValues_NotAllowed_WhenNotNoneChannel()

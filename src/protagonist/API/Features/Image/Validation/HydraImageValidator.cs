@@ -22,7 +22,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         {
             RuleFor(a => a.MediaType)
                 .NotEmpty()
-                .When(a => !IsNoneOnly(a))
+                .Unless(a => IsNoneOnly(a) || IsStubAsset(a))
                 .WithMessage("Media type must be specified");
         });
 
@@ -72,6 +72,9 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
     
     private static bool IsNoneOnly(DLCS.HydraModel.Image image)
         => AssetDeliveryChannels.IsNoneOnly(image.DeliveryChannels?.Select(dc => dc.Channel));
+
+    private static bool IsStubAsset(DLCS.HydraModel.Image image)
+        => AssetDeliveryChannels.IsStubAsset(image.Space, image.DeliveryChannels?.Select(dc => dc.Channel));
 
     private void ImageDeliveryChannelDependantValidation()
     {

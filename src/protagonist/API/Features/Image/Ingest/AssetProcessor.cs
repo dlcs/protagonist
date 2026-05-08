@@ -82,7 +82,9 @@ public class AssetProcessor(
 
             var existingAsset = assetFromDatabase?.Clone();
             var isNoneChannel = AssetDeliveryChannels.IsNoneOnly(
-                assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Select(dcp => dcp.Channel));
+                assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Select(dcp => dcp.Channel))
+                || AssetDeliveryChannels.IsStubAsset(assetBeforeProcessing.Asset.Space,
+                    assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Select(dcp => dcp.Channel));
             var assetPreparationResult =
                 AssetPreparer.PrepareAssetForUpsert(assetFromDatabase, assetBeforeProcessing.Asset, false, isBatchUpdate,
                     settings.RestrictedResourceIdCharacters, isNoneChannel);
