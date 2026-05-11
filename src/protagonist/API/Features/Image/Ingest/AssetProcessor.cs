@@ -79,12 +79,12 @@ public class AssetProcessor(
 
                 counts.CustomerStorage.NumberOfStoredImages++;
             }
-
+            
             var existingAsset = assetFromDatabase?.Clone();
-            var isNoneChannel = AssetDeliveryChannels.IsNoneOnly(
-                assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Select(dcp => dcp.Channel))
-                || AssetDeliveryChannels.IsStubAsset(assetBeforeProcessing.Asset.Space,
-                    assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Select(dcp => dcp.Channel));
+
+            var assetDeliveryChannels = assetBeforeProcessing.DeliveryChannelsBeforeProcessing?.Select(dcp => dcp.Channel).ToList();
+            var isNoneChannel = AssetDeliveryChannels.IsNoneOnly( assetDeliveryChannels)
+                || AssetDeliveryChannels.IsStubAsset(assetBeforeProcessing.Asset.Space, assetDeliveryChannels);
             var assetPreparationResult =
                 AssetPreparer.PrepareAssetForUpsert(assetFromDatabase, assetBeforeProcessing.Asset, false, isBatchUpdate,
                     settings.RestrictedResourceIdCharacters, isNoneChannel);
