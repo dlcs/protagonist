@@ -86,7 +86,7 @@ public class ImageOrchestrator : IImageOrchestrator
 
         var orchestrationResult = OrchestrationResult.AlreadyOrchestrated;
 
-        await appCache.GetOrAddAsync(CacheKeys.GetOrchestrationCacheKey(assetId), async _ =>
+        await appCache.GetOrAddAsync(CacheKeys.GetOrchestrationCacheKey(assetId), async entry =>
         {
             try
             {
@@ -97,14 +97,15 @@ public class ImageOrchestrator : IImageOrchestrator
                 orchestrationResult = OrchestrationResult.Error;
             }
 
+            if (orchestrationResult is OrchestrationResult.Error or OrchestrationResult.NotFound)
+            {
+                var cacheSettings = orchestratorSettings.CurrentValue.Caching;
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
+                entry.Priority = CacheItemPriority.Low;
+            }
+
             return true;
-        }, orchestratorSettings.CurrentValue.Caching.GetMemoryCacheOptions(
-            duration: orchestrationResult is OrchestrationResult.Error or OrchestrationResult.NotFound
-                ? CacheDuration.Short
-                : CacheDuration.Default,
-            priority: orchestrationResult is OrchestrationResult.Error or OrchestrationResult.NotFound
-                ? CacheItemPriority.Low
-                : CacheItemPriority.High));
+        }, orchestratorSettings.CurrentValue.Caching.GetMemoryCacheOptions(priority: CacheItemPriority.High));
 
         return orchestrationResult;
     }
