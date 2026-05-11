@@ -9,7 +9,6 @@ using System.Threading;
 using Amazon.S3;
 using API.Client;
 using API.Infrastructure;
-using API.Infrastructure.Messaging;
 using API.Infrastructure.Messaging.General;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
@@ -260,13 +259,12 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Put_CreateAsset_InSpaceZero_WithNoDeliveryChannel_CreatesAssetWithNoneChannelAndPlaceholders()
     {
         // Arrange - minimal stub asset payload: no origin, no mediaType, no deliveryChannels
-        var customerAndSpace = await CreateCustomerAndSpace();
-        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, 0);
+        var assetId = AssetIdGenerator.GetAssetId(space: 0); 
         var hydraImageBody = @"{ ""@type"": ""Image"" }";
 
         // Act
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+        var response = await httpClient.AsCustomer().PutAsync(assetId.ToApiResourcePath(), content);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
