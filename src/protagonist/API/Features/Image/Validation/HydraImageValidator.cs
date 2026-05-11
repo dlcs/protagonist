@@ -74,7 +74,7 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         => AssetDeliveryChannels.IsNoneOnly(image.DeliveryChannels?.Select(dc => dc.Channel));
 
     private static bool IsStubAsset(DLCS.HydraModel.Image image)
-        => AssetDeliveryChannels.IsStubAsset(image.Space, image.DeliveryChannels?.Select(dc => dc.Channel));
+        => AssetDeliveryChannels.IsPotentialStubAsset(image.Space, image.DeliveryChannels?.Select(dc => dc.Channel));
 
     private void ImageDeliveryChannelDependantValidation()
     {

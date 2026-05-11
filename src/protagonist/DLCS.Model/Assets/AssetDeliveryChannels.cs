@@ -87,8 +87,11 @@ public static class AssetDeliveryChannels
 
     /// <summary>
     /// Checks if an asset is a stub asset: in space 0 with no delivery channels specified
+    ///
+    /// Note: having "deliveryChannels": ["none"] would also be a valid stub asset, but this should be picked up with
+    /// <see cref="IsNoneOnly"/>
     /// </summary>
-    public static bool IsStubAsset(int? space, IEnumerable<string>? channels)
+    public static bool IsPotentialStubAsset(int? space, IEnumerable<string>? channels)
         => space == StubAssetSpace && channels.IsNullOrEmpty();
 
     /// <summary>
