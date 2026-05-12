@@ -49,45 +49,30 @@ public enum OrchestrationResult
 /// <summary>
 /// Class that contains logic for copying images from slow object-storage to fast-disk storage
 /// </summary>
-public class ImageOrchestrator : IImageOrchestrator
+public class ImageOrchestrator(
+    IAssetTracker assetTracker,
+    IOptionsMonitor<OrchestratorSettings> orchestratorSettings,
+    IOriginStrategy originStrategy,
+    IAppCache appCache,
+    IFileSaver fileSaver,
+    IFileSystem fileSystem,
+    IDlcsApiClient dlcsApiClient,
+    ILogger<ImageOrchestrator> logger)
+    : IImageOrchestrator
 {
-    private readonly IAssetTracker assetTracker;
-    private readonly IOptionsMonitor<OrchestratorSettings> orchestratorSettings;
-    private readonly IOriginStrategy originStrategy;
-    private readonly IAppCache appCache;
-    private readonly IFileSaver fileSaver;
-    private readonly IFileSystem fileSystem;
-    private readonly IDlcsApiClient dlcsApiClient;
-    private readonly ILogger<ImageOrchestrator> logger;
-
-    public ImageOrchestrator(IAssetTracker assetTracker,
-        IOptionsMonitor<OrchestratorSettings> orchestratorSettings,
-        IOriginStrategy originStrategy,
-        IAppCache appCache,
-        IFileSaver fileSaver,
-        IFileSystem fileSystem,
-        IDlcsApiClient dlcsApiClient,
-        ILogger<ImageOrchestrator> logger)
-    {
-        this.assetTracker = assetTracker;
-        this.orchestratorSettings = orchestratorSettings;
-        this.originStrategy = originStrategy;
-        this.appCache = appCache;
-        this.fileSaver = fileSaver;
-        this.fileSystem = fileSystem;
-        this.dlcsApiClient = dlcsApiClient;
-        this.logger = logger;
-    }
-
     public async Task<OrchestrationResult> EnsureImageOrchestrated(OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken = default)
     {
         var assetId = orchestrationImage.AssetId;
+        
+        // "workDone" is used to differentiate between an image being already orchestrated and cache delegate being
+        // called to do the orchestration 
+        var workDone = false;
 
-        var orchestrationResult = OrchestrationResult.AlreadyOrchestrated;
-
-        await appCache.GetOrAddAsync(CacheKeys.GetOrchestrationCacheKey(assetId), async entry =>
+        var orchestrationResult = await appCache.GetOrAddAsync(CacheKeys.GetOrchestrationCacheKey(assetId), async entry =>
         {
+            workDone = true;
+            OrchestrationResult orchestrationResult;
             try
             {
                 orchestrationResult = await OrchestrateImageInternal(orchestrationImage, assetId, cancellationToken);
@@ -104,10 +89,12 @@ public class ImageOrchestrator : IImageOrchestrator
                 entry.Priority = CacheItemPriority.Low;
             }
 
-            return true;
+            return orchestrationResult;
         }, orchestratorSettings.CurrentValue.Caching.GetMemoryCacheOptions(priority: CacheItemPriority.High));
-
-        return orchestrationResult;
+        
+        return orchestrationResult == OrchestrationResult.Orchestrated && !workDone
+            ? OrchestrationResult.AlreadyOrchestrated
+            : orchestrationResult;
     }
 
     private async Task<OrchestrationResult> OrchestrateImageInternal(OrchestrationImage orchestrationImage,

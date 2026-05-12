@@ -61,7 +61,8 @@ public class ImageOrchestratorTests
     public async Task EnsureImageOrchestrated_DoesNotCheckFileSystem_IfObjectInCache()
     {
         // Arrange
-        A.CallTo(() => fakedCache.GetOrAddAsync(CacheKey, A<Func<ICacheEntry, Task<bool>>>._)).Returns(true);
+        A.CallTo(() => fakedCache.GetOrAddAsync(CacheKey, A<Func<ICacheEntry, Task<OrchestrationResult>>>._, A<MemoryCacheEntryOptions>._))
+            .Returns(OrchestrationResult.Orchestrated);
         var sut = GetSystemUnderTest(true);
 
         // Act
@@ -269,10 +270,11 @@ public class ImageOrchestratorTests
     }
 
     private void SetupCacheToInvokeFactory(TestCacheEntry testEntry)
-        => A.CallTo(() => fakedCache.GetOrAddAsync(CacheKey, A<Func<ICacheEntry, Task<bool>>>._, A<MemoryCacheEntryOptions>._))
+        => A.CallTo(() => fakedCache.GetOrAddAsync(CacheKey, A<Func<ICacheEntry, Task<OrchestrationResult>>>._,
+                A<MemoryCacheEntryOptions>._))
             .ReturnsLazily(call =>
             {
-                var factory = call.GetArgument<Func<ICacheEntry, Task<bool>>>(1)!;
+                var factory = call.GetArgument<Func<ICacheEntry, Task<OrchestrationResult>>>(1)!;
                 return factory(testEntry);
             });
 
