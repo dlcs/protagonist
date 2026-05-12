@@ -1964,4 +1964,86 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
+
+    [Fact]
+    public async Task Post_CreateBatch_201_IfMinimalStubAsset()
+    {
+        // Arrange
+        const int customerId = 1901;
+        var assetId = AssetIdGenerator.GetAssetId(customerId, 0);
+        await dbContext.Customers.AddTestCustomer(customerId);
+        await dbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, 0, "stub-assets");
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId);
+        await dbContext.Queues.AddAsync(new Queue { Customer = customerId, Name = "default", Size = 0 });
+        await dbContext.SaveChangesAsync();
+
+        var hydraImageBody = $$"""
+        {
+            "@context": "http://www.w3.org/ns/hydra/context.jsonld",
+            "@type": "Collection",
+            "member": [
+                {
+                  "id": "{{assetId.Asset}}",
+                  "space": 0
+                }
+            ]
+        }
+        """;
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/{customerId}/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var model = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.CustomerQueue>();
+        var assetInDatabase = dbContext.Images
+            .Include(a => a.ImageDeliveryChannels)
+            .Single(a => a.Batch == model.Id.GetLastPathElementAsInt());
+        assetInDatabase.Id.Should().Be(assetId);
+        assetInDatabase.ImageDeliveryChannels.Should().ContainSingle(dc => dc.Channel == AssetDeliveryChannels.None);
+
+        // None-channel assets don't require engine processing
+        A.CallTo(() =>
+            EngineClient.AsynchronousIngestBatch(
+                A<IReadOnlyCollection<Asset>>.That.Matches(i => i.First().Id == assetId), true,
+                A<CancellationToken>._)).MustNotHaveHappened();
+
+        // Batch completes immediately since no engine processing is needed
+        A.CallTo(() =>
+                NotificationSender.SendBatchCompletedMessage(
+                    A<Batch>.That.Matches(b => b.Id == model.Id.GetLastPathElementAsInt()),
+                    A<CancellationToken>._))
+            .MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task Post_CreateBatch_400_IfSpaceNotProvided()
+    {
+        // Arrange
+        var hydraImageBody = """
+        {
+            "@context": "http://www.w3.org/ns/hydra/context.jsonld",
+            "@type": "Collection",
+            "member": [
+                {
+                  "id": "my-asset"
+                }
+            ]
+        }
+        """;
+
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var path = $"/customers/2/queue";
+
+        // Act
+        var response = await httpClient.AsCustomer().PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }

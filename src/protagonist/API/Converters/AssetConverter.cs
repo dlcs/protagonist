@@ -256,21 +256,23 @@ public static class AssetConverter
         
         hydraImage.CustomerId = customerId;
 
-        if (hydraImage.Space > 0 && spaceId.HasValue && spaceId.Value != hydraImage.Space)
+        if (hydraImage.Space.HasValue && spaceId.HasValue && spaceId.Value != hydraImage.Space.Value)
         {
             throw new BadRequestException("Asserted space does not agree with supplied space.");
         }
-        
-        if (hydraImage.Space <= 0)
+
+        if (!hydraImage.Space.HasValue && spaceId.HasValue)
         {
-            if (spaceId.HasValue)
-            {
-                hydraImage.Space = spaceId.Value;
-            }
-            else
-            {
-                throw new BadRequestException("No Space provided for this Asset.");
-            }
+            // Space was not provided in body; take space from route
+            hydraImage.Space = spaceId.Value;
+        }
+        else if (!hydraImage.Space.HasValue)
+        {
+            throw new BadRequestException("No Space provided for this Asset.");
+        }
+        else if (hydraImage.Space < 0)
+        {
+            throw new BadRequestException("Space must be 0 or greater.");
         }
         
         if (modelId.IsNullOrEmpty())
@@ -290,7 +292,7 @@ public static class AssetConverter
         
         // This is a silent test for backwards compatibility with Deliverator.
         // DDS sends Patch ModelIDs in full ID form:
-        var testPrefix = $"{hydraImage.CustomerId}/{hydraImage.Space}/";
+        var testPrefix = $"{hydraImage.CustomerId}/{hydraImage.Space.Value}/";
         if (modelId.StartsWith(testPrefix))
         {
             modelId = modelId.Substring(testPrefix.Length);
@@ -301,14 +303,14 @@ public static class AssetConverter
         {
             Id = assetId,
             Customer = hydraImage.CustomerId,
-            Space = hydraImage.Space
+            Space = hydraImage.Space.Value
         };
         return asset;
     }
     
     private static AssetId GetValidAssetId(Image hydraImage, string modelId)
     {
-        var assetId = new AssetId(hydraImage.CustomerId, hydraImage.Space, modelId);
+        var assetId = new AssetId(hydraImage.CustomerId, hydraImage.Space!.Value, modelId);
         if (!hydraImage.Id.HasText()) return assetId;
 
         var idParts = hydraImage.Id.Split("/");

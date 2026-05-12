@@ -115,6 +115,9 @@ public class ImageController : HydraController
             hydraAsset.ModelId = imageId;
         }
 
+        // make sure the space id is set for the validator
+        hydraAsset.Space ??= spaceId;
+
         var validationResult = await validator.ValidateAsync(hydraAsset,
             strategy => strategy.IncludeRuleSets("default", "create"), cancellationToken);
         
