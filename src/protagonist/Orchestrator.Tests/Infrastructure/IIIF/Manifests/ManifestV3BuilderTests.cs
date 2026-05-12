@@ -592,6 +592,62 @@ public class ManifestV3BuilderTests
         fullInlinePaintingAnnotationBody.Language.Should().OnlyContain(l => l == "en");
     }
     
+    [Fact]
+    public async Task BuildManifest_NoneChannel_WithAdjuncts_CreatesCanvas()
+    {
+        var asset = new Asset
+        {
+            Id = AssetIdGenerator.GetAssetId(),
+            MediaType = "example/example",
+            ImageDeliveryChannels = "none".GenerateDeliveryChannels(),
+            Adjuncts =
+            [
+                new Adjunct
+                {
+                    Id = "dataset",
+                    IIIFLink = IIIFLinkType.SeeAlso,
+                    MediaType = "application/json",
+                    AssetId = AssetIdGenerator.GetAssetId(),
+                    Type = "Dataset",
+                    ExternalId = new Uri("http://some.id/dataset")
+                }
+            ]
+        };
+
+        var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
+        A.CallTo(() => builderUtils.GetCanvasId(asset, pathElement, A<int>._))
+            .Returns("https://dlcs.test/canvas/0");
+
+        var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
+            ManifestType.NamedQuery, CancellationToken.None);
+
+        manifest.Items.Should().HaveCount(1);
+        var canvas = manifest.Items!.Single();
+        canvas.Items.Should().BeNull("No painting annotation for none channel");
+        canvas.SeeAlso.Should().HaveCount(1);
+        var seeAlso = canvas.SeeAlso!.Single();
+        seeAlso.Id.Should().Be("http://some.id/dataset");
+        seeAlso.Format.Should().Be("application/json");
+    }
+
+    [Fact]
+    public async Task BuildManifest_NoneChannel_WithoutAdjuncts_NoCanvas()
+    {
+        var asset = new Asset
+        {
+            Id = AssetIdGenerator.GetAssetId(),
+            MediaType = "example/example",
+            ImageDeliveryChannels = "none".GenerateDeliveryChannels()
+        };
+
+        var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
+
+        var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
+            ManifestType.NamedQuery, CancellationToken.None);
+
+        manifest.Items.Should().BeNullOrEmpty();
+    }
+
     private static Asset GetImageAsset(string deliveryChannels) =>
         new()
         {

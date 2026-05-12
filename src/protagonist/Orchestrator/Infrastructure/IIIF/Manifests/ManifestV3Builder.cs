@@ -202,9 +202,15 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
 
         if (annotationPage == null)
         {
+            if (asset.HasSingleDeliveryChannel(AssetDeliveryChannels.None) && !asset.Adjuncts.IsNullOrEmpty())
+            {
+                logger.LogDebug("{AssetId} has 'none' channel and adjuncts - adding Canvas", asset.Id);
+                AddAdjunctsToCanvas(canvas, asset);
+                return new AssetCanvas(canvas, additionalContexts);
+            }
             return new AssetCanvas(null, null);
         }
-        
+
         canvas.Items = annotationPage.AsList();
 
         if (thumbnail != null)
