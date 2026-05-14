@@ -91,6 +91,33 @@ public class S3BucketWriterTests
         maxConcurrent.Should().BeGreaterThan(1, "parts should be copied in parallel");
     }
 
+    [Fact]
+    public async Task CopyLargeObject_AbortsAndReturnsCancelled_WhenCancelled()
+    {
+        const string uploadId = "upload-id";
+        const long fileSize = 32L * 1024 * 1024; // 32 MB, 2 parts
+        SetupS3ForCopy(fileSize, uploadId);
+        var source = new ObjectInBucket("src-bucket", "src-key");
+        var destination = new ObjectInBucket("dst-bucket", "dst-key");
+
+        var cts = new CancellationTokenSource();
+
+        A.CallTo(() => s3Client.CopyPartAsync(A<CopyPartRequest>.Ignored, A<CancellationToken>.Ignored))
+            .ReturnsLazily(_ =>
+            {
+                // Cancel the operation after the first part is copied
+                cts.Cancel();
+                return Task.FromCanceled<CopyPartResponse>(cts.Token);
+            });
+
+        var result = await sut.CopyLargeObject(source, destination, token: cts.Token);
+
+        result.Result.Should().Be(LargeObjectStatus.Cancelled);
+        A.CallTo(() => s3Client.AbortMultipartUploadAsync(destination.Bucket, destination.Key, uploadId,
+                CancellationToken.None))
+            .MustHaveHappenedOnceExactly();
+    }
+
     private void SetupS3ForCopy(long fileSize, string uploadId = "upload-id")
     {
         A.CallTo(() => s3Client.GetObjectMetadataAsync(
