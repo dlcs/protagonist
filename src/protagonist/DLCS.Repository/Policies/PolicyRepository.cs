@@ -96,18 +96,6 @@ public class PolicyRepository : IPolicyRepository
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
     }
 
-    private Task<List<ThumbnailPolicy>> GetThumbnailPolicies(CancellationToken cancellationToken)
-    {
-        const string key = "ThumbnailPolicies";
-        return appCache.GetOrAddAsync(key, async () =>
-        {
-            logger.LogDebug("Refreshing ThumbnailPolicies from database");
-            var thumbnailPolicies =
-                await dlcsContext.ThumbnailPolicies.AsNoTracking().ToListAsync(cancellationToken: cancellationToken);
-            return thumbnailPolicies;
-        }, cacheSettings.GetMemoryCacheOptions());
-    }
-    
     private async Task<List<DeliveryChannelPolicy>> GetThumbnailDeliveryChannelPolicies(int customerId, CancellationToken cancellationToken)
     {
         string key = $"ThumbnailDeliveryChannelPolicies:{customerId}";
