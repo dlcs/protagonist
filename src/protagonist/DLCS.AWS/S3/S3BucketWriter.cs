@@ -4,20 +4,16 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using DLCS.AWS.S3.Models;
+using DLCS.AWS.Settings;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace DLCS.AWS.S3;
 
-public class S3BucketWriter : IBucketWriter
+public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions, ILogger<S3BucketWriter> logger)
+    : IBucketWriter
 {
-    private readonly IAmazonS3 s3Client;
-    private readonly ILogger<S3BucketWriter> logger;
-
-    public S3BucketWriter(IAmazonS3 s3Client, ILogger<S3BucketWriter> logger)
-    {
-        this.s3Client = s3Client;
-        this.logger = logger;
-    }
+    private readonly S3Settings s3Settings = awsOptions.Value.S3;
 
     public async Task CopyObject(ObjectInBucket source, ObjectInBucket destination)
     {
@@ -57,10 +53,10 @@ public class S3BucketWriter : IBucketWriter
     /// <returns>ResultStatus signifying success or failure alongside ContentSize</returns>
     /// <remarks>See https://docs.aws.amazon.com/AmazonS3/latest/dev/CopyingObjctsUsingLLNetMPUapi.html </remarks>
     public async Task<LargeObjectCopyResult> CopyLargeObject(ObjectInBucket source, ObjectInBucket destination,
-        Func<long, Task<bool>>? verifySize = null, string? contentType = null,
-        CancellationToken token = default)
+        Func<long, Task<bool>>? verifySize = null, string? contentType = null, CancellationToken token = default)
     {
         long? objectSize = null;
+        string? uploadId = null;
         var success = false;
         var timer = Stopwatch.StartNew();
 
@@ -74,57 +70,42 @@ public class S3BucketWriter : IBucketWriter
                 notFoundResponse.DestinationExists = destinationMetadata != null;
                 return notFoundResponse;
             }
-            
+
             objectSize = sourceMetadata.ContentLength;
-            
+            var notNullObjectSize = objectSize.Value;
+
             if (verifySize != null)
             {
-                if (!await verifySize.Invoke(objectSize.Value))
+                if (!await verifySize.Invoke(notNullObjectSize))
                 {
                     logger.LogInformation("Aborting multipart upload for {Target} as size verification failed",
                         destination);
-                    return new LargeObjectCopyResult(LargeObjectStatus.FileTooLarge, objectSize);
+                    return new LargeObjectCopyResult(LargeObjectStatus.FileTooLarge, notNullObjectSize);
                 }
             }
 
-            var partSize = GetPartSize(objectSize.Value);
-            var numberOfParts = (int)Math.Ceiling((double)objectSize / partSize);
-            var copyResponses = new List<CopyPartResponse>(numberOfParts);
+            var partSize = GetPartSize(notNullObjectSize);
+            var numberOfParts = (int)Math.Ceiling((double)notNullObjectSize / partSize);
 
-            var uploadId = await InitiateMultipartUpload(destination, contentType);
+            uploadId = await InitiateMultipartUpload(destination, contentType);
             logger.LogDebug("Starting copying {UploadId} in {Parts} parts of size {PartSize}", uploadId, numberOfParts,
                 partSize);
 
-            long bytePosition = 0;
-            for (int i = 1; bytePosition < objectSize; i++)
-            {
-                if (token.IsCancellationRequested)
-                {
-                    logger.LogInformation("Cancellation requested, aborting multipart upload for {Target}",
-                        destination);
-                    await s3Client.AbortMultipartUploadAsync(destination.Bucket, destination.Key, uploadId, token);
-                    return new LargeObjectCopyResult(LargeObjectStatus.Cancelled, objectSize);
-                }
-                
-                var copyRequest = new CopyPartRequest
-                {
-                    DestinationBucket = destination.Bucket,
-                    DestinationKey = destination.Key,
-                    SourceBucket = source.Bucket,
-                    SourceKey = source.Key,
-                    UploadId = uploadId,
-                    FirstByte = bytePosition,
-                    LastByte = bytePosition + partSize - 1 >= objectSize.Value
-                        ? objectSize.Value - 1
-                        : bytePosition + partSize - 1,
-                    PartNumber = i
-                };
-                
-                copyResponses.Add(await s3Client.CopyPartAsync(copyRequest, token));
-                bytePosition += partSize;
-            }
+            // Build all part requests
+            var partRequests =
+                GetCopyPartRequests(source, destination, numberOfParts, notNullObjectSize, uploadId, partSize);
 
-            // Complete the request
+            // Copy parts in parallel with bounded concurrency
+            var copyResponses = new CopyPartResponse[numberOfParts];
+            await Parallel.ForEachAsync(
+                partRequests,
+                new ParallelOptions
+                    { MaxDegreeOfParallelism = s3Settings.CopyPartConcurrency, CancellationToken = token },
+                async (request, ct) =>
+                {
+                    copyResponses[request.PartNumber - 1] = await s3Client.CopyPartAsync(request, ct);
+                });
+
             var completeRequest = new CompleteMultipartUploadRequest
             {
                 Key = destination.Key,
@@ -136,11 +117,15 @@ public class S3BucketWriter : IBucketWriter
             success = true;
             return new LargeObjectCopyResult(LargeObjectStatus.Success, objectSize);
         }
-        catch (OverflowException e)
+        catch (OperationCanceledException)
         {
-            logger.LogError(e,
-                "Error getting number of parts to copy. From '{Source}' to '{Destination}'. Size {Size}", source,
-                destination, objectSize);
+            logger.LogInformation("Cancellation requested, aborting multipart upload for {Target}", destination);
+            if (uploadId != null)
+            {
+                await s3Client.AbortMultipartUploadAsync(destination.Bucket, destination.Key, uploadId,
+                    CancellationToken.None);
+            }
+            return new LargeObjectCopyResult(LargeObjectStatus.Cancelled, objectSize);
         }
         catch (AmazonS3Exception e)
         {
@@ -171,11 +156,38 @@ public class S3BucketWriter : IBucketWriter
         return new LargeObjectCopyResult(LargeObjectStatus.Error, objectSize);
     }
 
+    private static List<CopyPartRequest> GetCopyPartRequests(ObjectInBucket source, ObjectInBucket destination,
+        int numberOfParts, long objectSize, string uploadId, long partSize)
+    {
+        var partRequests = new List<CopyPartRequest>(numberOfParts);
+        long bytePosition = 0;
+        for (var i = 1; bytePosition < objectSize; i++)
+        {
+            partRequests.Add(new CopyPartRequest
+            {
+                DestinationBucket = destination.Bucket,
+                DestinationKey = destination.Key,
+                SourceBucket = source.Bucket,
+                SourceKey = source.Key,
+                UploadId = uploadId,
+                FirstByte = bytePosition,
+                LastByte = bytePosition + partSize - 1 >= objectSize
+                    ? objectSize - 1
+                    : bytePosition + partSize - 1,
+                PartNumber = i
+            });
+            bytePosition += partSize;
+        }
+
+        return partRequests;
+    }
+
     private static long GetPartSize(long objectSize)
     {
-        // 5 MB (S3 minimum per part)
-        const long minPartSize = 5 * 1024 * 1024;
-        var partSize = Math.Max(minPartSize, (long)Math.Ceiling((double)objectSize / 10000));
+        // 16 MB matches TransferUtility's default and reduces API call overhead vs the 5 MB S3 minimum
+        const long minPartSize = 16 * 1024 * 1024;
+        const double maxParts = 10000;
+        var partSize = Math.Max(minPartSize, (long)Math.Ceiling(objectSize / maxParts));
         return partSize;
     }
 
