@@ -61,7 +61,6 @@ public class S3BucketWriter : IBucketWriter
         CancellationToken token = default)
     {
         long? objectSize = null;
-        var partSize = 5 * (long)Math.Pow(2, 20); // 5 MB
         var success = false;
         var timer = Stopwatch.StartNew();
 
@@ -77,7 +76,7 @@ public class S3BucketWriter : IBucketWriter
             }
             
             objectSize = sourceMetadata.ContentLength;
-
+            
             if (verifySize != null)
             {
                 if (!await verifySize.Invoke(objectSize.Value))
@@ -88,10 +87,13 @@ public class S3BucketWriter : IBucketWriter
                 }
             }
 
-            var numberOfParts = Convert.ToInt32(objectSize / partSize);
+            var partSize = GetPartSize(objectSize.Value);
+            var numberOfParts = (int)Math.Ceiling((double)objectSize / partSize);
             var copyResponses = new List<CopyPartResponse>(numberOfParts);
 
             var uploadId = await InitiateMultipartUpload(destination, contentType);
+            logger.LogDebug("Starting copying {UploadId} in {Parts} parts of size {PartSize}", uploadId, numberOfParts,
+                partSize);
 
             long bytePosition = 0;
             for (int i = 1; bytePosition < objectSize; i++)
@@ -167,6 +169,14 @@ public class S3BucketWriter : IBucketWriter
         }
         
         return new LargeObjectCopyResult(LargeObjectStatus.Error, objectSize);
+    }
+
+    private static long GetPartSize(long objectSize)
+    {
+        // 5 MB (S3 minimum per part)
+        const long minPartSize = 5 * 1024 * 1024;
+        var partSize = Math.Max(minPartSize, (long)Math.Ceiling((double)objectSize / 10000));
+        return partSize;
     }
 
     public async Task WriteToBucket(ObjectInBucket dest, string content, string contentType,
