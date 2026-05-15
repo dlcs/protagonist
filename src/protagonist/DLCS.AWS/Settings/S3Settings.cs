@@ -46,4 +46,9 @@ public class S3Settings
     /// Service root for S3. Only used if running LocalStack
     /// </summary>
     public string ServiceUrl { get; set; } = "http://localhost:4566/";
+
+    /// <summary>
+    /// Maximum number of concurrent part-copy operations when performing a multipart bucket-to-bucket copy.
+    /// </summary>
+    public int CopyPartConcurrency { get; set; } = 4;
 }
