@@ -226,10 +226,29 @@ public static class DatabaseTestDataPopulation
             Count = count, Errors = errors, Superseded = superseded, Finished = finished
         });
 
-    public static ValueTask<EntityEntry<CustomerStorage>> AddTestCustomerStorage(
+    public static async Task<CustomerStorage> AddTestCustomerStorage(
         this DbSet<CustomerStorage> customerStorages, int customer = 99, int? space = null, int numberOfImages = 0,
         long sizeOfStored = 0, long sizeOfThumbs = 0, string storagePolicy = "default")
-        => customerStorages.AddAsync(new CustomerStorage
+    {
+        // Aggregate rows (space == null) may already exist (seeded by test fixture CleanUp).
+        // Update in place to avoid violating the unique partial index.
+        if (space == null)
+        {
+            var existing = await customerStorages
+                .FirstOrDefaultAsync(cs => cs.Customer == customer && cs.Space == null);
+            if (existing != null)
+            {
+                existing.NumberOfStoredImages = numberOfImages;
+                existing.TotalSizeOfStoredImages = sizeOfStored;
+                existing.TotalSizeOfThumbnails = sizeOfThumbs;
+                existing.StoragePolicy = storagePolicy;
+                existing.LastCalculated = DateTime.UtcNow;
+                customerStorages.Update(existing);
+                return existing;
+            }
+        }
+
+        var newRow = new CustomerStorage
         {
             Customer = customer,
             Space = space,
@@ -238,7 +257,10 @@ public static class DatabaseTestDataPopulation
             NumberOfStoredImages = numberOfImages,
             TotalSizeOfStoredImages = sizeOfStored,
             TotalSizeOfThumbnails = sizeOfThumbs
-        });
+        };
+        await customerStorages.AddAsync(newRow);
+        return newRow;
+    }
 
     public static ValueTask<EntityEntry<Asset>> WithTestThumbnailMetadata(
         this ValueTask<EntityEntry<Asset>> asset,

@@ -35,6 +35,8 @@ public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerOriginStrategies\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerStorage\"");
+        DbContext.Database.ExecuteSqlRaw(
+            "INSERT INTO \"CustomerStorage\" (\"Customer\", \"Space\", \"StoragePolicy\", \"NumberOfStoredImages\", \"TotalSizeOfStoredImages\", \"TotalSizeOfThumbnails\") VALUES (99, NULL, 'default', 0, 0, 0)");
         DbContext.Database.ExecuteSqlRaw($"DELETE FROM \"AuthServices\" WHERE \"Id\" != '{ClickThroughAuthService}'");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Roles\" WHERE \"Id\" != 'clickthrough'");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"SessionUsers\"");
@@ -146,6 +148,11 @@ public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
                 Id = "cust-default", Name = "Customer Scoped", TechnicalDetails = new[] { "default" },
                 Global = false, Customer = 99
             });
+        await DbContext.CustomerStorages.AddAsync(new CustomerStorage
+        {
+            Customer = customer, Space = null, StoragePolicy = "default",
+            NumberOfStoredImages = 0, TotalSizeOfStoredImages = 0, TotalSizeOfThumbnails = 0
+        });
         await DbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(99);
         await DbContext.DeliveryChannelPolicies.AddRangeAsync(new DeliveryChannelPolicy()
         {

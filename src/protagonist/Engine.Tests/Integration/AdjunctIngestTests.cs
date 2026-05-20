@@ -33,6 +33,7 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly HttpClient httpClient;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
     private readonly DlcsContext dbContext;
+    private readonly DlcsContext seedContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private readonly ApiStub apiStub;
     
@@ -46,6 +47,8 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public AdjunctIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
     {
         dbContext = engineFixture.DbFixture.DbContext;
+        seedContext = new DlcsContext(
+            new DbContextOptionsBuilder<DlcsContext>().UseNpgsql(engineFixture.DbFixture.ConnectionString).Options);
         apiStub = engineFixture.ApiStub;
         
         // Fake http images
@@ -203,10 +206,11 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task IngestAsset_Error_ExceedAllowance()
     {
-        // prep customer
-        await dbContext.Customers.AddTestCustomer(CustomerForLimits);
-        await dbContext.Spaces.AddTestSpace(CustomerForLimits, SpaceExceedLimit);
-        await dbContext.SaveChangesAsync();
+        // prep customer - use seedContext so dbContext doesn't track the storage row
+        await seedContext.Customers.AddTestCustomer(CustomerForLimits);
+        await seedContext.Spaces.AddTestSpace(CustomerForLimits, SpaceExceedLimit);
+        await seedContext.CustomerStorages.AddTestCustomerStorage(customer: CustomerForLimits);
+        await seedContext.SaveChangesAsync();
         
         var asset = await CreateParentAsset(customer:CustomerForLimits);
 

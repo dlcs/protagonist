@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
@@ -16,7 +15,7 @@ public class CustomerStorageRepository : IStorageRepository
     private readonly ILogger<CustomerStorageRepository> logger;
 
     public CustomerStorageRepository(
-        DlcsContext dlcsContext, 
+        DlcsContext dlcsContext,
         IPolicyRepository policyRepository,
         ILogger<CustomerStorageRepository> logger)
     {
@@ -25,50 +24,22 @@ public class CustomerStorageRepository : IStorageRepository
         this.logger = logger;
     }
 
-    public async Task<CustomerStorage?> GetCustomerStorage(int customerId, int spaceId, bool createOnDemand,
-        CancellationToken cancellationToken)
-    {
-        // TODO - periodically recalculate this as-per Deliverator
-        var storageForSpace =
-            await dlcsContext.CustomerStorages.SingleOrDefaultAsync(cs =>
-                cs.Customer == customerId && cs.Space == spaceId, cancellationToken: cancellationToken);
-
-        if (storageForSpace != null) return storageForSpace;
-
-        if (!createOnDemand) return storageForSpace;
-
-        storageForSpace = new CustomerStorage
-        {
-            Customer = customerId, Space = spaceId, StoragePolicy = string.Empty,
-            NumberOfStoredImages = 0, TotalSizeOfThumbnails = 0, TotalSizeOfStoredImages = 0
-        };
-
-        await dlcsContext.CustomerStorages.AddAsync(storageForSpace, cancellationToken);
-        await dlcsContext.SaveChangesAsync(cancellationToken);
-
-        return storageForSpace;
-    }
-
     public async Task<CustomerStorageSummary> GetCustomerStorageSummary(
         int customerId, CancellationToken cancellationToken)
     {
-        // Is it quicker to do this with a SUM in the database? Depends how many spaces the customer has.
-        var spaceStorageList = await dlcsContext.CustomerStorages
-            .Where(cs => cs.Customer == customerId)
-            .ToListAsync(cancellationToken);
-        
-        var aggregateSummary = new CustomerStorageSummary { CustomerId = customerId };
-        foreach (var customerStorage in spaceStorageList)
-        {
-            if (customerStorage.Space == null)
-            {
-                aggregateSummary.NumberOfStoredImages = customerStorage.NumberOfStoredImages;
-                aggregateSummary.TotalSizeOfStoredImages = customerStorage.TotalSizeOfStoredImages;
-                aggregateSummary.TotalSizeOfThumbnails = customerStorage.TotalSizeOfThumbnails;
-            }
-        }
+        var aggregateRow = await dlcsContext.CustomerStorages
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cs => cs.Customer == customerId && cs.Space == null, cancellationToken);
 
-        return aggregateSummary;
+        return aggregateRow == null
+            ? new CustomerStorageSummary { CustomerId = customerId }
+            : new CustomerStorageSummary
+            {
+                CustomerId = customerId,
+                NumberOfStoredImages = aggregateRow.NumberOfStoredImages,
+                TotalSizeOfStoredImages = aggregateRow.TotalSizeOfStoredImages,
+                TotalSizeOfThumbnails = aggregateRow.TotalSizeOfThumbnails,
+            };
     }
 
     public async Task<AssetStorageMetric> GetStorageMetrics(int customerId, CancellationToken cancellationToken)
@@ -76,19 +47,10 @@ public class CustomerStorageRepository : IStorageRepository
         var aggregateRecord = await dlcsContext.CustomerStorages
             .SingleOrDefaultAsync(cs => cs.Customer == customerId && cs.Space == null, cancellationToken);
 
-        if (aggregateRecord == null)
-        {
-            aggregateRecord = new CustomerStorage
-            {
-                Customer = customerId, Space = null,
-                StoragePolicy = StoragePolicy.DefaultStoragePolicyName,
-                NumberOfStoredImages = 0, TotalSizeOfThumbnails = 0, TotalSizeOfStoredImages = 0
-            };
-            await dlcsContext.CustomerStorages.AddAsync(aggregateRecord, cancellationToken);
-            await dlcsContext.SaveChangesAsync(cancellationToken);
-        }
+        // The aggregate row is seeded by CreateCustomer and backfilled by migration - its absence is a bug.
+        aggregateRecord.ThrowIfNull(nameof(aggregateRecord));
 
-        var policyName = string.IsNullOrEmpty(aggregateRecord.StoragePolicy)
+        var policyName = string.IsNullOrEmpty(aggregateRecord!.StoragePolicy)
             ? StoragePolicy.DefaultStoragePolicyName
             : aggregateRecord.StoragePolicy;
 

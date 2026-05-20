@@ -294,7 +294,8 @@ public partial class DlcsContext : DbContext
             // One row per real space per customer (Space IS NOT NULL)
             entity.HasIndex(e => new { e.Customer, e.Space })
                 .IsUnique()
-                .HasFilter("\"Space\" IS NOT NULL");
+                .HasFilter("\"Space\" IS NOT NULL")
+                .HasDatabaseName("IX_CustomerStorage_Customer_Space");
 
             // One aggregate row per customer (Space IS NULL)
             entity.HasIndex(e => e.Customer)
