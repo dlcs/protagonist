@@ -1217,7 +1217,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         queue.Size.Should().Be(3);
         
         // Customer Storage incremented
-        var storage = await dbContext.CustomerStorages.SingleAsync(q => q.Customer == customerId && q.Space == 0);
+        var storage = await dbContext.CustomerStorages.SingleAsync(q => q.Customer == customerId && q.Space == null);
         storage.NumberOfStoredImages.Should().Be(3);
 
         // Items queued for processing
@@ -1497,7 +1497,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         queue.Size.Should().Be(3);
         
         // Customer Storage incremented
-        var storage = await dbContext.CustomerStorages.SingleAsync(q => q.Customer == customerId && q.Space == 0);
+        var storage = await dbContext.CustomerStorages.SingleAsync(q => q.Customer == customerId && q.Space == null);
         storage.NumberOfStoredImages.Should().Be(4);
 
         // Items queued for processing

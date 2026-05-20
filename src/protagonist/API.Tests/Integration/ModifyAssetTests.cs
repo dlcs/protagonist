@@ -1760,7 +1760,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.CustomerStorages.AddAsync(new DLCS.Model.Storage.CustomerStorage
         {
             StoragePolicy = "tiny",
-            Customer = customer, Space = 0,
+            Customer = customer, Space = null,
             TotalSizeOfStoredImages = 0,
             TotalSizeOfThumbnails = 0,
             NumberOfStoredImages = 2
@@ -2845,7 +2845,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 100L);
         var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
             sizeOfStored: 1000L, sizeOfThumbs: 1000L);
-        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
+        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: null, numberOfImages: 200,
             sizeOfStored: 2000L, sizeOfThumbs: 2000L);
         var customerImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
             ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);
@@ -2908,7 +2908,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 100L);
         var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
             sizeOfStored: 1000L, sizeOfThumbs: 1000L);
-        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
+        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: null, numberOfImages: 200,
             sizeOfStored: 2000L, sizeOfThumbs: 2000L);
         var customerImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
             ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);
@@ -2969,7 +2969,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 0L);
         var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
             sizeOfStored: 1000L, sizeOfThumbs: 1000L);
-        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
+        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: null, numberOfImages: 200,
             sizeOfStored: 2000L, sizeOfThumbs: 2000L);
         var customerImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
             ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);

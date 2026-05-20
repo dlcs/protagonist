@@ -39,7 +39,7 @@ public class StorageTests : IClassFixture<ProtagonistAppFactory<Startup>>
             NumberOfStoredImages = 5,
             TotalSizeOfStoredImages = 8863407,
             TotalSizeOfThumbnails = 1029624,
-            Space = 0,
+            Space = null,
         };
         
         await dlcsContext.CustomerStorages.AddAsync(customerStorage);

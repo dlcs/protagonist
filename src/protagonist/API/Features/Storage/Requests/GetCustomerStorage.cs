@@ -19,8 +19,7 @@ public class GetCustomerStorage : IRequest<FetchEntityResult<CustomerStorage>>
 public class GetCustomerStorageHandler : IRequestHandler<GetCustomerStorage, FetchEntityResult<CustomerStorage>>
 {
     private readonly DlcsContext dbContext;
-    private const int DefaultStorageId = 0;
-    
+
     public GetCustomerStorageHandler(DlcsContext dbContext)
     {
         this.dbContext = dbContext;
@@ -29,7 +28,7 @@ public class GetCustomerStorageHandler : IRequestHandler<GetCustomerStorage, Fet
     public async Task<FetchEntityResult<CustomerStorage>> Handle(GetCustomerStorage request, CancellationToken cancellationToken)
     {
         var storage = await dbContext.CustomerStorages.AsNoTracking()
-            .SingleOrDefaultAsync(s => s.Customer == request.CustomerId && s.Space == DefaultStorageId, 
+            .SingleOrDefaultAsync(s => s.Customer == request.CustomerId && s.Space == null,
                 cancellationToken: cancellationToken);
         
         return storage == null

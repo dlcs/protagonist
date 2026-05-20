@@ -6,7 +6,7 @@ using DLCS.Core;
 using DLCS.Model;
 using DLCS.Model.Auth;
 using DLCS.Model.Processing;
-using DLCS.Model.Spaces;
+using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Exceptions;
@@ -108,6 +108,17 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
                 Tags = Array.Empty<string>(),
                 Roles = Array.Empty<string>(),
                 MaxUnauthorised = -1
+            }, cancellationToken);
+
+            // Create null-space aggregate CustomerStorage row for storage limit checks
+            await dbContext.CustomerStorages.AddAsync(new CustomerStorage
+            {
+                Customer = newCustomerId,
+                Space = null,
+                StoragePolicy = StoragePolicy.DefaultStoragePolicyName,
+                NumberOfStoredImages = 0,
+                TotalSizeOfStoredImages = 0,
+                TotalSizeOfThumbnails = 0
             }, cancellationToken);
 
             await dbContext.SaveChangesAsync(cancellationToken);

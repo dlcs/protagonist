@@ -104,11 +104,13 @@ public class ApiAssetRepository : IApiAssetRepository
             }
 
             // Reduce CustomerStorage for space
-            var customerSpaceStorage = await dlcsContext.CustomerStorages.FindAsync(customer, space);
+            var customerSpaceStorage = await dlcsContext.CustomerStorages
+                .SingleOrDefaultAsync(cs => cs.Customer == customer && cs.Space == space);
             if (customerSpaceStorage != null) ReduceCustomerStorage(customerSpaceStorage);
 
-            // Reduce CustomerStorage for overall customer
-            var customerStorage = await dlcsContext.CustomerStorages.FindAsync(customer, 0);
+            // Reduce CustomerStorage aggregate row
+            var customerStorage = await dlcsContext.CustomerStorages
+                .SingleOrDefaultAsync(cs => cs.Customer == customer && cs.Space == null);
             if (customerStorage != null) ReduceCustomerStorage(customerStorage);
 
             var rowCount = await dlcsContext.SaveChangesAsync();

@@ -265,7 +265,7 @@ public class EngineAssetRepositoryTests
         dbImageStorage.Should().BeEquivalentTo(imageStorage, opts => opts.Excluding(s => s.LastChecked));
         dbImageStorage.LastChecked.Should().BeCloseTo(imageStorage.LastChecked, TimeSpan.FromMinutes(1));
 
-        var dbCustomerStorage = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == 99 && cs.Space == 0);
+        var dbCustomerStorage = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == 99 && cs.Space == null);
         dbCustomerStorage.TotalSizeOfStoredImages.Should().Be(1510);
         dbCustomerStorage.TotalSizeOfThumbnails.Should().Be(2820);
         A.CallTo(() =>

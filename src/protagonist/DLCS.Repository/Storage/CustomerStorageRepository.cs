@@ -36,18 +36,12 @@ public class CustomerStorageRepository : IStorageRepository
         if (storageForSpace != null) return storageForSpace;
 
         if (!createOnDemand) return storageForSpace;
-        
+
         storageForSpace = new CustomerStorage
         {
             Customer = customerId, Space = spaceId, StoragePolicy = string.Empty,
             NumberOfStoredImages = 0, TotalSizeOfThumbnails = 0, TotalSizeOfStoredImages = 0
         };
-                
-        if (spaceId == 0)
-        {
-            storageForSpace.StoragePolicy = StoragePolicy.DefaultStoragePolicyName; // this isn't set on Customer
-            // This space0 row isn't created when a customer is created, either - but should it?
-        }
 
         await dlcsContext.CustomerStorages.AddAsync(storageForSpace, cancellationToken);
         await dlcsContext.SaveChangesAsync(cancellationToken);
@@ -63,37 +57,46 @@ public class CustomerStorageRepository : IStorageRepository
             .Where(cs => cs.Customer == customerId)
             .ToListAsync(cancellationToken);
         
-        var sumSummary = new CustomerStorageSummary { CustomerId = customerId };
-        var space0Summary = new CustomerStorageSummary { CustomerId = customerId };
+        var aggregateSummary = new CustomerStorageSummary { CustomerId = customerId };
         foreach (var customerStorage in spaceStorageList)
         {
-            if (customerStorage.Space == 0)
+            if (customerStorage.Space == null)
             {
-                space0Summary.NumberOfStoredImages = customerStorage.NumberOfStoredImages;
-                space0Summary.TotalSizeOfStoredImages = customerStorage.TotalSizeOfStoredImages;
-                space0Summary.TotalSizeOfThumbnails = customerStorage.TotalSizeOfThumbnails;
-            }
-            else
-            {
-                sumSummary.NumberOfStoredImages += customerStorage.NumberOfStoredImages;
-                sumSummary.TotalSizeOfStoredImages += customerStorage.TotalSizeOfStoredImages;
-                sumSummary.TotalSizeOfThumbnails += customerStorage.TotalSizeOfThumbnails;
+                aggregateSummary.NumberOfStoredImages = customerStorage.NumberOfStoredImages;
+                aggregateSummary.TotalSizeOfStoredImages = customerStorage.TotalSizeOfStoredImages;
+                aggregateSummary.TotalSizeOfThumbnails = customerStorage.TotalSizeOfThumbnails;
             }
         }
 
-        // Which one of these should we return!!!
-        return space0Summary;
-        // return sumSummary;
+        return aggregateSummary;
     }
 
     public async Task<AssetStorageMetric> GetStorageMetrics(int customerId, CancellationToken cancellationToken)
     {
-        var space0Record = await GetCustomerStorage(customerId, 0, true, cancellationToken);
-        var policy = await policyRepository.GetStoragePolicy(space0Record.StoragePolicy, cancellationToken);
+        var aggregateRecord = await dlcsContext.CustomerStorages
+            .SingleOrDefaultAsync(cs => cs.Customer == customerId && cs.Space == null, cancellationToken);
+
+        if (aggregateRecord == null)
+        {
+            aggregateRecord = new CustomerStorage
+            {
+                Customer = customerId, Space = null,
+                StoragePolicy = StoragePolicy.DefaultStoragePolicyName,
+                NumberOfStoredImages = 0, TotalSizeOfThumbnails = 0, TotalSizeOfStoredImages = 0
+            };
+            await dlcsContext.CustomerStorages.AddAsync(aggregateRecord, cancellationToken);
+            await dlcsContext.SaveChangesAsync(cancellationToken);
+        }
+
+        var policyName = string.IsNullOrEmpty(aggregateRecord.StoragePolicy)
+            ? StoragePolicy.DefaultStoragePolicyName
+            : aggregateRecord.StoragePolicy;
+
+        var policy = await policyRepository.GetStoragePolicy(policyName, cancellationToken);
         return new AssetStorageMetric
         {
             Policy = policy.ThrowIfNull(nameof(policy))!,
-            CustomerStorage = space0Record,
+            CustomerStorage = aggregateRecord,
         };
     }
 }

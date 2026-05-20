@@ -1013,10 +1013,13 @@ namespace DLCS.Repository.Migrations
 
             modelBuilder.Entity("DLCS.Model.Storage.CustomerStorage", b =>
                 {
-                    b.Property<int>("Customer")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    b.Property<int>("Space")
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Customer")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("LastCalculated")
@@ -1024,6 +1027,9 @@ namespace DLCS.Repository.Migrations
 
                     b.Property<long>("NumberOfStoredImages")
                         .HasColumnType("bigint");
+
+                    b.Property<int?>("Space")
+                        .HasColumnType("integer");
 
                     b.Property<string>("StoragePolicy")
                         .HasMaxLength(500)
@@ -1035,7 +1041,16 @@ namespace DLCS.Repository.Migrations
                     b.Property<long>("TotalSizeOfThumbnails")
                         .HasColumnType("bigint");
 
-                    b.HasKey("Customer", "Space");
+                    b.HasKey("Id");
+
+                    b.HasIndex("Customer")
+                        .IsUnique()
+                        .HasDatabaseName("IX_CustomerStorage_Customer_Aggregate")
+                        .HasFilter("\"Space\" IS NULL");
+
+                    b.HasIndex("Customer", "Space")
+                        .IsUnique()
+                        .HasFilter("\"Space\" IS NOT NULL");
 
                     b.ToTable("CustomerStorage", (string)null);
                 });

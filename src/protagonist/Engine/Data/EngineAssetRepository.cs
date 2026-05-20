@@ -183,7 +183,7 @@ public class EngineAssetRepository(
         try
         {
             await DlcsContext.CustomerStorages
-                .Where(cs => cs.Customer == imageStorage.Customer && cs.Space == 0)
+                .Where(cs => cs.Customer == imageStorage.Customer && cs.Space == null)
                 .UpdateFromQueryAsync(cs => new CustomerStorage
                 {
                     TotalSizeOfStoredImages = cs.TotalSizeOfStoredImages + imageStorage.Size,
