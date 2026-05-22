@@ -50,7 +50,7 @@ namespace DLCS.Repository.Migrations
                 nullable: false,
                 defaultValue: 0L);
 
-            // All existing Space=0 rows were aggregate rows written by the recalculators.
+            // All existing Space=0 rows were aggregate rows.
             // Real stub-asset Space=0 tracking has not started yet, so this is safe to do wholesale.
             migrationBuilder.Sql(@"UPDATE ""CustomerStorage"" SET ""Space"" = NULL WHERE ""Space"" = 0;");
 
