@@ -16,17 +16,17 @@ public class AdjunctXTests
     };
 
     [Fact]
-    public void IsToBeIngested_ReturnsTrue_WhenOriginSet()
+    public void IsHosted_ReturnsTrue_WhenOriginSet()
     {
-        BuildAdjunct("https://example.com/file.jpg").IsToBeIngested().Should().BeTrue();
+        BuildAdjunct("https://example.com/file.jpg").IsHosted().Should().BeTrue();
     }
 
     [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public void IsToBeIngested_ReturnsFalse_WhenOriginNullOrEmpty(string origin)
+    public void IsHosted_ReturnsFalse_WhenOriginNullOrEmpty(string origin)
     {
-        BuildAdjunct(origin).IsToBeIngested().Should().BeFalse();
+        BuildAdjunct(origin).IsHosted().Should().BeFalse();
     }
 }

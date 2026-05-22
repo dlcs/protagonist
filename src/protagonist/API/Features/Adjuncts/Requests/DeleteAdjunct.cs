@@ -38,7 +38,7 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IDeliverableNotificatio
         
         dbContext.Adjuncts.Remove(adjunct);
 
-        if (adjunct.IsToBeIngested())
+        if (adjunct.IsHosted())
         {
             var storageRows = await dbContext.CustomerStorages
                 .Where(cs => cs.Customer == adjunct.AssetId.Customer &&
