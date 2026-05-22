@@ -29,7 +29,7 @@ public class FileChannelWorkerTests
         storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         originStrategy = A.Fake<IOriginStrategy>();
         OriginStrategyResolver resolver = _ => originStrategy;
-        var originFetcher = new OriginFetcher(null, resolver);
+        var originFetcher = new OriginFetcher(resolver);
 
         sut = new FileChannelWorker(assetToS3, assetIngestorSizeCheck, storageKeyGenerator, originFetcher,
             new NullLogger<FileChannelWorker>());
