@@ -48,7 +48,6 @@ public class CustomerStorageRepository : IStorageRepository
     {
         // The aggregate row is seeded by CreateCustomer and backfilled by migration - its absence is a bug.
         var aggregateRecord = (await dlcsContext.CustomerStorages
-            .AsNoTracking()
             .SingleOrDefaultAsync(cs => cs.Customer == customerId && cs.Space == null, cancellationToken))
             .ThrowIfNull("aggregateRecord");
 

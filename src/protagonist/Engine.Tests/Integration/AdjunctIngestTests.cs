@@ -224,11 +224,13 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbContext.Adjuncts.Add(adjunct);
         await dbContext.SaveChangesAsync();
 
-        // Capture before-state after parent-asset ingest so we can do a delta check
+        // Capture before-state after parent-asset ingest so we can do delta checks
         var aggregateRow = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == 99 && cs.Space == null);
         var spaceRow = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == 99 && cs.Space == 1);
         var imagesSizeBefore = aggregateRow.TotalSizeOfStoredImages;
         var spaceImagesSizeBefore = spaceRow.TotalSizeOfStoredImages;
+        var adjunctSizeBefore = aggregateRow.TotalSizeOfStoredAdjuncts;
+        var spaceAdjunctSizeBefore = spaceRow.TotalSizeOfStoredAdjuncts;
 
         var message = new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow);
         var jsonContent =
@@ -243,12 +245,12 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Entry(aggregateRow).ReloadAsync();
         await dbContext.Entry(spaceRow).ReloadAsync();
 
-        aggregateRow.TotalSizeOfStoredAdjuncts.Should().Be(2048,
+        aggregateRow.TotalSizeOfStoredAdjuncts.Should().Be(adjunctSizeBefore + 2048,
             "hosted adjunct size should be reflected in the aggregate CustomerStorage row");
         aggregateRow.TotalSizeOfStoredImages.Should().Be(imagesSizeBefore,
             "adjunct ingest should not affect the image size column");
 
-        spaceRow.TotalSizeOfStoredAdjuncts.Should().Be(2048,
+        spaceRow.TotalSizeOfStoredAdjuncts.Should().Be(spaceAdjunctSizeBefore + 2048,
             "hosted adjunct size should be reflected in the per-space CustomerStorage row");
         spaceRow.TotalSizeOfStoredImages.Should().Be(spaceImagesSizeBefore,
             "adjunct ingest should not affect the image size column");

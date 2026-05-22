@@ -833,8 +833,9 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        
-        await dbContext.Images.AddTestAsset(assetId); 
+
+        await dbContext.CustomerStorages.AddTestCustomerStorage();
+        await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
 
         A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
@@ -1406,7 +1407,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
 
-        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.CustomerStorages.AddTestCustomerStorage();
+        await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
 
         A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
@@ -1495,6 +1497,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
 
+        await dbContext.CustomerStorages.AddTestCustomerStorage();
         await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
 
