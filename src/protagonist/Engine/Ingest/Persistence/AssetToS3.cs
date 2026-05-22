@@ -48,10 +48,8 @@ public class AssetToS3(
     private readonly EngineSettings engineSettings = engineSettings.CurrentValue;
 
     public async Task<AssetFromOrigin> CopyOriginToStorage(ObjectInBucket destination, IngestionContext context,
-        bool verifySize,
-        CustomerOriginStrategy customerOriginStrategy,
-        Func<string, CancellationToken, Task<string?>>? validator = null,
-        CancellationToken cancellationToken = default)
+        bool verifySize, CustomerOriginStrategy customerOriginStrategy,
+        Func<string, CancellationToken, Task<string?>>? validator = null, CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
         var copyResult = await DoItemCopy(destination, context, verifySize, customerOriginStrategy, validator,
@@ -65,8 +63,7 @@ public class AssetToS3(
 
     private async Task<AssetFromOrigin> DoItemCopy(ObjectInBucket destination, IngestionContext context,
         bool verifySize, CustomerOriginStrategy customerOriginStrategy,
-        Func<string, CancellationToken, Task<string?>>? validator,
-        CancellationToken cancellationToken)
+        Func<string, CancellationToken, Task<string?>>? validator, CancellationToken cancellationToken)
     {
         if (validator == null && ShouldCopyBucketToBucket(customerOriginStrategy))
         {
@@ -84,8 +81,7 @@ public class AssetToS3(
         => customerOriginStrategy is { Strategy: OriginStrategyType.S3Ambient };
 
     private async Task<AssetFromOrigin> CopyAssetBucketToBucket(IngestionContext context, ObjectInBucket destination,
-        bool verifySize,
-        CancellationToken cancellationToken)
+        bool verifySize, CancellationToken cancellationToken)
     {
         var item = context.GetOriginItem();
 
@@ -107,8 +103,7 @@ public class AssetToS3(
     }
 
     private async Task<LargeObjectCopyResult> CopyBucketToBucket(IOriginItem originItem, ObjectInBucket destination,
-        int customerId, bool verifySize, long preIngestionSize,
-        CancellationToken cancellationToken)
+        int customerId, bool verifySize, long preIngestionSize, CancellationToken cancellationToken)
     {
         var source = RegionalisedObjectInBucket.Parse(originItem.Origin!);
         if (source == null)
