@@ -228,7 +228,8 @@ public static class DatabaseTestDataPopulation
 
     public static async Task<CustomerStorage> AddTestCustomerStorage(
         this DbSet<CustomerStorage> customerStorages, int customer = 99, int? space = null, int numberOfImages = 0,
-        long sizeOfStored = 0, long sizeOfThumbs = 0, string storagePolicy = "default")
+        long sizeOfStored = 0, long sizeOfThumbs = 0, string storagePolicy = "default",
+        int numberOfAdjuncts = 0, long sizeOfAdjuncts = 0)
     {
         // Aggregate rows (space == null) may already exist (seeded by test fixture CleanUp).
         // Update in place to avoid violating the unique partial index.
@@ -241,6 +242,8 @@ public static class DatabaseTestDataPopulation
                 existing.NumberOfStoredImages = numberOfImages;
                 existing.TotalSizeOfStoredImages = sizeOfStored;
                 existing.TotalSizeOfThumbnails = sizeOfThumbs;
+                existing.NumberOfStoredAdjuncts = numberOfAdjuncts;
+                existing.TotalSizeOfStoredAdjuncts = sizeOfAdjuncts;
                 existing.StoragePolicy = storagePolicy;
                 existing.LastCalculated = DateTime.UtcNow;
                 customerStorages.Update(existing);
@@ -256,7 +259,9 @@ public static class DatabaseTestDataPopulation
             StoragePolicy = storagePolicy,
             NumberOfStoredImages = numberOfImages,
             TotalSizeOfStoredImages = sizeOfStored,
-            TotalSizeOfThumbnails = sizeOfThumbs
+            TotalSizeOfThumbnails = sizeOfThumbs,
+            NumberOfStoredAdjuncts = numberOfAdjuncts,
+            TotalSizeOfStoredAdjuncts = sizeOfAdjuncts
         };
         await customerStorages.AddAsync(newRow);
         return newRow;

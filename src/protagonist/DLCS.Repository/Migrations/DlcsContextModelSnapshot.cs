@@ -1025,6 +1025,9 @@ namespace DLCS.Repository.Migrations
                     b.Property<DateTime?>("LastCalculated")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<long>("NumberOfStoredAdjuncts")
+                        .HasColumnType("bigint");
+
                     b.Property<long>("NumberOfStoredImages")
                         .HasColumnType("bigint");
 
@@ -1034,6 +1037,9 @@ namespace DLCS.Repository.Migrations
                     b.Property<string>("StoragePolicy")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<long>("TotalSizeOfStoredAdjuncts")
+                        .HasColumnType("bigint");
 
                     b.Property<long>("TotalSizeOfStoredImages")
                         .HasColumnType("bigint");

@@ -121,6 +121,17 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
                 TotalSizeOfThumbnails = 0
             }, cancellationToken);
 
+            // Create per-space CustomerStorage row for space 0 (stub-assets)
+            await dbContext.CustomerStorages.AddAsync(new CustomerStorage
+            {
+                Customer = newCustomerId,
+                Space = 0,
+                StoragePolicy = StoragePolicy.DefaultStoragePolicyName,
+                NumberOfStoredImages = 0,
+                TotalSizeOfStoredImages = 0,
+                TotalSizeOfThumbnails = 0
+            }, cancellationToken);
+
             await dbContext.SaveChangesAsync(cancellationToken);
 
             var deliveryChannelPoliciesCreated =

@@ -103,12 +103,16 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.Motivation.Should().Be("a motivation");
         adjunct.Provides.Should().Be("translation");
-        
+
         response.Headers.Location.Should()
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts");
+
+        var storage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
+        storage.NumberOfStoredAdjuncts.Should().Be(0, "external adjunct is not tracked in hosted storage count");
     }
-    
+
     [Fact]
     public async Task PostAdjunct_Returns400_FailsValidation()
     {
@@ -803,8 +807,9 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.Images.AddTestAsset(assetId)
             .WithTestAdjunct("someAdjunctId");
+        await dbContext.CustomerStorages.AddTestCustomerStorage(numberOfAdjuncts: 2, sizeOfAdjuncts: 500);
         await dbContext.SaveChangesAsync();
-        
+
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
 
         // Act
@@ -812,10 +817,15 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        
+
         A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
-            A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Delete && r.Before.AssetId == assetId), 
+            A<NotificationRecord<DLCS.Model.Assets.Adjunct>>.That.Matches(r => r.ChangeType == ChangeType.Delete && r.Before.AssetId == assetId),
             A<CancellationToken>._)).MustHaveHappened();
+
+        var storage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
+        storage.NumberOfStoredAdjuncts.Should().Be(2, "external adjunct deletion should not affect count");
+        storage.TotalSizeOfStoredAdjuncts.Should().Be(500, "external adjunct deletion should not affect size");
     }
     
     [Fact]
@@ -874,11 +884,15 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 IngestNotificationSender.SendIngestAdjunctRequest(
-                    A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a[0].AssetId == assetId && a[0].Id == "someAdjunctId"), 
+                    A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a[0].AssetId == assetId && a[0].Id == "someAdjunctId"),
                     A<CancellationToken>._))
             .MustHaveHappened();
+
+        var storage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
+        storage.NumberOfStoredAdjuncts.Should().Be(1, "hosted adjunct increments the count");
     }
-    
+
     [Fact]
     public async Task PostAdjunct_CreatesMultipleHostedAdjuncts_AsArray()
     {
@@ -1469,22 +1483,26 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Finished.Should().NotBeNull("API doesn't touch finished, as it now states for 'last finished'");
         adjunct.ExternalId.Should().BeNull("we removed it in the update json");
         adjunct.PublicId.Should().NotBe(externalUri, "it no longer points to the external id from initial creation");
+
+        var storage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
+        storage.NumberOfStoredAdjuncts.Should().Be(1, "transitioning from external to hosted increments count");
     }
-    
+
     [Fact]
     public async Task PostAdjunct_UpdateHostedToExternal()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
 
-        await dbContext.Images.AddTestAsset(assetId); 
+        await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
 
         A.CallTo(() => IngestNotificationSender.SendIngestAdjunctRequest(
                 A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Single().AssetId == assetId),
                 A<CancellationToken>._))
             .ReturnsLazily(_ => Task.FromResult(1));
-        
+
         const string adjunctId = "updateableAdjunct";
         const string adjunctOrigin = "https://example.com/an-adjunct";
         const string externalUri = "https://example.com/some-external-id";
@@ -1531,7 +1549,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // no error, "ingest" was successful
         dbContext.Entry(dbAdjunct).State = EntityState.Modified;
         await dbContext.SaveChangesAsync();
-        
+
         // update json, this time it will be an external one
         const string updatedAdjunctJson = $$"""
                                         {
@@ -1558,5 +1576,67 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         adjunct.Size.Should().Be(69L, "as this is now external adjunct, ");
         adjunct.Ingesting.Should().NotBe(true, "the adjunct was NOT sent to engine for ingestion");
         adjunct.Finished.Should().NotBeNull("API doesn't touch finished, as it now states for 'last finished'");
+
+        var storage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
+        storage.NumberOfStoredAdjuncts.Should().Be(0, "transitioning from hosted to external decrements count");
     }
+
+    [Fact]
+    public async Task PutAdjunct_DecrementsStorageSize_WhenHostedAdjunctBecomesExternal()
+    {
+        // Arrange — seed adjunct with origin+size directly so storage arithmetic is deterministic without a preceding API call
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string adjunctId = "hosted-to-ext-size";
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct(adjunctId, origin: "https://example.com/file.jpg", size: 2048);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(numberOfAdjuncts: 1, sizeOfAdjuncts: 2048);
+        await dbContext.SaveChangesAsync();
+
+        var json = $$"""
+                     {
+                       "id": "{{adjunctId}}",
+                       "@type": "Image",
+                       "externalId": "https://example.com/external",
+                       "iiifLink": "seeAlso",
+                       "mediaType": "image/jpeg"
+                     }
+                     """;
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .PutAsync($"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var storage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
+        storage.NumberOfStoredAdjuncts.Should().Be(0, "count decremented on hosted→external transition");
+        storage.TotalSizeOfStoredAdjuncts.Should().Be(0, "size decremented by adjunct's stored size on hosted→external transition");
+    }
+
+    [Fact]
+    public async Task DeleteAdjunct_ReducesCustomerStorage_WhenHostedAdjunct()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string adjunctId = "hosted-del";
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct(adjunctId, origin: "https://example.com/file.jpg", size: 1024);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(numberOfAdjuncts: 1, sizeOfAdjuncts: 1024);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        await httpClient.AsCustomer(assetId.Customer)
+            .DeleteAsync($"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}");
+
+        // Assert
+        var storage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
+        storage.NumberOfStoredAdjuncts.Should().Be(0);
+        storage.TotalSizeOfStoredAdjuncts.Should().Be(0);
+    }
+
 }

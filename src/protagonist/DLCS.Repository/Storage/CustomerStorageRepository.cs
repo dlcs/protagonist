@@ -39,6 +39,8 @@ public class CustomerStorageRepository : IStorageRepository
                 NumberOfStoredImages = aggregateRow.NumberOfStoredImages,
                 TotalSizeOfStoredImages = aggregateRow.TotalSizeOfStoredImages,
                 TotalSizeOfThumbnails = aggregateRow.TotalSizeOfThumbnails,
+                NumberOfStoredAdjuncts = aggregateRow.NumberOfStoredAdjuncts,
+                TotalSizeOfStoredAdjuncts = aggregateRow.TotalSizeOfStoredAdjuncts,
             };
     }
 

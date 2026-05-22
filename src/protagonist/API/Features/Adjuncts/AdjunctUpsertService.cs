@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace API.Features.Adjuncts;
@@ -42,6 +42,12 @@ public class AdjunctUpsertService(
 
             if (!toBeIngested)
             {
+                if (dbAdjunct.IsToBeIngested())
+                {
+                    // Was hosted, now external — decrement count and reduce stored size
+                    await DecrementAdjunctStorage(adjunct.AssetId.Customer, dbAdjunct.Size ?? 0, cancellationToken);
+                }
+
                 // External adjunct — size is irrelevant for storage limits, copy submitted value
                 dbAdjunct.Size = adjunct.Size;
             }
@@ -49,6 +55,7 @@ public class AdjunctUpsertService(
             {
                 // Was external, now hosted — reset size so Engine calculates from scratch
                 dbAdjunct.Size = null;
+                await IncrementAdjunctCount(adjunct.AssetId.Customer, cancellationToken);
             }
 
             dbAdjunct.MediaType = adjunct.MediaType;
@@ -73,6 +80,7 @@ public class AdjunctUpsertService(
             {
                 // Engine will set the real size; disregard any submitted value
                 dbAdjunct.Size = null;
+                await IncrementAdjunctCount(adjunct.AssetId.Customer, cancellationToken);
             }
 
             await dbContext.Adjuncts.AddAsync(dbAdjunct, cancellationToken);
@@ -85,6 +93,22 @@ public class AdjunctUpsertService(
         }
 
         return new AdjunctDocument(dbAdjunct, existingAdjunct);
+    }
+
+    private async Task IncrementAdjunctCount(int customerId, CancellationToken cancellationToken)
+    {
+        var aggregateRow = await dbContext.CustomerStorages
+            .SingleOrDefaultAsync(cs => cs.Customer == customerId && cs.Space == null, cancellationToken);
+        if (aggregateRow != null) aggregateRow.NumberOfStoredAdjuncts++;
+    }
+
+    private async Task DecrementAdjunctStorage(int customerId, long adjunctSize, CancellationToken cancellationToken)
+    {
+        var aggregateRow = await dbContext.CustomerStorages
+            .SingleOrDefaultAsync(cs => cs.Customer == customerId && cs.Space == null, cancellationToken);
+        if (aggregateRow == null) return;
+        aggregateRow.NumberOfStoredAdjuncts -= 1;
+        aggregateRow.TotalSizeOfStoredAdjuncts -= adjunctSize;
     }
 
     /// <summary>

@@ -49,6 +49,30 @@ WHERE NOT EXISTS (
     SELECT 1 FROM ""CustomerStorage"" cs WHERE cs.""Customer"" = c.""Id"" AND cs.""Space"" IS NULL
 );");
 
+            // Ensure every customer that has a Space=0 (stub-assets) also has a per-space CustomerStorage row for it.
+            migrationBuilder.Sql(@"
+INSERT INTO ""CustomerStorage"" (""Customer"", ""Space"", ""StoragePolicy"", ""NumberOfStoredImages"", ""TotalSizeOfStoredImages"", ""TotalSizeOfThumbnails"")
+SELECT s.""Customer"", 0, 'default', 0, 0, 0
+FROM ""Spaces"" s
+WHERE s.""Id"" = 0
+AND NOT EXISTS (
+    SELECT 1 FROM ""CustomerStorage"" cs WHERE cs.""Customer"" = s.""Customer"" AND cs.""Space"" = 0
+);");
+
+            migrationBuilder.AddColumn<long>(
+                name: "NumberOfStoredAdjuncts",
+                table: "CustomerStorage",
+                type: "bigint",
+                nullable: false,
+                defaultValue: 0L);
+
+            migrationBuilder.AddColumn<long>(
+                name: "TotalSizeOfStoredAdjuncts",
+                table: "CustomerStorage",
+                type: "bigint",
+                nullable: false,
+                defaultValue: 0L);
+
             migrationBuilder.CreateIndex(
                 name: "IX_CustomerStorage_Customer_Aggregate",
                 table: "CustomerStorage",
@@ -71,9 +95,11 @@ WHERE NOT EXISTS (
                 name: "PK_CustomerStorage",
                 table: "CustomerStorage");
 
-            // NOTE: Down is only safe before any real Space=0 stub-asset storage rows have been written.
-            // If both a NULL aggregate row and a real Space=0 row exist for the same customer,
-            // restoring the {Customer, Space} composite PK will conflict. Resolve manually before running Down.
+            // Remove per-space Space=0 rows before converting aggregate rows back to Space=0,
+            // otherwise the restored composite PK (Customer, Space) would have duplicates.
+            // Any accumulated stub-asset storage figures are lost, but that is expected on rollback.
+            migrationBuilder.Sql(@"DELETE FROM ""CustomerStorage"" WHERE ""Space"" = 0;");
+
             migrationBuilder.Sql(@"UPDATE ""CustomerStorage"" SET ""Space"" = 0 WHERE ""Space"" IS NULL;");
 
             migrationBuilder.DropIndex(
@@ -82,6 +108,14 @@ WHERE NOT EXISTS (
 
             migrationBuilder.DropIndex(
                 name: "IX_CustomerStorage_Customer_Space",
+                table: "CustomerStorage");
+
+            migrationBuilder.DropColumn(
+                name: "NumberOfStoredAdjuncts",
+                table: "CustomerStorage");
+
+            migrationBuilder.DropColumn(
+                name: "TotalSizeOfStoredAdjuncts",
                 table: "CustomerStorage");
 
             migrationBuilder.DropColumn(

@@ -3,6 +3,7 @@ using API.Infrastructure.Messaging.General;
 using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Storage;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -36,12 +37,28 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IDeliverableNotificatio
         }
         
         dbContext.Adjuncts.Remove(adjunct);
+
+        if (adjunct.Size > 0)
+        {
+            var storageRows = await dbContext.CustomerStorages
+                .Where(cs => cs.Customer == adjunct.AssetId.Customer &&
+                             (cs.Space == adjunct.AssetId.Space || cs.Space == null))
+                .ToListAsync(cancellationToken);
+            foreach (var row in storageRows) ReduceAdjunctStorage(row, adjunct.Size!.Value);
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
         await RaiseNotification(request, adjunct, cancellationToken);
 
         return new ResultMessage<DeleteResult>(string.Empty, DeleteResult.Deleted);
     }
     
+    private static void ReduceAdjunctStorage(CustomerStorage row, long adjunctSize)
+    {
+        row.NumberOfStoredAdjuncts -= 1;
+        row.TotalSizeOfStoredAdjuncts -= adjunctSize;
+    }
+
     private async Task RaiseNotification(DeleteAdjunct request, Adjunct deletedAdjunct,
         CancellationToken cancellationToken)
     {

@@ -199,6 +199,11 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .SingleOrDefaultAsync(s => s.Customer == newCustomerId && s.Space == null);
         aggregateStorage.Should().NotBeNull();
         aggregateStorage!.StoragePolicy.Should().Be("default");
+
+        var spaceZeroStorage = await dbContext.CustomerStorages
+            .SingleOrDefaultAsync(s => s.Customer == newCustomerId && s.Space == 0);
+        spaceZeroStorage.Should().NotBeNull("space 0 (stub-assets) needs its own per-space CustomerStorage row");
+        spaceZeroStorage!.StoragePolicy.Should().Be("default");
     }
 
     [Fact]
