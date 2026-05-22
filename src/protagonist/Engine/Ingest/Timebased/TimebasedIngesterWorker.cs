@@ -44,7 +44,7 @@ public class TimebasedIngesterWorker : IAssetIngesterWorker
                 targetStorageLocation,
                 ingestionContext,
                 !assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer),
-                customerOriginStrategy, cancellationToken);
+                customerOriginStrategy, cancellationToken: cancellationToken);
             ingestionContext.WithAssetFromOrigin(assetInBucket);
 
             var jobMetadata = GetJobMetadata(ingestionContext);

@@ -16,15 +16,21 @@ public interface IAssetToS3
     /// <summary>
     /// Copy <see cref="IOriginItem"/> provided by the supplied <paramref name="context"/> from Origin to DLCS storage.
     /// Configuration determines if this is a direct S3-S3 copy, or S3-disk-S3.
+    /// When <paramref name="validator"/> is provided the copy always goes via local disk so the validator can inspect
+    /// the file; the S3 write is skipped if the validator returns false.
     /// </summary>
     /// <param name="destination"><see cref="ObjectInBucket"/> where file is to copied to</param>
     /// <param name="context">Ingestion context containing the <see cref="IOriginItem"/> to be copied</param>
     /// <param name="verifySize">if True, size is validated that it does not exceed allowed size.</param>
     /// <param name="customerOriginStrategy"><see cref="CustomerOriginStrategy"/> to use to fetch item.</param>
+    /// <param name="validator">Optional callback invoked with the local file path after download but before S3 upload.
+    /// Return null to allow the upload; return an error message string to abort it.</param>
     /// <param name="cancellationToken"><see cref="CancellationToken"/></param>
     /// <returns><see cref="AssetFromOrigin"/> containing new location, size etc</returns>
     Task<AssetFromOrigin> CopyOriginToStorage(ObjectInBucket destination, IngestionContext context, bool verifySize,
-        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default);
+        CustomerOriginStrategy customerOriginStrategy,
+        Func<string, CancellationToken, Task<string?>>? validator = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -43,10 +49,13 @@ public class AssetToS3(
 
     public async Task<AssetFromOrigin> CopyOriginToStorage(ObjectInBucket destination, IngestionContext context,
         bool verifySize,
-        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
+        CustomerOriginStrategy customerOriginStrategy,
+        Func<string, CancellationToken, Task<string?>>? validator = null,
+        CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
-        var copyResult = await DoItemCopy(destination, context, verifySize, customerOriginStrategy, cancellationToken);
+        var copyResult = await DoItemCopy(destination, context, verifySize, customerOriginStrategy, validator,
+            cancellationToken);
         stopwatch.Stop();
         logger.LogDebug("Copied item {Item} in {Elapsed}ms using {OriginStrategy}",
             context.GetOriginItem().Identifier(), stopwatch.ElapsedMilliseconds, customerOriginStrategy.Strategy);
@@ -55,17 +64,20 @@ public class AssetToS3(
     }
 
     private async Task<AssetFromOrigin> DoItemCopy(ObjectInBucket destination, IngestionContext context,
-        bool verifySize, CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
+        bool verifySize, CustomerOriginStrategy customerOriginStrategy,
+        Func<string, CancellationToken, Task<string?>>? validator,
+        CancellationToken cancellationToken)
     {
-        if (ShouldCopyBucketToBucket(customerOriginStrategy))
+        if (validator == null && ShouldCopyBucketToBucket(customerOriginStrategy))
         {
             // We have direct bucket access so can copy directly using SDK
             return await CopyAssetBucketToBucket(context, destination, verifySize, cancellationToken);
         }
 
-        // We don't have direct bucket access; or it's a non-S3 origin so copy S3->Disk->S3 
+        // We don't have direct bucket access; or it's a non-S3 origin so copy S3->Disk->S3.
+        // Also forced when a validator is provided, so the file is available on disk for inspection.
         return await IndirectAssetCopyBucketToBucket(context, destination, verifySize, customerOriginStrategy,
-            cancellationToken);
+            validator, cancellationToken);
     }
 
     private static bool ShouldCopyBucketToBucket(CustomerOriginStrategy customerOriginStrategy)
@@ -127,7 +139,9 @@ public class AssetToS3(
 
     private async Task<AssetFromOrigin> IndirectAssetCopyBucketToBucket(IngestionContext context,
         ObjectInBucket destination,
-        bool verifySize, CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
+        bool verifySize, CustomerOriginStrategy customerOriginStrategy,
+        Func<string, CancellationToken, Task<string?>>? validator,
+        CancellationToken cancellationToken)
     {
         var item = context.GetOriginItem();
 
@@ -147,12 +161,21 @@ public class AssetToS3(
                 return itemOnDisk;
             }
 
+            downloadedFile = itemOnDisk.Location;
+
+            if (validator != null)
+            {
+                var validationError = await validator(itemOnDisk.Location, cancellationToken);
+                if (validationError != null)
+                {
+                    throw new InvalidOperationException(validationError);
+                }
+            }
+
             logger.LogDebug("Copied '{Item}' to disk, copying to bucket..", item.Identifier());
 
             var success = await bucketWriter.WriteFileToBucket(destination, itemOnDisk.Location,
                 itemOnDisk.ContentType, cancellationToken);
-
-            downloadedFile = itemOnDisk.Location;
 
             if (!success)
             {

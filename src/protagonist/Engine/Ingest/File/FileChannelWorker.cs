@@ -1,6 +1,9 @@
-﻿using DLCS.AWS.S3;
+﻿using System.Text.Json;
+using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
+using DLCS.Repository.Strategy.Utils;
 using Engine.Ingest.Persistence;
 
 namespace Engine.Ingest.File;
@@ -12,6 +15,7 @@ public class FileChannelWorker(
     IAssetToS3 assetToS3,
     IAssetIngestorSizeCheck assetIngestorSizeCheck,
     IStorageKeyGenerator storageKeyGenerator,
+    OriginFetcher originFetcher,
     ILogger<FileChannelWorker> logger)
     : IAssetIngesterWorker, IAdjunctIngesterWorker
 {
@@ -35,7 +39,7 @@ public class FileChannelWorker(
                 ingestionContext,
                 !assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer),
                 customerOriginStrategy,
-                cancellationToken);
+                cancellationToken: cancellationToken);
 
             ingestionContext.WithAssetFromOrigin(assetInBucket);
 
@@ -87,19 +91,24 @@ public class FileChannelWorker(
     }
 
     public async Task<IngestResultStatus> Ingest(AdjunctIngestionContext ingestionContext,
-        CustomerOriginStrategy customerOriginStrategy,
-        CancellationToken cancellationToken = default)
+        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
         var adjunct = ingestionContext.Adjunct;
+        var isAnnotation = adjunct.IIIFLink == IIIFLinkType.Annotations;
 
         try
         {
             if (customerOriginStrategy.Optimised)
             {
-                logger.LogDebug(
-                    "Adjunct {AdjunctId} for Asset {Asset} is at optimised origin, no 'file' handling required",
-                    adjunct.Id, ingestionContext.AssetId);
-                return IngestResultStatus.Success;
+                if (!isAnnotation)
+                {
+                    logger.LogDebug(
+                        "Non-annotation adjunct {AdjunctId} for Asset {Asset} is at optimised origin, no 'file' handling required",
+                        adjunct.Id, ingestionContext.AssetId);
+                    return IngestResultStatus.Success;
+                }
+
+                return await ValidateAnnotationAtOrigin(ingestionContext, customerOriginStrategy, cancellationToken);
             }
 
             var targetStorageLocation = storageKeyGenerator.GetStoredAdjunctLocation(ingestionContext.AssetId, adjunct);
@@ -108,6 +117,7 @@ public class FileChannelWorker(
                 ingestionContext,
                 !assetIngestorSizeCheck.CustomerHasNoStorageCheck(ingestionContext.Asset.Customer),
                 customerOriginStrategy,
+                isAnnotation ? IsValidAnnotationJsonFile : null,
                 cancellationToken);
 
             if (assetIngestorSizeCheck.DoesAssetFromOriginExceedAllowance(adjunctInBucket, adjunct))
@@ -131,4 +141,56 @@ public class FileChannelWorker(
             return IngestResultStatus.Failed;
         }
     }
+
+    private async Task<IngestResultStatus> ValidateAnnotationAtOrigin(AdjunctIngestionContext ingestionContext,
+        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
+    {
+        var adjunct = ingestionContext.Adjunct;
+
+        await using var originResponse =
+            await originFetcher.LoadFromOrigin(adjunct, customerOriginStrategy, cancellationToken);
+
+        if (originResponse.IsEmpty)
+        {
+            logger.LogError(
+                "Unable to read annotation adjunct {AdjunctId} for Asset {AssetId} content from origin for validation",
+                adjunct.Id, ingestionContext.AssetId);
+            adjunct.Error = "Unable to read annotation content for validation";
+            return IngestResultStatus.Failed;
+        }
+
+        var validationError = await GetJsonValidationError(originResponse.Stream, cancellationToken);
+        if (validationError != null)
+        {
+            logger.LogError(
+                "Annotation adjunct {AdjunctId} for Asset {AssetId} content is not valid JSON",
+                adjunct.Id, ingestionContext.AssetId);
+            adjunct.Error = validationError;
+            return IngestResultStatus.Failed;
+        }
+
+        return IngestResultStatus.Success;
+    }
+
+    private static async Task<string?> IsValidAnnotationJsonFile(string filePath, CancellationToken cancellationToken)
+    {
+        await using var stream = System.IO.File.OpenRead(filePath);
+        return await GetJsonValidationError(stream, cancellationToken);
+    }
+
+    /// <summary>Returns null if <paramref name="stream"/> contains valid JSON, or an error message if not.</summary>
+    private static async Task<string?> GetJsonValidationError(Stream stream, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+            return null;
+        }
+        catch (JsonException)
+        {
+            return AnnotationInvalidJsonError;
+        }
+    }
+
+    private const string AnnotationInvalidJsonError = "Annotation content is not valid JSON";
 }
