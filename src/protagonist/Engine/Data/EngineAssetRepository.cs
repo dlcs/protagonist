@@ -183,7 +183,7 @@ public class EngineAssetRepository(
     {
         try
         {
-            // don't increase the size of the image in the customer record if the deliverable is an asset
+            // skip image/thumb size delta when the deliverable is an adjunct
             var imageSizeDelta = isAdjunct ? 0 : imageStorage.Size;
             var thumbSizeDelta = isAdjunct ? 0 : imageStorage.ThumbnailSize;
 

@@ -36,29 +36,6 @@ namespace DLCS.Repository.Migrations
                 table: "CustomerStorage",
                 column: "Id");
 
-            // All existing Space=0 rows were aggregate rows written by the recalculators.
-            // Real stub-asset Space=0 tracking has not started yet, so this is safe to do wholesale.
-            migrationBuilder.Sql(@"UPDATE ""CustomerStorage"" SET ""Space"" = NULL WHERE ""Space"" = 0;");
-
-            // Ensure every customer has an aggregate (NULL-space) row; some may never have had a Space=0 row.
-            migrationBuilder.Sql(@"
-INSERT INTO ""CustomerStorage"" (""Customer"", ""Space"", ""StoragePolicy"", ""NumberOfStoredImages"", ""TotalSizeOfStoredImages"", ""TotalSizeOfThumbnails"")
-SELECT c.""Id"", NULL, 'default', 0, 0, 0
-FROM ""Customers"" c
-WHERE NOT EXISTS (
-    SELECT 1 FROM ""CustomerStorage"" cs WHERE cs.""Customer"" = c.""Id"" AND cs.""Space"" IS NULL
-);");
-
-            // Ensure every customer that has a Space=0 (stub-assets) also has a per-space CustomerStorage row for it.
-            migrationBuilder.Sql(@"
-INSERT INTO ""CustomerStorage"" (""Customer"", ""Space"", ""StoragePolicy"", ""NumberOfStoredImages"", ""TotalSizeOfStoredImages"", ""TotalSizeOfThumbnails"")
-SELECT s.""Customer"", 0, 'default', 0, 0, 0
-FROM ""Spaces"" s
-WHERE s.""Id"" = 0
-AND NOT EXISTS (
-    SELECT 1 FROM ""CustomerStorage"" cs WHERE cs.""Customer"" = s.""Customer"" AND cs.""Space"" = 0
-);");
-
             migrationBuilder.AddColumn<long>(
                 name: "NumberOfStoredAdjuncts",
                 table: "CustomerStorage",
@@ -72,6 +49,29 @@ AND NOT EXISTS (
                 type: "bigint",
                 nullable: false,
                 defaultValue: 0L);
+
+            // All existing Space=0 rows were aggregate rows written by the recalculators.
+            // Real stub-asset Space=0 tracking has not started yet, so this is safe to do wholesale.
+            migrationBuilder.Sql(@"UPDATE ""CustomerStorage"" SET ""Space"" = NULL WHERE ""Space"" = 0;");
+
+            // Ensure every customer has an aggregate (NULL-space) row; some may never have had a Space=0 row.
+            migrationBuilder.Sql(@"
+INSERT INTO ""CustomerStorage"" (""Customer"", ""Space"", ""StoragePolicy"", ""NumberOfStoredImages"", ""TotalSizeOfStoredImages"", ""TotalSizeOfThumbnails"", ""NumberOfStoredAdjuncts"", ""TotalSizeOfStoredAdjuncts"")
+SELECT c.""Id"", NULL, 'default', 0, 0, 0, 0, 0
+FROM ""Customers"" c
+WHERE NOT EXISTS (
+    SELECT 1 FROM ""CustomerStorage"" cs WHERE cs.""Customer"" = c.""Id"" AND cs.""Space"" IS NULL
+);");
+
+            // Ensure every customer that has a Space=0 (stub-assets) also has a per-space CustomerStorage row for it.
+            migrationBuilder.Sql(@"
+INSERT INTO ""CustomerStorage"" (""Customer"", ""Space"", ""StoragePolicy"", ""NumberOfStoredImages"", ""TotalSizeOfStoredImages"", ""TotalSizeOfThumbnails"", ""NumberOfStoredAdjuncts"", ""TotalSizeOfStoredAdjuncts"")
+SELECT s.""Customer"", 0, 'default', 0, 0, 0, 0, 0
+FROM ""Spaces"" s
+WHERE s.""Id"" = 0
+AND NOT EXISTS (
+    SELECT 1 FROM ""CustomerStorage"" cs WHERE cs.""Customer"" = s.""Customer"" AND cs.""Space"" = 0
+);");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CustomerStorage_Customer_Aggregate",

@@ -121,7 +121,9 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
                 TotalSizeOfThumbnails = 0
             }, cancellationToken);
 
-            // Create per-space CustomerStorage row for space 0 (stub-assets)
+            // Pre-seed a per-space row for space 0 (stub-assets) so that Engine storage increments
+            // hit an existing row rather than silently no-oping on their first UPDATE.
+            // Other spaces get their per-space row created lazily by the Engine on first ingest.
             await dbContext.CustomerStorages.AddAsync(new CustomerStorage
             {
                 Customer = newCustomerId,

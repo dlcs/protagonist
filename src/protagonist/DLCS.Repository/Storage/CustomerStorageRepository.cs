@@ -46,13 +46,13 @@ public class CustomerStorageRepository : IStorageRepository
 
     public async Task<AssetStorageMetric> GetStorageMetrics(int customerId, CancellationToken cancellationToken)
     {
-        var aggregateRecord = await dlcsContext.CustomerStorages
-            .SingleOrDefaultAsync(cs => cs.Customer == customerId && cs.Space == null, cancellationToken);
-
         // The aggregate row is seeded by CreateCustomer and backfilled by migration - its absence is a bug.
-        aggregateRecord.ThrowIfNull(nameof(aggregateRecord));
+        var aggregateRecord = (await dlcsContext.CustomerStorages
+            .AsNoTracking()
+            .SingleOrDefaultAsync(cs => cs.Customer == customerId && cs.Space == null, cancellationToken))
+            .ThrowIfNull("aggregateRecord");
 
-        var policyName = string.IsNullOrEmpty(aggregateRecord!.StoragePolicy)
+        var policyName = string.IsNullOrEmpty(aggregateRecord.StoragePolicy)
             ? StoragePolicy.DefaultStoragePolicyName
             : aggregateRecord.StoragePolicy;
 

@@ -1591,6 +1591,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId)
             .WithTestAdjunct(adjunctId, origin: "https://example.com/file.jpg", size: 2048);
         await dbContext.CustomerStorages.AddTestCustomerStorage(numberOfAdjuncts: 1, sizeOfAdjuncts: 2048);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(space: assetId.Space, numberOfAdjuncts: 1, sizeOfAdjuncts: 2048);
         await dbContext.SaveChangesAsync();
 
         var json = $$"""
@@ -1613,8 +1614,13 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         var storage = await dbContext.CustomerStorages
             .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
-        storage.NumberOfStoredAdjuncts.Should().Be(0, "count decremented on hosted→external transition");
-        storage.TotalSizeOfStoredAdjuncts.Should().Be(0, "size decremented by adjunct's stored size on hosted→external transition");
+        storage.NumberOfStoredAdjuncts.Should().Be(0, "aggregate count decremented on hosted→external transition");
+        storage.TotalSizeOfStoredAdjuncts.Should().Be(0, "aggregate size decremented by adjunct's stored size on hosted→external transition");
+
+        var spaceStorage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == assetId.Space);
+        spaceStorage.NumberOfStoredAdjuncts.Should().Be(0, "per-space count decremented on hosted→external transition");
+        spaceStorage.TotalSizeOfStoredAdjuncts.Should().Be(0, "per-space size decremented by adjunct's stored size on hosted→external transition");
     }
 
     [Fact]
@@ -1626,6 +1632,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.Images.AddTestAsset(assetId)
             .WithTestAdjunct(adjunctId, origin: "https://example.com/file.jpg", size: 1024);
         await dbContext.CustomerStorages.AddTestCustomerStorage(numberOfAdjuncts: 1, sizeOfAdjuncts: 1024);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(space: assetId.Space, numberOfAdjuncts: 1, sizeOfAdjuncts: 1024);
         await dbContext.SaveChangesAsync();
 
         // Act
@@ -1635,8 +1642,13 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         var storage = await dbContext.CustomerStorages
             .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
-        storage.NumberOfStoredAdjuncts.Should().Be(0);
-        storage.TotalSizeOfStoredAdjuncts.Should().Be(0);
+        storage.NumberOfStoredAdjuncts.Should().Be(0, "aggregate count decremented on delete");
+        storage.TotalSizeOfStoredAdjuncts.Should().Be(0, "aggregate size decremented on delete");
+
+        var spaceStorage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == assetId.Space);
+        spaceStorage.NumberOfStoredAdjuncts.Should().Be(0, "per-space count decremented on delete");
+        spaceStorage.TotalSizeOfStoredAdjuncts.Should().Be(0, "per-space size decremented on delete");
     }
 
 }

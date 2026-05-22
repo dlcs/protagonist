@@ -38,13 +38,13 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IDeliverableNotificatio
         
         dbContext.Adjuncts.Remove(adjunct);
 
-        if (adjunct.Size > 0)
+        if (adjunct.IsToBeIngested())
         {
             var storageRows = await dbContext.CustomerStorages
                 .Where(cs => cs.Customer == adjunct.AssetId.Customer &&
                              (cs.Space == adjunct.AssetId.Space || cs.Space == null))
                 .ToListAsync(cancellationToken);
-            foreach (var row in storageRows) ReduceAdjunctStorage(row, adjunct.Size!.Value);
+            foreach (var row in storageRows) ReduceAdjunctStorage(row, adjunct.Size ?? 0);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
