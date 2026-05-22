@@ -59,37 +59,6 @@ public class FileChannelWorker(
         }
     }
 
-    private static void UpdateIngestionContext(IngestionContext ingestionContext, AssetFromOrigin itemInBucket,
-        RegionalisedObjectInBucket targetStorageLocation)
-    {
-        ingestionContext.StoredObjects[targetStorageLocation] = itemInBucket.AssetSize;
-
-        if (ingestionContext is AdjunctIngestionContext adjunctIngestionContext)
-        {
-            // We don't track individual adjunct size in the ImageStorage
-            // Instead, we run a running tally of all asset's adjuncts
-
-            // In creation of new adjunct scenario this is simple: we add the size as reported by the item in bucket
-            // For update, we're interested in the difference between previous and current size of the _specific_ adjunct,
-            // as it can be negative
-
-            // If the adjunct has been previously external one, then the API would've updated it's Size to 0, signifying
-            // it didn't use to count against limits. Otherwise, the Size of Adjunct retrieved from DB is the size
-            // of the previous version of a hosted adjunct
-
-            // size to add to the tally = size of the just uploaded adjunct minus size of a previous hosted version (or 0)
-            var adjunctSize = itemInBucket.AssetSize - (adjunctIngestionContext.Adjunct.Size ?? 0);
-
-            ingestionContext.WithStorage(adjunctSize: adjunctSize);
-        }
-        else
-        {
-            // Asset ingestion
-            // NOTE: should a third type (Asset, Adjunct, ?) appear, this will need a suitable case added
-            ingestionContext.WithStorage(assetSize: itemInBucket.AssetSize);
-        }
-    }
-
     public async Task<IngestResultStatus> Ingest(AdjunctIngestionContext ingestionContext,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken = default)
     {
@@ -139,6 +108,37 @@ public class FileChannelWorker(
                 adjunct.Id, ingestionContext.AssetId);
             adjunct.Error = ex.Message;
             return IngestResultStatus.Failed;
+        }
+    }
+    
+    private static void UpdateIngestionContext(IngestionContext ingestionContext, AssetFromOrigin itemInBucket,
+        RegionalisedObjectInBucket targetStorageLocation)
+    {
+        ingestionContext.StoredObjects[targetStorageLocation] = itemInBucket.AssetSize;
+
+        if (ingestionContext is AdjunctIngestionContext adjunctIngestionContext)
+        {
+            // We don't track individual adjunct size in the ImageStorage
+            // Instead, we run a running tally of all asset's adjuncts
+
+            // In creation of new adjunct scenario this is simple: we add the size as reported by the item in bucket
+            // For update, we're interested in the difference between previous and current size of the _specific_ adjunct,
+            // as it can be negative
+
+            // If the adjunct has been previously external one, then the API would've updated it's Size to 0, signifying
+            // it didn't use to count against limits. Otherwise, the Size of Adjunct retrieved from DB is the size
+            // of the previous version of a hosted adjunct
+
+            // size to add to the tally = size of the just uploaded adjunct minus size of a previous hosted version (or 0)
+            var adjunctSize = itemInBucket.AssetSize - (adjunctIngestionContext.Adjunct.Size ?? 0);
+
+            ingestionContext.WithStorage(adjunctSize: adjunctSize);
+        }
+        else
+        {
+            // Asset ingestion
+            // NOTE: should a third type (Asset, Adjunct, ?) appear, this will need a suitable case added
+            ingestionContext.WithStorage(assetSize: itemInBucket.AssetSize);
         }
     }
 
