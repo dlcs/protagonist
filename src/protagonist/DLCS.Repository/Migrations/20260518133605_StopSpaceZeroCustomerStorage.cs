@@ -64,10 +64,12 @@ WHERE NOT EXISTS (
 );");
 
             // Ensure every customer that has a Space=0 (stub-assets) also has a per-space CustomerStorage row for it.
+            // StoragePolicy is inherited from the customer's aggregate (NULL-space) row.
             migrationBuilder.Sql(@"
 INSERT INTO ""CustomerStorage"" (""Customer"", ""Space"", ""StoragePolicy"", ""NumberOfStoredImages"", ""TotalSizeOfStoredImages"", ""TotalSizeOfThumbnails"", ""NumberOfStoredAdjuncts"", ""TotalSizeOfStoredAdjuncts"")
-SELECT s.""Customer"", 0, 'default', 0, 0, 0, 0, 0
+SELECT s.""Customer"", 0, agg.""StoragePolicy"", 0, 0, 0, 0, 0
 FROM ""Spaces"" s
+JOIN ""CustomerStorage"" agg ON agg.""Customer"" = s.""Customer"" AND agg.""Space"" IS NULL
 WHERE s.""Id"" = 0
 AND NOT EXISTS (
     SELECT 1 FROM ""CustomerStorage"" cs WHERE cs.""Customer"" = s.""Customer"" AND cs.""Space"" = 0
