@@ -17,7 +17,7 @@ public interface IAssetToS3
     /// Copy <see cref="IOriginItem"/> provided by the supplied <paramref name="context"/> from Origin to DLCS storage.
     /// Configuration determines if this is a direct S3-S3 copy, or S3-disk-S3.
     /// When <paramref name="validator"/> is provided the copy always goes via local disk so the validator can inspect
-    /// the file; the S3 write is skipped if the validator returns false.
+    /// the file; the S3 write is skipped if the validator returns an error.
     /// </summary>
     /// <param name="destination"><see cref="ObjectInBucket"/> where file is to copied to</param>
     /// <param name="context">Ingestion context containing the <see cref="IOriginItem"/> to be copied</param>
