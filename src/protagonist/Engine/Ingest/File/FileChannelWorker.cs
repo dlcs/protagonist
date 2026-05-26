@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Core.Streams;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy.Utils;
@@ -172,22 +173,23 @@ public class FileChannelWorker(
         return IngestResultStatus.Success;
     }
 
-    private static async Task<string?> IsValidAnnotationJsonFile(string filePath, CancellationToken cancellationToken)
+    private async Task<string?> IsValidAnnotationJsonFile(string filePath, CancellationToken cancellationToken)
     {
         await using var stream = System.IO.File.OpenRead(filePath);
         return await GetJsonValidationError(stream, cancellationToken);
     }
 
     /// <summary>Returns null if <paramref name="stream"/> contains valid JSON, or an error message if not.</summary>
-    private static async Task<string?> GetJsonValidationError(Stream stream, CancellationToken cancellationToken)
+    private async Task<string?> GetJsonValidationError(Stream stream, CancellationToken cancellationToken)
     {
         try
         {
             await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
             return null;
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            logger.LogTrace(ex, "Failed to parse JSON from stream");
             return AnnotationInvalidJsonError;
         }
     }
