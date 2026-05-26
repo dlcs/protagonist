@@ -33,7 +33,6 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly HttpClient httpClient;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
     private readonly DlcsContext dbContext;
-    private readonly DlcsContext seedContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private readonly ApiStub apiStub;
     
@@ -47,8 +46,6 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public AdjunctIngestTests(ProtagonistAppFactory<Startup> appFactory, EngineFixture engineFixture)
     {
         dbContext = engineFixture.DbFixture.DbContext;
-        seedContext = new DlcsContext(
-            new DbContextOptionsBuilder<DlcsContext>().UseNpgsql(engineFixture.DbFixture.ConnectionString).Options);
         apiStub = engineFixture.ApiStub;
         
         // Fake http images
@@ -207,8 +204,9 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task IngestAdjunct_Success_UpdatesCustomerStorage()
     {
         // Seed per-space storage row before parent-asset ingest so both rows are updated by that ingest
-        await seedContext.CustomerStorages.AddTestCustomerStorage(customer: 99, space: 1);
-        await seedContext.SaveChangesAsync();
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customer: 99, space: 1);
+        await dbContext.SaveChangesAsync();
+        dbContext.ChangeTracker.Clear();
 
         var asset = await CreateParentAsset();
 
@@ -259,11 +257,12 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task IngestAsset_Error_ExceedAllowance()
     {
-        // prep customer - use seedContext so dbContext doesn't track the storage row
-        await seedContext.Customers.AddTestCustomer(CustomerForLimits);
-        await seedContext.Spaces.AddTestSpace(CustomerForLimits, SpaceExceedLimit);
-        await seedContext.CustomerStorages.AddTestCustomerStorage(customer: CustomerForLimits);
-        await seedContext.SaveChangesAsync();
+        // prep customer
+        await dbContext.Customers.AddTestCustomer(CustomerForLimits);
+        await dbContext.Spaces.AddTestSpace(CustomerForLimits, SpaceExceedLimit);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customer: CustomerForLimits);
+        await dbContext.SaveChangesAsync();
+        dbContext.ChangeTracker.Clear();
         
         var asset = await CreateParentAsset(customer:CustomerForLimits);
 

@@ -5,6 +5,7 @@ using API.Infrastructure.Messaging.General;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
+using DLCS.Model.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -95,25 +96,24 @@ public class AdjunctUpsertService(
         return new AdjunctDocument(dbAdjunct, existingAdjunct);
     }
 
-    private async Task IncrementAdjunctCount(int customerId, int space, CancellationToken cancellationToken)
-    {
-        var rows = await dbContext.CustomerStorages
+    private Task IncrementAdjunctCount(int customerId, int space, CancellationToken cancellationToken) =>
+        dbContext.CustomerStorages
             .Where(cs => cs.Customer == customerId && (cs.Space == null || cs.Space == space))
-            .ToListAsync(cancellationToken);
-        foreach (var row in rows) row.NumberOfStoredAdjuncts++;
-    }
+            .UpdateFromQueryAsync(cs => new CustomerStorage
+            {
+                NumberOfStoredAdjuncts = cs.NumberOfStoredAdjuncts + 1
+            }, cancellationToken);
 
-    private async Task DecrementAdjunctStorage(int customerId, int space, long adjunctSize, CancellationToken cancellationToken)
-    {
-        var rows = await dbContext.CustomerStorages
+    private Task DecrementAdjunctStorage(int customerId, int space, long adjunctSize, CancellationToken cancellationToken) =>
+        dbContext.CustomerStorages
             .Where(cs => cs.Customer == customerId && (cs.Space == null || cs.Space == space))
-            .ToListAsync(cancellationToken);
-        foreach (var row in rows)
-        {
-            row.NumberOfStoredAdjuncts -= 1;
-            row.TotalSizeOfStoredAdjuncts -= adjunctSize;
-        }
-    }
+            .UpdateFromQueryAsync(cs => new CustomerStorage
+            {
+                NumberOfStoredAdjuncts = cs.NumberOfStoredAdjuncts > 0 ? cs.NumberOfStoredAdjuncts - 1 : 0,
+                TotalSizeOfStoredAdjuncts = cs.TotalSizeOfStoredAdjuncts > adjunctSize
+                    ? cs.TotalSizeOfStoredAdjuncts - adjunctSize
+                    : 0
+            }, cancellationToken);
 
     /// <summary>
     /// Sends engine ingest and deliverable-modified notifications for a processed set of adjuncts.

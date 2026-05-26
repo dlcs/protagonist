@@ -55,6 +55,8 @@ namespace DLCS.Repository.Migrations
             migrationBuilder.Sql(@"UPDATE ""CustomerStorage"" SET ""Space"" = NULL WHERE ""Space"" = 0;");
 
             // Ensure every customer has an aggregate (NULL-space) row; some may never have had a Space=0 row.
+            // 'default' StoragePolicy is safe here: this INSERT only fires for customers with no CustomerStorage
+            // rows at all, meaning storage was never checked for them and no custom policy was assigned.
             migrationBuilder.Sql(@"
 INSERT INTO ""CustomerStorage"" (""Customer"", ""Space"", ""StoragePolicy"", ""NumberOfStoredImages"", ""TotalSizeOfStoredImages"", ""TotalSizeOfThumbnails"", ""NumberOfStoredAdjuncts"", ""TotalSizeOfStoredAdjuncts"")
 SELECT c.""Id"", NULL, 'default', 0, 0, 0, 0, 0
@@ -65,6 +67,7 @@ WHERE NOT EXISTS (
 
             // Ensure every customer that has a Space=0 (stub-assets) also has a per-space CustomerStorage row for it.
             // StoragePolicy is inherited from the customer's aggregate (NULL-space) row.
+            // Adjunct counts are left at 0: historical figures can be reconciled via the recalculators.
             migrationBuilder.Sql(@"
 INSERT INTO ""CustomerStorage"" (""Customer"", ""Space"", ""StoragePolicy"", ""NumberOfStoredImages"", ""TotalSizeOfStoredImages"", ""TotalSizeOfThumbnails"", ""NumberOfStoredAdjuncts"", ""TotalSizeOfStoredAdjuncts"")
 SELECT s.""Customer"", 0, agg.""StoragePolicy"", 0, 0, 0, 0, 0

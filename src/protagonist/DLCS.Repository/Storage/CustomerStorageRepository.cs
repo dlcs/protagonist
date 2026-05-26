@@ -31,17 +31,21 @@ public class CustomerStorageRepository : IStorageRepository
             .AsNoTracking()
             .SingleOrDefaultAsync(cs => cs.Customer == customerId && cs.Space == null, cancellationToken);
 
-        return aggregateRow == null
-            ? new CustomerStorageSummary { CustomerId = customerId }
-            : new CustomerStorageSummary
-            {
-                CustomerId = customerId,
-                NumberOfStoredImages = aggregateRow.NumberOfStoredImages,
-                TotalSizeOfStoredImages = aggregateRow.TotalSizeOfStoredImages,
-                TotalSizeOfThumbnails = aggregateRow.TotalSizeOfThumbnails,
-                NumberOfStoredAdjuncts = aggregateRow.NumberOfStoredAdjuncts,
-                TotalSizeOfStoredAdjuncts = aggregateRow.TotalSizeOfStoredAdjuncts,
-            };
+        if (aggregateRow == null)
+        {
+            logger.LogWarning("No aggregate CustomerStorage row found for customer {CustomerId}", customerId);
+            return new CustomerStorageSummary { CustomerId = customerId };
+        }
+
+        return new CustomerStorageSummary
+        {
+            CustomerId = customerId,
+            NumberOfStoredImages = aggregateRow.NumberOfStoredImages,
+            TotalSizeOfStoredImages = aggregateRow.TotalSizeOfStoredImages,
+            TotalSizeOfThumbnails = aggregateRow.TotalSizeOfThumbnails,
+            NumberOfStoredAdjuncts = aggregateRow.NumberOfStoredAdjuncts,
+            TotalSizeOfStoredAdjuncts = aggregateRow.TotalSizeOfStoredAdjuncts,
+        };
     }
 
     public async Task<AssetStorageMetric> GetStorageMetrics(int customerId, CancellationToken cancellationToken)

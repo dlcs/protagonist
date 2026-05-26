@@ -40,11 +40,17 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IDeliverableNotificatio
 
         if (adjunct.IsHosted())
         {
-            var storageRows = await dbContext.CustomerStorages
+            var adjunctSize = adjunct.Size ?? 0;
+            await dbContext.CustomerStorages
                 .Where(cs => cs.Customer == adjunct.AssetId.Customer &&
                              (cs.Space == adjunct.AssetId.Space || cs.Space == null))
-                .ToListAsync(cancellationToken);
-            foreach (var row in storageRows) ReduceAdjunctStorage(row, adjunct.Size ?? 0);
+                .UpdateFromQueryAsync(cs => new CustomerStorage
+                {
+                    NumberOfStoredAdjuncts = cs.NumberOfStoredAdjuncts > 0 ? cs.NumberOfStoredAdjuncts - 1 : 0,
+                    TotalSizeOfStoredAdjuncts = cs.TotalSizeOfStoredAdjuncts > adjunctSize
+                        ? cs.TotalSizeOfStoredAdjuncts - adjunctSize
+                        : 0
+                }, cancellationToken);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -53,12 +59,6 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IDeliverableNotificatio
         return new ResultMessage<DeleteResult>(string.Empty, DeleteResult.Deleted);
     }
     
-    private static void ReduceAdjunctStorage(CustomerStorage row, long adjunctSize)
-    {
-        row.NumberOfStoredAdjuncts -= 1;
-        row.TotalSizeOfStoredAdjuncts -= adjunctSize;
-    }
-
     private async Task RaiseNotification(DeleteAdjunct request, Adjunct deletedAdjunct,
         CancellationToken cancellationToken)
     {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -110,12 +111,12 @@ public class StorageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task Get_ImageStorage_200()
+    public async Task Get_ImageStorage_200_ReturnsCorrectValues()
     {
         // Arrange
         const int customerId = 94;
         const string imageId = "test-image";
-        
+
         var path = $"customers/{customerId}/spaces/0/images/{imageId}/storage";
         var imageStorage = new ImageStorage()
         {
@@ -124,17 +125,23 @@ public class StorageTests : IClassFixture<ProtagonistAppFactory<Startup>>
             Space = 0,
             ThumbnailSize = 168104,
             Size = 2605964,
+            AdjunctSize = 102400,
             LastChecked = DateTime.MinValue.ToUniversalTime()
         };
-        
+
         await dlcsContext.ImageStorages.AddAsync(imageStorage);
         await dlcsContext.SaveChangesAsync();
-        
+
         // Act
         var response = await httpClient.AsCustomer(customerId).GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonDoc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var root = jsonDoc.RootElement;
+        root.GetProperty("thumbnailSize").GetInt64().Should().Be(168104);
+        root.GetProperty("size").GetInt64().Should().Be(2605964);
+        root.GetProperty("adjunctSize").GetInt64().Should().Be(102400);
     }
     
     [Fact]

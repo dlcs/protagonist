@@ -110,7 +110,7 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
                 MaxUnauthorised = -1
             }, cancellationToken);
 
-            // Create null-space aggregate CustomerStorage row for storage limit checks
+            // Create null-space aggregate CustomerStorage row for storage tracking
             await dbContext.CustomerStorages.AddAsync(new CustomerStorage
             {
                 Customer = newCustomerId,
@@ -123,7 +123,6 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
 
             // Pre-seed a per-space row for space 0 (stub-assets) so that Engine storage increments
             // hit an existing row rather than silently no-oping on their first UPDATE.
-            // Other spaces get their per-space row created lazily by the Engine on first ingest.
             await dbContext.CustomerStorages.AddAsync(new CustomerStorage
             {
                 Customer = newCustomerId,
