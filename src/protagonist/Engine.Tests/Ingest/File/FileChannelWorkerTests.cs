@@ -404,6 +404,23 @@ public class FileChannelWorkerTests
         context.Adjunct.Error.Should().Be("Unable to read annotation content for validation");
     }
 
+    [Fact]
+    public async Task IngestAdjunct_Annotation_Optimised_NullStream_ReturnsFailed()
+    {
+        // OriginResponse with Stream.Null but IsEmpty=false (strategy returns null stream without using Empty static)
+        var context = GetAnnotationAdjunctIngestionContext();
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = true };
+        A.CallTo(() => originStrategy.LoadFromOrigin(context.Adjunct, cos, A<CancellationToken>._))
+            .Returns(new OriginResponse(Stream.Null));
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+
+        // Assert
+        result.Should().Be(IngestResultStatus.Failed);
+        context.Adjunct.Error.Should().Be("Unable to read annotation content for validation");
+    }
+
     // Annotation adjuncts - non-Optimised path (validator callback passed to CopyOriginToStorage)
 
     [Fact]

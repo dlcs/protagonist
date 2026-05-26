@@ -151,7 +151,7 @@ public class FileChannelWorker(
         await using var originResponse =
             await originFetcher.LoadFromOrigin(adjunct, customerOriginStrategy, cancellationToken);
 
-        if (originResponse.IsEmpty)
+        if (originResponse.IsEmpty || originResponse.Stream.IsNull())
         {
             logger.LogError(
                 "Unable to read annotation adjunct {AdjunctId} for Asset {AssetId} content from origin for validation",
