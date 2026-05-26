@@ -9,13 +9,13 @@ namespace DLCS.Repository.Strategy;
 /// <summary>
 /// Represents the result of fetching an asset from an origin.
 /// </summary>
-public class OriginResponse : IAsyncDisposable
+public class OriginResponse(Stream stream) : IAsyncDisposable
 {
     /// <summary>
     /// Stream content from origin
     /// </summary>
-    public Stream Stream { get; }
-    
+    public Stream Stream { get; } = stream.ThrowIfNull(nameof(stream));
+
     /// <summary>
     /// Get value of ContentType for content
     /// </summary>
@@ -36,11 +36,6 @@ public class OriginResponse : IAsyncDisposable
     /// </summary>
     public static readonly OriginResponse Empty = new(Stream.Null) { IsEmpty = true };
 
-    public OriginResponse(Stream stream)
-    {
-        Stream = stream.ThrowIfNull(nameof(stream));
-    }
-    
     public OriginResponse WithContentType(string? contentType)
     {
         if (IsEmpty) throw new InvalidOperationException("Cannot set ContentType for empty response");

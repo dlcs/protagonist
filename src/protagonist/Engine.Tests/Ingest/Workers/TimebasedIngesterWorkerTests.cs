@@ -43,7 +43,7 @@ public class TimebasedIngesterWorkerTests
         var asset = new Asset(AssetId.FromString("2/1/shallow"));
         A.CallTo(() =>
                 assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, true, A<CustomerOriginStrategy>._,
-                    A<CancellationToken>._))
+                    A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._))
             .ThrowsAsync(new Exception());
 
         // Act
@@ -62,7 +62,7 @@ public class TimebasedIngesterWorkerTests
         var asset = new Asset(AssetId.FromString($"{customerId}/1/shallow"));
         var assetFromOrigin = new AssetFromOrigin(asset.Id, 13, "/target/location", "application/json");
         A.CallTo(() => assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._,
-            A<CustomerOriginStrategy>._, A<CancellationToken>._)).Returns(assetFromOrigin);
+            A<CustomerOriginStrategy>._, A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._)).Returns(assetFromOrigin);
 
         // Act
         await sut.Ingest(new IngestionContext(asset), new CustomerOriginStrategy());
@@ -70,7 +70,7 @@ public class TimebasedIngesterWorkerTests
         // Assert
         A.CallTo(() =>
             assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, !noStoragePolicyCheck,
-                A<CustomerOriginStrategy>._, A<CancellationToken>._))
+                A<CustomerOriginStrategy>._, A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._))
             .MustHaveHappened();
     }
 
@@ -82,7 +82,7 @@ public class TimebasedIngesterWorkerTests
 
         A.CallTo(() =>
                 assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, A<CustomerOriginStrategy>._,
-                    A<CancellationToken>._))
+                    A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._))
             .Returns(new AssetFromOrigin(asset.Id, 13, "target", "application/json"));
 
         var originLocation = new RegionalisedObjectInBucket("bucket", "key", "fake-region");
@@ -114,7 +114,7 @@ public class TimebasedIngesterWorkerTests
 
         A.CallTo(() =>
                 assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, A<CustomerOriginStrategy>._,
-                    A<CancellationToken>._))
+                    A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._))
             .Returns(new AssetFromOrigin(asset.Id, 13, "target", "application/json"));
 
         A.CallTo(() =>

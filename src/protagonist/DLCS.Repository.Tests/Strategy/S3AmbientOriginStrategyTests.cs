@@ -93,12 +93,28 @@ public class S3AmbientOriginStrategyTests
     }
 
     [Fact]
-    public async Task LoadAssetFromOrigin_ReturnsNull_IfCallFails()
+    public async Task LoadAssetFromOrigin_ReturnsEmpty_IfCallFails()
     {
         // Arrange
         const string originUri = "s3://eu-west-1/test-storage/2/1/repelish";
         A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._, A<CancellationToken>._))
             .ThrowsAsync(new Exception());
+
+        // Act
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
+
+        // Assert
+        result.Stream.Should().BeSameAs(Stream.Null);
+        result.IsEmpty.Should().BeTrue();
+    }
+    
+    [Fact]
+    public async Task LoadAssetFromOrigin_ReturnsEmpty_IfCallReturnsNullStream()
+    {
+        // Arrange
+        const string originUri = "s3://eu-west-1/test-storage/2/1/repelish";
+        A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._, A<CancellationToken>._))
+            .Returns(new ObjectFromBucket(new ObjectInBucket("bucket"), null, null));
 
         // Act
         var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);

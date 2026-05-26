@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Core.Streams;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
@@ -34,6 +35,7 @@ public class S3AmbientOriginStrategy : IOriginStrategy
         {
             var regionalisedBucket = RegionalisedObjectInBucket.Parse(originItem.Origin);
             var response = await bucketReader.GetObjectFromBucket(regionalisedBucket, cancellationToken);
+            if (response.Stream.IsNull()) return OriginResponse.Empty;
             var originResponse = CreateOriginResponse(response);
             return originResponse;
         }

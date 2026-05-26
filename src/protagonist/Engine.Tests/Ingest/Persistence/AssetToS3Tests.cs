@@ -63,7 +63,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
 
         // Act
-        await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         A.CallTo(() => bucketWriter.CopyLargeObject(
@@ -102,7 +102,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
 
         // Act
-        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         actual.Should().BeEquivalentTo(expected);
@@ -136,7 +136,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
 
         // Act
-        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         actual.Should().BeEquivalentTo(expected);
@@ -168,7 +168,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
 
         // Act
-        Func<Task> action = () => sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        Func<Task> action = () => sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         action.Should().ThrowAsync<ApplicationException>();
@@ -201,7 +201,7 @@ public class AssetToS3Tests
             .Returns(assetFromOrigin);
 
         // Act
-        await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         A.CallTo(() =>
@@ -232,7 +232,7 @@ public class AssetToS3Tests
             .Returns(assetOnDisk);
 
         // Act
-        var response = await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        var response = await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         A.CallTo(() => bucketWriter.WriteFileToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, ct))
@@ -265,7 +265,7 @@ public class AssetToS3Tests
             .Returns(true);
 
         // Act
-        await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         A.CallTo(() => bucketWriter.WriteFileToBucket(
@@ -307,7 +307,7 @@ public class AssetToS3Tests
             .Returns(true);
 
         // Act
-        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         actual.Should().BeEquivalentTo(expected);
@@ -335,7 +335,7 @@ public class AssetToS3Tests
             .Returns(assetOnDisk);
 
         // Act
-        Func<Task> action = () => sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        Func<Task> action = () => sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         action.Should().ThrowAsync<ApplicationException>();

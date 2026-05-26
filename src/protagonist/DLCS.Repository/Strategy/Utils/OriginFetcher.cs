@@ -9,9 +9,7 @@ namespace DLCS.Repository.Strategy.Utils;
 /// <summary>
 /// Helper class that gets appropriate origin strategy for a resource and fetches from origin to local disk
 /// </summary>
-public class OriginFetcher(
-    ICustomerOriginStrategyRepository customerOriginStrategyRepository,
-    OriginStrategyResolver originStrategyResolver)
+public class OriginFetcher(OriginStrategyResolver originStrategyResolver)
 {
     /// <summary>
     /// Get <see cref="OriginResponse"/> object for provided asset, loading from origin passed origin strategy
