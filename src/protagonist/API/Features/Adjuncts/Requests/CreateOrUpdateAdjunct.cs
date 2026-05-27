@@ -94,7 +94,7 @@ public class CreateOrUpdateAdjunctHandler(
         {
             await transaction.RollbackAsync(CancellationToken.None);
             logger.LogError(exception, "Error processing adjuncts for {AssetId}", assetId);
-            return ModifyEntityResult<Adjunct[]>.Failure($"Unknown database error saving adjuncts for {assetId}");
+            return ModifyEntityResult<Adjunct[]>.Failure($"Unknown error processing adjuncts for {assetId}");
         }
 
         // Reload all from db - this confirms all saved fine, and we also retrieve the asset object for use below
