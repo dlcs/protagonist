@@ -17,6 +17,7 @@ namespace API.Features.Adjuncts;
 /// </summary>
 public class AdjunctUpsertService(
     DlcsContext dbContext,
+    IStorageRepository storageRepository,
     IIngestNotificationSender notificationSender,
     IDeliverableNotificationSender deliverableNotificationSender,
     ILogger<AdjunctUpsertService> logger)
@@ -46,7 +47,7 @@ public class AdjunctUpsertService(
                 if (dbAdjunct.IsHosted())
                 {
                     // Was hosted, now external — decrement count and reduce stored size
-                    await DecrementAdjunctStorage(adjunct.AssetId.Customer, adjunct.AssetId.Space, dbAdjunct.Size ?? 0, cancellationToken);
+                    await storageRepository.DecrementAdjunctStorage(adjunct.AssetId.Customer, adjunct.AssetId.Space, dbAdjunct.Size ?? 0, cancellationToken);
                 }
 
                 // External adjunct — size is irrelevant for storage limits, copy submitted value
@@ -102,17 +103,6 @@ public class AdjunctUpsertService(
             .UpdateFromQueryAsync(cs => new CustomerStorage
             {
                 NumberOfStoredAdjuncts = cs.NumberOfStoredAdjuncts + 1
-            }, cancellationToken);
-
-    private Task DecrementAdjunctStorage(int customerId, int space, long adjunctSize, CancellationToken cancellationToken) =>
-        dbContext.CustomerStorages
-            .Where(cs => cs.Customer == customerId && (cs.Space == null || cs.Space == space))
-            .UpdateFromQueryAsync(cs => new CustomerStorage
-            {
-                NumberOfStoredAdjuncts = cs.NumberOfStoredAdjuncts > 0 ? cs.NumberOfStoredAdjuncts - 1 : 0,
-                TotalSizeOfStoredAdjuncts = cs.TotalSizeOfStoredAdjuncts > adjunctSize
-                    ? cs.TotalSizeOfStoredAdjuncts - adjunctSize
-                    : 0
             }, cancellationToken);
 
     /// <summary>

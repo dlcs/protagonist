@@ -21,7 +21,7 @@ public class DeleteAdjunct(string id, AssetId assetId, ImageCacheType deleteFrom
 }
 
 
-public class DeleteAdjunctHandler(DlcsContext dbContext, IDeliverableNotificationSender deliverableNotificationSender, ILogger<DeleteAdjunctHandler> logger)
+public class DeleteAdjunctHandler(DlcsContext dbContext, IStorageRepository storageRepository, IDeliverableNotificationSender deliverableNotificationSender, ILogger<DeleteAdjunctHandler> logger)
     : IRequestHandler<DeleteAdjunct, ResultMessage<DeleteResult>>
 {
     public async Task<ResultMessage<DeleteResult>> Handle(DeleteAdjunct request, CancellationToken cancellationToken)
@@ -35,22 +35,13 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IDeliverableNotificatio
             return new ResultMessage<DeleteResult>($"Couldn't find an adjunct with the id {request.Id}",
                 DeleteResult.NotFound);
         }
-        
+
         dbContext.Adjuncts.Remove(adjunct);
 
         if (adjunct.IsHosted())
         {
-            var adjunctSize = adjunct.Size ?? 0;
-            await dbContext.CustomerStorages
-                .Where(cs => cs.Customer == adjunct.AssetId.Customer &&
-                             (cs.Space == adjunct.AssetId.Space || cs.Space == null))
-                .UpdateFromQueryAsync(cs => new CustomerStorage
-                {
-                    NumberOfStoredAdjuncts = cs.NumberOfStoredAdjuncts > 0 ? cs.NumberOfStoredAdjuncts - 1 : 0,
-                    TotalSizeOfStoredAdjuncts = cs.TotalSizeOfStoredAdjuncts > adjunctSize
-                        ? cs.TotalSizeOfStoredAdjuncts - adjunctSize
-                        : 0
-                }, cancellationToken);
+            await storageRepository.DecrementAdjunctStorage(
+                adjunct.AssetId.Customer, adjunct.AssetId.Space, adjunct.Size ?? 0, cancellationToken);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
