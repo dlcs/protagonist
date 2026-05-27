@@ -1084,9 +1084,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
-        (await tryRead.Should().ThrowAsync<DlcsException>())
-            .Which.Message.Should()
-            .Be("One or more adjuncts were expected in request body but found none");;
+        (await tryRead.Should().ThrowAsync<DlcsException>()).WithMessage(
+            "One or more adjuncts were expected in request body but found none");
     }
     
     [Fact]
@@ -1130,9 +1129,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
-        (await tryRead.Should().ThrowAsync<DlcsException>())
-            .Which.Message.Should()
-            .Be("'iiifLink' is required");
+        (await tryRead.Should().ThrowAsync<DlcsException>()).WithMessage("'iiifLink' is required");
         
         // verify db unchanged
         dbContext.Adjuncts.Count(a=>a.AssetId == assetId).Should().Be(0, "no adjuncts for this asset should have been created");
@@ -1183,8 +1180,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
         (await tryRead.Should().ThrowAsync<DlcsException>())
-            .Which.Message.Should()
-            .Be("Create failed. Adjunct or adjuncts with id(s) in (someAdjunctId1,someAdjunctId2) already exists");
+            .WithMessage("Create failed. Adjunct or adjuncts with id(s) in (someAdjunctId1,someAdjunctId2) already exists");
         
         // verify db unchanged
         dbContext.Adjuncts.Count(a=>a.AssetId == assetId).Should().Be(1, "no additional adjuncts for this asset should have been created");
@@ -1231,8 +1227,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
         (await tryRead.Should().ThrowAsync<DlcsException>())
-            .Which.Message.Should()
-            .Be($"Asset with id '{assetId}' not found");
+            .WithMessage($"Asset with id '{assetId}' not found");
     }
     
     [Fact]
@@ -1261,8 +1256,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
         (await tryRead.Should().ThrowAsync<DlcsException>())
-            .Which.Message.Should()
-            .Be("One or more adjuncts were expected in request body but found none");
+            .WithMessage("One or more adjuncts were expected in request body but found none");
     }
     
     [Fact]
@@ -1314,8 +1308,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
         Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
         (await tryRead.Should().ThrowAsync<DlcsException>())
-            .Which.Message.Should()
-            .Be($"One or more adjuncts for asset {assetId} failed submission for ingestion and will need to be resubmitted");
+            .WithMessage($"One or more adjuncts for asset {assetId} failed submission for ingestion and will need to be resubmitted");
         
         // verify db status
         dbContext.Adjuncts.Count(a=>a.AssetId == assetId).Should().Be(2, "creation in db worked, but we failed after saving");

@@ -79,8 +79,7 @@ public class AdjunctUnexpectedErrorTests : IClassFixture<ProtagonistAppFactory<S
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
 
         Func<Task> tryRead = () => response.ReadAsHydraResponseAsync<Error>();
-        (await tryRead.Should().ThrowAsync<DlcsException>())
-            .Which.Message.Should()
-            .Be($"Unknown error processing adjuncts for {assetId}");
+        (await tryRead.Should().ThrowAsync<DlcsException>()).WithMessage(
+            $"Unknown error processing adjuncts for {assetId}");
     }
 }
