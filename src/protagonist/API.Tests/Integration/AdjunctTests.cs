@@ -465,18 +465,21 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        
+
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customer: assetId.Customer, numberOfAdjuncts: 0);
+        await dbContext.SaveChangesAsync();
+
         const string newAdjunctJson = """
                                       {
                                                 "@type": "Image",
-                                                "externalId": "https://some-location.com/an-adjunct",
+                                                "origin": "https://some-location.com/an-adjunct",
                                                 "iiifLink": "seeAlso",
                                                 "mediaType": "a-mediaType",
                                                 "label": {"label": ["value"]},
                                                 "language": ["en"],
                                               }
                                       """;
-        
+
         var path = $"{assetId.ToApiResourcePath()}/adjuncts/foo";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
 
@@ -485,9 +488,13 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        
+
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
         error.Detail.Should().Be($"Asset with id '{assetId}' not found");
+
+        var storage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
+        storage.NumberOfStoredAdjuncts.Should().Be(0, "storage must not be modified when the asset does not exist");
     }
     
     [Fact]
