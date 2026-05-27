@@ -63,6 +63,16 @@ public class CustomerStorage : DlcsResource
     [JsonProperty(Order = 22, PropertyName = "totalSizeOfThumbnails")]
     public long? TotalSizeOfThumbnails { get; set; }
 
+    [RdfProperty(Description = "Number of stored adjuncts",
+        Range = Names.XmlSchema.Integer, ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 23, PropertyName = "numberOfStoredAdjuncts")]
+    public long? NumberOfStoredAdjuncts { get; set; }
+
+    [RdfProperty(Description = "Total storage usage for adjuncts, in bytes",
+        Range = Names.XmlSchema.Integer, ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 24, PropertyName = "totalSizeOfStoredAdjuncts")]
+    public long? TotalSizeOfStoredAdjuncts { get; set; }
+
     [RdfProperty(Description = "When the DLCS last evaluated storage use to generate this resource",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 31, PropertyName = "lastCalculated")]

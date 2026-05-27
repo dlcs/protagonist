@@ -3,10 +3,8 @@
 public static class AdjunctX
 {
     /// <summary>
-    /// Semantic helper for code readability. If `origin` has been provided in adjunct, it needs to be ingested into
-    /// hosted adjunct
+    /// Returns true if the adjunct is or will be hosted by DLCS (i.e. has an origin to ingest from).
     /// </summary>
-    /// <param name="adjunct">Adjunct for which to determine whether it should be ingested</param>
-    /// <returns>True if the Adjunct was determined to require ingesting, otherwise false</returns>
-    public static bool IsToBeIngested(this Adjunct adjunct) => !string.IsNullOrWhiteSpace(adjunct.Origin);
+    /// <remarks>External adjuncts have no origin and are not ingested.</remarks>
+    public static bool IsHosted(this Adjunct adjunct) => !string.IsNullOrWhiteSpace(adjunct.Origin);
 }

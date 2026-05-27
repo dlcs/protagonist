@@ -748,7 +748,8 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         }}";
 
         await dbContext.Spaces.AddTestSpace(customerId, 1);
-        
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customerId);
+
         dbContext.DefaultDeliveryChannels.Add(new DLCS.Model.DeliveryChannels.DefaultDeliveryChannel
         {
             Customer = customerId,
@@ -1047,6 +1048,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var assetId = AssetIdGenerator.GetAssetId(customer, space);
         await dbContext.Customers.AddTestCustomer(customer);
         await dbContext.Spaces.AddTestSpace(customer, space);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customer: customer);
         await dbContext.SaveChangesAsync();
 
         var hydraImageBody = $@"{{
@@ -1760,7 +1762,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.CustomerStorages.AddAsync(new DLCS.Model.Storage.CustomerStorage
         {
             StoragePolicy = "tiny",
-            Customer = customer, Space = 0,
+            Customer = customer, Space = null,
             TotalSizeOfStoredImages = 0,
             TotalSizeOfThumbnails = 0,
             NumberOfStoredImages = 2
@@ -2845,7 +2847,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 100L);
         var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
             sizeOfStored: 1000L, sizeOfThumbs: 1000L);
-        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
+        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: null, numberOfImages: 200,
             sizeOfStored: 2000L, sizeOfThumbs: 2000L);
         var customerImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
             ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);
@@ -2873,15 +2875,15 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbAdjunct.Should().BeNull();
         
         // CustomerStorage values reduced
-        await dbContext.Entry(customerSpaceStorage.Entity).ReloadAsync();
-        customerSpaceStorage.Entity.NumberOfStoredImages.Should().Be(99);
-        customerSpaceStorage.Entity.TotalSizeOfThumbnails.Should().Be(900L);
-        customerSpaceStorage.Entity.TotalSizeOfStoredImages.Should().Be(600L);
+        await dbContext.Entry(customerSpaceStorage).ReloadAsync();
+        customerSpaceStorage.NumberOfStoredImages.Should().Be(99);
+        customerSpaceStorage.TotalSizeOfThumbnails.Should().Be(900L);
+        customerSpaceStorage.TotalSizeOfStoredImages.Should().Be(600L);
         
-        await dbContext.Entry(customerStorage.Entity).ReloadAsync();
-        customerStorage.Entity.NumberOfStoredImages.Should().Be(199);
-        customerStorage.Entity.TotalSizeOfThumbnails.Should().Be(1900L);
-        customerStorage.Entity.TotalSizeOfStoredImages.Should().Be(1600L);
+        await dbContext.Entry(customerStorage).ReloadAsync();
+        customerStorage.NumberOfStoredImages.Should().Be(199);
+        customerStorage.TotalSizeOfThumbnails.Should().Be(1900L);
+        customerStorage.TotalSizeOfStoredImages.Should().Be(1600L);
         
         // EntityCounter for customer images reduced
         var dbCustomerCounter = await dbContext.EntityCounters.SingleAsync(ec =>
@@ -2908,7 +2910,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 100L);
         var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
             sizeOfStored: 1000L, sizeOfThumbs: 1000L);
-        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
+        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: null, numberOfImages: 200,
             sizeOfStored: 2000L, sizeOfThumbs: 2000L);
         var customerImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
             ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);
@@ -2934,15 +2936,15 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbStorage.Should().BeNull();
         
         // CustomerStorage values reduced
-        await dbContext.Entry(customerSpaceStorage.Entity).ReloadAsync();
-        customerSpaceStorage.Entity.NumberOfStoredImages.Should().Be(99);
-        customerSpaceStorage.Entity.TotalSizeOfThumbnails.Should().Be(900L);
-        customerSpaceStorage.Entity.TotalSizeOfStoredImages.Should().Be(600L);
+        await dbContext.Entry(customerSpaceStorage).ReloadAsync();
+        customerSpaceStorage.NumberOfStoredImages.Should().Be(99);
+        customerSpaceStorage.TotalSizeOfThumbnails.Should().Be(900L);
+        customerSpaceStorage.TotalSizeOfStoredImages.Should().Be(600L);
         
-        await dbContext.Entry(customerStorage.Entity).ReloadAsync();
-        customerStorage.Entity.NumberOfStoredImages.Should().Be(199);
-        customerStorage.Entity.TotalSizeOfThumbnails.Should().Be(1900L);
-        customerStorage.Entity.TotalSizeOfStoredImages.Should().Be(1600L);
+        await dbContext.Entry(customerStorage).ReloadAsync();
+        customerStorage.NumberOfStoredImages.Should().Be(199);
+        customerStorage.TotalSizeOfThumbnails.Should().Be(1900L);
+        customerStorage.TotalSizeOfStoredImages.Should().Be(1600L);
         
         // EntityCounter for customer images reduced
         var dbCustomerCounter = await dbContext.EntityCounters.SingleAsync(ec =>
@@ -2969,7 +2971,7 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 0L);
         var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1, numberOfImages: 100,
             sizeOfStored: 1000L, sizeOfThumbs: 1000L);
-        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 0, numberOfImages: 200,
+        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: null, numberOfImages: 200,
             sizeOfStored: 2000L, sizeOfThumbs: 2000L);
         var customerImagesCounter = await dbContext.EntityCounters.SingleAsync(ec =>
             ec.Customer == 0 && ec.Scope == "99" && ec.Type == KnownEntityCounters.CustomerImages);
@@ -2992,15 +2994,15 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbLocation.Should().BeNull();
 
         // CustomerStorage values reduced
-        await dbContext.Entry(customerSpaceStorage.Entity).ReloadAsync();
-        customerSpaceStorage.Entity.NumberOfStoredImages.Should().Be(99);
-        customerSpaceStorage.Entity.TotalSizeOfThumbnails.Should().Be(1000L);
-        customerSpaceStorage.Entity.TotalSizeOfStoredImages.Should().Be(600L);
+        await dbContext.Entry(customerSpaceStorage).ReloadAsync();
+        customerSpaceStorage.NumberOfStoredImages.Should().Be(99);
+        customerSpaceStorage.TotalSizeOfThumbnails.Should().Be(1000L);
+        customerSpaceStorage.TotalSizeOfStoredImages.Should().Be(600L);
         
-        await dbContext.Entry(customerStorage.Entity).ReloadAsync();
-        customerStorage.Entity.NumberOfStoredImages.Should().Be(199);
-        customerStorage.Entity.TotalSizeOfThumbnails.Should().Be(2000L);
-        customerStorage.Entity.TotalSizeOfStoredImages.Should().Be(1600L);
+        await dbContext.Entry(customerStorage).ReloadAsync();
+        customerStorage.NumberOfStoredImages.Should().Be(199);
+        customerStorage.TotalSizeOfThumbnails.Should().Be(2000L);
+        customerStorage.TotalSizeOfStoredImages.Should().Be(1600L);
         
         // EntityCounter for customer images reduced
         var dbCustomerCounter = await dbContext.EntityCounters.SingleAsync(ec =>

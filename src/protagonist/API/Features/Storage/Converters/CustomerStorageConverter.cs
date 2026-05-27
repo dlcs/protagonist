@@ -16,6 +16,8 @@ public static class CustomerStorageConverter
             NumberOfStoredImages = customerStorage.NumberOfStoredImages,
             TotalSizeOfStoredImages = customerStorage.TotalSizeOfStoredImages,
             TotalSizeOfThumbnails = customerStorage.TotalSizeOfThumbnails,
+            NumberOfStoredAdjuncts = customerStorage.NumberOfStoredAdjuncts,
+            TotalSizeOfStoredAdjuncts = customerStorage.TotalSizeOfStoredAdjuncts,
             LastCalculated = customerStorage.LastCalculated
         };
         

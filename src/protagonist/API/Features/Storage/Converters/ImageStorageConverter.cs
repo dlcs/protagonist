@@ -15,8 +15,9 @@ public static class ImageStorageConverter
         {
             ThumbnailSize = imageStorage.ThumbnailSize,
             Size = imageStorage.Size,
+            AdjunctSize = imageStorage.AdjunctSize,
             LastChecked = imageStorage.LastChecked,
-            CheckingInProgress = imageStorage.CheckingInProgress,
+            CheckingInProgress = imageStorage.CheckingInProgress
         };
         
         return hydraImageStorage;

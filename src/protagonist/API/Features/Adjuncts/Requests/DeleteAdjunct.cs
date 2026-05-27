@@ -3,6 +3,7 @@ using API.Infrastructure.Messaging.General;
 using DLCS.Core;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Storage;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +21,7 @@ public class DeleteAdjunct(string id, AssetId assetId, ImageCacheType deleteFrom
 }
 
 
-public class DeleteAdjunctHandler(DlcsContext dbContext, IDeliverableNotificationSender deliverableNotificationSender, ILogger<DeleteAdjunctHandler> logger)
+public class DeleteAdjunctHandler(DlcsContext dbContext, IStorageRepository storageRepository, IDeliverableNotificationSender deliverableNotificationSender, ILogger<DeleteAdjunctHandler> logger)
     : IRequestHandler<DeleteAdjunct, ResultMessage<DeleteResult>>
 {
     public async Task<ResultMessage<DeleteResult>> Handle(DeleteAdjunct request, CancellationToken cancellationToken)
@@ -34,8 +35,15 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IDeliverableNotificatio
             return new ResultMessage<DeleteResult>($"Couldn't find an adjunct with the id {request.Id}",
                 DeleteResult.NotFound);
         }
-        
+
         dbContext.Adjuncts.Remove(adjunct);
+
+        if (adjunct.IsHosted())
+        {
+            await storageRepository.DecrementAdjunctStorage(
+                adjunct.AssetId.Customer, adjunct.AssetId.Space, adjunct.Size ?? 0, cancellationToken);
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
         await RaiseNotification(request, adjunct, cancellationToken);
 

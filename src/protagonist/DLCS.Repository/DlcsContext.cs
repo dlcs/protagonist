@@ -285,9 +285,23 @@ public partial class DlcsContext : DbContext
 
         modelBuilder.Entity<CustomerStorage>(entity =>
         {
-            entity.HasKey(e => new { e.Customer, e.Space });
+            entity.HasKey(e => e.Id);
 
             entity.ToTable("CustomerStorage");
+
+            entity.Property(e => e.Id).UseIdentityByDefaultColumn();
+
+            // One row per real space per customer (Space IS NOT NULL)
+            entity.HasIndex(e => new { e.Customer, e.Space })
+                .IsUnique()
+                .HasFilter("\"Space\" IS NOT NULL")
+                .HasDatabaseName("IX_CustomerStorage_Customer_Space");
+
+            // One aggregate row per customer (Space IS NULL)
+            entity.HasIndex(e => e.Customer)
+                .IsUnique()
+                .HasFilter("\"Space\" IS NULL")
+                .HasDatabaseName("IX_CustomerStorage_Customer_Aggregate");
 
             entity.Property(e => e.LastCalculated).HasColumnType("timestamp with time zone");
 

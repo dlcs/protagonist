@@ -201,12 +201,68 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
+    public async Task IngestAdjunct_Success_UpdatesCustomerStorage()
+    {
+        // Seed per-space storage row before parent-asset ingest so both rows are updated by that ingest
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customer: 99, space: 1);
+        await dbContext.SaveChangesAsync();
+        dbContext.ChangeTracker.Clear();
+
+        var asset = await CreateParentAsset();
+
+        const string adjunctId = nameof(IngestAdjunct_Success_UpdatesCustomerStorage);
+
+        var adjunct = new Adjunct
+        {
+            Id = adjunctId, AssetId = asset.Id, Asset = asset, IIIFLink = IIIFLinkType.SeeAlso,
+            MediaType = "image/jpeg", Type = "Image", Origin = origin2k, Created = DateTime.UtcNow,
+            Error = string.Empty, Ingesting = true
+        };
+
+        dbContext.Adjuncts.Add(adjunct);
+        await dbContext.SaveChangesAsync();
+
+        // Capture before-state after parent-asset ingest so we can do delta checks
+        var aggregateRow = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == 99 && cs.Space == null);
+        var spaceRow = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == 99 && cs.Space == 1);
+        var imagesSizeBefore = aggregateRow.TotalSizeOfStoredImages;
+        var spaceImagesSizeBefore = spaceRow.TotalSizeOfStoredImages;
+        var adjunctSizeBefore = aggregateRow.TotalSizeOfStoredAdjuncts;
+        var spaceAdjunctSizeBefore = spaceRow.TotalSizeOfStoredAdjuncts;
+
+        var message = new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow);
+        var jsonContent =
+            new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
+
+        // Act
+        var result = await httpClient.PostAsync("adjunct-ingest", jsonContent);
+
+        // Assert
+        result.Should().BeSuccessful();
+
+        await dbContext.Entry(aggregateRow).ReloadAsync();
+        await dbContext.Entry(spaceRow).ReloadAsync();
+
+        aggregateRow.TotalSizeOfStoredAdjuncts.Should().Be(adjunctSizeBefore + 2048,
+            "hosted adjunct size should be reflected in the aggregate CustomerStorage row");
+        aggregateRow.TotalSizeOfStoredImages.Should().Be(imagesSizeBefore,
+            "adjunct ingest should not affect the image size column");
+
+        spaceRow.TotalSizeOfStoredAdjuncts.Should().Be(spaceAdjunctSizeBefore + 2048,
+            "hosted adjunct size should be reflected in the per-space CustomerStorage row");
+        spaceRow.TotalSizeOfStoredImages.Should().Be(spaceImagesSizeBefore,
+            "adjunct ingest should not affect the image size column");
+    }
+
+    [Fact]
     public async Task IngestAsset_Error_ExceedAllowance()
     {
         // prep customer
         await dbContext.Customers.AddTestCustomer(CustomerForLimits);
         await dbContext.Spaces.AddTestSpace(CustomerForLimits, SpaceExceedLimit);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customer: CustomerForLimits);
         await dbContext.SaveChangesAsync();
+        dbContext.ChangeTracker.Clear();
         
         var asset = await CreateParentAsset(customer:CustomerForLimits);
 

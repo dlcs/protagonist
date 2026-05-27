@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Data;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Assets;
@@ -53,9 +54,13 @@ public class CreateOrUpdateAdjunctHandler(
         // We use a custom "wrapper" document for the Adjuncts being processed
         // This reduces the complexity of preserving set of data for each adjunct in some sort of dictionaries here
         var adjuncts = new List<AdjunctDocument>(request.Adjuncts.Length);
-        foreach (var adjunct in request.Adjuncts)
+
+        await using var transaction =
+            await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+
+        try
         {
-            try
+            foreach (var adjunct in request.Adjuncts)
             {
                 var existingAdjunct = !request.CreateOnly && existing.TryGetValue(adjunct.Id, out var maybeAdjunct)
                     ? maybeAdjunct
@@ -67,21 +72,13 @@ public class CreateOrUpdateAdjunctHandler(
                 var processed = await adjunctUpsertService.HandleAdjunct(adjunct, existingAdjunct, cancellationToken);
                 adjuncts.Add(processed);
             }
-            catch (Exception exception)
-            {
-                logger.LogError(exception, "Error processing {Identifier}", adjunct.Identifier());
-                return ModifyEntityResult<Adjunct[]>.Failure(
-                    $"Unknown database error saving '{adjunct.Identifier()}'");
-            }
-        }
 
-        // Add/update of all in a list has been done successfully, but changes weren't saved yet 
-        try
-        {
             await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (DbUpdateException ex)
         {
+            await transaction.RollbackAsync(CancellationToken.None);
             var databaseError = ex.GetDatabaseError();
             return databaseError switch
             {
@@ -92,6 +89,12 @@ public class CreateOrUpdateAdjunctHandler(
                     WriteResult.NotFound),
                 _ => ModifyEntityResult<Adjunct[]>.Failure($"Unknown database error saving adjuncts for {assetId}")
             };
+        }
+        catch (Exception exception)
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            logger.LogError(exception, "Error processing adjuncts for {AssetId}", assetId);
+            return ModifyEntityResult<Adjunct[]>.Failure($"Unknown database error saving adjuncts for {assetId}");
         }
 
         // Reload all from db - this confirms all saved fine, and we also retrieve the asset object for use below

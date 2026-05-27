@@ -1,11 +1,12 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
+using DLCS.Model.Storage;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace API.Features.Adjuncts;
@@ -16,6 +17,7 @@ namespace API.Features.Adjuncts;
 /// </summary>
 public class AdjunctUpsertService(
     DlcsContext dbContext,
+    IStorageRepository storageRepository,
     IIngestNotificationSender notificationSender,
     IDeliverableNotificationSender deliverableNotificationSender,
     ILogger<AdjunctUpsertService> logger)
@@ -33,22 +35,29 @@ public class AdjunctUpsertService(
         CancellationToken cancellationToken)
     {
         logger.LogDebug("Processing adjunct {AdjunctIdentifier}", adjunct.Identifier());
-        var toBeIngested = adjunct.IsToBeIngested();
+        var isHosted = adjunct.IsHosted();
         Adjunct? existingAdjunct = null;
 
         if (dbAdjunct != null)
         {
             existingAdjunct = dbAdjunct.Clone();
 
-            if (!toBeIngested)
+            if (!isHosted)
             {
+                if (dbAdjunct.IsHosted())
+                {
+                    // Was hosted, now external — decrement count and reduce stored size
+                    await storageRepository.DecrementAdjunctStorage(adjunct.AssetId.Customer, adjunct.AssetId.Space, dbAdjunct.Size ?? 0, cancellationToken);
+                }
+
                 // External adjunct — size is irrelevant for storage limits, copy submitted value
                 dbAdjunct.Size = adjunct.Size;
             }
-            else if (!dbAdjunct.IsToBeIngested())
+            else if (!dbAdjunct.IsHosted())
             {
                 // Was external, now hosted — reset size so Engine calculates from scratch
                 dbAdjunct.Size = null;
+                await IncrementAdjunctCount(adjunct.AssetId.Customer, adjunct.AssetId.Space, cancellationToken);
             }
 
             dbAdjunct.MediaType = adjunct.MediaType;
@@ -69,16 +78,17 @@ public class AdjunctUpsertService(
             dbAdjunct = adjunct;
             dbAdjunct.Created = DateTime.UtcNow;
 
-            if (toBeIngested)
+            if (isHosted)
             {
                 // Engine will set the real size; disregard any submitted value
                 dbAdjunct.Size = null;
+                await IncrementAdjunctCount(adjunct.AssetId.Customer, adjunct.AssetId.Space, cancellationToken);
             }
 
             await dbContext.Adjuncts.AddAsync(dbAdjunct, cancellationToken);
         }
 
-        if (!toBeIngested)
+        if (!isHosted)
         {
             // External adjunct — no Engine involvement, so finalise now
             dbAdjunct.Finished = DateTime.UtcNow;
@@ -87,6 +97,14 @@ public class AdjunctUpsertService(
         return new AdjunctDocument(dbAdjunct, existingAdjunct);
     }
 
+    private Task IncrementAdjunctCount(int customerId, int space, CancellationToken cancellationToken) =>
+        dbContext.CustomerStorages
+            .Where(cs => cs.Customer == customerId && (cs.Space == null || cs.Space == space))
+            .UpdateFromQueryAsync(cs => new CustomerStorage
+            {
+                NumberOfStoredAdjuncts = cs.NumberOfStoredAdjuncts + 1
+            }, cancellationToken);
+
     /// <summary>
     /// Sends engine ingest and deliverable-modified notifications for a processed set of adjuncts.
     /// </summary>
@@ -94,7 +112,7 @@ public class AdjunctUpsertService(
     public async Task<bool> SendNotifications(ICollection<AdjunctDocument> adjuncts, CancellationToken cancellationToken)
     {
         var toIngest = adjuncts
-            .Where(a => a.ToBeIngested)
+            .Where(a => a.IsHosted)
             .Select(a => a.Processed)
             .ToList();
 
@@ -107,7 +125,7 @@ public class AdjunctUpsertService(
 
         var notifications = adjuncts
             .Select(a => a.IsUpdate
-                ? NotificationRecord<Adjunct>.Update(a.Original, a.Processed, a.ToBeIngested)
+                ? NotificationRecord<Adjunct>.Update(a.Original, a.Processed, a.IsHosted)
                 : NotificationRecord<Adjunct>.Create(a.Processed))
             .ToList();
 
@@ -121,7 +139,7 @@ public class AdjunctUpsertService(
 /// </summary>
 public class AdjunctDocument(Adjunct adjunct, Adjunct? existingAdjunct)
 {
-    public bool ToBeIngested { get; } = adjunct.IsToBeIngested();
+    public bool IsHosted { get; } = adjunct.IsHosted();
     
     [MemberNotNullWhen(true, nameof(Original))]
     public bool IsUpdate => Original != null;

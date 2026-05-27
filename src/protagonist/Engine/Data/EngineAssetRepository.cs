@@ -53,7 +53,7 @@ public class EngineAssetRepository(
 
             if (updatedRows && imageStorage != null)
             {
-                await IncreaseCustomerStorage(imageStorage, cancellationToken);
+                await IncreaseCustomerStorage(imageStorage, deliverable is Adjunct, cancellationToken);
             }
             
             return updatedRows || !ingestFinished; // if the ingestion hasn't finished, rows can be not updated - meaning success
@@ -178,21 +178,28 @@ public class EngineAssetRepository(
         return batch?.Finished.HasValue ?? false ? batch : default;
     }
 
-    private async Task IncreaseCustomerStorage(ImageStorage imageStorage, CancellationToken cancellationToken)
+    private async Task IncreaseCustomerStorage(ImageStorage imageStorage, bool isAdjunct,
+        CancellationToken cancellationToken)
     {
         try
         {
+            // skip image/thumb size delta when the deliverable is an adjunct
+            var imageSizeDelta = isAdjunct ? 0 : imageStorage.Size;
+            var thumbSizeDelta = isAdjunct ? 0 : imageStorage.ThumbnailSize;
+
             await DlcsContext.CustomerStorages
-                .Where(cs => cs.Customer == imageStorage.Customer && cs.Space == 0)
+                .Where(cs => cs.Customer == imageStorage.Customer &&
+                             (cs.Space == null || cs.Space == imageStorage.Space))
                 .UpdateFromQueryAsync(cs => new CustomerStorage
                 {
-                    TotalSizeOfStoredImages = cs.TotalSizeOfStoredImages + imageStorage.Size,
-                    TotalSizeOfThumbnails = cs.TotalSizeOfThumbnails + imageStorage.ThumbnailSize
+                    TotalSizeOfStoredImages = cs.TotalSizeOfStoredImages + imageSizeDelta,
+                    TotalSizeOfStoredAdjuncts = cs.TotalSizeOfStoredAdjuncts + imageStorage.AdjunctSize,
+                    TotalSizeOfThumbnails = cs.TotalSizeOfThumbnails + thumbSizeDelta
                 }, cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Exception updating customer storage for {Customer}", imageStorage.Customer);
+            logger.LogError(ex, "Exception updating customer storage for customer {Customer}", imageStorage.Customer);
         }
     }
     

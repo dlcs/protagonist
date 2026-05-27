@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using DLCS.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DLCS.Repository.Migrations
 {
     [DbContext(typeof(DlcsContext))]
-    partial class DlcsContextModelSnapshot : ModelSnapshot
+    [Migration("20260518133605_StopSpaceZeroCustomerStorage")]
+    partial class StopSpaceZeroCustomerStorage
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1025,9 +1028,6 @@ namespace DLCS.Repository.Migrations
                     b.Property<DateTime?>("LastCalculated")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long>("NumberOfStoredAdjuncts")
-                        .HasColumnType("bigint");
-
                     b.Property<long>("NumberOfStoredImages")
                         .HasColumnType("bigint");
 
@@ -1037,9 +1037,6 @@ namespace DLCS.Repository.Migrations
                     b.Property<string>("StoragePolicy")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
-
-                    b.Property<long>("TotalSizeOfStoredAdjuncts")
-                        .HasColumnType("bigint");
 
                     b.Property<long>("TotalSizeOfStoredImages")
                         .HasColumnType("bigint");

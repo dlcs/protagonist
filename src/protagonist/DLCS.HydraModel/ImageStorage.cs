@@ -41,6 +41,11 @@ public class ImageStorage : DlcsResource
     [JsonProperty(Order = 54, PropertyName = "size")]
     public long Size { get; set; }
 
+    [RdfProperty(Description = "Storage space taken up by hosted adjuncts for this item",
+        Range = Names.XmlSchema.NonNegativeInteger, ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 55, PropertyName = "adjunctSize")]
+    public long AdjunctSize { get; set; }
+
     [RdfProperty(Description = "When these figures were last computed",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 55, PropertyName = "lastChecked")]

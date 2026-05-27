@@ -73,7 +73,7 @@ public class CreateAdjunctBatchHandler(
                 batch.AddAdjunctBatchAdjunct(
                     doc.Processed.Id,
                     doc.Processed.AssetId,
-                    doc.ToBeIngested ? BatchStatus.Waiting : BatchStatus.Completed);
+                    doc.IsHosted ? BatchStatus.Waiting : BatchStatus.Completed);
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
