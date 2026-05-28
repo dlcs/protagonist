@@ -1,7 +1,6 @@
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Strings;
-using DLCS.Model.Assets;
 using DLCS.Model.Spaces;
 using MediatR;
 
@@ -31,10 +30,10 @@ public class PatchSpaceHandler : IRequestHandler<PatchSpace, ModifyEntityResult<
     
     public async Task<ModifyEntityResult<DLCS.Model.Spaces.Space>> Handle(PatchSpace request, CancellationToken cancellationToken)
     {
-        if (request.SpaceId == AssetDeliveryChannels.StubAssetSpace)
+        if (request.SpaceId <= 0)
         {
             return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure(
-                "The stub asset space cannot be updated",
+                "Space id must be a positive integer",
                 WriteResult.FailedValidation);
         }
 

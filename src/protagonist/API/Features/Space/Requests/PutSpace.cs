@@ -34,7 +34,7 @@ public class PutSpaceHandler : IRequestHandler<PutSpace, ModifyEntityResult<DLCS
         if (request.SpaceId <= 0)
         {
             return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure(
-                "Space id must be a positive integer.",
+                "Space id must be a positive integer",
                 WriteResult.FailedValidation);
         }
 
