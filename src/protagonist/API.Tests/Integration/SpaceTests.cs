@@ -598,7 +598,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
-    public async Task PatchSpace_Returns_BadRequest_ForSpaceZero()
+    public async Task PatchSpace_Returns_BadRequest_ForStubAssetSpace()
     {
         // Arrange
         const int customerId = 99;
