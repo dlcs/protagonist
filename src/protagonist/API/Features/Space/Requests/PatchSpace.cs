@@ -30,6 +30,13 @@ public class PatchSpaceHandler : IRequestHandler<PatchSpace, ModifyEntityResult<
     
     public async Task<ModifyEntityResult<DLCS.Model.Spaces.Space>> Handle(PatchSpace request, CancellationToken cancellationToken)
     {
+        if (request.SpaceId <= 0)
+        {
+            return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure(
+                "Space id must be a positive integer.",
+                WriteResult.FailedValidation);
+        }
+
         var sameIdSpace = await spaceRepository.GetSpace(request.CustomerId, request.SpaceId, cancellationToken);
         if (sameIdSpace == null)
         {
