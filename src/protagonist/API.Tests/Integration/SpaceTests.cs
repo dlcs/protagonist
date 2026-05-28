@@ -568,6 +568,51 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
+    public async Task PutSpace_Returns_BadRequest_ForSpaceZero()
+    {
+        // Arrange
+        const int customerId = 99;
+        const string json = @"{""@type"": ""Space"", ""name"": ""test""}";
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PutAsync($"/customers/{customerId}/spaces/0", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PutSpace_Returns_BadRequest_ForNegativeSpaceId()
+    {
+        // Arrange
+        const int customerId = 99;
+        const string json = @"{""@type"": ""Space"", ""name"": ""test""}";
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PutAsync($"/customers/{customerId}/spaces/-1", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task PatchSpace_Returns_BadRequest_ForStubAssetSpace()
+    {
+        // Arrange
+        const int customerId = 99;
+        const string json = @"{""@type"": ""Space"", ""name"": ""test""}";
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsCustomer(customerId).PatchAsync($"/customers/{customerId}/spaces/0", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task DeleteSpace_Returns_Conflict_ForSpaceZero()
     {
         // Arrange
