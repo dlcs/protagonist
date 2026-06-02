@@ -88,6 +88,7 @@ public class AdjunctRequestHandler(
 
         var result = new IdRewriteProxyActionResult(proxyTarget, newId)
         {
+            // set like this as future types of adjuncts could change this i.e.: restricted or not etc.
             MaxSizeBytes = orchestratorOptions.Value.MaxAdjunctSizeBytes
         };
         result.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
