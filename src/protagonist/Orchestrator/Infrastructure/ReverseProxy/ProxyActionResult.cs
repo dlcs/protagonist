@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Net;
+using DLCS.AWS.S3.Models;
 using Microsoft.Extensions.Primitives;
 using Orchestrator.Assets;
 
@@ -95,6 +96,16 @@ public class StatusCodeResult(HttpStatusCode statusCode, string? message = null)
     public Dictionary<string, StringValues> Headers { get; } = new();
 
     public static StatusCodeResult NotFound => new(HttpStatusCode.NotFound);
+}
+
+/// <summary>
+/// Result for annotation adjunct requests that require the top-level <c>id</c> to be rewritten on the fly.
+/// </summary>
+public class IdRewriteProxyActionResult(ObjectInBucket source, string newId) : IProxyActionResult
+{
+    public ObjectInBucket Source { get; } = source;
+    public string NewId { get; } = newId;
+    public Dictionary<string, StringValues> Headers { get; } = new();
 }
 
 public static class ProxyActionResultsX

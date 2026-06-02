@@ -41,7 +41,7 @@ public class AdjunctDeletedHandler(
                 return true;
             }
 
-            await adjunctBucketOperations.DeleteFromOriginBucket(adjunct, settings);
+            await adjunctBucketOperations.DeleteAdjunctStorage(adjunct, settings);
         }
 
         return true;

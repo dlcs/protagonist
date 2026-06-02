@@ -17,6 +17,11 @@ public class OrchestrationAdjunct : IOriginItem
     public required AssetId AssetId { get; set; }
     
     /// <summary>
+    /// How this adjunct is expressed in IIIF presentation
+    /// </summary>
+    public IIIFLinkType IIIFLink { get; set; }
+
+    /// <summary>
     /// Get or set the adjunct media-type
     /// </summary>
     public StringValues? MediaType { get; set; }

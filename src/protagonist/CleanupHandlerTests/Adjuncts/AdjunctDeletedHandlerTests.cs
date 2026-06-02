@@ -110,6 +110,44 @@ public class AdjunctDeletedHandlerTests
     }
     
     [Fact]
+    public async Task Handle_DeletesFromBothBuckets_WhenHostedAdjunctDeleted()
+    {
+        // Arrange
+        var assetId = new AssetId(99, 1, "test-asset");
+        const string adjunctId = "someId";
+        var cleanupRequest = new DeliverableDeletedNotification<Adjunct>
+        {
+            Deliverable = new Adjunct
+            {
+                Id = adjunctId,
+                MediaType = "a-mediaType",
+                IIIFLink = IIIFLinkType.Annotations,
+                Type = "a-type",
+                AssetId = assetId,
+                Origin = "https://some.origin"
+            }
+        };
+
+        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
+        var queueMessage = new QueueMessage { Body = JsonNode.Parse(serialized)!.AsObject() };
+
+        var expectedKey = $"{assetId}/adjuncts/{adjunctId}";
+        var expectedStorageKey = new ObjectInBucket(LocalStackFixture.StorageBucketName, expectedKey);
+        var expectedOriginKey = new ObjectInBucket(LocalStackFixture.OriginBucketName, expectedKey);
+
+        // Act
+        var sut = GetSut();
+        await sut.HandleMessage(queueMessage);
+
+        // Assert — both storage and origin buckets must be targeted with the same key
+        A.CallTo(() => bucketWriter.DeleteFromBucket(
+                A<ObjectInBucket[]>.That.Matches(b =>
+                    b.Any(o => o.Bucket == expectedStorageKey.Bucket && o.Key == expectedStorageKey.Key) &&
+                    b.Any(o => o.Bucket == expectedOriginKey.Bucket && o.Key == expectedOriginKey.Key))))
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
     public async Task Handle_ReturnsTrueWithoutDeletion_WhenNotHosted()
     {
         // Arrange

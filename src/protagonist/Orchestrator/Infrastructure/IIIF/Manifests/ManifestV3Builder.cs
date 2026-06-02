@@ -14,6 +14,7 @@ using DLCS.Model.IIIF;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
+using Orchestrator.Features.Adjuncts;
 using IIIF;
 using IIIF.Auth.V2;
 using IIIF.Presentation;
@@ -36,7 +37,6 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     private readonly IIIIFAuthBuilder authBuilder;
     private readonly ILogger<ManifestV3Builder> logger;
     private const string AdjunctAnnotationRoutePrefix = "adjunct-annotations";
-    private const string AdjunctRoutePrefix = "adjuncts";
 
     /// <summary>
     /// Implementation of <see cref="IBuildManifests{T}"/> responsible for generating IIIF v3 manifest
@@ -573,7 +573,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                 {
                     Space = adjunct.AssetId.Space,
                     AssetPath = $"{adjunct.AssetId.Asset}/{adjunct.Id}",
-                    RoutePrefix = AdjunctRoutePrefix,
+                    RoutePrefix = AdjunctRouteHandlers.RoutePrefix,
                     CustomerPathValue = adjunct.AssetId.Customer.ToString(),
                 }, includeQueryParams: false),
                 _ => null
