@@ -44,7 +44,7 @@ public class AdjunctUpdatedHandler(
                 return true;
             }
             
-            await adjunctBucketOperations.DeleteAdjunctStorage(adjunctBefore, settings);
+            await adjunctBucketOperations.DeleteFromOriginBucket(adjunctBefore, settings);
 
             return true;
         }

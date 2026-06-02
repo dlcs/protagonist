@@ -7,7 +7,6 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SQS;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
@@ -193,49 +192,6 @@ public class AdjunctUpdatedHandlerTests
         A.CallTo(() => bucketWriter.DeleteFromBucket(A<ObjectInBucket[]>._)).MustHaveHappened();
     }
     
-    [Fact]
-    public async Task Handle_DeletesFromBothBuckets_WhenHostedBecomesExternal()
-    {
-        // Arrange
-        var assetId = new AssetId(99, 1, "test-asset");
-        const string adjunctId = "someAdjunct";
-        var asset = await dbContext.Images.AddTestAsset(assetId).WithTestAdjunct(adjunctId, externalId: "https://some.external.id");
-        await dbContext.SaveChangesAsync();
-
-        var afterAdjunct = asset.Entity.Adjuncts!.First();
-        var cleanupRequest = new DeliverableUpdatedNotification<Adjunct>
-        {
-            DeliverableBeforeUpdate = new Adjunct
-            {
-                Id = adjunctId,
-                MediaType = "a-mediaType",
-                IIIFLink = IIIFLinkType.Annotations,
-                Type = "a-type",
-                AssetId = assetId,
-                Origin = "https://some.origin"
-            },
-            DeliverableAfterUpdate = afterAdjunct
-        };
-
-        var serialized = JsonSerializer.Serialize(cleanupRequest, settings);
-        var queueMessage = new QueueMessage { Body = JsonNode.Parse(serialized)!.AsObject() };
-
-        var expectedKey = $"{assetId}/adjuncts/{adjunctId}";
-        var expectedStorageKey = new ObjectInBucket(LocalStackFixture.StorageBucketName, expectedKey);
-        var expectedOriginKey = new ObjectInBucket(LocalStackFixture.OriginBucketName, expectedKey);
-
-        // Act
-        var sut = GetSut();
-        await sut.HandleMessage(queueMessage);
-
-        // Assert — both storage and origin buckets must be targeted with the same key
-        A.CallTo(() => bucketWriter.DeleteFromBucket(
-                A<ObjectInBucket[]>.That.Matches(b =>
-                    b.Any(o => o.Bucket == expectedStorageKey.Bucket && o.Key == expectedStorageKey.Key) &&
-                    b.Any(o => o.Bucket == expectedOriginKey.Bucket && o.Key == expectedOriginKey.Key))))
-            .MustHaveHappenedOnceExactly();
-    }
-
     [Fact]
     public async Task Handle_ReturnsTrueNoCleanup_IfValidAdjunctExternalToHosted()
     {
