@@ -1,6 +1,5 @@
 ﻿using CleanupHandler.Adjunct;
 using DLCS.AWS.S3;
-using DLCS.AWS.S3.Models;
 using Microsoft.Extensions.Logging;
 
 namespace CleanupHandler.Infrastructure;
