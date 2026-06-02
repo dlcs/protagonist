@@ -9,8 +9,10 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.IdRewriter;
 using Orchestrator.Infrastructure.ReverseProxy;
+using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.Features.Adjuncts;
@@ -45,17 +47,18 @@ public static class AdjunctRouteHandlers
         var forwarder = endpoints.GetRequiredService<IHttpForwarder>();
         var bucketReader = endpoints.GetRequiredService<IBucketReader>();
         var logger = endpoints.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(AdjunctRouteHandlers));
+        var settings = endpoints.GetRequiredService<IOptions<OrchestratorSettings>>().Value;
 
         endpoints.Map("/adjuncts/{customer}/{space}/{assetId}/{adjunctId}", async httpContext =>
         {
             logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
             var proxyResponse = await requestHandler.HandleRequest(httpContext);
-            await ProcessResponse(logger, httpContext, forwarder, bucketReader, proxyResponse);
+            await ProcessResponse(logger, httpContext, forwarder, bucketReader, settings, proxyResponse);
         });
     }
 
     private static async Task ProcessResponse(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
-        IBucketReader bucketReader, IProxyActionResult proxyActionResult)
+        IBucketReader bucketReader, OrchestratorSettings settings, IProxyActionResult proxyActionResult)
     {
         if (proxyActionResult is StatusCodeResult statusCodeResult)
         {
@@ -69,7 +72,7 @@ public static class AdjunctRouteHandlers
 
         if (proxyActionResult is IdRewriteProxyActionResult rewriteResult)
         {
-            await RewriteAndStreamAdjunct(logger, httpContext, bucketReader, rewriteResult);
+            await RewriteAndStreamAdjunct(logger, httpContext, bucketReader, settings, rewriteResult);
             return;
         }
 
@@ -78,7 +81,7 @@ public static class AdjunctRouteHandlers
     }
 
     private static async Task RewriteAndStreamAdjunct(ILogger logger, HttpContext httpContext,
-        IBucketReader bucketReader, IdRewriteProxyActionResult rewriteResult)
+        IBucketReader bucketReader, OrchestratorSettings settings, IdRewriteProxyActionResult rewriteResult)
     {
         try
         {
@@ -88,16 +91,29 @@ public static class AdjunctRouteHandlers
             if (objectFromBucket.Stream.IsNull())
             {
                 logger.LogWarning("Annotation adjunct not found in S3 for {Path}", httpContext.Request.Path);
+                httpContext.Response.StatusCode = (int) HttpStatusCode.NotFound;
+                return;
+            }
+
+            var contentLength = objectFromBucket.Headers.ContentLength;
+            logger.LogDebug("Rewriting annotation adjunct id for {Path}, size {ContentLength} bytes",
+                httpContext.Request.Path, contentLength);
+
+            if (contentLength > settings.MaxAdjunctSizeBytes)
+            {
+                logger.LogWarning(
+                    "Annotation adjunct at {Path} exceeds max permitted size ({ContentLength} > {MaxSize} bytes)",
+                    httpContext.Request.Path, contentLength, settings.MaxAdjunctSizeBytes);
                 httpContext.Response.StatusCode = 500;
                 return;
             }
 
             await using var s3Stream = objectFromBucket.Stream;
-            using var bufferedInput = new MemoryStream();
+            using var bufferedInput = new MemoryStream((int?)contentLength ?? 0);
             await s3Stream.CopyToAsync(bufferedInput, httpContext.RequestAborted);
             bufferedInput.Seek(0, SeekOrigin.Begin);
 
-            using var outputStream = new MemoryStream();
+            using var outputStream = new MemoryStream((int)bufferedInput.Length);
             StreamingJsonProcessor.ProcessJson(
                 bufferedInput,
                 outputStream,
@@ -111,6 +127,10 @@ public static class AdjunctRouteHandlers
 
             outputStream.Seek(0, SeekOrigin.Begin);
             await outputStream.CopyToAsync(httpContext.Response.Body, httpContext.RequestAborted);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

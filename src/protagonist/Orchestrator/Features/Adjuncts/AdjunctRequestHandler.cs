@@ -61,18 +61,9 @@ public class AdjunctRequestHandler(
             return new StatusCodeResult(HttpStatusCode.OK);
         }
 
-        if (orchestrationAdjunct.IIIFLink is IIIFLinkType.Annotations or IIIFLinkType.InlineAnnotation)
+        if (orchestrationAdjunct.IIIFLink is IIIFLinkType.Annotations)
         {
-            var newId = assetPathGenerator.GetFullPathForRequest(new BasicPathElements
-            {
-                RoutePrefix = AdjunctRouteHandlers.RoutePrefix,
-                CustomerPathValue = adjunctRequest.CustomerPathValue,
-                Space = adjunctRequest.Space,
-                AssetPath = $"{adjunctRequest.AssetId}/{adjunctRequest.AdjunctId}",
-            }, includeQueryParams: false);
-            var rewriteResult = new IdRewriteProxyActionResult(proxyTarget, newId);
-            rewriteResult.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
-            return rewriteResult;
+            return GetIdRewriteResult(adjunctRequest, proxyTarget, orchestrationAdjunct);
         }
 
         var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget, !orchestrationAdjunct.OptimisedOrigin ?? true);
@@ -81,6 +72,22 @@ public class AdjunctRequestHandler(
         return proxyActionResult;
     }
     
+    private IdRewriteProxyActionResult GetIdRewriteResult(AdjunctDeliveryRequest adjunctRequest,
+        ObjectInBucket proxyTarget, OrchestrationAdjunct orchestrationAdjunct)
+    {
+        var newId = assetPathGenerator.GetFullPathForRequest(new BasicPathElements
+        {
+            RoutePrefix = AdjunctRouteHandlers.RoutePrefix,
+            CustomerPathValue = adjunctRequest.CustomerPathValue,
+            Space = adjunctRequest.Space,
+            AssetPath = $"{adjunctRequest.AssetId}/{adjunctRequest.AdjunctId}",
+        }, includeQueryParams: false);
+
+        var result = new IdRewriteProxyActionResult(proxyTarget, newId);
+        result.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
+        return result;
+    }
+
     private ObjectInBucket? GetRequestedAdjunctLocation(AdjunctDeliveryRequest adjunctRequest, OrchestrationAdjunct orchestrationAdjunct)
     {
         ObjectInBucket fileLocation;

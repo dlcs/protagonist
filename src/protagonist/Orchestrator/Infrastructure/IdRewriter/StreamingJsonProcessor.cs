@@ -5,6 +5,12 @@ using System.Text.Json;
 
 namespace Orchestrator.Infrastructure.IdRewriter;
 
+/// <summary>
+/// Utility for processing a UTF-8 JSON stream token by token, writing transformed output to a target stream.
+/// </summary>
+/// <remarks>
+/// Based on the equivalent implementation in iiif-presentation. Any changes here should be considered there too.
+/// </remarks>
 public static class StreamingJsonProcessor
 {
     /// <summary>

@@ -10,7 +10,9 @@ using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using DLCS.Repository;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Orchestrator.Settings;
 using Orchestrator.Tests.Integration.Infrastructure;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
@@ -25,6 +27,7 @@ namespace Orchestrator.Tests.Integration;
 [Collection(OrchestratorCollection.CollectionName)]
 public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
 {
+    private readonly ProtagonistAppFactory<Startup> appFactory;
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
     private readonly string stubAddress;
@@ -40,6 +43,7 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
 
     public AdjunctHandlingTests(ProtagonistAppFactory<Startup> factory, OrchestratorFixture orchestratorFixture)
     {
+        appFactory = factory;
         var dbFixture1 = orchestratorFixture.DbFixture;
         dbContext = dbFixture1.DbContext;
         stubAddress = orchestratorFixture.ApiStub.Address;
@@ -197,14 +201,12 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
-    [Theory]
-    [InlineData(IIIFLinkType.Annotations)]
-    [InlineData(IIIFLinkType.InlineAnnotation)]
-    public async Task Get_AnnotationAdjunct_RewritesTopLevelId(IIIFLinkType iiifLinkType)
+    [Fact]
+    public async Task Get_AnnotationAdjunct_RewritesTopLevelId()
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        var adjunctId = $"{nameof(Get_AnnotationAdjunct_RewritesTopLevelId)}_{iiifLinkType}";
+        var adjunctId = nameof(Get_AnnotationAdjunct_RewritesTopLevelId);
         var s3Key = $"{id}/adjuncts/{adjunctId}";
         var origin = $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{s3Key}";
 
@@ -227,7 +229,7 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         await dbContext.Images
             .AddTestAsset(id, mediaType: "text/plain", origin: $"{stubAddress}/testfile",
                 imageDeliveryChannels: deliveryChannelsForFile)
-            .WithTestAdjunct(adjunctId, mediaType: "application/json", iiifLinkType: iiifLinkType,
+            .WithTestAdjunct(adjunctId, mediaType: "application/json", iiifLinkType: IIIFLinkType.Annotations,
                 origin: origin);
         await dbContext.SaveChangesAsync();
 
@@ -293,9 +295,9 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
 
     [Theory]
-    [InlineData("my-proxy.com",      "const_value/{0}/{1}/{2}")]
+    [InlineData("my-proxy.com", "const_value/{0}/{1}/{2}")]
     [InlineData("non-versioned.com", "adjuncts/{0}/{1}/{2}")]
-    [InlineData("versioned.com",     "adj/_{1}/{2}")]
+    [InlineData("versioned.com", "adj/_{1}/{2}")]
     public async Task Get_AnnotationAdjunct_RewrittenId_RespectsPathTemplate(string host, string pathFormat)
     {
         // {0}=customer, {1}=asset, {2}=adjunctId. All three templates drop {space} and produce a path
@@ -344,11 +346,11 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
 
     [Fact]
-    public async Task Get_AnnotationAdjunct_Returns500_WhenS3ObjectMissing()
+    public async Task Get_AnnotationAdjunct_Returns404_WhenS3ObjectMissing()
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        const string adjunctId = nameof(Get_AnnotationAdjunct_Returns500_WhenS3ObjectMissing);
+        const string adjunctId = nameof(Get_AnnotationAdjunct_Returns404_WhenS3ObjectMissing);
         var origin = $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{id}/adjuncts/{adjunctId}-missing";
 
         await dbContext.Images
@@ -362,7 +364,7 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         var response = await httpClient.GetAsync($"adjuncts/{id}/{adjunctId}");
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -419,6 +421,43 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         // Act
         var response = await httpClient.GetAsync($"adjuncts/{id}/{adjunctId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
+    }
+
+    [Fact]
+    public async Task Get_AnnotationAdjunct_Returns500_WhenExceedsMaxSizeBytes()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_AnnotationAdjunct_Returns500_WhenExceedsMaxSizeBytes);
+        var s3Key = $"{id}/adjuncts/{adjunctId}";
+        var origin = $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{s3Key}";
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            BucketName = LocalStackFixture.OriginBucketName,
+            Key = s3Key,
+            ContentBody = """{ "id": "https://old.example.org/1", "type": "AnnotationPage", "items": [] }""",
+            ContentType = "application/json"
+        });
+
+        await dbContext.Images
+            .AddTestAsset(id, mediaType: "text/plain", origin: $"{stubAddress}/testfile",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, mediaType: "application/json", iiifLinkType: IIIFLinkType.Annotations,
+                origin: origin);
+        await dbContext.SaveChangesAsync();
+
+        // Use a client configured with a 1-byte size limit so any real object is rejected
+        using var sizeLimitedClient = appFactory
+            .WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+                services.PostConfigure<OrchestratorSettings>(s => s.MaxAdjunctSizeBytes = 1)))
+            .CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
+        // Act
+        var response = await sizeLimitedClient.GetAsync($"adjuncts/{id}/{adjunctId}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);

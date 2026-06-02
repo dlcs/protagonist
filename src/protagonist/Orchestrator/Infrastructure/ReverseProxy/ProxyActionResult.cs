@@ -99,12 +99,23 @@ public class StatusCodeResult(HttpStatusCode statusCode, string? message = null)
 }
 
 /// <summary>
-/// Result for annotation adjunct requests that require the top-level <c>id</c> to be rewritten on the fly.
+/// Result for json objects that require the top-level <c>id</c> to be rewritten on the fly.
 /// </summary>
 public class IdRewriteProxyActionResult(ObjectInBucket source, string newId) : IProxyActionResult
 {
+    /// <summary>
+    /// The S3 location of the object to rewrite.
+    /// </summary>
     public ObjectInBucket Source { get; } = source;
+
+    /// <summary>
+    /// The new value to write into the top-level <c>id</c> property.
+    /// </summary>
     public string NewId { get; } = newId;
+
+    /// <summary>
+    /// A collection of any Headers to set on response object.
+    /// </summary>
     public Dictionary<string, StringValues> Headers { get; } = new();
 }
 
