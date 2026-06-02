@@ -114,6 +114,11 @@ public class IdRewriteProxyActionResult(ObjectInBucket source, string newId) : I
     public string NewId { get; } = newId;
 
     /// <summary>
+    /// Maximum permitted size of the object in bytes. Requests exceeding this limit will be rejected.
+    /// </summary>
+    public long? MaxSizeBytes { get; init; }
+
+    /// <summary>
     /// A collection of any Headers to set on response object.
     /// </summary>
     public Dictionary<string, StringValues> Headers { get; } = new();

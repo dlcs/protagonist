@@ -9,10 +9,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.IdRewriter;
 using Orchestrator.Infrastructure.ReverseProxy;
-using Orchestrator.Settings;
 using Yarp.ReverseProxy.Forwarder;
 
 namespace Orchestrator.Features.Adjuncts;
@@ -47,18 +45,16 @@ public static class AdjunctRouteHandlers
         var forwarder = endpoints.GetRequiredService<IHttpForwarder>();
         var bucketReader = endpoints.GetRequiredService<IBucketReader>();
         var logger = endpoints.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(AdjunctRouteHandlers));
-        var settings = endpoints.GetRequiredService<IOptions<OrchestratorSettings>>().Value;
-
         endpoints.Map("/adjuncts/{customer}/{space}/{assetId}/{adjunctId}", async httpContext =>
         {
             logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
             var proxyResponse = await requestHandler.HandleRequest(httpContext);
-            await ProcessResponse(logger, httpContext, forwarder, bucketReader, settings, proxyResponse);
+            await ProcessResponse(logger, httpContext, forwarder, bucketReader, proxyResponse);
         });
     }
 
     private static async Task ProcessResponse(ILogger logger, HttpContext httpContext, IHttpForwarder forwarder,
-        IBucketReader bucketReader, OrchestratorSettings settings, IProxyActionResult proxyActionResult)
+        IBucketReader bucketReader, IProxyActionResult proxyActionResult)
     {
         if (proxyActionResult is StatusCodeResult statusCodeResult)
         {
@@ -72,7 +68,7 @@ public static class AdjunctRouteHandlers
 
         if (proxyActionResult is IdRewriteProxyActionResult rewriteResult)
         {
-            await RewriteAndStreamAdjunct(logger, httpContext, bucketReader, settings, rewriteResult);
+            await RewriteAndStreamAdjunct(logger, httpContext, bucketReader, rewriteResult);
             return;
         }
 
@@ -81,7 +77,7 @@ public static class AdjunctRouteHandlers
     }
 
     private static async Task RewriteAndStreamAdjunct(ILogger logger, HttpContext httpContext,
-        IBucketReader bucketReader, OrchestratorSettings settings, IdRewriteProxyActionResult rewriteResult)
+        IBucketReader bucketReader, IdRewriteProxyActionResult rewriteResult)
     {
         try
         {
@@ -99,11 +95,11 @@ public static class AdjunctRouteHandlers
             logger.LogDebug("Rewriting annotation adjunct id for {Path}, size {ContentLength} bytes",
                 httpContext.Request.Path, contentLength);
 
-            if (contentLength > settings.MaxAdjunctSizeBytes)
+            if (rewriteResult.MaxSizeBytes.HasValue && contentLength > rewriteResult.MaxSizeBytes)
             {
                 logger.LogWarning(
                     "Annotation adjunct at {Path} exceeds max permitted size ({ContentLength} > {MaxSize} bytes)",
-                    httpContext.Request.Path, contentLength, settings.MaxAdjunctSizeBytes);
+                    httpContext.Request.Path, contentLength, rewriteResult.MaxSizeBytes);
                 httpContext.Response.StatusCode = 500;
                 return;
             }

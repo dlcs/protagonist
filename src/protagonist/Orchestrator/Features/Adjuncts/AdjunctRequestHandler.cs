@@ -7,9 +7,11 @@ using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.ReverseProxy;
+using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Adjuncts;
 
@@ -18,7 +20,8 @@ public class AdjunctRequestHandler(
     AssetRequestProcessor assetRequestProcessor,
     IStorageKeyGenerator storageKeyGenerator,
     S3ProxyPathGenerator proxyPathGenerator,
-    IAssetPathGenerator assetPathGenerator)
+    IAssetPathGenerator assetPathGenerator,
+    IOptions<OrchestratorSettings> orchestratorOptions)
 {
     /// <summary>
     /// Handle /adjuncts/ request, returning object detailing operation that should be carried out.
@@ -83,7 +86,10 @@ public class AdjunctRequestHandler(
             AssetPath = $"{adjunctRequest.AssetId}/{adjunctRequest.AdjunctId}",
         }, includeQueryParams: false);
 
-        var result = new IdRewriteProxyActionResult(proxyTarget, newId);
+        var result = new IdRewriteProxyActionResult(proxyTarget, newId)
+        {
+            MaxSizeBytes = orchestratorOptions.Value.MaxAdjunctSizeBytes
+        };
         result.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
         return result;
     }
