@@ -120,6 +120,12 @@ public class OrchestratorSettings
     public NamedQuerySettings NamedQuery { get; set; } = new();
 
     public ImageIngestSettings ImageIngest { get; set; } = new();
+
+    /// <summary>
+    /// Maximum permitted size in bytes for annotation adjuncts that are loaded into memory for id-rewriting.
+    /// Defaults to 5 MB.
+    /// </summary>
+    public long MaxAdjunctSizeBytes { get; set; } = 5 * 1024 * 1024;
 }
 
 public class ProxySettings

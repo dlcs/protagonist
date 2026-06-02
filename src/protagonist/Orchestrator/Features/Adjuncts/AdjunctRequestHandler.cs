@@ -2,12 +2,16 @@
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Model.Assets;
 using DLCS.Web.Requests.AssetDelivery;
+using DLCS.Web.Response;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.ReverseProxy;
+using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Adjuncts;
 
@@ -15,7 +19,9 @@ public class AdjunctRequestHandler(
     ILogger<AdjunctRequestHandler> logger,
     AssetRequestProcessor assetRequestProcessor,
     IStorageKeyGenerator storageKeyGenerator,
-    S3ProxyPathGenerator proxyPathGenerator)
+    S3ProxyPathGenerator proxyPathGenerator,
+    IAssetPathGenerator assetPathGenerator,
+    IOptions<OrchestratorSettings> orchestratorOptions)
 {
     /// <summary>
     /// Handle /adjuncts/ request, returning object detailing operation that should be carried out.
@@ -51,19 +57,44 @@ public class AdjunctRequestHandler(
         }
         
         // TBD - AUTH
-        
+
         if (httpContext.Request.Method == "HEAD")
         {
             // quit with success as we've done all we need to
             return new StatusCodeResult(HttpStatusCode.OK);
         }
-        
+
+        if (orchestrationAdjunct.IIIFLink is IIIFLinkType.Annotations)
+        {
+            return GetIdRewriteResult(adjunctRequest, proxyTarget, orchestrationAdjunct);
+        }
+
         var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget, !orchestrationAdjunct.OptimisedOrigin ?? true);
         var proxyActionResult = new ProxyActionResult(ProxyDestination.S3, orchestrationAdjunct.RequiresAuth, proxyPath);
         proxyActionResult.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
         return proxyActionResult;
     }
     
+    private IdRewriteProxyActionResult GetIdRewriteResult(AdjunctDeliveryRequest adjunctRequest,
+        ObjectInBucket proxyTarget, OrchestrationAdjunct orchestrationAdjunct)
+    {
+        var newId = assetPathGenerator.GetFullPathForRequest(new BasicPathElements
+        {
+            RoutePrefix = AdjunctRouteHandlers.RoutePrefix,
+            CustomerPathValue = adjunctRequest.CustomerPathValue,
+            Space = adjunctRequest.Space,
+            AssetPath = $"{adjunctRequest.AssetId}/{adjunctRequest.AdjunctId}",
+        }, includeQueryParams: false);
+
+        var result = new IdRewriteProxyActionResult(proxyTarget, newId)
+        {
+            // set like this as future types of adjuncts could change this i.e.: restricted or not etc.
+            MaxSizeBytes = orchestratorOptions.Value.MaxAdjunctSizeBytes
+        };
+        result.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
+        return result;
+    }
+
     private ObjectInBucket? GetRequestedAdjunctLocation(AdjunctDeliveryRequest adjunctRequest, OrchestrationAdjunct orchestrationAdjunct)
     {
         ObjectInBucket fileLocation;

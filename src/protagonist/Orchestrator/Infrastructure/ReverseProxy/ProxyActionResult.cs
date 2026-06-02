@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Net;
+using DLCS.AWS.S3.Models;
 using Microsoft.Extensions.Primitives;
 using Orchestrator.Assets;
 
@@ -95,6 +96,32 @@ public class StatusCodeResult(HttpStatusCode statusCode, string? message = null)
     public Dictionary<string, StringValues> Headers { get; } = new();
 
     public static StatusCodeResult NotFound => new(HttpStatusCode.NotFound);
+}
+
+/// <summary>
+/// Result for json objects that require the top-level <c>id</c> to be rewritten on the fly.
+/// </summary>
+public class IdRewriteProxyActionResult(ObjectInBucket source, string newId) : IProxyActionResult
+{
+    /// <summary>
+    /// The S3 location of the object to rewrite.
+    /// </summary>
+    public ObjectInBucket Source { get; } = source;
+
+    /// <summary>
+    /// The new value to write into the top-level <c>id</c> property.
+    /// </summary>
+    public string NewId { get; } = newId;
+
+    /// <summary>
+    /// Maximum permitted size of the object in bytes. Requests exceeding this limit will be rejected.
+    /// </summary>
+    public long? MaxSizeBytes { get; init; }
+
+    /// <summary>
+    /// A collection of any Headers to set on response object.
+    /// </summary>
+    public Dictionary<string, StringValues> Headers { get; } = new();
 }
 
 public static class ProxyActionResultsX

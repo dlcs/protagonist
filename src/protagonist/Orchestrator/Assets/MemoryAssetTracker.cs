@@ -170,6 +170,7 @@ public class MemoryAssetTracker(
             Id = adjunct.Id,
             AssetId = adjunct.AssetId,
             Origin = origin,
+            IIIFLink = adjunct.IIIFLink,
             MediaType = new StringValues(adjunct.MediaType),
             OptimisedOrigin = cos.Optimised
         };
