@@ -1,10 +1,12 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Adjuncts;
+using DLCS.Repository.Storage;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -25,6 +27,7 @@ public class DeleteMultipleAdjunctsById(
 
 public class DeleteMultipleAdjunctsByIdHandler(
     DlcsContext dlcsContext,
+    IStorageRepository storageRepository,
     IDeliverableNotificationSender deliverableNotificationSender,
     ILogger<DeleteMultipleImagesByIdHandler> logger)
     : IRequestHandler<DeleteMultipleAdjunctsById, int>
@@ -37,7 +40,8 @@ public class DeleteMultipleAdjunctsByIdHandler(
         var rowCount = await DeleteAdjunctsFromDb(adjunctsFromDatabase, cancellationToken);
         logger.LogInformation("Deleted {DeletedRows} adjuncts from a requested {RequestedRows}", rowCount,
             request.Adjuncts.Count);
-        
+
+        await DecrementStorageForHostedAdjuncts(adjunctsFromDatabase, cancellationToken);
         await RaiseModifiedNotifications(adjunctsFromDatabase, request.DeleteFrom, cancellationToken);
         return adjunctsFromDatabase.Count;
     }
@@ -57,10 +61,23 @@ public class DeleteMultipleAdjunctsByIdHandler(
         }
     }
 
+    private async Task DecrementStorageForHostedAdjuncts(List<Adjunct> adjuncts, CancellationToken cancellationToken)
+    {
+        var hostedAdjuncts = adjuncts.Where(a => a.IsHosted()).ToList();
+        if (hostedAdjuncts.Count == 0) return;
+
+        foreach (var adjunct in hostedAdjuncts)
+        {
+            var size = adjunct.Size ?? 0;
+            await storageRepository.DecrementAdjunctStorage(
+                adjunct.AssetId.Customer, adjunct.AssetId.Space, size, cancellationToken);
+            await dlcsContext.ImageStorages.DecrementAdjunctSize(adjunct.AssetId, size, cancellationToken);
+        }
+    }
+
     private async Task RaiseModifiedNotifications(List<Adjunct> adjuncts, ImageCacheType deleteFrom, CancellationToken cancellationToken)
     {
         var changeSet = adjuncts.Select(a => NotificationRecord<Adjunct>.Delete(a, deleteFrom)).ToList();
         await deliverableNotificationSender.SendDeliverableModifiedMessage(changeSet, cancellationToken);
     }
 }
-

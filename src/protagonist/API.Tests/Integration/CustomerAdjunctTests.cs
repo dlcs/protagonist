@@ -12,6 +12,7 @@ using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Web.Response;
 using FakeItEasy;
+using Microsoft.EntityFrameworkCore;
 using Hydra.Model;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection;
@@ -336,5 +337,50 @@ public class CustomerAdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task DeleteMultipleAdjuncts_ReducesStorageCounts_WhenHostedAdjuncts()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string adjunctId = "hosted-bulk-del";
+
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct(adjunctId, origin: "https://example.com/file.jpg", size: 512)
+            .WithTestAdjunct($"{adjunctId}_1", origin: "https://example.com/file2.jpg", size: 512);
+        await dbContext.ImageStorages.AddTestImageStorage(assetId, space: assetId.Space, customer: assetId.Customer,
+            adjunctSize: 1024);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(numberOfAdjuncts: 2, sizeOfAdjuncts: 1024);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(space: assetId.Space, numberOfAdjuncts: 2, sizeOfAdjuncts: 1024);
+        await dbContext.SaveChangesAsync();
+
+        var deleteAdjunctsJson = $$"""
+                                   {
+                                       "@type": "Collection",
+                                       "member": [
+                                         { "id": "{{assetId}}", "adjunct": [ "{{adjunctId}}", "{{adjunctId}}_1" ] }
+                                       ]
+                                   };
+                                   """;
+        var content = new StringContent(deleteAdjunctsJson, Encoding.UTF8, "application/json");
+
+        // Act
+        await httpClient.AsCustomer(assetId.Customer).PostAsync($"/customers/{assetId.Customer}/deleteAdjuncts", content);
+
+        // Assert
+        var storage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
+        storage.NumberOfStoredAdjuncts.Should().Be(0, "aggregate count decremented on delete");
+        storage.TotalSizeOfStoredAdjuncts.Should().Be(0, "aggregate size decremented on delete");
+
+        var spaceStorage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == assetId.Space);
+        spaceStorage.NumberOfStoredAdjuncts.Should().Be(0, "per-space count decremented on delete");
+        spaceStorage.TotalSizeOfStoredAdjuncts.Should().Be(0, "per-space size decremented on delete");
+
+        await dbContext.Entry(await dbContext.ImageStorages.FindAsync(assetId)).ReloadAsync();
+        var imageStorage = await dbContext.ImageStorages.FindAsync(assetId);
+        imageStorage!.AdjunctSize.Should().Be(0, "image storage adjunct size decremented on hosted adjunct delete");
     }
 }
