@@ -1673,9 +1673,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .DeleteAsync($"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}");
 
         // Assert
-        await dbContext.Entry(await dbContext.ImageStorages.FindAsync(assetId)).ReloadAsync();
-        var imageStorage = await dbContext.ImageStorages.FindAsync(assetId);
-        imageStorage!.AdjunctSize.Should().Be(0, "adjunct size decremented on hosted adjunct delete");
+        var imageStorage = await dbContext.ImageStorages.AsNoTracking().SingleAsync(s => s.Id == assetId);
+        imageStorage.AdjunctSize.Should().Be(0, "adjunct size decremented on hosted adjunct delete");
     }
 
     [Fact]
@@ -1696,9 +1695,8 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .DeleteAsync($"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}");
 
         // Assert
-        await dbContext.Entry(await dbContext.ImageStorages.FindAsync(assetId)).ReloadAsync();
-        var imageStorage = await dbContext.ImageStorages.FindAsync(assetId);
-        imageStorage!.AdjunctSize.Should().Be(500, "external adjunct deletion should not affect image storage adjunct size");
+        var imageStorage = await dbContext.ImageStorages.AsNoTracking().SingleAsync(s => s.Id == assetId);
+        imageStorage.AdjunctSize.Should().Be(500, "external adjunct deletion should not affect image storage adjunct size");
     }
 
 }

@@ -3053,10 +3053,41 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         
         A.CallTo(() => DeliverableNotificationSender.SendDeliverableModifiedMessage(
-            A<NotificationRecord<Asset>>.That.Matches(r => 
+            A<NotificationRecord<Asset>>.That.Matches(r =>
                 r.ChangeType == ChangeType.Delete &&
                 r.Before.ImageDeliveryChannels.Count == 3),
             A<CancellationToken>._)).MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task Delete_DecrementsAdjunctStorageCounts_WhenAssetHasHostedAdjuncts()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct("hosted-1", origin: "https://example.com/file1.jpg", size: 512)
+            .WithTestAdjunct("hosted-2", origin: "https://example.com/file2.jpg", size: 512)
+            .WithTestAdjunct("external-1"); // external adjunct - should not affect counts
+        await dbContext.ImageStorages.AddTestImageStorage(assetId, size: 400L, thumbSize: 100L, adjunctSize: 1024);
+        var customerSpaceStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: 1,
+            numberOfAdjuncts: 2, sizeOfAdjuncts: 1024);
+        var customerStorage = await dbContext.CustomerStorages.AddTestCustomerStorage(space: null,
+            numberOfAdjuncts: 2, sizeOfAdjuncts: 1024);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(99).DeleteAsync(assetId.ToApiResourcePath());
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        await dbContext.Entry(customerSpaceStorage).ReloadAsync();
+        customerSpaceStorage.NumberOfStoredAdjuncts.Should().Be(0, "per-space adjunct count decremented for hosted adjuncts");
+        customerSpaceStorage.TotalSizeOfStoredAdjuncts.Should().Be(0, "per-space adjunct size decremented for hosted adjuncts");
+
+        await dbContext.Entry(customerStorage).ReloadAsync();
+        customerStorage.NumberOfStoredAdjuncts.Should().Be(0, "aggregate adjunct count decremented for hosted adjuncts");
+        customerStorage.TotalSizeOfStoredAdjuncts.Should().Be(0, "aggregate adjunct size decremented for hosted adjuncts");
     }
 
     [Fact]

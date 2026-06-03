@@ -379,8 +379,7 @@ public class CustomerAdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>
         spaceStorage.NumberOfStoredAdjuncts.Should().Be(0, "per-space count decremented on delete");
         spaceStorage.TotalSizeOfStoredAdjuncts.Should().Be(0, "per-space size decremented on delete");
 
-        await dbContext.Entry(await dbContext.ImageStorages.FindAsync(assetId)).ReloadAsync();
-        var imageStorage = await dbContext.ImageStorages.FindAsync(assetId);
-        imageStorage!.AdjunctSize.Should().Be(0, "image storage adjunct size decremented on hosted adjunct delete");
+        var imageStorage = await dbContext.ImageStorages.AsNoTracking().SingleAsync(s => s.Id == assetId);
+        imageStorage.AdjunctSize.Should().Be(0, "image storage adjunct size decremented on hosted adjunct delete");
     }
 }

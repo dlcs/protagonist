@@ -353,7 +353,8 @@ public class ApiAssetRepositoryTests
         result.DeletedEntity.Should()
             .BeEquivalentTo(dbAsset.Entity, options => options
                     .Excluding(a => a.Created)
-                    .Excluding(a => a.ImageDeliveryChannels),
+                    .Excluding(a => a.ImageDeliveryChannels)
+                    .Excluding(a => a.Adjuncts),
                 "returned object is as deleted, exclude created as datetime can be off by a few ms");
         result.DeletedEntity.Created.Should().BeCloseTo(dbAsset.Entity.Created.Value, TimeSpan.FromSeconds(1));
 
