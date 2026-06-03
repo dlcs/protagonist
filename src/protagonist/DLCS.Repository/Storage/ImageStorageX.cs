@@ -24,6 +24,9 @@ public static class ImageStorageX
         }
     }
 
+    /// <summary>
+    /// Decrement adjunct size for specified asset.
+    /// </summary>
     public static Task DecrementAdjunctSize(this DbSet<ImageStorage> imageStorages, AssetId assetId,
         long adjunctSize, CancellationToken cancellationToken) =>
         imageStorages
