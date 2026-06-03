@@ -41,6 +41,8 @@ public class DeleteMultipleAdjunctsByIdHandler(
         logger.LogInformation("Deleted {DeletedRows} adjuncts from a requested {RequestedRows}", rowCount,
             request.Adjuncts.Count);
 
+        if (rowCount == 0) return 0;
+
         await DecrementStorageForHostedAdjuncts(adjunctsFromDatabase, cancellationToken);
         await RaiseModifiedNotifications(adjunctsFromDatabase, request.DeleteFrom, cancellationToken);
         return adjunctsFromDatabase.Count;
