@@ -12,6 +12,6 @@ public interface IStorageRepository
     /// <summary>Decrement adjunct counts in CustomerStorage and AdjunctSize in ImageStorage.</summary>
     public Task DecrementAdjunctStorage(AssetId assetId, long adjunctSize, CancellationToken cancellationToken);
 
-    /// <summary>Decrement adjunct counts in CustomerStorage and AdjunctSize in ImageStorage when there are multip[le adjuncts being removed.</summary>
+    /// <summary>Decrement adjunct counts in CustomerStorage and AdjunctSize in ImageStorage when there are multiple adjuncts being removed.</summary>
     public Task DecrementAdjunctStorage(AssetId assetId, long adjunctSize, int adjunctCount, CancellationToken cancellationToken);
 }
