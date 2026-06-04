@@ -47,7 +47,7 @@ public class AdjunctUpsertService(
                 if (dbAdjunct.IsHosted())
                 {
                     // Was hosted, now external — decrement count and reduce stored size
-                    await storageRepository.DecrementAdjunctStorage(adjunct.AssetId.Customer, adjunct.AssetId.Space, dbAdjunct.Size ?? 0, cancellationToken);
+                    await storageRepository.DecrementAdjunctStorage(adjunct.AssetId, dbAdjunct.Size ?? 0, cancellationToken);
                 }
 
                 // External adjunct — size is irrelevant for storage limits, copy submitted value

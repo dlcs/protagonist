@@ -6,7 +6,6 @@ using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Adjuncts;
-using DLCS.Repository.Storage;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -65,15 +64,11 @@ public class DeleteMultipleAdjunctsByIdHandler(
 
     private async Task DecrementStorageForHostedAdjuncts(List<Adjunct> adjuncts, CancellationToken cancellationToken)
     {
-        var hostedAdjuncts = adjuncts.Where(a => a.IsHosted()).ToList();
-        if (hostedAdjuncts.Count == 0) return;
-
-        foreach (var adjunct in hostedAdjuncts)
+        var grouped = adjuncts.Where(a => a.IsHosted()).GroupBy(a => a.AssetId);
+        foreach (var group in grouped)
         {
-            var size = adjunct.Size ?? 0;
-            await storageRepository.DecrementAdjunctStorage(
-                adjunct.AssetId.Customer, adjunct.AssetId.Space, size, cancellationToken);
-            await dlcsContext.ImageStorages.DecrementAdjunctSize(adjunct.AssetId, size, cancellationToken);
+            await storageRepository.DecrementAdjunctStorage(group.Key, group.Sum(a => a.Size ?? 0), group.Count(),
+                cancellationToken);
         }
     }
 

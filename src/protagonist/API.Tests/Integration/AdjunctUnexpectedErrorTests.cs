@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
+using DLCS.Core.Types;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using FakeItEasy;
@@ -55,7 +56,7 @@ public class AdjunctUnexpectedErrorTests : IClassFixture<ProtagonistAppFactory<S
         await dbContext.SaveChangesAsync();
 
         A.CallTo(() => StorageRepository.DecrementAdjunctStorage(
-                A<int>._, A<int>._, A<long>._, A<CancellationToken>._))
+                A<AssetId>._, A<long>._, A<CancellationToken>._))
             .ThrowsAsync(new InvalidOperationException("Simulated unexpected error"));
 
         // PUT the adjunct without origin to trigger the hosted→external transition

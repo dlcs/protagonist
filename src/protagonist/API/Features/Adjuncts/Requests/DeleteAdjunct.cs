@@ -5,7 +5,6 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository;
-using DLCS.Repository.Storage;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -41,10 +40,7 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IStorageRepository stor
 
         if (adjunct.IsHosted())
         {
-            var size = adjunct.Size ?? 0;
-            await storageRepository.DecrementAdjunctStorage(
-                adjunct.AssetId.Customer, adjunct.AssetId.Space, size, cancellationToken);
-            await dbContext.ImageStorages.DecrementAdjunctSize(adjunct.AssetId, size, cancellationToken);
+            await storageRepository.DecrementAdjunctStorage(adjunct.AssetId, adjunct.Size ?? 0, cancellationToken);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
