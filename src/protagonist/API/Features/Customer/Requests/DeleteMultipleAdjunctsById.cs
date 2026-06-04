@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Adjuncts;
 using MediatR;
@@ -25,6 +26,7 @@ public class DeleteMultipleAdjunctsById(
 
 public class DeleteMultipleAdjunctsByIdHandler(
     DlcsContext dlcsContext,
+    IStorageRepository storageRepository,
     IDeliverableNotificationSender deliverableNotificationSender,
     ILogger<DeleteMultipleImagesByIdHandler> logger)
     : IRequestHandler<DeleteMultipleAdjunctsById, int>
@@ -37,7 +39,10 @@ public class DeleteMultipleAdjunctsByIdHandler(
         var rowCount = await DeleteAdjunctsFromDb(adjunctsFromDatabase, cancellationToken);
         logger.LogInformation("Deleted {DeletedRows} adjuncts from a requested {RequestedRows}", rowCount,
             request.Adjuncts.Count);
-        
+
+        if (rowCount == 0) return 0;
+
+        await DecrementStorageForHostedAdjuncts(adjunctsFromDatabase, cancellationToken);
         await RaiseModifiedNotifications(adjunctsFromDatabase, request.DeleteFrom, cancellationToken);
         return adjunctsFromDatabase.Count;
     }
@@ -57,10 +62,19 @@ public class DeleteMultipleAdjunctsByIdHandler(
         }
     }
 
+    private async Task DecrementStorageForHostedAdjuncts(List<Adjunct> adjuncts, CancellationToken cancellationToken)
+    {
+        var grouped = adjuncts.Where(a => a.IsHosted()).GroupBy(a => a.AssetId);
+        foreach (var group in grouped)
+        {
+            await storageRepository.DecrementAdjunctStorage(group.Key, group.Sum(a => a.Size ?? 0), group.Count(),
+                cancellationToken);
+        }
+    }
+
     private async Task RaiseModifiedNotifications(List<Adjunct> adjuncts, ImageCacheType deleteFrom, CancellationToken cancellationToken)
     {
         var changeSet = adjuncts.Select(a => NotificationRecord<Adjunct>.Delete(a, deleteFrom)).ToList();
         await deliverableNotificationSender.SendDeliverableModifiedMessage(changeSet, cancellationToken);
     }
 }
-

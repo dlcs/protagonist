@@ -1654,4 +1654,49 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         spaceStorage.TotalSizeOfStoredAdjuncts.Should().Be(0, "per-space size decremented on delete");
     }
 
+    [Fact]
+    public async Task DeleteAdjunct_ReducesImageStorageAdjunctSize_WhenHostedAdjunct()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string adjunctId = "hosted-del-imgstorage";
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct(adjunctId, origin: "https://example.com/file.jpg", size: 1024);
+        await dbContext.ImageStorages.AddTestImageStorage(assetId, space: assetId.Space, customer: assetId.Customer,
+            adjunctSize: 1024);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(numberOfAdjuncts: 1, sizeOfAdjuncts: 1024);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(space: assetId.Space, numberOfAdjuncts: 1, sizeOfAdjuncts: 1024);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        await httpClient.AsCustomer(assetId.Customer)
+            .DeleteAsync($"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}");
+
+        // Assert
+        var imageStorage = await dbContext.ImageStorages.AsNoTracking().SingleAsync(s => s.Id == assetId);
+        imageStorage.AdjunctSize.Should().Be(0, "adjunct size decremented on hosted adjunct delete");
+    }
+
+    [Fact]
+    public async Task DeleteAdjunct_DoesNotReduceImageStorageAdjunctSize_WhenExternalAdjunct()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string adjunctId = "external-del-imgstorage";
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct(adjunctId);
+        await dbContext.ImageStorages.AddTestImageStorage(assetId, space: assetId.Space, customer: assetId.Customer,
+            adjunctSize: 500);
+        await dbContext.CustomerStorages.AddTestCustomerStorage();
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        await httpClient.AsCustomer(assetId.Customer)
+            .DeleteAsync($"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}");
+
+        // Assert
+        var imageStorage = await dbContext.ImageStorages.AsNoTracking().SingleAsync(s => s.Id == assetId);
+        imageStorage.AdjunctSize.Should().Be(500, "external adjunct deletion should not affect image storage adjunct size");
+    }
+
 }

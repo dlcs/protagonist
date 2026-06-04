@@ -62,6 +62,7 @@ public class ApiAssetRepository : IApiAssetRepository
         {
             var asset = await dlcsContext.Images
                 .Include(a => a.ImageDeliveryChannels)
+                .Include(a => a.Adjuncts)
                 .SingleOrDefaultAsync(i => i.Id == assetId);
             if (asset == null)
             {
@@ -95,12 +96,18 @@ public class ApiAssetRepository : IApiAssetRepository
                 logger.LogInformation("No ImageStorage record found when deleting asset {AssetId}", assetId);
             }
             
+            var hostedAdjuncts = asset.Adjuncts?.Where(a => a.IsHosted()).ToList() ?? [];
+            var hostedAdjunctCount = hostedAdjuncts.Count;
+            var hostedAdjunctSize = hostedAdjuncts.Sum(a => a.Size ?? 0);
+
             void ReduceCustomerStorage(CustomerStorage customerStorage)
             {
                 // And reduce CustomerStorage record
                 customerStorage.NumberOfStoredImages -= 1;
                 customerStorage.TotalSizeOfThumbnails -= imageStorage?.ThumbnailSize ?? 0;
                 customerStorage.TotalSizeOfStoredImages -= imageStorage?.Size ?? 0;
+                customerStorage.NumberOfStoredAdjuncts -= hostedAdjunctCount;
+                customerStorage.TotalSizeOfStoredAdjuncts -= hostedAdjunctSize;
             }
 
             // Reduce both the per-space row and the customer-wide aggregate row

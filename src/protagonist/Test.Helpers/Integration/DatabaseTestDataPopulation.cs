@@ -206,7 +206,7 @@ public static class DatabaseTestDataPopulation
         => locations.AddAsync(new ImageLocation { Id = id, S3 = s3, Nas = nas });
 
     public static ValueTask<EntityEntry<ImageStorage>> AddTestImageStorage(this DbSet<ImageStorage> storage,
-        AssetId id, int space = 1, int customer = 99, long size = 123, long thumbSize = 10)
+        AssetId id, int space = 1, int customer = 99, long size = 123, long thumbSize = 10, long adjunctSize = 0)
         => storage.AddAsync(new ImageStorage
         {
             Id = id,
@@ -214,7 +214,8 @@ public static class DatabaseTestDataPopulation
             Space = space,
             Size = size,
             LastChecked = DateTime.UtcNow.AddDays(-7),
-            ThumbnailSize = thumbSize
+            ThumbnailSize = thumbSize,
+            AdjunctSize = adjunctSize
         });
 
     public static ValueTask<EntityEntry<Batch>> AddTestBatch(this DbSet<Batch> batch, int id, int customer = 99,

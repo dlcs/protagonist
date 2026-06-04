@@ -1,5 +1,7 @@
-﻿using System.Threading;
+﻿using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,4 +23,16 @@ public static class ImageStorageX
             }
         }
     }
+
+    /// <summary>
+    /// Decrement adjunct size for specified asset.
+    /// </summary>
+    public static Task DecrementAdjunctSize(this DbSet<ImageStorage> imageStorages, AssetId assetId,
+        long adjunctSize, CancellationToken cancellationToken) =>
+        imageStorages
+            .Where(s => s.Id == assetId)
+            .UpdateFromQueryAsync(s => new ImageStorage
+            {
+                AdjunctSize = s.AdjunctSize > adjunctSize ? s.AdjunctSize - adjunctSize : 0
+            }, cancellationToken);
 }

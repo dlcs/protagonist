@@ -40,8 +40,7 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IStorageRepository stor
 
         if (adjunct.IsHosted())
         {
-            await storageRepository.DecrementAdjunctStorage(
-                adjunct.AssetId.Customer, adjunct.AssetId.Space, adjunct.Size ?? 0, cancellationToken);
+            await storageRepository.DecrementAdjunctStorage(adjunct.AssetId, adjunct.Size ?? 0, cancellationToken);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);

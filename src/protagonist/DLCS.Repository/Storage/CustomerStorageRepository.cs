@@ -2,6 +2,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
+using DLCS.Core.Types;
 using DLCS.Model.Policies;
 using DLCS.Model.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -49,16 +50,24 @@ public class CustomerStorageRepository : IStorageRepository
         };
     }
 
-    public Task DecrementAdjunctStorage(int customerId, int space, long adjunctSize, CancellationToken cancellationToken) =>
-        dlcsContext.CustomerStorages
-            .Where(cs => cs.Customer == customerId && (cs.Space == null || cs.Space == space))
+    public Task DecrementAdjunctStorage(AssetId assetId, long adjunctSize, CancellationToken cancellationToken) =>
+        DecrementAdjunctStorage(assetId, adjunctSize, 1, cancellationToken);
+
+    public async Task DecrementAdjunctStorage(AssetId assetId, long adjunctSize, int adjunctCount,
+        CancellationToken cancellationToken)
+    {
+        await dlcsContext.CustomerStorages
+            .Where(cs => cs.Customer == assetId.Customer && (cs.Space == null || cs.Space == assetId.Space))
             .UpdateFromQueryAsync(cs => new CustomerStorage
             {
-                NumberOfStoredAdjuncts = cs.NumberOfStoredAdjuncts > 0 ? cs.NumberOfStoredAdjuncts - 1 : 0,
+                NumberOfStoredAdjuncts = cs.NumberOfStoredAdjuncts > adjunctCount ? cs.NumberOfStoredAdjuncts - adjunctCount : 0,
                 TotalSizeOfStoredAdjuncts = cs.TotalSizeOfStoredAdjuncts > adjunctSize
                     ? cs.TotalSizeOfStoredAdjuncts - adjunctSize
                     : 0
             }, cancellationToken);
+
+        await dlcsContext.ImageStorages.DecrementAdjunctSize(assetId, adjunctSize, cancellationToken);
+    }
 
     public async Task<AssetStorageMetric> GetStorageMetrics(int customerId, CancellationToken cancellationToken)
     {
