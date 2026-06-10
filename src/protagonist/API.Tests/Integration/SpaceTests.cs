@@ -493,26 +493,32 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer().PostAsync($"/customers/{customerId}/spaces", content);
         var space = await response.ReadAsHydraResponseAsync<Space>();
         var spaceCounterBeforeDeletion = await 
-            dbContext.EntityCounters.FirstOrDefaultAsync(s => 
+            dbContext.EntityCounters.SingleOrDefaultAsync(s => 
                 s.Customer == customerId && s.Scope == customerId.ToString() && s.Type == "space");
+        
+        var newSpaceId = space.ModelId!;
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customerId.Value, newSpaceId, 10000);
+        await dbContext.SaveChangesAsync();
 
         // Act
         var deleteResponse = await httpClient.AsCustomer()
-            .DeleteAsync($"/customers/{customerId}/spaces/{space.ModelId}");
+            .DeleteAsync($"/customers/{customerId}/spaces/{newSpaceId}");
         
         var spaceCounterAfterDeletion = await 
-            dbContext.EntityCounters.FirstOrDefaultAsync(s => 
+            dbContext.EntityCounters.SingleOrDefaultAsync(s => 
                 s.Customer == customerId && s.Scope == customerId.ToString() && s.Type == "space");
         
         // Assert
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var deletedSpace = await dbContext.Spaces.SingleOrDefaultAsync(s => s.Id == space.ModelId && s.Customer == customerId );
+        var deletedSpace = await dbContext.Spaces.SingleOrDefaultAsync(s => s.Id == newSpaceId && s.Customer == customerId );
         deletedSpace.Should().BeNull();
 
         spaceCounterBeforeDeletion.Should().NotBeNull();
         spaceCounterAfterDeletion.Should().NotBeNull();
-        spaceCounterAfterDeletion.Next.Should().Be(spaceCounterBeforeDeletion.Next - 1
-                , "because we perform a decrement on the space entity counter on deletion");
+        spaceCounterAfterDeletion.Next.Should().Be(spaceCounterBeforeDeletion.Next - 1,
+            "because we perform a decrement on the space entity counter on deletion");
+        (await dbContext.CustomerStorages.AnyAsync(s => s.Customer == customerId && s.Space == newSpaceId))
+            .Should().BeFalse("CustomerStorage deleted");
     }
     
     [Fact]

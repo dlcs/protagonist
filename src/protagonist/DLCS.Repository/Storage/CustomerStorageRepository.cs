@@ -69,6 +69,14 @@ public class CustomerStorageRepository : IStorageRepository
         await dlcsContext.ImageStorages.DecrementAdjunctSize(assetId, adjunctSize, cancellationToken);
     }
 
+    public async Task<bool> DeleteCustomerStorage(int customer, int space, CancellationToken cancellationToken)
+    {
+        var deleted = await dlcsContext.CustomerStorages
+            .Where(cs => cs.Customer == customer && cs.Space == space)
+            .DeleteFromQueryAsync(cancellationToken);
+        return deleted > 0;
+    }
+
     public async Task<AssetStorageMetric> GetStorageMetrics(int customerId, CancellationToken cancellationToken)
     {
         // The aggregate row is seeded by CreateCustomer and backfilled by migration - its absence is a bug.

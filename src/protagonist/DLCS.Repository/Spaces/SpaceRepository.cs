@@ -4,9 +4,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core;
 using DLCS.Core.Caching;
+using DLCS.Core.Guard;
 using DLCS.Core.Strings;
 using DLCS.Model;
 using DLCS.Model.Spaces;
+using DLCS.Model.Storage;
 using DLCS.Repository.Entities;
 using LazyCache;
 using Microsoft.EntityFrameworkCore;
@@ -15,30 +17,19 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.Repository.Spaces;
 
-public class SpaceRepository : ISpaceRepository
+public class SpaceRepository(
+    DlcsContext dlcsContext,
+    IOptions<CacheSettings> cacheOptions,
+    IAppCache appCache,
+    IEntityCounterRepository entityCounterRepository,
+    IStorageRepository storageRepository,
+    ILogger<SpaceRepository> logger)
+    : ISpaceRepository
 {
-    private readonly DlcsContext dlcsContext;
-    private readonly IEntityCounterRepository entityCounterRepository;
-    private readonly CacheSettings cacheSettings;
-    private readonly IAppCache appCache;
-    private readonly ILogger<SpaceRepository> logger;
-    
+    private readonly CacheSettings cacheSettings = cacheOptions.Value;
+
     private const int DefaultMaxUnauthorised = -1;
 
-    public SpaceRepository(
-        DlcsContext dlcsContext,
-        IOptions<CacheSettings> cacheOptions,
-        IAppCache appCache,
-        ILogger<SpaceRepository> logger,
-        IEntityCounterRepository entityCounterRepository )
-    {
-        this.dlcsContext = dlcsContext;
-        this.appCache = appCache;
-        cacheSettings = cacheOptions.Value;
-        this.entityCounterRepository = entityCounterRepository;
-        this.logger = logger;
-    }
-    
     public async Task<int?> GetImageCountForSpace(int customerId, int spaceId)
     {
         // NOTE - this is sub-optimal but EntityCounters are not reliable when using PUT
@@ -121,7 +112,7 @@ public class SpaceRepository : ISpaceRepository
             appCache.Remove(key);
         }
         
-        return await appCache.GetOrAddAsync(key, async entry =>
+        return await appCache.GetOrAddAsync(key, async _ =>
         {
             Space? space;
             if (name != null)
@@ -136,7 +127,7 @@ public class SpaceRepository : ISpaceRepository
                     s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
             }
 
-            if (space == null || withApproximateImageCount == false)
+            if (space == null || !withApproximateImageCount)
             {
                 return space;
             }
@@ -186,7 +177,9 @@ public class SpaceRepository : ISpaceRepository
         CancellationToken cancellationToken)
     {    
         var keys = new object[] {spaceId, customerId}; // Keys are in this order
-        var dbSpace = await dlcsContext.Spaces.FindAsync(keys, cancellationToken);
+        
+        // The caller should have confirmed space exists already
+        var dbSpace = (await dlcsContext.Spaces.FindAsync(keys, cancellationToken)).ThrowIfNull("dbSpace");
         if (name.HasText() && name != dbSpace.Name)
         {
             dbSpace.Name = name;
@@ -207,12 +200,10 @@ public class SpaceRepository : ISpaceRepository
             dbSpace.MaxUnauthorised = (int)maxUnauthorised;
         }
 
-        // ImageBucket?
-        
         await dlcsContext.SaveChangesAsync(cancellationToken);
 
         var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken, noCache: true);
-        return retrievedSpace;
+        return retrievedSpace.ThrowIfNull(nameof(retrievedSpace));
     }
 
     public async Task<Space> PutSpace(
@@ -266,7 +257,7 @@ public class SpaceRepository : ISpaceRepository
         await dlcsContext.SaveChangesAsync(cancellationToken);
         
         var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken, noCache:true);
-        return retrievedSpace;
+        return retrievedSpace.ThrowIfNull(nameof(retrievedSpace));
     }
 
     public async Task<ResultMessage<DeleteResult>> DeleteSpace(int customerId, int spaceId,
@@ -293,6 +284,7 @@ public class SpaceRepository : ISpaceRepository
             dlcsContext.Spaces.Remove(space);
             await dlcsContext.SaveChangesAsync(cancellationToken);
 
+            await storageRepository.DeleteCustomerStorage(customerId, spaceId, cancellationToken);
             await entityCounterRepository.Decrement(customerId, KnownEntityCounters.CustomerSpaces,
                 customerId.ToString());
             await entityCounterRepository.Remove(customerId, KnownEntityCounters.SpaceImages,
