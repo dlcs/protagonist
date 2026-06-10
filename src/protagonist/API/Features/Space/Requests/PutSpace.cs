@@ -53,7 +53,7 @@ public class PutSpaceHandler : IRequestHandler<PutSpace, ModifyEntityResult<DLCS
                     WriteResult.Conflict);
         }
         
-        var putSpaceResult = await spaceRepository.PutSpace(
+        var putSpaceResult = await spaceRepository.UpsertSpace(
             request.CustomerId, request.SpaceId, request.Name, request.ImageBucket,
             request.MaxUnauthorised, request.Tags, request.Roles,
             cancellationToken);

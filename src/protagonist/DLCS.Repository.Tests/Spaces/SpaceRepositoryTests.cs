@@ -93,9 +93,11 @@ public class SpaceRepositoryTests
     [Fact]
     public async Task DeleteSpace_ReturnsConflict_WhenSpaceHasImages()
     {
-        await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/1"), ref1: "foobar");
+        const int customerId = 9903;
+        await dbContext.Images.AddTestAsset(AssetId.FromString("9903/1/1"), customer: customerId);
+        await dbContext.Spaces.AddTestSpace(customerId, 1);
         await dbContext.SaveChangesAsync();
-        var deleteResult = await sut.DeleteSpace(99, 1, CancellationToken.None);
+        var deleteResult = await sut.DeleteSpace(customerId, 1, CancellationToken.None);
 
         // Assert
         deleteResult.Value.Should().Be(DeleteResult.Conflict);
@@ -105,7 +107,7 @@ public class SpaceRepositoryTests
     public async Task DeleteSpace_ReturnsDeleted_AndCallsCleanup_WhenSuccessful()
     {
         // Arrange
-        const int customerId = 99;
+        const int customerId = 9901;
         const int spaceId = 2;
         dbContext.Spaces.Add(new Space
         {
@@ -122,9 +124,102 @@ public class SpaceRepositoryTests
         deleteResult.Value.Should().Be(DeleteResult.Deleted);
         A.CallTo(() => storageRepository.DeleteCustomerStorage(customerId, spaceId, A<CancellationToken>._))
             .MustHaveHappenedOnceExactly();
-        A.CallTo(() => entityCounterRepository.Decrement(customerId, KnownEntityCounters.CustomerSpaces, "99", 1))
+        A.CallTo(() => entityCounterRepository.Decrement(customerId, KnownEntityCounters.CustomerSpaces, "9901", 1))
             .MustHaveHappenedOnceExactly();
         A.CallTo(() => entityCounterRepository.Remove(customerId, KnownEntityCounters.SpaceImages, "2", 1))
             .MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task CreateSpace_ReturnsSpace_WithProvidedValues()
+    {
+        // Arrange
+        const int customer = 192239;
+        A.CallTo(() => entityCounterRepository.GetNext(customer, KnownEntityCounters.CustomerSpaces, customer.ToString(), 1))
+            .Returns(2L);
+
+        // Act
+        var space = await sut.CreateSpace(customer, "new-space", "my-bucket", ["tag1"], ["role1"], 400,
+            CancellationToken.None);
+
+        // Assert
+        space.Id.Should().Be(2);
+        space.Customer.Should().Be(customer);
+        space.Name.Should().Be("new-space");
+        space.ImageBucket.Should().Be("my-bucket");
+        space.Tags.Should().BeEquivalentTo(["tag1"]);
+        space.Roles.Should().BeEquivalentTo(["role1"]);
+        space.MaxUnauthorised.Should().Be(400);
+    }
+
+    [Fact]
+    public async Task CreateSpace_ReturnsSpace_WithDefaultValues_WhenOptionalParamsNull()
+    {
+        // Arrange
+        const int customer = 123929;
+        A.CallTo(() => entityCounterRepository.GetNext(customer, KnownEntityCounters.CustomerSpaces, customer.ToString(), 1))
+            .Returns(2L);
+
+        // Act
+        var space = await sut.CreateSpace(customer, "new-space", null, null, null, null, CancellationToken.None);
+
+        // Assert
+        space.ImageBucket.Should().BeEmpty();
+        space.Tags.Should().BeEmpty();
+        space.Roles.Should().BeEmpty();
+        space.MaxUnauthorised.Should().Be(-1);
+    }
+
+    [Fact]
+    public async Task CreateSpace_CreatesSpaceImagesCounter()
+    {
+        // Arrange
+        const int customer = 1929;
+        A.CallTo(() => entityCounterRepository.GetNext(customer, KnownEntityCounters.CustomerSpaces, customer.ToString(), 1))
+            .Returns(2L);
+
+        // Act
+        await sut.CreateSpace(customer, "new-space", null, null, null, null, CancellationToken.None);
+
+        // Assert
+        A.CallTo(() => entityCounterRepository.TryCreate(customer, KnownEntityCounters.SpaceImages, "2", 1))
+            .MustHaveHappenedOnceExactly();
+    }
+    
+    [Fact]
+    public async Task CreateSpace_CreatesCustomerStorage()
+    {
+        // Arrange
+        const int customer = 199;
+        A.CallTo(() => entityCounterRepository.GetNext(customer, KnownEntityCounters.CustomerSpaces, customer.ToString(), 1))
+            .Returns(2L);
+
+        // Act
+        await sut.CreateSpace(customer, "new-space", null, null, null, null, CancellationToken.None);
+
+        // Assert
+        A.CallTo(() => storageRepository.TryCreateCustomerStorage(customer, 2, "default", CancellationToken.None))
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task CreateSpace_SkipsId_IfIdAlreadyInUse()
+    {
+        // Arrange - space 1 already exists; first call returns 1, second returns 2
+        const int customer = 13299;
+        dbContext.Spaces.Add(new Space { Id = 1, Customer = customer, Name = "space-already" });
+        await dbContext.SaveChangesAsync();
+        A.CallTo(() => entityCounterRepository.GetNext(customer, KnownEntityCounters.CustomerSpaces, customer.ToString(), 1))
+            .Returns(1L).Once()
+            .Then.Returns(2L);
+
+        // Act
+        var space = await sut.CreateSpace(customer, "new-space", null, null, null, null, CancellationToken.None);
+
+        // Assert
+        space.Id.Should().Be(2);
+        A.CallTo(() =>
+                entityCounterRepository.GetNext(customer, KnownEntityCounters.CustomerSpaces, customer.ToString(), 1))
+            .MustHaveHappenedTwiceExactly();
     }
 }

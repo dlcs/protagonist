@@ -19,4 +19,10 @@ public interface IStorageRepository
     /// Delete customer storage record
     /// </summary>
     public Task<bool> DeleteCustomerStorage(int customer, int space, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Create new customer storage record for given space
+    /// </summary>
+    public Task TryCreateCustomerStorage(int customer, int? space, string policy = StoragePolicy.DefaultStoragePolicyName,
+        CancellationToken cancellationToken = default);
 }
