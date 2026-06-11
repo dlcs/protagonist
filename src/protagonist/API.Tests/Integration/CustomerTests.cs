@@ -163,13 +163,47 @@ public class CustomerTests : IClassFixture<ProtagonistAppFactory<Startup>>
         priorityQueue.Size.Should().Be(0);
         
         dbContext.DeliveryChannelPolicies.Count(d => d.Customer == newDbCustomer.Id).Should().Be(3);
-        dbContext.DefaultDeliveryChannels.Count(d => d.Customer == newDbCustomer.Id).Should().Be(5);
+        dbContext.DefaultDeliveryChannels.Count(d => d.Customer == newDbCustomer.Id).Should().Be(6);
 
         A.CallTo(() =>
                 NotificationSender.SendCustomerCreatedMessage(
                     A<DLCS.Model.Customers.Customer>.That.Matches(c => c.Id == newDbCustomer.Id),
                     A<CancellationToken>._))
             .MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task CreateNewCustomer_CreatesSpaceZero()
+    {
+        // Arrange
+        const string newCustomerJson = @"{
+  ""@type"": ""Customer"",
+  ""name"": ""api-test-space-zero"",
+  ""displayName"": ""Space Zero Customer""
+}";
+        var content = new StringContent(newCustomerJson, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await httpClient.AsAdmin().PostAsync("/customers", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var newCustomer = await response.ReadAsHydraResponseAsync<Customer>();
+        var newCustomerId = int.Parse(newCustomer.Id!.Split('/').Last());
+
+        var spaceZero = await dbContext.Spaces.SingleOrDefaultAsync(s => s.Customer == newCustomerId && s.Id == 0);
+        spaceZero.Should().NotBeNull();
+        spaceZero!.Name.Should().Be("stub-assets");
+
+        var aggregateStorage = await dbContext.CustomerStorages
+            .SingleOrDefaultAsync(s => s.Customer == newCustomerId && s.Space == null);
+        aggregateStorage.Should().NotBeNull();
+        aggregateStorage!.StoragePolicy.Should().Be("default");
+
+        var spaceZeroStorage = await dbContext.CustomerStorages
+            .SingleOrDefaultAsync(s => s.Customer == newCustomerId && s.Space == 0);
+        spaceZeroStorage.Should().NotBeNull("space 0 (stub-assets) needs its own per-space CustomerStorage row");
+        spaceZeroStorage!.StoragePolicy.Should().Be("default");
     }
 
     [Fact]

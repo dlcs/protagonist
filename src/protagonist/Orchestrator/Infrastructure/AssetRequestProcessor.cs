@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
 using System.Threading.Tasks;
 using DLCS.Core.Exceptions;
 using DLCS.Web.Requests.AssetDelivery;
@@ -12,22 +13,12 @@ namespace Orchestrator.Infrastructure;
 /// <summary>
 /// Helper utilities for dealing with Asset requests
 /// </summary>
-public class AssetRequestProcessor
+public class AssetRequestProcessor(
+    ILogger<AssetRequestProcessor> logger,
+    IAssetTracker assetTracker,
+    IAdjunctTracker adjunctTracker,
+    IAssetDeliveryPathParser assetDeliveryPathParser)
 {
-    private readonly ILogger<AssetRequestProcessor> logger;
-    private readonly IAssetTracker assetTracker;
-    private readonly IAssetDeliveryPathParser assetDeliveryPathParser;
-
-    public AssetRequestProcessor(
-        ILogger<AssetRequestProcessor> logger,
-        IAssetTracker assetTracker,
-        IAssetDeliveryPathParser assetDeliveryPathParser)
-    {
-        this.logger = logger;
-        this.assetTracker = assetTracker;
-        this.assetDeliveryPathParser = assetDeliveryPathParser;
-    }
-
     /// <summary>
     /// Try and parse current asset request, handling possible errors that may occur
     /// </summary>
@@ -56,10 +47,30 @@ public class AssetRequestProcessor
     public async Task<T?> GetAsset<T>(HttpContext httpContext, BaseAssetRequest assetRequest)
         where T : OrchestrationAsset
     {
-        var imageId = assetRequest.GetAssetId();
-        var asset = await assetTracker.GetOrchestrationAsset<T>(imageId);
+        var assetId = assetRequest.GetAssetId();
+        var asset = await assetTracker.GetOrchestrationAsset<T>(assetId);
         
-        if (asset != null) httpContext.Response.SetAssetIdResponseHeader(imageId);
+        if (asset != null)
+        {
+            httpContext.Response.SetAssetIdResponseHeader(assetId);
+        }
+
         return asset;
+    }
+
+    public async Task<OrchestrationAdjunct?> GetAdjunct(HttpContext httpContext, AdjunctDeliveryRequest adjunctRequest)
+    {
+        // Checked in AdjunctRequestHandler
+        Debug.Assert(adjunctRequest.AdjunctId != null, "adjunctRequest.AdjunctId != null");
+        
+        var assetId = adjunctRequest.GetAssetId();
+        var adjunct = await adjunctTracker.GetOrchestrationAdjunct(adjunctRequest.AdjunctId, assetId);
+        
+        if (adjunct != null)
+        {
+            httpContext.Response.SetAssetIdResponseHeader(assetId);
+        }
+
+        return adjunct;
     }
 }

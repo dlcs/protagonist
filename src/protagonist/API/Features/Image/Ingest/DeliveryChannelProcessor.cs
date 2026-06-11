@@ -1,4 +1,4 @@
-﻿﻿using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using API.Exceptions;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
@@ -8,20 +8,12 @@ using Microsoft.Extensions.Logging;
 
 namespace API.Features.Image.Ingest;
 
-public class DeliveryChannelProcessor
+public class DeliveryChannelProcessor(
+    IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository,
+    IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository,
+    ILogger<DeliveryChannelProcessor> logger)
 {
-    private readonly IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository;
-    private readonly IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository;
-    private readonly ILogger<DeliveryChannelProcessor> logger;
     private const string FileNonePolicy = "none";
-
-    public DeliveryChannelProcessor(IDefaultDeliveryChannelRepository defaultDeliveryChannelRepository,
-        IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository, ILogger<DeliveryChannelProcessor> logger)
-    {
-        this.defaultDeliveryChannelRepository = defaultDeliveryChannelRepository;
-        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
-        this.logger = logger;
-    }
     
     /// <summary>
     /// Update updatedAsset.ImageDeliveryChannels, adding/removing/updating as required to match channels specified in
@@ -41,9 +33,9 @@ public class DeliveryChannelProcessor
         {
             try
             {
-                var deliveryChannelChanged = await SetImageDeliveryChannels(updatedAsset,
+                var requiresEngineNotification = await SetImageDeliveryChannels(updatedAsset,
                     deliveryChannelsBeforeProcessing ?? [], existingAsset != null);
-                return deliveryChannelChanged;
+                return requiresEngineNotification;
             }
             catch (InvalidOperationException ioEx)
             {
@@ -93,11 +85,11 @@ public class DeliveryChannelProcessor
             }
         }
 
-        // If 'none' specified then it's the only valid option
+        // If 'none' specified then it's the only valid option, and does not require processing by engine
         if (deliveryChannelsBeforeProcessing.Count(d => d.Channel == AssetDeliveryChannels.None) == 1)
         {
             await AddExplicitNoneChannel(asset);
-            return true;
+            return false;
         }
 
         // Iterate through DeliveryChannels specified in payload and make necessary update/delete/insert

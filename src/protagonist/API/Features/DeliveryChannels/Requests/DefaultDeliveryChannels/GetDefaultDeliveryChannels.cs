@@ -1,6 +1,6 @@
-﻿using API.Infrastructure.Requests;
+﻿using API.Infrastructure.Page;
+using API.Infrastructure.Requests;
 using DLCS.Model.DeliveryChannels;
-using DLCS.Model.Page;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -12,9 +12,9 @@ public class GetDefaultDeliveryChannels: IRequest<FetchEntityResult<PageOf<Defau
     public int Page { get; set; }
     public int PageSize { get; set; }
     public int Customer { get; }
-    public int Space { get; }
-    
-    public GetDefaultDeliveryChannels(int customer, int space)
+    public int? Space { get; }
+
+    public GetDefaultDeliveryChannels(int customer, int? space)
     {
         Customer = customer;
         Space = space;

@@ -1,6 +1,8 @@
-﻿using DLCS.Core.Collections;
+﻿using API.Settings;
+using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using FluentValidation;
+using Microsoft.Extensions.Options;
 
 namespace API.Features.Image.Validation;
 
@@ -9,7 +11,7 @@ namespace API.Features.Image.Validation;
 /// </summary>
 public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
 {
-    public HydraImageValidator()
+    public HydraImageValidator(IOptions<ApiSettings> apiSettings)
     {
         RuleFor(p => p.DeliveryChannels)
             .Must(a => a!.Any())
@@ -18,10 +20,39 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         
         RuleSet("create", () =>
         {
-            RuleFor(a => a.MediaType).NotEmpty().WithMessage("Media type must be specified");
+            RuleFor(a => a.MediaType)
+                .NotEmpty()
+                .Unless(a => IsNoneOnly(a) || IsStubAsset(a))
+                .WithMessage("Media type must be specified");
         });
-        
+
+        RuleFor(a => a.Origin)
+            .Must(o => !string.Equals(o, AssetDeliveryChannels.NoneChannelOriginPlaceholder, StringComparison.OrdinalIgnoreCase))
+            .When(a => !IsNoneOnly(a))
+            .WithMessage($"'{AssetDeliveryChannels.NoneChannelOriginPlaceholder}' is not a valid origin");
+
+        RuleFor(a => a.MediaType)
+            .Must(m => !string.Equals(m, AssetDeliveryChannels.NoneChannelMediaTypePlaceholder, StringComparison.OrdinalIgnoreCase))
+            .When(a => !IsNoneOnly(a))
+            .WithMessage($"'{AssetDeliveryChannels.NoneChannelMediaTypePlaceholder}' is not a valid mediaType");
+
         When(a => !a.DeliveryChannels.IsNullOrEmpty(), ImageDeliveryChannelDependantValidation);
+        
+        RuleFor(a => a.MaxUnauthorised)
+            .Must(ma => !ma.HasValue)
+            .When(a => a.MaxWidth.HasValue || a.OpenFullMax.HasValue)
+            .WithMessage("'maxUnauthorised' cannot be set when 'maxWidth' or 'openFullMax' is set");
+        
+        // MaxWidth must be negative or null (ie unset) or, if it is set it must be between the min and max values
+        RuleFor(a => a.MaxWidth)
+            .Must(mw =>
+            {
+                var maxWidthValue = mw ?? apiSettings.Value.MinimumMaxWidth;
+                return maxWidthValue >= apiSettings.Value.MinimumMaxWidth && maxWidthValue <= apiSettings.Value.MaxWidth;
+            })
+            .When(asset => asset.MaxWidth is > 0)
+            .WithMessage(
+                $"'maxWidth' must be between {apiSettings.Value.MinimumMaxWidth} and {apiSettings.Value.MaxWidth}.");
         
         // Legacy policy fields
         RuleFor(a => a.ImageOptimisationPolicy).Null()
@@ -38,6 +69,12 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
         RuleFor(a => a.Finished).Empty().WithMessage("Should not include finished");
         RuleFor(a => a.Created).Empty().WithMessage("Should not include created");
     }
+    
+    private static bool IsNoneOnly(DLCS.HydraModel.Image image)
+        => AssetDeliveryChannels.IsNoneOnly(image.DeliveryChannels?.Select(dc => dc.Channel));
+
+    private static bool IsStubAsset(DLCS.HydraModel.Image image)
+        => AssetDeliveryChannels.IsPotentialStubAsset(image.Space, image.DeliveryChannels?.Select(dc => dc.Channel));
 
     private void ImageDeliveryChannelDependantValidation()
     {

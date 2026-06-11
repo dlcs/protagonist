@@ -75,4 +75,29 @@ public class DeliveryChannelPolicyRepositoryTests
         await action.Should()
             .ThrowAsync<InvalidOperationException>();
     }
+    
+    [Theory]
+    [InlineData(1, 1, "default")] // admin customer - general policy
+    [InlineData(260, 2, "space-specific-image")] // customer specific
+    public async Task RetrieveDeliveryChannelPolicy_RetrievesAPolicyUsingPolicyId(int policyId, int customerId, string policyName)
+    {
+        // Arrange and Act
+        var deliveryChannelPolicy = await sut.RetrieveDeliveryChannelPolicy(2, "iiif-img", policyId);
+
+        // Assert
+        deliveryChannelPolicy.Channel.Should().Be("iiif-img");
+        deliveryChannelPolicy.Customer.Should().Be(customerId);
+        deliveryChannelPolicy.Name.Should().Be(policyName);
+    }
+    
+    [Fact]
+    public async Task RetrieveDeliveryChannelPolicy_RetrieveNonExistentPolicyByPolicyId()
+    {
+        // Arrange and Act
+        Func<Task> action = () => sut.RetrieveDeliveryChannelPolicy(2, "notAChannel", 261);
+
+        // Assert
+        await action.Should()
+            .ThrowAsync<InvalidOperationException>();
+    }
 }

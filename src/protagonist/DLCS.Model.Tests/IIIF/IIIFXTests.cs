@@ -151,37 +151,53 @@ public class IIIFXTests
     }
 
     [Fact]
-    public void IsRegionFullOrEquivalent_True_IfFull()
+    public void IsFullOrEquivalent_True_IfFull()
     {
         var region = new RegionParameter { Full = true };
-        region.IsFullOrEquivalent(1, 1).Should().BeTrue("Explicitly requesting full image");
+        region.IsFullOrEquivalent(new Size(1, 1)).Should().BeTrue("Explicitly requesting full image");
     }
 
     [Fact]
-    public void IsRegionFullOrEquivalent_True_IfSquareRegion_AndImageSquare()
+    public void IsFullOrEquivalent_True_IfSquareRegion_AndImageSquare()
     {
         var region = new RegionParameter { Square = true };
-        region.IsFullOrEquivalent(100, 100).Should().BeTrue("Requesting square region for square image");
+        region.IsFullOrEquivalent(new Size(100, 100)).Should().BeTrue("Requesting square region for square image");
+    }
+    
+    [Fact]
+    public void IsFullOrEquivalent_True_IfPercentFullRegion()
+    {
+        var region = new RegionParameter { X = 0, Y = 0, W = 100, H = 100, Percent = true };
+        region.IsFullOrEquivalent(new Size(700, 200)).Should().BeTrue("Region is for full image");
     }
     
     [Theory]
     [InlineData(100, 100)]
     [InlineData(200, 100)]
     [InlineData(100, 200)]
-    public void IsRegionFullOrEquivalent_True_IfRequesting0XY_AndWHMatchImage(int w, int h)
+    public void IsFullOrEquivalent_True_IfRequesting0XY_AndWHMatchImage(int w, int h)
     {
         var region = new RegionParameter { X = 0, Y = 0, W = w, H = h };
-        region.IsFullOrEquivalent(w, h).Should().BeTrue("Region is for full image");
+        region.IsFullOrEquivalent(new Size(w, h)).Should().BeTrue("Region is for full image");
     }
     
     [Theory]
-    [InlineData(100, 100)]
     [InlineData(200, 100)]
     [InlineData(100, 200)]
-    public void IsRegionFullOrEquivalent_False_IfRequesting0XY_AndWHMatchImage_ButPercent(int w, int h)
+    public void IsFullOrEquivalent_False_IfRequesting0XY_AndWHMatchImage_ButPercent(int w, int h)
     {
         var region = new RegionParameter { X = 0, Y = 0, W = w, H = h, Percent = true };
-        region.IsFullOrEquivalent(w, h).Should().BeFalse("Percent region");
+        region.IsFullOrEquivalent(new Size(w, h)).Should().BeFalse("Percent region");
+    }
+    
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(1, 0)]
+    [InlineData(1, 1)]
+    public void IsFullOrEquivalent_False_IfPercentFullRegion_Not0XY(int x, int y)
+    {
+        var region = new RegionParameter { X = x, Y = y, W = 100, H = 100, Percent = true };
+        region.IsFullOrEquivalent(new Size(100, 100)).Should().BeFalse("Region is for full image");
     }
     
     [Theory]
@@ -191,9 +207,41 @@ public class IIIFXTests
     [InlineData(0, 0, 101, 100)]
     [InlineData(0, 0, 100, 101)]
     [InlineData(0, 0, 101, 101)]
-    public void IsRegionFullOrEquivalent_False_IfRequesting0XY_AndWHMatchImage(int x, int y, int w, int h)
+    public void IsFullOrEquivalent_False_IfRequesting0XY_AndWHMatchImage(int x, int y, int w, int h)
     {
         var region = new RegionParameter { X = x, Y = y, W = w, H = h };
-        region.IsFullOrEquivalent(100, 100).Should().BeFalse();
+        region.IsFullOrEquivalent(new Size(100, 100)).Should().BeFalse();
     }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("info.json")]
+    public void IsExplicitFullSize_False_IfBaseOrInfoJson(string imageRequest)
+        => ImageRequest.Parse($"asset/{imageRequest}", "").IsExplicitFullSize().Should().BeFalse();
+    
+    [Theory]
+    [InlineData("full/max/0/default.jpg")]
+    [InlineData("full/10,20/90/default.jpg")]
+    [InlineData("square/!200,200/180/bitonal.jpg")]
+    [InlineData("0,0,512,512/512,/90/default.jpg")]
+    [InlineData("full/pct:80/90/default.png")]
+    [InlineData("pct:41.6,7.5,40,70/max/90/default.png")]
+    public void IsExplicitFullSize_False_IfNotFull(string imageRequest)
+        => ImageRequest.Parse($"asset/{imageRequest}", "").IsExplicitFullSize().Should().BeFalse();
+    
+    [Theory]
+    [InlineData("full/full/0/default.jpg")]
+    [InlineData("square/full/180/bitonal.jpg")]
+    [InlineData("0,0,512,512/full/90/default.jpg")]
+    [InlineData("pct:41.6,7.5,40,70/full/90/default.png")]
+    public void IsExplicitFullSize_True_IfFull(string imageRequest)
+        => ImageRequest.Parse($"asset/{imageRequest}", "").IsExplicitFullSize().Should().BeTrue();
+    
+    [Theory]
+    [InlineData("full/^full/0/default.jpg")]
+    [InlineData("square/^full/180/bitonal.jpg")]
+    [InlineData("0,0,512,512/^full/90/default.jpg")]
+    [InlineData("pct:41.6,7.5,40,70/^full/90/default.png")]
+    public void IsExplicitFullSize_True_IfUpscaleFull(string imageRequest)
+        => ImageRequest.Parse($"asset/{imageRequest}", "").IsExplicitFullSize().Should().BeTrue();
 }

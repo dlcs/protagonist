@@ -30,33 +30,68 @@ public class HydraAdjunctValidatorTests
     }
     
     [Fact]
-    public void ExternalId_NotValidUri()
+    public void ExternalId_NotValidUri_NoOrigin()
     {
         var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
         {
             ExternalId = "not-uri",
+            Origin = null,
             MediaType = "mediaType",
             IIIFLink = "seeAlso",
             Type = "Image"
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.ExternalId)
-            .WithErrorMessage("'externalId' is required and must be a well formed URI");
+            .WithErrorMessage("'externalId' must be a well formed URI");
     }
     
     [Fact]
-    public void ExternalId_Null()
+    public void ExternalId_And_Origin_Null()
     {
         var adjunct = new Adjunct
         {
+            ExternalId = null,
+            Origin = null,
+            MediaType = "mediaType",
+            IIIFLink = "seeAlso",
+            Type = "Image"
+        };
+        var result = sut.TestValidate(adjunct);
+        result.ShouldHaveValidationErrorFor(r => r)
+            .WithErrorMessage("Either 'origin' or 'externalId' is required, but not both");
+    }
+    
+    [Fact]
+    public void ExternalId_And_Origin_BothPresent()
+    {
+        var adjunct = new Adjunct
+        {
+            ExternalId = "https://localhost/customers/1/spaces/1/images/assetId/valid",
+            Origin = "https://localhost/customers/1/spaces/1/images/assetId/valid",
+            MediaType = "mediaType",
+            IIIFLink = "seeAlso",
+            Type = "Image"
+        };
+        var result = sut.TestValidate(adjunct);
+        result.ShouldHaveValidationErrorFor(r => r)
+            .WithErrorMessage("Either 'origin' or 'externalId' is required, but not both");
+    }
+    
+    [Fact]
+    public void Origin_NotValidUri_NoExternalId()
+    {
+        var adjunct = new Adjunct("https://localhost", 1, 1, "assetId", "adjunctId")
+        {
+            Origin = "not-uri",
             ExternalId = null,
             MediaType = "mediaType",
             IIIFLink = "seeAlso",
             Type = "Image"
         };
         var result = sut.TestValidate(adjunct);
-        result.ShouldHaveValidationErrorFor(r => r.ExternalId)
-            .WithErrorMessage("'externalId' is required and must be a well formed URI");
+        
+        result.ShouldHaveValidationErrorFor(r => r.Origin)
+            .WithErrorMessage("'origin' must be a well formed URI");
     }
     
     [Theory]
@@ -73,7 +108,7 @@ public class HydraAdjunctValidatorTests
         };
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.IIIFLink)
-            .WithErrorMessage("Valid values for 'iiifLink' are 'seeAlso', 'annotations', 'rendering'");
+            .WithErrorMessage("Valid values for 'iiifLink' are 'seeAlso', 'annotations', 'rendering', 'inlineAnnotation'");
     }
     
     [Fact]
@@ -183,5 +218,19 @@ public class HydraAdjunctValidatorTests
         var result = sut.TestValidate(adjunct);
         result.ShouldHaveValidationErrorFor(r => r.Language)
             .WithErrorMessage("All 'language' values must be 10 characters or less. e.g. ISO language codes, sub-codes or 'none'");
+    }
+    
+    [Fact]
+    public void Type_Error_NotAnnotationPage()
+    {
+        var adjunct = new Adjunct
+        {
+            MediaType = "mediaType",
+            IIIFLink = "annotations",
+            Type = "Annotation",
+        };
+        var result = sut.TestValidate(adjunct);
+        result.ShouldHaveValidationErrorFor(r => r.Type)
+            .WithErrorMessage("When 'iiifLink' is 'annotations', the '@type' must be 'AnnotationPage'");
     }
 }

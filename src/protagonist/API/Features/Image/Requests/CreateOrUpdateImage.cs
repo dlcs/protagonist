@@ -2,12 +2,15 @@ using System.Data;
 using System.Net;
 using API.Exceptions;
 using API.Features.Assets;
+using API.Features.DeliveryChannels.Helpers;
 using API.Features.Image.Ingest;
-using API.Infrastructure.Messaging;
+using API.Infrastructure;
+using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
+using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Messaging;
 using DLCS.Model.Spaces;
 using DLCS.Repository;
@@ -48,34 +51,17 @@ public class CreateOrUpdateImage : IRequest<ModifyEntityResult<Asset>>
     }
 }
 
-public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, ModifyEntityResult<Asset>>
+public class CreateOrUpdateImageHandler(
+    ISpaceRepository spaceRepository,
+    IApiAssetRepository assetRepository,
+    IBatchRepository batchRepository,
+    IIngestNotificationSender ingestNotificationSender,
+    IDeliverableNotificationSender deliverableNotificationSender,
+    DlcsContext dlcsContext,
+    IDeliveryChannelPolicyRepository deliveryChannelPolicyRepository,
+    AssetProcessor assetProcessor)
+    : IRequestHandler<CreateOrUpdateImage, ModifyEntityResult<Asset>>
 {
-    private readonly ISpaceRepository spaceRepository;
-    private readonly IApiAssetRepository assetRepository;
-    private readonly IBatchRepository batchRepository;
-    private readonly IIngestNotificationSender ingestNotificationSender;
-    private readonly IAssetNotificationSender assetNotificationSender;
-    private readonly DlcsContext dlcsContext;
-    private readonly AssetProcessor assetProcessor;
-
-    public CreateOrUpdateImageHandler(
-        ISpaceRepository spaceRepository,
-        IApiAssetRepository assetRepository,
-        IBatchRepository batchRepository,
-        IIngestNotificationSender ingestNotificationSender,
-        IAssetNotificationSender assetNotificationSender,
-        DlcsContext dlcsContext,
-        AssetProcessor assetProcessor)
-    {
-        this.spaceRepository = spaceRepository;
-        this.assetRepository = assetRepository;
-        this.batchRepository = batchRepository;
-        this.ingestNotificationSender = ingestNotificationSender;
-        this.assetNotificationSender = assetNotificationSender;
-        this.dlcsContext = dlcsContext;
-        this.assetProcessor = assetProcessor;
-    }
-    
     public async Task<ModifyEntityResult<Asset>> Handle(CreateOrUpdateImage request, CancellationToken cancellationToken)
     {
         var assetBeforeProcessing = request.AssetBeforeProcessing;
@@ -90,7 +76,10 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
                 $"Target space for asset does not exist: {assetBeforeProcessing.Asset.Customer}/{assetBeforeProcessing.Asset.Space}",
                 WriteResult.FailedValidation);
         }
-
+        
+        var space0Validation = SpaceZeroValidator.Validate(request);
+        if (space0Validation != null) return space0Validation;
+        
         await using var transaction = 
             await dlcsContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
         
@@ -132,14 +121,26 @@ public class CreateOrUpdateImageHandler : IRequestHandler<CreateOrUpdateImage, M
         var assetAfterSave = modifyEntityResult.Entity!;
 
         var assetModificationRecord = existingAsset == null
-            ? AssetModificationRecord.Create(assetAfterSave)
-            : AssetModificationRecord.Update(existingAsset, assetAfterSave, processAssetResult.RequiresEngineNotification);
+            ? NotificationRecord<Asset>.Create(assetAfterSave)
+            : NotificationRecord<Asset>.Update(existingAsset, assetAfterSave, processAssetResult.RequiresEngineNotification);
 
-        await assetNotificationSender.SendAssetModifiedMessage(assetModificationRecord, cancellationToken);
+        await deliverableNotificationSender.SendDeliverableModifiedMessage(assetModificationRecord, cancellationToken);
 
         if (processAssetResult.RequiresEngineNotification)
         {
             return await IngestAndGenerateResult(assetAfterSave, existingAsset != null, cancellationToken);
+        }
+
+        // this adds in additional information that's used to hydrate the hydra model.  This is done here as if it's done before
+        // the DB save it acts like creating a new DCP and fails due to conflicts.
+        if (assetAfterSave.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
+        {
+            var deliveryChannel = assetAfterSave.ImageDeliveryChannels.Single();
+            
+            var deliveryChannelPolicy = await deliveryChannelPolicyRepository.RetrieveDeliveryChannelPolicy(assetAfterSave.Customer,
+                deliveryChannel.Channel, deliveryChannel.DeliveryChannelPolicyId);
+
+            deliveryChannel.DeliveryChannelPolicy = deliveryChannelPolicy;
         }
 
         return modifyEntityResult;

@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using DLCS.Core.Types;
 using IIIF.Presentation.V3.Strings;
 
 namespace DLCS.Model.Assets;
 
-public class Adjunct
+public class Adjunct : IDeliverable
 {
     public const int MaxIdLength = 200;
     
@@ -40,7 +41,7 @@ public class Adjunct
     public string? Profile { get; set; }
     
     /// <summary>
-    /// A human readable label, name or title
+    /// A human-readable label, name or title
     /// </summary>
     public LanguageMap? Label { get; set; }
     
@@ -52,8 +53,16 @@ public class Adjunct
     /// <summary>
     /// A fully-qualified URL external to the platform where the adjunct is hosted
     /// </summary>
-    public required Uri ExternalId { get; set; }
+    public Uri? ExternalId { get; set; }
     
+    /// <inheritdoc/>
+    public bool? Ingesting { get; set; }
+    
+    /// <inheritdoc/>
+    public string? Error { get; set; }
+
+    public string? Origin { get; set; }
+
     /// <summary>
     /// When the adjunct was created
     /// </summary>
@@ -62,14 +71,52 @@ public class Adjunct
     /// <summary>
     /// When the adjunct last finished processing
     /// </summary>
-    public DateTime Finished { get; set; }
+    public DateTime? Finished { get; set; }
+
+    /// <inheritdoc/>
+    public string ItemId => Id;
+    
+    /// <inheritdoc/>
+    public string Identifier() => $"adjunct '{Id}' for asset '{AssetId}'";
+
+    /// <inheritdoc/>
+    public AssetId GetAssetId() => AssetId;
     
     /// <summary>
     /// The size in bytes of the adjunct
     /// </summary>
     public long? Size { get; set; }
+    
+    /// <summary>
+    /// The reason why this adjunct exists.
+    /// </summary>
+    public string? Motivation { get; set; }
+    
+    /// <summary>
+    /// An additional set of features or functionality this adjunct provides
+    /// </summary>
+    public string? Provides { get; set; }
+
+    /// <summary>
+    /// The id of the AdjunctBatch this adjunct was most recently submitted in, if any.
+    /// </summary>
+    public int? Batch { get; set; }
 
     public Asset Asset { get; set; } = null!;
+
+    /// <summary>
+    /// Historical records linking this Adjunct to an AdjunctBatch.
+    /// </summary>
+    public List<AdjunctBatchAdjunct>? AdjunctBatchAdjuncts { get; set; }
+    
+    public Adjunct Clone()
+    {
+        var adjunct = (Adjunct)MemberwiseClone();
+
+        return adjunct;
+    }
+    
+    object ICloneable.Clone() { return Clone(); }
 }
 
 /// <summary>
@@ -82,5 +129,7 @@ public enum IIIFLinkType
     [Description("annotations")]
     Annotations,
     [Description("rendering")]
-    Rendering
+    Rendering,
+    [Description("inlineAnnotation")]
+    InlineAnnotation
 }

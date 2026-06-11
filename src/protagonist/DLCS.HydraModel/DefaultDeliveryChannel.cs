@@ -14,13 +14,13 @@ public class DefaultDeliveryChannel : DlcsResource
     {
     }
     
-    public DefaultDeliveryChannel(string baseUrl, int customerId, string channel, string? policy, string mediaType, string id, int space)
+    public DefaultDeliveryChannel(string baseUrl, int customerId, string channel, string? policy, string mediaType, string id, int? space)
     {
         Channel = channel;
         Policy = policy;
         MediaType = mediaType;
 
-        if (space == 0)
+        if (space == null)
         {
             Init(baseUrl, true, customerId, id);
         }

@@ -1,5 +1,6 @@
 ﻿using DLCS.AWS.S3.Models;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using Version = IIIF.ImageApi.Version;
 
 namespace DLCS.AWS.S3;
@@ -12,14 +13,14 @@ public interface IStorageKeyGenerator
     /// <param name="assetId">Unique identifier for Asset</param>
     /// <returns><see cref="ObjectInBucket"/> for tile-ready asset</returns>
     RegionalisedObjectInBucket GetStorageLocation(AssetId assetId);
-    
+
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> for root location of stored delivery assets (tile-ready or original)
     /// </summary>
     /// <param name="assetId">Unique identifier for Asset</param>
     /// <returns><see cref="ObjectInBucket"/> for delivery asset root</returns>
     ObjectInBucket GetStorageLocationRoot(AssetId assetId);
-    
+
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> for stored original file.
     /// This is for assets for "file" delivery, or images where origin is tile-optimised
@@ -52,7 +53,7 @@ public interface IStorageKeyGenerator
     /// <param name="assetId">Unique identifier for Asset</param>
     /// <returns><see cref="ObjectInBucket"/> for sizes json</returns>
     ObjectInBucket GetThumbsSizesJsonLocation(AssetId assetId);
-    
+
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> for root location of thumbnails for asset, rather than an individual file
     /// </summary>
@@ -74,14 +75,14 @@ public interface IStorageKeyGenerator
     /// <param name="assetPath">Requested asset path</param>
     /// <returns><see cref="RegionalisedObjectInBucket"/> for AV file</returns>
     RegionalisedObjectInBucket GetTimebasedAssetLocation(AssetId assetId, string assetPath);
-    
+
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> for requested AV file 
     /// </summary>
     /// <param name="fullAssetPath">Full asset path, including AssetId</param>
     /// <returns><see cref="RegionalisedObjectInBucket"/> for AV file</returns>
     ObjectInBucket GetTimebasedAssetLocation(string fullAssetPath);
-    
+
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> for root location of info.json for asset, rather than individual info.json file
     /// </summary>
@@ -127,7 +128,7 @@ public interface IStorageKeyGenerator
     /// </summary>
     /// <returns><see cref="ObjectInBucket"/> for specified key in timebased input bucket</returns>
     ObjectInBucket GetTimebasedInputLocation(AssetId assetId);
-    
+
     /// <summary>
     /// Attempt to parse provided input location to a key in the timebased input bucket.
     /// </summary>
@@ -139,7 +140,7 @@ public interface IStorageKeyGenerator
     /// bucket
     /// </remarks>
     ObjectInBucket? TryParseTimebasedInputLocation(string inputLocation);
-    
+
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> item for timebased asset that has to been transcoded
     /// </summary>
@@ -158,7 +159,7 @@ public interface IStorageKeyGenerator
     /// <param name="assetId">asset id the request is for</param>
     /// <returns><see cref="ObjectInBucket"/> for specified asset's metadata file</returns>
     ObjectInBucket GetOriginRoot(AssetId assetId);
-    
+
     /// <summary>
     /// Get <see cref="ObjectInBucket"/> item for customer origin strategy credentials object
     /// </summary>
@@ -172,4 +173,22 @@ public interface IStorageKeyGenerator
     /// <param name="assetId">Id of Asset being transcoded</param>
     /// <param name="jobId">Unique job identifier</param>
     ObjectInBucket GetTranscodeDestinationRoot(AssetId assetId, string jobId);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> for stored adjunct file.
+    /// This is for adjuncts which all use "file" delivery
+    /// </summary>
+    /// <param name="assetId">Id of Asset owning this Adjunct</param>
+    /// <param name="adjunct">Adjunct that will be stored at location</param>
+    /// <returns><see cref="ObjectInBucket"/> for specified Asset's hosted Adjunct</returns>
+    RegionalisedObjectInBucket GetStoredAdjunctLocation(AssetId assetId, Adjunct adjunct);
+
+    /// <summary>
+    /// Get <see cref="ObjectInBucket"/> for stored adjunct file.
+    /// This is for adjuncts which all use "file" delivery
+    /// </summary>
+    /// <param name="assetId">Id of Asset owning this Adjunct</param>
+    /// <param name="adjunctId">Id of the adjunct location of which to generate</param>
+    /// <returns><see cref="ObjectInBucket"/> for specified Asset's hosted Adjunct</returns>
+    RegionalisedObjectInBucket GetStoredAdjunctLocation(AssetId assetId, string adjunctId);
 }

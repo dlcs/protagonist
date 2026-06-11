@@ -28,7 +28,28 @@ public static class TemplatedFolders
         string? root = null,
         bool replaceImage = true)
         => GenerateTemplate(template, asset, Path.DirectorySeparatorChar.ToString(), root, replaceImage);
-    
+
+    /// <summary>
+    /// Generate a folder template using provided details for hosted Adjunct
+    /// </summary>
+    /// <param name="template">The basic template, e.g. {root}\{customer}\{space}\{image}</param>
+    /// <param name="asset">Used to populate {customer}, {space} and, optionally, {image} and {image-dir} properties.</param>
+    /// <param name="adjunctId">id of the hosted adjunct</param>
+    /// <param name="root">The root of the template, used as {root} param.</param>
+    /// <param name="replaceImage">If true {image} is replaced, else it is left untouched</param>
+    /// <returns>New string with replacements made.</returns>
+    public static string GenerateFolderTemplateForAdjunct(string template,
+        AssetId asset,
+        string adjunctId,
+        string? root = null,
+        bool replaceImage = true)
+    {
+        // We get the folder originally designed for the asset
+        var separator = Path.DirectorySeparatorChar.ToString();
+        var assetTemplate = GenerateTemplate(template, asset, separator, root, replaceImage);
+        return $"{assetTemplate}{separator}adjuncts{separator}{adjunctId}";
+    }
+
     /// <summary>
     /// Generate a folder template using provided details.
     /// </summary>
@@ -40,13 +61,13 @@ public static class TemplatedFolders
     /// <returns>New string with replacements made.</returns>
     /// <remarks>
     /// This isn't nice but necessary as some downstream services (image-server and derivatives-generator always
-    /// require unix-style but elsewhere it should be Path.DirectorySeparatorChar
+    /// require unix-style, but elsewhere it should be Path.DirectorySeparatorChar
     /// </remarks>
     public static string GenerateTemplate(
         string template,
-        AssetId asset, 
+        AssetId asset,
         string directorySeparator,
-        string? root = null, 
+        string? root = null,
         bool replaceImage = true)
     {
         var replacements = template
@@ -60,7 +81,7 @@ public static class TemplatedFolders
                 .Replace(Image, asset.Asset)
             : replacements;
     }
-    
+
     /// <summary>
     /// Generate a folder template using provided details, ensuring path separator is for Unix.
     /// This is required when calling unix-services (e.g. Appetiser/Tizer) from windows machine.
@@ -72,14 +93,14 @@ public static class TemplatedFolders
     /// <returns>New string with replacements made.</returns>
     public static string GenerateTemplateForUnix(
         string template,
-        AssetId asset, 
-        string? root = null, 
+        AssetId asset,
+        string? root = null,
         bool replaceImage = true)
     {
         var result = GenerateTemplate(template, asset, "/", root, replaceImage);
         return result.Replace("\\", "/");
     }
-    
+
     private static string SplitImageNameToFolders(string name, string separator)
         => name.Length <= 8
             ? name

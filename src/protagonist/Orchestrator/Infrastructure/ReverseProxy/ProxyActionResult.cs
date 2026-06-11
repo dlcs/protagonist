@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Net;
+using DLCS.AWS.S3.Models;
 using Microsoft.Extensions.Primitives;
 using Orchestrator.Assets;
 
@@ -77,34 +78,57 @@ public class ProxyActionResult : IProxyActionResult
 /// <summary>
 /// Result for proxy actions that should be shortcut to return status code.
 /// </summary>
-public class StatusCodeResult : IProxyActionResult
+public class StatusCodeResult(HttpStatusCode statusCode, string? message = null) : IProxyActionResult
 {
     /// <summary>
     /// StatusCode to return
     /// </summary>
-    public HttpStatusCode StatusCode { get; }
+    public HttpStatusCode StatusCode { get; } = statusCode;
     
+    /// <summary>
+    /// Optional message to return with status code
+    /// </summary>
+    public string? Message { get; } = message;
+
     /// <summary>
     /// A collection of any Headers to set on response object. 
     /// </summary>
     public Dictionary<string, StringValues> Headers { get; } = new();
 
-    public StatusCodeResult(HttpStatusCode statusCode)
-    {
-        StatusCode = statusCode;
-    }
-    
     public static StatusCodeResult NotFound => new(HttpStatusCode.NotFound);
+}
+
+/// <summary>
+/// Result for json objects that require the top-level <c>id</c> to be rewritten on the fly.
+/// </summary>
+public class IdRewriteProxyActionResult(ObjectInBucket source, string newId) : IProxyActionResult
+{
+    /// <summary>
+    /// The S3 location of the object to rewrite.
+    /// </summary>
+    public ObjectInBucket Source { get; } = source;
+
+    /// <summary>
+    /// The new value to write into the top-level <c>id</c> property.
+    /// </summary>
+    public string NewId { get; } = newId;
+
+    /// <summary>
+    /// Maximum permitted size of the object in bytes. Requests exceeding this limit will be rejected.
+    /// </summary>
+    public long? MaxSizeBytes { get; init; }
+
+    /// <summary>
+    /// A collection of any Headers to set on response object.
+    /// </summary>
+    public Dictionary<string, StringValues> Headers { get; } = new();
 }
 
 public static class ProxyActionResultsX
 {
     /// <summary>
-    /// Set header to return alongside statusCode
+    /// Add headers to <see cref="IProxyActionResult"/> object.
     /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    /// <returns></returns>
     public static IProxyActionResult WithHeader(this IProxyActionResult result, string key, string value)
     {
         result.Headers[key] = value;

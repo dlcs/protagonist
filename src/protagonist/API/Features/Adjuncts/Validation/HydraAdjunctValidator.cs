@@ -20,9 +20,19 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
         RuleFor(a => a.MediaType).NotEmpty()
             .WithMessage("'mediaType' is required");
         
+        RuleFor(a=>a)
+            .Must(a=>a is ({ExternalId:not null} or {Origin:not null}) and not {ExternalId:not null, Origin:not null})
+            .WithMessage("Either 'origin' or 'externalId' is required, but not both");
+        
         RuleFor(a => a.ExternalId)
             .Must(a => Uri.IsWellFormedUriString(a, UriKind.Absolute))
-            .WithMessage("'externalId' is required and must be a well formed URI");
+            .When(a => a.ExternalId != null)
+            .WithMessage("'externalId' must be a well formed URI");
+        
+        RuleFor(a => a.Origin)
+            .Must(a => Uri.IsWellFormedUriString(a, UriKind.Absolute))
+            .When(a => a.Origin != null)
+            .WithMessage("'origin' must be a well formed URI");
         
         RuleFor(a => a.ModelId)
             .NotEmpty()
@@ -34,7 +44,7 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
         
         RuleFor(a => a.ModelId)
             .Must(a => !apiSettings.Value.DoesResourceIdContainRestrictedCharacters(a))
-            .WithMessage($"Adjunct id contains at least one of the following restricted characters. Invalid values are: {new string(apiSettings.Value.RestrictedResourceIdCharacters)}");
+            .WithMessage($"Adjunct id contains at least one of the following restricted characters. Invalid values are: {apiSettings.Value.RestrictedResourceIdCharacterString}");
         
         RuleFor(a => a.Type)
             .NotEmpty()
@@ -44,6 +54,11 @@ public class HydraAdjunctValidator : AbstractValidator<DLCS.HydraModel.Adjunct>
         RuleForEach(a => a.Language)
             .MaximumLength(maximumLength)
             .WithMessage($"All 'language' values must be {maximumLength} characters or less. e.g. ISO language codes, sub-codes or 'none'");
+        
+        RuleFor(a => a.Type)
+            .Must(t =>  t == "AnnotationPage")
+            .When(a => a.IIIFLink == IIIFLinkType.Annotations.GetDescription())
+            .WithMessage($"When 'iiifLink' is '{IIIFLinkType.Annotations.GetDescription()}', the '@type' must be 'AnnotationPage'");
     }
 
     private readonly List<string> validIIIFLinkTypes =

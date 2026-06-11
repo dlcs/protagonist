@@ -1,8 +1,10 @@
 ﻿using System.Text.Json;
+using Amazon;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
 using DLCS.AWS.Settings;
 using DLCS.Core;
+using DLCS.Model.Assets;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -16,34 +18,7 @@ public class TopicPublisher(
 {
     private readonly SNSSettings snsSettings = settings.Value.SNS;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
-
-    /// <inheritdoc />
-    public async Task<bool> PublishToAssetModifiedTopic(IReadOnlyList<AssetModifiedNotification> messages,
-        CancellationToken cancellationToken = default)
-    {
-        if (messages.Count == 1)
-        {
-            var singleMessage = messages[0];
-            return await PublishToAssetModifiedTopic(singleMessage, cancellationToken);
-        }
-
-        const int maxSnsBatchSize = 5;
-        var allBatchSuccess = true;
-        var batchIdPrefix = Guid.NewGuid();
-        logger.LogDebug("Publishing SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
-            messages.Count);
-        var batchNumber = 0;
-        foreach (var chunk in messages.Chunk(maxSnsBatchSize))
-        {
-            var success = await PublishBatch(chunk, batchIdPrefix, batchNumber++, cancellationToken);
-            if (allBatchSuccess) allBatchSuccess = success;
-        }
-        
-        logger.LogTrace("Published SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
-            messages.Count);
-        return allBatchSuccess;
-    }
-
+    
     /// <inheritdoc />
     public async Task<bool> PublishToCustomerCreatedTopic(CustomerCreatedNotification message, CancellationToken cancellationToken)
     {
@@ -63,37 +38,59 @@ public class TopicPublisher(
     }
 
     /// <inheritdoc />
-    public async Task<bool> PublishToBatchCompletedTopic(BatchCompletedNotification message, CancellationToken cancellationToken)
+    public Task<bool> PublishToBatchCompletedTopic(BatchCompletedNotification message,
+        CancellationToken cancellationToken)
+        => PublishBatchCompleted(message, snsSettings.BatchCompletedTopicArn,
+            nameof(snsSettings.BatchCompletedTopicArn), cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> PublishToAdjunctBatchCompletedTopic(AdjunctBatchCompletedNotification message,
+        CancellationToken cancellationToken)
+        => PublishBatchCompleted(message, snsSettings.AdjunctBatchCompletedTopicArn,
+            nameof(snsSettings.AdjunctBatchCompletedTopicArn), cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<bool> PublishToDeliverableModifiedTopic(IReadOnlyList<DeliverableModifiedNotification> messages,
+        DeliverableTopicType topicType, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(snsSettings.BatchCompletedTopicArn))
+        var topicArn = topicType == DeliverableTopicType.Asset
+            ? snsSettings.AssetModifiedNotificationTopicArn!
+            : snsSettings.AdjunctModifiedNotificationTopicArn!;
+        
+        if (messages.Count == 1)
         {
-            logger.LogWarning("Batch Completed Topic Arn is not set - cannot send BatchCompletedNotification");
+            var singleMessage = messages[0];
+            return await PublishToDeliverableModifiedTopic(singleMessage, topicArn, cancellationToken);
+        }
+
+        const int maxSnsBatchSize = 5;
+        var allBatchSuccess = true;
+        var batchIdPrefix = Guid.NewGuid();
+        if (!Arn.TryParse(topicArn, out var arn))
+        {
+            logger.LogError("Could not parse the topic arn {Arn} into a valid arn", topicArn);
             return false;
         }
-        
-        var request = new PublishRequest
+        logger.LogDebug("Publishing SNS batch {BatchPrefix} containing {ItemCount} items to {Service}", batchIdPrefix,
+            messages.Count, arn.Resource);
+        var batchNumber = 0;
+        foreach (var chunk in messages.Chunk(maxSnsBatchSize))
         {
-            TopicArn = snsSettings.BatchCompletedTopicArn,
-            Message = JsonSerializer.Serialize(message, settings),
-            MessageAttributes = new Dictionary<string, MessageAttributeValue>()
-            {
-                {"CustomerId", new MessageAttributeValue
-                {
-                    StringValue = message.Customer.ToString(),
-                    DataType = "String"
-                }}
-            } 
-        };
-
-        return await TryPublishRequest(request, cancellationToken);
+            var success = await PublishBatch(chunk, batchIdPrefix, batchNumber++, topicArn, cancellationToken);
+            if (allBatchSuccess) allBatchSuccess = success;
+        }
+        
+        logger.LogTrace("Published SNS batch {BatchPrefix} containing {ItemCount} items", batchIdPrefix,
+            messages.Count);
+        return allBatchSuccess;
     }
 
-    private Task<bool> PublishToAssetModifiedTopic(AssetModifiedNotification message,
+    private Task<bool> PublishToDeliverableModifiedTopic(DeliverableModifiedNotification message, string topicArn,
         CancellationToken cancellationToken = default)
     {
         var request = new PublishRequest
         {
-            TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
+            TopicArn = topicArn,
             Message = message.MessageContents,
             MessageAttributes = GetMessageAttributes(message.Attributes)
         };
@@ -115,15 +112,15 @@ public class TopicPublisher(
         }
     }
 
-    private async Task<bool> PublishBatch(AssetModifiedNotification[] chunk, Guid batchIdPrefix, int batchNumber,
-        CancellationToken cancellationToken)
+    private async Task<bool> PublishBatch(DeliverableModifiedNotification[] chunk, Guid batchIdPrefix, int batchNumber,
+        string topicArn, CancellationToken cancellationToken)
     {
         try
         {
             int batchCount = 0;
             var bulkRequest = new PublishBatchRequest
             {
-                TopicArn = snsSettings.AssetModifiedNotificationTopicArn,
+                TopicArn = topicArn,
                 PublishBatchRequestEntries = chunk.Select(m => new PublishBatchRequestEntry
                 {
                     MessageAttributes = GetMessageAttributes(m.Attributes),
@@ -143,18 +140,38 @@ public class TopicPublisher(
     }
 
     private static Dictionary<string, MessageAttributeValue> GetMessageAttributes(Dictionary<string, string> attributes)
+        => attributes.ToDictionary(
+            attribute => attribute.Key,
+            attribute => new MessageAttributeValue { DataType = "String", StringValue = attribute.Value });
+
+    private async Task<bool> PublishBatchCompleted(IBatchCompletedNotification message, string? topicArn, string topicName,
+        CancellationToken cancellationToken)
     {
-        var messageAttributes = new Dictionary<string, MessageAttributeValue>();
-        foreach (var attribute in attributes)
+        if (string.IsNullOrEmpty(topicArn))
         {
-            messageAttributes.Add(attribute.Key,
-                new MessageAttributeValue
-                {
-                    DataType = "String",
-                    StringValue = attribute.Value
-                });
+            logger.LogWarning("{TopicName} is not set - cannot publish batch completed notification", topicName);
+            return false;
         }
 
-        return messageAttributes;
+        var request = new PublishRequest
+        {
+            TopicArn = topicArn,
+            Message = JsonSerializer.Serialize(message, message.GetType(), settings),
+            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+            {
+                ["CustomerId"] = new()
+                {
+                    StringValue = message.Customer.ToString(),
+                    DataType = "String"
+                },
+                ["Type"] = new()
+                {
+                    StringValue = message is AdjunctBatchCompletedNotification ? nameof(AdjunctBatch) : nameof(Batch),
+                    DataType = "String"
+                },
+            }
+        };
+
+        return await TryPublishRequest(request, cancellationToken);
     }
 }

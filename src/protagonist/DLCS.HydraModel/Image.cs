@@ -3,6 +3,7 @@ using DLCS.HydraModel.Converters;
 using Hydra;
 using Hydra.Model;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace DLCS.HydraModel;
 
@@ -37,7 +38,7 @@ public class Image : DlcsResource
     public string? ModelId { get; set; }
     
     [JsonProperty(Order = 10, PropertyName = "space")]
-    public int Space { get; set; }
+    public int? Space { get; set; }
 
     [RdfProperty(Description = "image service URI - where the IIIF Image API is exposed for this image",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
@@ -71,12 +72,26 @@ public class Image : DlcsResource
     [JsonProperty(Order = 15, PropertyName = "origin")]
     public string? Origin { get; set; }
 
+    [Obsolete("Use openFullMax and/or maxWidth instead")]
     [RdfProperty(Description = "Maximum size of request allowed before roles are enforced " +
                                "- relates to the effective WHOLE image size, not the individual tile size." +
                                " 0 = No open option, -1 (default) = no authorisation",
         Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 17, PropertyName = "maxUnauthorised")]
     public int? MaxUnauthorised { get; set; }
+    
+    [RdfProperty(Description = "Restricts the maximum permitted pixel response as defined in the IIIF Image API." +
+                               "Applies to all image requests, regardless of region, " +
+                               "if unset a system-default maxWidth value will be applied",
+        Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 18, PropertyName = "maxWidth")]
+    public int? MaxWidth { get; set; }
+    
+    [RdfProperty(Description = "Maximum size of /full/ region requests allowed before roles are enforced " +
+                               "Only applies when an image has roles",
+        Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
+    [JsonProperty(Order = 19, PropertyName = "openFullMax")]
+    public int? OpenFullMax { get; set; }
     
     [RdfProperty(Description = "When the image was added to the queue",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
@@ -160,7 +175,7 @@ public class Image : DlcsResource
     [HydraLink(Description = "Adjuncts related to the asset",
         Range = "vocab:Adjunct", ReadOnly = true, WriteOnly = false, SetManually = false)]
     [JsonProperty(Order = 81, PropertyName = "adjuncts")]
-    public string? Adjuncts { get; set; }
+    public JToken? Adjuncts { get; set; }
     
     // TODO - this is used by Wellcome DDS but is not documented.
     // I think it should be a hydra link property

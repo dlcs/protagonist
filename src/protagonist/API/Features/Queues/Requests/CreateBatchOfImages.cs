@@ -1,9 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Data;
+using API.Features.DeliveryChannels.Helpers;
 using API.Features.Image;
 using API.Features.Image.Ingest;
-using API.Infrastructure.Messaging;
+using API.Infrastructure;
+using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Requests;
+using DLCS.AWS.SNS.Messaging;
 using DLCS.Core;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
@@ -32,39 +35,27 @@ public class CreateBatchOfImages : IRequest<ModifyEntityResult<Batch>>
     }
 }
 
-public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, ModifyEntityResult<Batch>>
+public class CreateBatchOfImagesHandler(
+    DlcsContext dlcsContext,
+    IBatchRepository batchRepository,
+    AssetProcessor assetProcessor,
+    IIngestNotificationSender ingestNotificationSender,
+    IDeliverableNotificationSender deliverableNotificationSender,
+    IBatchCompletedNotificationSender  batchCompletedNotificationSender,
+    ILogger<CreateBatchOfImagesHandler> logger)
+    : IRequestHandler<CreateBatchOfImages, ModifyEntityResult<Batch>>
 {
-    private readonly DlcsContext dlcsContext;
-    private readonly IBatchRepository batchRepository;
-    private readonly AssetProcessor assetProcessor;
-    private readonly IIngestNotificationSender ingestNotificationSender;
-    private readonly IAssetNotificationSender assetNotificationSender;
-    private readonly ILogger<CreateBatchOfImagesHandler> logger;
-
-    public CreateBatchOfImagesHandler(
-        DlcsContext dlcsContext,
-        IBatchRepository batchRepository,
-        AssetProcessor assetProcessor,
-        IIngestNotificationSender ingestNotificationSender,
-        IAssetNotificationSender assetNotificationSender,
-        ILogger<CreateBatchOfImagesHandler> logger)
-    {
-        this.dlcsContext = dlcsContext;
-        this.batchRepository = batchRepository;
-        this.assetProcessor = assetProcessor;
-        this.ingestNotificationSender = ingestNotificationSender;
-        this.assetNotificationSender = assetNotificationSender;
-        this.logger = logger;
-    }
-    
     public async Task<ModifyEntityResult<Batch>> Handle(CreateBatchOfImages request,
         CancellationToken cancellationToken)
     {
         var priorityValidation = ValidatePriorityQueueRequest(request);
         if (priorityValidation != null) return priorityValidation;
-        
+
         var spaceValidation = await ValidateAllSpaces(request, cancellationToken);
-        if (spaceValidation != null) return spaceValidation; 
+        if (spaceValidation != null) return spaceValidation;
+
+        var space0Validation = SpaceZeroValidator.Validate(request);
+        if (space0Validation != null) return space0Validation;
 
         bool updateFailed = false;
         var failureMessage = string.Empty;
@@ -76,7 +67,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         var batch = await batchRepository.CreateBatch(request.CustomerId, request.AssetsBeforeProcessing.Select(a => a.Asset).ToList(), cancellationToken);
 
         var engineNotificationList = new List<Asset>(request.AssetsBeforeProcessing.Count);
-        var assetModifiedNotificationList = new List<AssetModificationRecord>();
+        var assetModifiedNotificationList = new List<NotificationRecord<Asset>>();
         
         try
         {
@@ -109,14 +100,18 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
                 }
                 else
                 {
-                    // NOTE(DG) - I think this code block is no longer accessible as alwaysReingest:true is sent to
-                    // the assetProcessor
                     logger.LogDebug(
                         "Asset {AssetId} of Batch {BatchId} does not require engine notification. Marking as complete",
                         assetId, batch.Id);
-                    batch.AddBatchAsset(assetId, BatchAssetStatus.Completed);
+                    batch.AddBatchAsset(assetId, BatchStatus.Completed);
                     batch.Completed += 1;
                 }
+            }
+            
+            // complete batch if nothing requires notification in the engine
+            if (batch.Completed == batch.Count)
+            {
+                batch.Finished = DateTime.UtcNow;
             }
 
             await dlcsContext.SaveChangesAsync(cancellationToken);
@@ -124,7 +119,7 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
             if (!updateFailed)
             {
                 await transaction.CommitAsync(cancellationToken);
-                await assetNotificationSender.SendAssetModifiedMessage(assetModifiedNotificationList, cancellationToken);
+                await deliverableNotificationSender.SendDeliverableModifiedMessage(assetModifiedNotificationList, cancellationToken);
             }
         }
         catch (Exception ex)
@@ -145,14 +140,18 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
 
             return ModifyEntityResult<Batch>.Failure(failureMessage, failureType ?? WriteResult.Error);
         }
-        else
+
+        // Raise notifications
+        logger.LogDebug("Batch {BatchId} created - sending engine notifications", batch.Id);
+        await ingestNotificationSender.SendIngestAssetsRequest(engineNotificationList, request.IsPriority,
+            cancellationToken);
+
+        if (batch.Finished.HasValue)
         {
-            // Raise notifications
-            logger.LogDebug("Batch {BatchId} created - sending engine notifications", batch.Id);
-            await ingestNotificationSender.SendIngestAssetsRequest(engineNotificationList, request.IsPriority,
-                cancellationToken);
+            logger.LogDebug("Batch {BatchId} completed - sending batch completed notification", batch.Id);
+            await batchCompletedNotificationSender.SendBatchCompletedMessage(batch, cancellationToken);
         }
-        
+
         return ModifyEntityResult<Batch>.Success(batch, WriteResult.Created);
     }
 
@@ -200,13 +199,13 @@ public class CreateBatchOfImagesHandler : IRequestHandler<CreateBatchOfImages, M
         return (false, missing);
     }
     
-    private static AssetModificationRecord GetAssetModificationRecord(ProcessAssetResult processAssetResult,
+    private static NotificationRecord<Asset> GetAssetModificationRecord(ProcessAssetResult processAssetResult,
         Asset savedAsset)
     {
         var existingAsset = processAssetResult.ExistingAsset;
         var assetModificationRecord = existingAsset == null
-            ? AssetModificationRecord.Create(savedAsset)
-            : AssetModificationRecord.Update(existingAsset, savedAsset, processAssetResult.RequiresEngineNotification);
+            ? NotificationRecord<Asset>.Create(savedAsset)
+            : NotificationRecord<Asset>.Update(existingAsset, savedAsset, processAssetResult.RequiresEngineNotification);
         return assetModificationRecord;
     }
 }

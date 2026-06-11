@@ -34,7 +34,7 @@ public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
             "DELETE FROM \"ImageOptimisationPolicies\" WHERE \"Id\" not in ('fast-higher', 'video-max', 'audio-max', 'cust-default')");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Images\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerOriginStrategies\"");
-        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerStorage\"");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"CustomerStorage\" WHERE NOT (\"Customer\" = 99 AND \"Space\" IS NULL)");
         DbContext.Database.ExecuteSqlRaw($"DELETE FROM \"AuthServices\" WHERE \"Id\" != '{ClickThroughAuthService}'");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Roles\" WHERE \"Id\" != 'clickthrough'");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"SessionUsers\"");
@@ -121,6 +121,8 @@ public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
             Next = 1
         });
         await DbContext.Spaces.AddAsync(new Space
+            { Created = DateTime.UtcNow, Id = 0, Customer = customer, Name = "stub-assets", ImageBucket = string.Empty, Tags = Array.Empty<string>(), Roles = Array.Empty<string>(), MaxUnauthorised = -1 });
+        await DbContext.Spaces.AddAsync(new Space
             { Created = DateTime.UtcNow, Id = 1, Customer = customer, Name = "space-1" });
         await DbContext.ThumbnailPolicies.AddAsync(new ThumbnailPolicy
             { Id = "default", Name = "default", Sizes = "800,400,200" });
@@ -144,6 +146,11 @@ public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
                 Id = "cust-default", Name = "Customer Scoped", TechnicalDetails = new[] { "default" },
                 Global = false, Customer = 99
             });
+        await DbContext.CustomerStorages.AddAsync(new CustomerStorage
+        {
+            Customer = customer, Space = null, StoragePolicy = "default",
+            NumberOfStoredImages = 0, TotalSizeOfStoredImages = 0, TotalSizeOfThumbnails = 0
+        });
         await DbContext.DefaultDeliveryChannels.AddTestDefaultDeliveryChannels(99);
         await DbContext.DeliveryChannelPolicies.AddRangeAsync(new DeliveryChannelPolicy()
         {

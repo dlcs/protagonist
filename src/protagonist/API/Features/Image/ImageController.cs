@@ -45,16 +45,15 @@ public class ImageController : HydraController
     [ProducesResponseType(200, Type = typeof(DLCS.HydraModel.Image))]
     [ProducesResponseType(404, Type = typeof(Error))]
     public async Task<IActionResult> GetImage(int customerId, int spaceId, string imageId,
-        [FromQuery] bool noCache = false)
+        [FromQuery] bool noCache = false, CancellationToken cancellationToken = default)
     {
         var assetId = new AssetId(customerId, spaceId, imageId);
-        var dbImage = await Mediator.Send(new GetImage(assetId, noCache));
-        if (dbImage == null)
-        {
-            return this.HydraNotFound();
-        }
-
-        return Ok(dbImage.ToHydra(GetUrlRoots()));
+        return await HandleFetch(
+            new GetImage(assetId, noCache),
+            s => s.ToHydra(GetUrlRoots()),
+            errorTitle: "Failed to get image",
+            cancellationToken: cancellationToken
+        );
     }
 
     /// <summary>
@@ -102,7 +101,7 @@ public class ImageController : HydraController
         {
             try
             {
-                hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset);
+                hydraAsset = LegacyModeConverter.VerifyAndConvertToModernFormat(hydraAsset, spaceId);
             }
             catch (APIException apiEx)
             {
@@ -115,8 +114,11 @@ public class ImageController : HydraController
         {
             hydraAsset.ModelId = imageId;
         }
-        
-        var validationResult = await validator.ValidateAsync(hydraAsset, 
+
+        // make sure the space id is set for the validator
+        hydraAsset.Space ??= spaceId;
+
+        var validationResult = await validator.ValidateAsync(hydraAsset,
             strategy => strategy.IncludeRuleSets("default", "create"), cancellationToken);
         
         if (!validationResult.IsValid)
@@ -269,13 +271,9 @@ public class ImageController : HydraController
     public async Task<IActionResult> GetAssetMetadata([FromRoute] int customerId, [FromRoute] int spaceId,
         [FromRoute] string imageId, CancellationToken cancellationToken)
     {
-        return await HandleHydraRequest(async () =>
-        {
-            var getMetadata = new GetAssetMetadata(customerId, spaceId, imageId);
-            var entityResult = await Mediator.Send(getMetadata, cancellationToken);
-
-            return this.FetchResultToHttpResult(entityResult, getMetadata.AssetId.ToString(), "Error getting metadata");
-        });
+        var getMetadata = new GetAssetMetadata(customerId, spaceId, imageId);
+        var entityResult = await Mediator.Send(getMetadata, cancellationToken);
+        return this.FetchResultToHttpResult(entityResult, getMetadata.AssetId.ToString(), "Error getting metadata");
     }
 
     private Task<IActionResult> PutOrPatchAsset(int customerId, int spaceId, string imageId,
@@ -284,14 +282,13 @@ public class ImageController : HydraController
         var assetId = new AssetId(customerId, spaceId, imageId);
         var asset = hydraAsset.ToDlcsModel(customerId, spaceId, imageId);
         asset.Id = assetId;
-                
-        // In the special case where we were passed ImageWithFile from the PostImageWithFileBytes action, 
+
+        // In the special case where we were passed ImageWithFile from the PostImageWithFileBytes action,
         // it was a POST - but we should revisit that as the direct image ingest should be a PUT as well I think
         // See https://github.com/dlcs/protagonist/issues/338
         var method = hydraAsset is ImageWithFile ? "PUT" : Request.Method;
 
         var assetBeforeProcessing = new AssetBeforeProcessing(asset, hydraAsset.DeliveryChannels.ToInterimModel());
-
         var createOrUpdateRequest = new CreateOrUpdateImage(assetBeforeProcessing, method);
 
         return HandleUpsert(
@@ -300,7 +297,7 @@ public class ImageController : HydraController
             assetId.ToString(),
             "Upsert asset failed", cancellationToken);
     }
-    
+
     private async Task<IActionResult> PutOrPatchAssetWithFileBytes(int customerId, int spaceId, string imageId,
         ImageWithFile hydraAsset, CancellationToken cancellationToken)
     { 

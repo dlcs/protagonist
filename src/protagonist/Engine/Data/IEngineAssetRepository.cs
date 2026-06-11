@@ -6,25 +6,45 @@ namespace Engine.Data;
 public interface IEngineAssetRepository
 {
     /// <summary>
-    /// Update database with ingested asset.
+    /// Update database with ingested deliverable.
     /// </summary>
-    /// <param name="asset">Asset to update</param>
-    /// <param name="imageLocation">ImageLocation, optional as may have exited prior to creation</param>
+    /// <param name="deliverable">Deliverable to update</param>
+    /// <param name="imageLocation">ImageLocation, optional as may have exited prior to creation or not be relevant</param>
     /// <param name="imageStorage">ImageStorage, optional as may have exited prior to creation</param>
     /// <param name="ingestFinished">
-    /// If true then the ingest is done, no further processing required. Else it's an async ingest
+    /// If true then the ingestion is done, no further processing required. Else it's an async ingest
     /// and there will be further work required.
     /// </param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>True if successful</returns>
-    Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage,
+    Task<bool> UpdateIngestedDeliverable(IDeliverable deliverable, ImageLocation? imageLocation, ImageStorage? imageStorage,
         bool ingestFinished, CancellationToken cancellationToken = default);
-
+    
     /// <summary>
     /// Get Asset with specified Id. This loads asset with all required navigation properties that are required for
     /// Engine to work on it (DeliveryChannels + policies, specified Batch, AssetApplicationMetadata)
     /// </summary>
     ValueTask<Asset?> GetAsset(AssetId assetId, int? batchId, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Get the adjunct with the id, for the specified asset. If <paramref name="batchId"/> is provided, the
+    /// matching <see cref="AdjunctBatchAdjunct"/> record is included.
+    /// </summary>
+    /// <param name="id">Adjunct id - unique only within asset</param>
+    /// <param name="assetId">Asset that owns the adjunct</param>
+    /// <param name="batchId">Optional batch id; if provided loads the matching AdjunctBatchAdjunct</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns></returns>
+    Task<Adjunct?> GetAdjunct(string id, AssetId assetId, int? batchId = null, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Get the <see cref="ImageStorage"/> for the specified <paramref name="assetId"/>
+    /// </summary>
+    /// <param name="assetId">AssetId for which the image storage data to retrieve</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>The image storage data for the specified AssetId or null if not exists</returns>
+    /// <remarks>At this time, this is used for Adjunct ingestion in the update scenario</remarks>
+    ValueTask<ImageStorage?> GetImageStorage(AssetId assetId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieves the size of an image from the database, or null if the image is not found

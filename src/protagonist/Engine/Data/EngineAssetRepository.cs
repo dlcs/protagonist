@@ -5,41 +5,36 @@ using DLCS.Model.Assets;
 using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
+using DLCS.Repository.Storage;
 using Microsoft.EntityFrameworkCore;
 
 namespace Engine.Data;
 
-public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepository
+public class EngineAssetRepository(
+    DlcsContext dlcsContext,
+    IBatchCompletedNotificationSender batchCompletedNotificationSender,
+    ILogger<EngineAssetRepository> logger)
+    : IEngineAssetRepository, IDapperContextRepository
 {
-    private readonly ILogger<EngineAssetRepository> logger;
-    public DlcsContext DlcsContext { get; }
-    private readonly IBatchCompletedNotificationSender batchCompletedNotificationSender;
+    public DlcsContext DlcsContext { get; } = dlcsContext;
 
-    public EngineAssetRepository(
-        DlcsContext dlcsContext, 
-        IBatchCompletedNotificationSender batchCompletedNotificationSender, 
-        ILogger<EngineAssetRepository> logger)
-    {
-        DlcsContext = dlcsContext;
-        this.logger = logger;
-        this.batchCompletedNotificationSender = batchCompletedNotificationSender;
-    }
-
-    public async Task<bool> UpdateIngestedAsset(Asset asset, ImageLocation? imageLocation, ImageStorage? imageStorage,
+    public async Task<bool> UpdateIngestedDeliverable(IDeliverable deliverable, ImageLocation? imageLocation, ImageStorage? imageStorage,
         bool ingestFinished, CancellationToken cancellationToken = default)
     {
-        var hasBatch = !asset.BatchAssets.IsNullOrEmpty();
+        var hasBatch = DoesDeliverableHaveBatch(deliverable);
 
-        logger.LogDebug("Updating ingested asset {AssetId}. HasBatch:{HasBatch}, Finished:{Finished}", asset.Id,
+        logger.LogDebug("Updating ingested item {Item}. HasBatch:{HasBatch}, Finished:{Finished}", deliverable.Identifier(),
             hasBatch, ingestFinished);
 
+        var assetId = deliverable.GetAssetId();
+        
         try
         {
-            UpdateAsset(asset, ingestFinished);
+            UpdateDeliverable(deliverable, ingestFinished);
 
             if (imageLocation != null)
             {
-                if (await DlcsContext.ImageLocations.AnyAsync(l => l.Id == asset.Id, cancellationToken))
+                if (await DlcsContext.ImageLocations.AnyAsync(l => l.Id == assetId, cancellationToken))
                 {
                     DlcsContext.ImageLocations.Attach(imageLocation);
                     DlcsContext.Entry(imageLocation).State = EntityState.Modified;
@@ -50,36 +45,33 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
                 }
             }
 
-            if (imageStorage != null)
-            {
-                if (await DlcsContext.ImageStorages.AnyAsync(l => l.Id == asset.Id, cancellationToken))
-                {
-                    DlcsContext.ImageStorages.Attach(imageStorage);
-                    DlcsContext.Entry(imageStorage).State = EntityState.Modified;
-                }
-                else
-                {
-                    DlcsContext.ImageStorages.Add(imageStorage);
-                }
-            }
+            await DlcsContext.ImageStorages.UpsertImageStorageRecord(imageStorage, cancellationToken);
             
             var updatedRows = hasBatch
-                ? await BatchSave(asset, ingestFinished, cancellationToken)
+                ? await BatchSave(deliverable, ingestFinished, cancellationToken)
                 : await NonBatchedSave(cancellationToken);
 
             if (updatedRows && imageStorage != null)
             {
-                await IncreaseCustomerStorage(imageStorage, cancellationToken);
+                await IncreaseCustomerStorage(imageStorage, deliverable is Adjunct, cancellationToken);
             }
             
-            return updatedRows || !ingestFinished; // if the ingest hasn't finished, rows can be not updated - meaning success
+            return updatedRows || !ingestFinished; // if the ingestion hasn't finished, rows can be not updated - meaning success
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error finalising Asset {AssetId} in DB", asset.Id);
+            logger.LogError(ex, "Error finalising item {AssetId} in DB", deliverable.Identifier());
             return false;
         }
     }
+
+    private static bool DoesDeliverableHaveBatch(IDeliverable deliverable) =>
+        deliverable switch
+        {
+            Asset a => !a.BatchAssets.IsNullOrEmpty(),
+            Adjunct adj => !adj.AdjunctBatchAdjuncts.IsNullOrEmpty(),
+            _ => false
+        };
 
     public ValueTask<Asset?> GetAsset(AssetId assetId, int? batchId, CancellationToken cancellationToken = default)
     {
@@ -89,11 +81,28 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
 
         if (batchId.HasValue)
         {
-            images = images.Include(i => i.BatchAssets.Where(ba => ba.BatchId == batchId.Value));
+            images = images.Include(i => i.BatchAssets!.Where(ba => ba.BatchId == batchId.Value));
         }
         
         return new ValueTask<Asset?>(images.SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
     }
+
+    public Task<Adjunct?> GetAdjunct(string id, AssetId assetId, int? batchId = null,
+        CancellationToken cancellationToken = default)
+    {
+        IQueryable<Adjunct> adjunct = DlcsContext.Adjuncts
+            .Include(a => a.Asset);
+
+        if (batchId.HasValue)
+        {
+            adjunct = adjunct.Include(adj => adj.AdjunctBatchAdjuncts!.Where(aba => aba.BatchId == batchId.Value));
+        }
+
+        return adjunct.SingleOrDefaultAsync(a => a.Id == id && a.AssetId == assetId, cancellationToken);
+    }
+
+    public ValueTask<ImageStorage?> GetImageStorage(AssetId assetId, CancellationToken cancellationToken = default)
+        => new(DlcsContext.ImageStorages.SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
 
     public async Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default)
     {
@@ -111,7 +120,7 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
         return updatedRows > 0;
     }
 
-    private async Task<bool> BatchSave(Asset asset, bool ingestFinished, CancellationToken cancellationToken)
+    private async Task<bool> BatchSave(IDeliverable deliverable, bool ingestFinished, CancellationToken cancellationToken)
     {
         if (!ingestFinished)
         {
@@ -119,11 +128,30 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
             return rowCount > 0;
         }
 
-        var batchAsset = asset.BatchAssets!.Single();
-        UpdateBatchAsset(asset, batchAsset);
+        return deliverable switch
+        {
+            Asset asset => await FinishBatchedItem<Batch>(asset.BatchAssets!.Single(), asset, cancellationToken),
+            Adjunct adjunct => await FinishBatchedItem<AdjunctBatch>(adjunct.AdjunctBatchAdjuncts!.Single(), adjunct,
+                cancellationToken),
+            _ => throw new ArgumentOutOfRangeException(nameof(deliverable), deliverable, null)
+        };
+    }
+    
+    private static void UpdateDeliverable(IDeliverable deliverable, bool ingestFinished)
+    {
+        if (ingestFinished)
+        {
+            deliverable.MarkAsFinished();
+        }
+    }
+
+    private async Task<bool> FinishBatchedItem<T>(IDeliverableBatchItem batchItem, IDeliverable deliverable,
+        CancellationToken cancellationToken) where T : IDeliverableBatch
+    {
+        batchItem.FinishBatchItem(deliverable);
         var updatedRows = await DlcsContext.SaveChangesAsync(cancellationToken);
 
-        var finishedBatch = await TryFinishBatch(batchAsset.BatchId);
+        var finishedBatch = await TryFinishBatch<T>(batchItem.BatchId);
         if (finishedBatch != null)
         {
             updatedRows++;
@@ -133,67 +161,61 @@ public class EngineAssetRepository : IEngineAssetRepository, IDapperContextRepos
         return updatedRows > 0;
     }
 
-    private static void UpdateBatchAsset(Asset asset, BatchAsset batchAsset)
+    private async Task<T?> TryFinishBatch<T>(int batchId) where T : IDeliverableBatch
     {
-        if (!string.IsNullOrEmpty(asset.Error))
+        var updateSql = string.Empty;
+        if (typeof(T) == typeof(AdjunctBatch))
         {
-            batchAsset.Status = BatchAssetStatus.Error;
-            batchAsset.Error = asset.Error;
+            updateSql = BuildUpdateBatchSql("AdjunctBatches", "AdjunctBatchAdjuncts");
         }
-        else
+        else if (typeof(T) == typeof(Batch))
         {
-            batchAsset.Status = BatchAssetStatus.Completed;
+            updateSql = BuildUpdateBatchSql("Batches", "BatchAssets");
         }
-        batchAsset.Finished = DateTime.UtcNow;
+
+        var batch = await this.QuerySingleOrDefaultAsync<T>(updateSql, new { batchId });
+
+        return batch?.Finished.HasValue ?? false ? batch : default;
     }
 
-    private static void UpdateAsset(Asset asset, bool ingestFinished)
-    {
-        if (ingestFinished)
-        {
-            asset.MarkAsFinished();
-        }
-    }
-
-    private async Task<Batch?> TryFinishBatch(int batchId)
-    {
-        // Update the "Batches" table, summarising the rows in "BatchAssets"
-        var batch = await this.QuerySingleOrDefaultAsync<Batch>(UpdateBatchesSql, new { batchId });
-
-        return batch?.Finished.HasValue ?? false ? batch : null;
-    }
-
-    private async Task IncreaseCustomerStorage(ImageStorage imageStorage, CancellationToken cancellationToken)
+    private async Task IncreaseCustomerStorage(ImageStorage imageStorage, bool isAdjunct,
+        CancellationToken cancellationToken)
     {
         try
         {
+            // skip image/thumb size delta when the deliverable is an adjunct
+            var imageSizeDelta = isAdjunct ? 0 : imageStorage.Size;
+            var thumbSizeDelta = isAdjunct ? 0 : imageStorage.ThumbnailSize;
+
             await DlcsContext.CustomerStorages
-                .Where(cs => cs.Customer == imageStorage.Customer && cs.Space == 0)
+                .Where(cs => cs.Customer == imageStorage.Customer &&
+                             (cs.Space == null || cs.Space == imageStorage.Space))
                 .UpdateFromQueryAsync(cs => new CustomerStorage
                 {
-                    TotalSizeOfStoredImages = cs.TotalSizeOfStoredImages + imageStorage.Size,
-                    TotalSizeOfThumbnails = cs.TotalSizeOfThumbnails + imageStorage.ThumbnailSize
+                    TotalSizeOfStoredImages = cs.TotalSizeOfStoredImages + imageSizeDelta,
+                    TotalSizeOfStoredAdjuncts = cs.TotalSizeOfStoredAdjuncts + imageStorage.AdjunctSize,
+                    TotalSizeOfThumbnails = cs.TotalSizeOfThumbnails + thumbSizeDelta
                 }, cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Exception updating customer storage for {Customer}", imageStorage.Customer);
+            logger.LogError(ex, "Exception updating customer storage for customer {Customer}", imageStorage.Customer);
         }
     }
-
-    private const string UpdateBatchesSql = @"
-UPDATE ""Batches"" b
-SET ""Completed"" = ba.completed,
-    ""Errors""    = ba.errors,
-    ""Finished""  = CASE WHEN ba.completed + ba.errors = b.""Count"" THEN now() ELSE null END
-FROM (SELECT ""BatchId""                                     as batch_id,
-             COUNT(""Status"") filter ( where ""Status"" = 2 ) as errors,
-             COUNT(""Status"") filter ( where ""Status"" = 3 ) as completed
-      FROM ""BatchAssets""
-      GROUP BY ""BatchId"") ba
-WHERE b.""Id"" = ba.batch_id
-AND b.""Id"" = @batchId
-AND b.""Finished"" IS NULL
-RETURNING b.*;
-";
+    
+    private static string BuildUpdateBatchSql(string batchTable, string itemsTable) => $@"
+ UPDATE ""{batchTable}"" b
+ SET ""Completed"" = ba.completed,
+     ""Errors""    = ba.errors,
+     ""Finished""  = CASE WHEN ba.completed + ba.errors = b.""Count"" THEN now() ELSE null END
+ FROM (SELECT ""BatchId""                                     as batch_id,
+              COUNT(""Status"") filter ( where ""Status"" = 2 ) as errors,
+              COUNT(""Status"") filter ( where ""Status"" = 3 ) as completed
+       FROM ""{itemsTable}""
+       GROUP BY ""BatchId"") ba
+ WHERE b.""Id"" = ba.batch_id
+ AND b.""Id"" = @batchId
+ AND b.""Finished"" IS NULL
+ RETURNING b.*;
+ ";
 }

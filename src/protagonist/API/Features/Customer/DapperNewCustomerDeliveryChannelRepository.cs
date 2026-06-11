@@ -57,7 +57,7 @@ where dcp.""Customer"" = 1
 insert into ""DefaultDeliveryChannels"" (""Id"", ""Customer"", ""Space"", ""MediaType"", ""DeliveryChannelPolicyId"")
 select gen_random_uuid(),
        @Customer,
-       0,
+       ddc.""Space"",
        ddc.""MediaType"",
        case
            when ddc.""DeliveryChannelPolicyId"" = 5 then (select ""Id"" from ""DeliveryChannelPolicies"" where ""Channel"" = 'iiif-av' and ""Name"" = 'default-audio' and ""Customer"" = @Customer)
@@ -67,6 +67,6 @@ select gen_random_uuid(),
        end as policyId
 from ""DefaultDeliveryChannels"" ddc
 where ddc.""Customer"" = 1
-  and ddc.""Space"" = 0;
+  and (ddc.""Space"" IS NULL OR ddc.""Space"" = 0);
 ";
 }

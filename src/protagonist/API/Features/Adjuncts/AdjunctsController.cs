@@ -5,6 +5,8 @@ using API.Infrastructure;
 using API.Settings;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
+using DLCS.Web.Requests;
+using Hydra;
 using Hydra.Collections;
 using Hydra.Model;
 using MediatR;
@@ -62,17 +64,25 @@ public class AdjunctsController(
     }
     
     /// <summary>
-    /// Create an adjunct for an asset.
+    /// Create an adjunct, or adjuncts, for an asset.
     /// </summary>
-    /// <returns>A Hydra JSON-LD Adjunct object representing the adjuncts.</returns>
+    /// <returns>A Hydra JSON-LD Adjunct object representing the adjunct, or a HydraCollection if more than 1 submitted</returns>
     [HttpPost]
     [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
+    [ProducesResponseType(201, Type = typeof(HydraCollection<Adjunct>))]
+    [ProducesResponseType(200, Type = typeof(Adjunct))]
+    [ProducesResponseType(201, Type = typeof(Adjunct))]
     [ProducesResponseType(404, Type = typeof(Error))]
     public async Task<IActionResult> PostAdjunct(int customerId, int spaceId, string imageId, 
-        [FromBody] Adjunct hydraAdjunct, 
+        [FromBody] FlexCollection<Adjunct> adjuncts, 
         [FromServices] HydraAdjunctValidator validator, CancellationToken cancellationToken = default)
     {
-        return await CreateOrUpdateAdjunct(customerId, spaceId, imageId, hydraAdjunct, validator, true, cancellationToken);
+        if (adjuncts.Items is not { Length: > 0 } hydraAdjuncts)
+        {
+            return this.HydraProblem($"One or more adjuncts were expected in request body but found none", null, 400);
+        }
+        
+        return await CreateOrUpdateAdjunct(customerId, spaceId, imageId, hydraAdjuncts, validator, true, cancellationToken);
     }
 
     /// <summary>
@@ -92,8 +102,9 @@ public class AdjunctsController(
         }
         
         hydraAdjunct.ModelId = adjunctId;
-        
-        return await CreateOrUpdateAdjunct(customerId, spaceId, imageId, hydraAdjunct, validator, false, cancellationToken);
+
+        return await CreateOrUpdateAdjunct(customerId, spaceId, imageId, [hydraAdjunct], validator, false,
+            cancellationToken);
     }
 
     /// <summary>
@@ -103,29 +114,51 @@ public class AdjunctsController(
     [HttpDelete("{adjunctId}")]
     [ProducesResponseType(204)]
     [ProducesResponseType(404, Type = typeof(Error))]
-    public async Task<IActionResult> DeleteAdjunct(int customerId, int spaceId, string imageId, string adjunctId)
+    public async Task<IActionResult> DeleteAdjunct(int customerId, int spaceId, string imageId, string adjunctId, [FromQuery] string? deleteFrom)
     {
-        var deleteRequest = new DeleteAdjunct(adjunctId, new AssetId(customerId, spaceId, imageId));
+        var additionalDeletion = ImageCacheTypeConverter.ConvertToImageCacheType(deleteFrom, ',');
+        var deleteRequest = new DeleteAdjunct(adjunctId, new AssetId(customerId, spaceId, imageId),  additionalDeletion);
 
         return await HandleDelete(deleteRequest);
     }
-    
-    private async Task<IActionResult> CreateOrUpdateAdjunct(int customerId, int spaceId, string imageId, Adjunct hydraAdjunct,
-        HydraAdjunctValidator validator, bool createOnly, CancellationToken cancellationToken)
+
+    private async Task<IActionResult> CreateOrUpdateAdjunct(int customerId, int spaceId, string imageId,
+        Adjunct[] hydraAdjuncts, HydraAdjunctValidator validator, bool isPost, CancellationToken cancellationToken)
     {
-        var validationResult = await validator.ValidateAsync(hydraAdjunct, cancellationToken);
-        if (!validationResult.IsValid)
+        foreach (var hydraAdjunct in hydraAdjuncts)
         {
-            return this.ValidationFailed(validationResult);
+            var validationResult = await validator.ValidateAsync(hydraAdjunct, cancellationToken);
+            if (!validationResult.IsValid)
+            {
+                return this.ValidationFailed(validationResult);
+            }
         }
 
-        var createOrUpdateRequest =
-            new CreateOrUpdateAdjunct(hydraAdjunct.ToDlcsModel(customerId, spaceId, imageId), createOnly);
+        var dlcsAdjuncts = hydraAdjuncts
+            .Select(a => a.ToDlcsModel(customerId, spaceId, imageId))
+            .ToArray();
+        
+        var createOrUpdateRequest = new CreateOrUpdateAdjunct(dlcsAdjuncts, isPost);
 
         return await HandleUpsert(
             createOrUpdateRequest,
-            a => a.ToHydra(GetUrlRoots()),
-            createOrUpdateRequest.Adjunct.Id,
-            "Create or update adjunct failed", cancellationToken);
+            BuildHydraResponse,
+            new AssetId(customerId, spaceId, imageId).ToString(),
+            "Create or update adjunct failed",
+            cancellationToken);
+
+        // If this is a PUT operation (ie !isPost) then we always want to return a single adjunct, not a collection. 
+        // else we want to return a collection always
+        JsonLdBase BuildHydraResponse(DLCS.Model.Assets.Adjunct[] adjuncts)
+            => isPost
+                ? new HydraCollection<Adjunct>
+                {
+                    WithContext = true,
+                    Members = adjuncts.Select(a => a.ToHydra(GetUrlRoots())).ToArray(),
+                    TotalItems = adjuncts.Length,
+                    PageSize = adjuncts.Length,
+                    Id = Request.GetJsonLdId()
+                }
+                : adjuncts.Single().ToHydra(GetUrlRoots());
     }
 }

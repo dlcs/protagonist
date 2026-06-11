@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO.Enumeration;
 using DLCS.Core.Caching;
+using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
 using DLCS.Repository;
@@ -31,9 +32,18 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
 
     public async Task<List<DeliveryChannelPolicy>> MatchedDeliveryChannels(string mediaType, int space, int customerId)
     {
-        var completedMatch = new List<DeliveryChannelPolicy>();
-        
         var orderedDefaultDeliveryChannels = await OrderedDefaultDeliveryChannels(space, customerId);
+
+        // this is the stub asset space, which is handled differently as it's used to hold assets
+        // without any delivery channels which is effectively used to store adjuncts that can be outputted on
+        // named queries
+        if (space == AssetDeliveryChannels.StubAssetSpace)
+        {
+            return orderedDefaultDeliveryChannels.Where(dc => dc.Space == AssetDeliveryChannels.StubAssetSpace)
+                .Select(dc => dc.DeliveryChannelPolicy).ToList();
+        } 
+        
+        var completedMatch = new List<DeliveryChannelPolicy>();
         
         foreach (var defaultDeliveryChannel in orderedDefaultDeliveryChannels)
         {
@@ -87,7 +97,7 @@ public class DefaultDeliveryChannelRepository : IDefaultDeliveryChannelRepositor
             return defaultDeliveryChannels;
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
 
-        return defaultDeliveryChannels.Where(d => d.Space == space || d.Space == 0).ToList();
+        return defaultDeliveryChannels.Where(d => d.Space == space || d.Space == null).ToList();
     }
     
     private async Task<List<DefaultDeliveryChannel>> OrderedDefaultDeliveryChannels(int space, int customerId, string? channel = null)

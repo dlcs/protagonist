@@ -1,14 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using DLCS.Core.Caching;
 using DLCS.Core.FileSystem;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.Utils;
 using LazyCache;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
@@ -32,6 +36,7 @@ public class ImageOrchestratorTests
 
     private readonly OrchestrationImage orchestrationImage =
         new() { AssetId = new AssetId(1, 10, "test"), S3Location = "s3://here" };
+
     private const string CacheKey = "orch:1/10/test";
 
     public ImageOrchestratorTests()
@@ -48,7 +53,7 @@ public class ImageOrchestratorTests
             ImageFolderTemplateOrchestrator = "/wherever",
             Caching = new CacheSettings()
         };
-        
+
         orchestratorSettings = OptionsHelpers.GetOptionsMonitor(settings);
     }
 
@@ -56,7 +61,8 @@ public class ImageOrchestratorTests
     public async Task EnsureImageOrchestrated_DoesNotCheckFileSystem_IfObjectInCache()
     {
         // Arrange
-        A.CallTo(() => fakedCache.GetOrAddAsync(CacheKey, A<Func<ICacheEntry, Task<bool>>>._)).Returns(true);
+        A.CallTo(() => fakedCache.GetOrAddAsync(CacheKey, A<Func<ICacheEntry, Task<OrchestrationResult>>>._, A<MemoryCacheEntryOptions>._))
+            .Returns(OrchestrationResult.Orchestrated);
         var sut = GetSystemUnderTest(true);
 
         // Act
@@ -66,7 +72,7 @@ public class ImageOrchestratorTests
         A.CallTo(() => fileSystem.FileExists(A<string>._)).MustNotHaveHappened();
         result.Should().Be(OrchestrationResult.AlreadyOrchestrated);
     }
-    
+
     [Fact]
     public async Task EnsureImageOrchestrated_ChecksFileSystem_TouchesFile_AndReturnsIfExists()
     {
@@ -80,19 +86,19 @@ public class ImageOrchestratorTests
         // Assert
         A.CallTo(() => fileSystem.SetLastWriteTimeUtc(A<string>._, A<DateTime>._)).MustHaveHappened();
         A.CallTo(() =>
-                originStrategy.LoadAssetFromOrigin(orchestrationImage.AssetId, A<string>._, null,
+                originStrategy.LoadFromOrigin(new Asset{ Id = orchestrationImage.AssetId }, null,
                     CancellationToken.None))
             .MustNotHaveHappened();
         result.Should().Be(OrchestrationResult.AlreadyOrchestrated);
     }
-    
+
     [Fact]
     public async Task EnsureImageOrchestrated_ChecksFileSystem_AndOrchesteratesIfNotExists()
     {
         // Arrange
         var originResponse = new OriginResponse("test".ToMemoryStream());
         A.CallTo(() =>
-                originStrategy.LoadAssetFromOrigin(orchestrationImage.AssetId, A<string>._, null,
+                originStrategy.LoadFromOrigin(orchestrationImage, null,
                     CancellationToken.None))
             .Returns(originResponse);
         var sut = GetSystemUnderTest();
@@ -102,18 +108,18 @@ public class ImageOrchestratorTests
 
         // Assert
         A.CallTo(() =>
-                fileSaver.SaveResponseToDisk(orchestrationImage.AssetId, originResponse, A<string>._,
+                fileSaver.SaveResponseToDisk(orchestrationImage, originResponse, A<string>._,
                     CancellationToken.None))
             .MustHaveHappened();
         result.Should().Be(OrchestrationResult.Orchestrated);
     }
-    
+
     [Fact]
     public async Task EnsureImageOrchestrated_Throws_ReturnsError_IfOrchesetrationReturnsNullStream()
     {
         // Arrange
         A.CallTo(() =>
-                originStrategy.LoadAssetFromOrigin(orchestrationImage.AssetId, A<string>._, null,
+                originStrategy.LoadFromOrigin(orchestrationImage, null,
                     CancellationToken.None))
             .Returns(new OriginResponse(Stream.Null));
         var sut = GetSystemUnderTest();
@@ -124,7 +130,7 @@ public class ImageOrchestratorTests
         // Assert
         result.Should().Be(OrchestrationResult.Error);
     }
-    
+
     [Fact]
     public async Task EnsureImageOrchestrated_ReingestsImage_IfReingestTrue()
     {
@@ -139,7 +145,7 @@ public class ImageOrchestratorTests
         // Assert
         A.CallTo(() => dlcsApiClient.ReingestAsset(image.AssetId, CancellationToken.None)).MustHaveHappened();
     }
-    
+
     [Fact]
     public async Task EnsureImageOrchestrated_ReturnsError_IfReingestFails()
     {
@@ -154,7 +160,7 @@ public class ImageOrchestratorTests
         // Assert
         result.Should().Be(OrchestrationResult.Error);
     }
-    
+
     [Fact]
     public async Task EnsureImageOrchestrated_ReturnsError_IfReingestSucceedButRefreshFails()
     {
@@ -171,7 +177,7 @@ public class ImageOrchestratorTests
         // Assert
         result.Should().Be(OrchestrationResult.Error);
     }
-    
+
     [Fact]
     public async Task EnsureImageOrchestrated_ReturnsNotFound_IfNoS3Location()
     {
@@ -206,8 +212,88 @@ public class ImageOrchestratorTests
         result.Should().Be(OrchestrationResult.NotFound);
     }
 
+    [Fact]
+    public async Task EnsureImageOrchestrated_SetsShortTtlAndLowPriority_WhenOrchestrationErrors()
+    {
+        // Arrange
+        var testEntry = new TestCacheEntry();
+        SetupCacheToInvokeFactory(testEntry);
+        A.CallTo(() => originStrategy.LoadFromOrigin(orchestrationImage, null, CancellationToken.None))
+            .Returns(new OriginResponse(Stream.Null));
+
+        var sut = GetSystemUnderTest(true);
+
+        // Act
+        await sut.EnsureImageOrchestrated(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        testEntry.AbsoluteExpirationRelativeToNow.Should().Be(TimeSpan.FromSeconds(60));
+        testEntry.Priority.Should().Be(CacheItemPriority.Low);
+    }
+
+    [Fact]
+    public async Task EnsureImageOrchestrated_SetsShortTtlAndLowPriority_WhenAssetNotFound()
+    {
+        // Arrange
+        var image = new OrchestrationImage { AssetId = new AssetId(1, 10, "test") };
+        var testEntry = new TestCacheEntry();
+        SetupCacheToInvokeFactory(testEntry);
+
+        var sut = GetSystemUnderTest(true);
+
+        // Act
+        await sut.EnsureImageOrchestrated(image, CancellationToken.None);
+
+        // Assert
+        testEntry.AbsoluteExpirationRelativeToNow.Should().Be(TimeSpan.FromSeconds(60));
+        testEntry.Priority.Should().Be(CacheItemPriority.Low);
+    }
+
+    [Fact]
+    public async Task EnsureImageOrchestrated_DoesNotOverrideCacheEntry_WhenSuccessful()
+    {
+        // Arrange
+        var testEntry = new TestCacheEntry();
+        SetupCacheToInvokeFactory(testEntry);
+        var originResponse = new OriginResponse("test".ToMemoryStream());
+        A.CallTo(() => originStrategy.LoadFromOrigin(orchestrationImage, null, CancellationToken.None))
+            .Returns(originResponse);
+
+        var sut = GetSystemUnderTest(true);
+
+        // Act
+        await sut.EnsureImageOrchestrated(orchestrationImage, CancellationToken.None);
+
+        // Assert - factory did not override entry (options on GetOrAddAsync handle the High priority default)
+        testEntry.AbsoluteExpirationRelativeToNow.Should().BeNull();
+        testEntry.Priority.Should().NotBe(CacheItemPriority.Low);
+    }
+
+    private void SetupCacheToInvokeFactory(TestCacheEntry testEntry)
+        => A.CallTo(() => fakedCache.GetOrAddAsync(CacheKey, A<Func<ICacheEntry, Task<OrchestrationResult>>>._,
+                A<MemoryCacheEntryOptions>._))
+            .ReturnsLazily(call =>
+            {
+                var factory = call.GetArgument<Func<ICacheEntry, Task<OrchestrationResult>>>(1)!;
+                return factory(testEntry);
+            });
+
     // if fakeCache = true then use A.Fake<IAppCache>, else use provided MockCachingService
     private ImageOrchestrator GetSystemUnderTest(bool fakeCache = false)
-        => new(assetTracker, orchestratorSettings, originStrategy, fakeCache ? fakedCache : new MockCachingService(), 
+        => new(assetTracker, orchestratorSettings, originStrategy, fakeCache ? fakedCache : new MockCachingService(),
             fileSaver, fileSystem, dlcsApiClient, new NullLogger<ImageOrchestrator>());
+
+    private class TestCacheEntry : ICacheEntry
+    {
+        public object Key => throw new NotImplementedException();
+        public object? Value { get; set; }
+        public DateTimeOffset? AbsoluteExpiration { get; set; }
+        public TimeSpan? AbsoluteExpirationRelativeToNow { get; set; }
+        public TimeSpan? SlidingExpiration { get; set; }
+        public IList<IChangeToken> ExpirationTokens { get; } = new List<IChangeToken>();
+        public IList<PostEvictionCallbackRegistration> PostEvictionCallbacks { get; } = new List<PostEvictionCallbackRegistration>();
+        public CacheItemPriority Priority { get; set; } = CacheItemPriority.Normal;
+        public long? Size { get; set; }
+        public void Dispose() { }
+    }
 }

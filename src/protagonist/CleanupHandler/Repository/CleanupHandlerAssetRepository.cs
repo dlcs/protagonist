@@ -15,7 +15,7 @@ public class CleanupHandlerAssetRepository : ICleanupHandlerAssetRepository
         this.dbContext = dbContext;
     }
     
-    public async Task<Asset?> RetrieveAssetWithDeliveryChannels(AssetId assetId)
+    public async Task<DLCS.Model.Assets.Asset?> RetrieveAssetWithDeliveryChannels(AssetId assetId)
     {
         return await dbContext.Images.IncludeDeliveryChannelsWithPolicy().SingleOrDefaultAsync(x => x.Id == assetId);
     }

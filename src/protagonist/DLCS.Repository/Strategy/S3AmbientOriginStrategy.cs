@@ -4,7 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.Core.Streams;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using Microsoft.Extensions.Logging;
 
@@ -23,22 +25,23 @@ public class S3AmbientOriginStrategy : IOriginStrategy
         this.bucketReader = bucketReader;
         this.logger = logger;
     }
-    
-    public async Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
+
+    public async Task<OriginResponse> LoadFromOrigin(IOriginItem originItem,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("Fetching {Asset} from Origin: {Origin}", assetId, origin);
+        logger.LogDebug("Fetching {ItemDesc} from Origin: {Origin}", originItem.Identifier(), originItem.Origin);
 
         try
         {
-            var regionalisedBucket = RegionalisedObjectInBucket.Parse(origin);
+            var regionalisedBucket = RegionalisedObjectInBucket.Parse(originItem.Origin);
             var response = await bucketReader.GetObjectFromBucket(regionalisedBucket, cancellationToken);
+            if (response.Stream.IsNull()) return OriginResponse.Empty;
             var originResponse = CreateOriginResponse(response);
             return originResponse;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error fetching {Asset} from Origin: {Origin}", assetId, origin);
+            logger.LogError(ex, "Error fetching {ItemDesc} from Origin: {Origin}", originItem.Identifier(), originItem.Origin);
             return OriginResponse.Empty;
         }
     }

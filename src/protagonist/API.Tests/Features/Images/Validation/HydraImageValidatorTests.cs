@@ -2,13 +2,16 @@
 using API.Features.Image.Validation;
 using API.Settings;
 using DLCS.HydraModel;
+using DLCS.Model.Assets;
 using FluentValidation.TestHelper;
+using Microsoft.Extensions.Options;
 
 namespace API.Tests.Features.Images.Validation;
 
 public class HydraImageValidatorTests
 {
-    private HydraImageValidator sut => new();
+    private static readonly ApiSettings apiSettings = new();
+    private static HydraImageValidator Sut => new(Options.Create(apiSettings));
 
     [Theory]
     [InlineData(null)]
@@ -17,7 +20,7 @@ public class HydraImageValidatorTests
     public void MediaType_NullOrEmpty_OnCreate(string mediaType)
     {
         var model = new Image { MediaType = mediaType };
-        var result = sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(a => a.MediaType);
     }
     
@@ -25,7 +28,7 @@ public class HydraImageValidatorTests
     public void Batch_Provided()
     {
         var model = new Image { Batch = "10" };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Batch);
     }
     
@@ -33,7 +36,7 @@ public class HydraImageValidatorTests
     public void Width_Provided()
     {
         var model = new Image { Width = 10 };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(a => a.Width)
             .WithErrorMessage("Should not include width");
@@ -43,7 +46,7 @@ public class HydraImageValidatorTests
     public void Height_Provided()
     {
         var model = new Image { Height = 10 };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(a => a.Height)
             .WithErrorMessage("Should not include height");
@@ -53,7 +56,7 @@ public class HydraImageValidatorTests
     public void Duration_Provided()
     {
         var model = new Image { Duration = 10 };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result
             .ShouldHaveValidationErrorFor(a => a.Duration)
             .WithErrorMessage("Should not include duration");
@@ -63,7 +66,7 @@ public class HydraImageValidatorTests
     public void Finished_Provided()
     {
         var model = new Image { Finished = DateTime.Today };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Finished);
     }
     
@@ -71,93 +74,108 @@ public class HydraImageValidatorTests
     public void Created_Provided()
     {
         var model = new Image { Created = DateTime.Today };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.Created);
     }
     
     [Fact]
     public void DeliveryChannel_ValidationError_DeliveryChannelMissingChannel()
     {
-        var model = new Image { DeliveryChannels = new[]
+        var model = new Image
         {
-            new DeliveryChannel()
-            {
-                Policy = "none"
-            },
-            new DeliveryChannel()
-            {
-                Channel = "file"
-            }
-        } };
-        var result = sut.TestValidate(model);
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                {
+                    Policy = "none"
+                },
+                new DeliveryChannel
+                {
+                    Channel = "file"
+                }
+            ]
+        };
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
     [Fact]
     public void DeliveryChannel_ValidationError_WhenNoneAndMoreDeliveryChannels()
     {
-        var model = new Image { DeliveryChannels = new[]
+        var model = new Image
         {
-            new DeliveryChannel()
-            {
-                Channel = "none"
-            },
-            new DeliveryChannel()
-            {
-                Channel = "file"
-            }
-        } };
-        var result = sut.TestValidate(model);
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                {
+                    Channel = "none"
+                },
+                new DeliveryChannel
+                {
+                    Channel = "file"
+                }
+            ]
+        };
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
     [Fact]
     public void DeliveryChannel_ValidationError_WhenDefaultAndMoreDeliveryChannels()
     {
-        var model = new Image { DeliveryChannels = new[]
+        var model = new Image
         {
-            new DeliveryChannel()
-            {
-                Channel = "default"
-            },
-            new DeliveryChannel()
-            {
-                Channel = "file"
-            }
-        } };
-        var result = sut.TestValidate(model);
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                {
+                    Channel = "default"
+                },
+                new DeliveryChannel
+                {
+                    Channel = "file"
+                }
+            ]
+        };
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
     [Fact]
     public void DeliveryChannel_NoValidationError_WhenDeliveryChannelsWithNoNone()
     {
-        var model = new Image { DeliveryChannels = new[]
+        var model = new Image
         {
-            new DeliveryChannel()
-            {
-                Channel = "iiif-img"
-            },
-            new DeliveryChannel()
-            {
-                Channel = "file"
-            }
-        } };
-        var result = sut.TestValidate(model);
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                    {
+                        Channel = "iiif-img"
+                    },
+                    new DeliveryChannel
+                    {
+                        Channel = "file"
+                    }
+            ]
+        };
+        var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
     [Fact]
     public void DeliveryChannel_NoValidationError_WhenOnlyNone()
     {
-        var model = new Image { DeliveryChannels = new[]
+        var model = new Image
         {
-            new DeliveryChannel()
-            {
-                Channel = "none"
-            }
-        } };
-        var result = sut.TestValidate(model);
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                {
+                    Channel = "none"
+                }
+            ]
+        };
+        var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
@@ -176,16 +194,18 @@ public class HydraImageValidatorTests
     [InlineData("application/pdf", "none")]
     public void DeliveryChannel_NoValidationError_WhenChannelValidForMediaType(string mediaType, string channel)
     {
-        var model = new Image { 
+        var model = new Image
+        {
             MediaType = mediaType,
-            DeliveryChannels = new[]
-            {
-                new DeliveryChannel()
+            DeliveryChannels =
+            [
+                new DeliveryChannel
                 {
                     Channel = channel,
                 }
-            } };
-        var result = sut.TestValidate(model);
+            ]
+        };
+        var result = Sut.TestValidate(model);
         result.ShouldNotHaveValidationErrorFor(a => a.DeliveryChannels);
     }
     
@@ -198,16 +218,18 @@ public class HydraImageValidatorTests
     [InlineData("application/pdf", "iiif-av")]
     public void DeliveryChannel_ValidationError_WhenWrongChannelForMediaType(string mediaType, string channel)
     {
-        var model = new Image { 
-            MediaType = mediaType,
-            DeliveryChannels = new[]
+        var model = new Image
         {
-            new DeliveryChannel()
-            {
-                Channel = channel,
-            }
-        } };
-        var result = sut.TestValidate(model);
+            MediaType = mediaType,
+            DeliveryChannels =
+            [
+                new DeliveryChannel
+                    {
+                        Channel = channel,
+                    }
+            ]
+        };
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
 
@@ -216,9 +238,9 @@ public class HydraImageValidatorTests
     {
         var model = new Image
         {
-            DeliveryChannels = Array.Empty<DeliveryChannel>()
+            DeliveryChannels = []
         };
-        var result = sut.TestValidate(model, options => 
+        var result = Sut.TestValidate(model, options => 
             options.IncludeRuleSets("default", "patch"));
         result.ShouldHaveValidationErrorFor(a => a.DeliveryChannels);
     }
@@ -230,7 +252,7 @@ public class HydraImageValidatorTests
         {
             ImageOptimisationPolicy = "some-iop-policy"
         };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.ImageOptimisationPolicy);
     }
     
@@ -241,7 +263,139 @@ public class HydraImageValidatorTests
         {
             ThumbnailPolicy = "some-tp-policy"
         };
-        var result = sut.TestValidate(model);
+        var result = Sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor(a => a.ThumbnailPolicy);
+    }
+    
+    [Theory]
+    [InlineData(10, null)]
+    [InlineData(null, 10)]
+    [InlineData(20, 10)]
+    public void MaxUnauthorised_WithReplacementProps(int? maxWidth, int? openFullMax)
+    {
+        // MaxUnauthorised is not allowed when maxWidth or openFullMax props are set as these replace it
+        var model = new Image
+        {
+            MaxUnauthorised = -1,
+            MaxWidth = maxWidth,
+            OpenFullMax = openFullMax
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.MaxUnauthorised);
+    }
+    
+    [Fact]
+    public void MaxWidth_TooLarge()
+    {
+        var model = new Image
+        {
+            MaxWidth = apiSettings.MaxWidth + 1
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.MaxWidth);
+    }
+    
+    [Fact]
+    public void MaxWidth_TooSmall()
+    {
+        var model = new Image
+        {
+            MaxWidth = apiSettings.MinimumMaxWidth - 1
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.MaxWidth);
+    }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData(-1)]
+    public void MaxWidth_CanBeZeroOrNegative(int? maxWidth)
+    {
+        var model = new Image
+        {
+            MaxWidth = maxWidth
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.MaxWidth);
+    }
+    
+    [Fact]
+    public void MaxWidth_CanBeMinSize()
+    {
+        var model = new Image
+        {
+            MaxWidth = apiSettings.MinimumMaxWidth
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.MaxWidth);
+    }
+    
+    [Fact]
+    public void MaxWidth_CanBeMaxSize()
+    {
+        var model = new Image
+        {
+            MaxWidth = apiSettings.MaxWidth
+        };
+        var result = Sut.TestValidate(model);
+        result.ShouldNotHaveValidationErrorFor(a => a.MaxWidth);
+    }
+    
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void MediaType_CanBeNullOrEmpty_OnCreateWhenNoneDeliveryChannel(string mediaType)
+    {
+        var model = new Image
+        {
+            MediaType = mediaType,
+            DeliveryChannels = [new DeliveryChannel {Channel = AssetDeliveryChannels.None }]
+        };
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
+        result.ShouldNotHaveValidationErrorFor(a => a.MediaType);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void MediaType_CanBeNullOrEmpty_OnCreateWhenStubAsset(string mediaType)
+    {
+        var model = new Image
+        {
+            MediaType = mediaType,
+            Space = AssetDeliveryChannels.StubAssetSpace
+        };
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default", "create"));
+        result.ShouldNotHaveValidationErrorFor(a => a.MediaType);
+    }
+    
+    [Fact]
+    public void PlaceHolderValues_NotAllowed_WhenNotNoneChannel()
+    {
+        var model = new Image
+        {
+            MediaType = AssetDeliveryChannels.NoneChannelMediaTypePlaceholder,
+            Origin = AssetDeliveryChannels.NoneChannelOriginPlaceholder,
+            DeliveryChannels = [new DeliveryChannel {Channel = AssetDeliveryChannels.Image }]
+        };
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default"));
+        result.ShouldHaveValidationErrorFor(a => a.MediaType).WithErrorMessage("'example/example' is not a valid mediaType");
+        result.ShouldHaveValidationErrorFor(a => a.Origin).WithErrorMessage("'https://example.org/origin' is not a valid origin");
+    }
+    
+    [Fact]
+    public void PlaceHolderValues_Allowed_WhenNoneChannel()
+    {
+        var model = new Image
+        {
+            MediaType = AssetDeliveryChannels.NoneChannelMediaTypePlaceholder,
+            Origin = AssetDeliveryChannels.NoneChannelOriginPlaceholder,
+            DeliveryChannels = [new DeliveryChannel {Channel = AssetDeliveryChannels.None }]
+        };
+        var result = Sut.TestValidate(model, options => options.IncludeRuleSets("default"));
+        result.ShouldNotHaveValidationErrorFor(a => a.MediaType);
+        result.ShouldNotHaveValidationErrorFor(a => a.Origin);
     }
 }

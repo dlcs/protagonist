@@ -23,22 +23,15 @@ public interface IThumbSizeProvider
     Task<ThumbnailSizes> GetThumbSizesForImage(Asset asset, CancellationToken cancellationToken = default);
 }
 
-public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
+public class MetadataWithFallbackThumbSizeProvider(
+    IPolicyRepository policyRepository,
+    IOptions<OrchestratorSettings> orchestratorOptions,
+    ILogger<MetadataWithFallbackThumbSizeProvider> logger)
+    : IThumbSizeProvider
 {
-    private readonly IPolicyRepository policyRepository;
-    private readonly ILogger<MetadataWithFallbackThumbSizeProvider> logger;
-    private readonly OrchestratorSettings orchestratorSettings;
+    private readonly OrchestratorSettings orchestratorSettings = orchestratorOptions.Value;
     private readonly Dictionary<int, List<ImageApi.SizeParameter>> thumbnailPolicies = new();
 
-    public MetadataWithFallbackThumbSizeProvider(IPolicyRepository policyRepository, 
-        IOptions<OrchestratorSettings> orchestratorOptions,
-        ILogger<MetadataWithFallbackThumbSizeProvider> logger)
-    {
-        this.policyRepository = policyRepository;
-        this.logger = logger;
-        orchestratorSettings = orchestratorOptions.Value;
-    }
-    
     /// <summary>
     /// Get available sizes for thumbnails
     /// 
@@ -73,7 +66,7 @@ public class MetadataWithFallbackThumbSizeProvider : IThumbSizeProvider
         
         if (sizeParameters.IsNullOrEmpty()) return ThumbnailSizes.Empty;
 
-        var thumbnailSizesForImage = asset.GetAvailableThumbSizes(sizeParameters);
+        var thumbnailSizesForImage = asset.GetAvailableThumbSizes(sizeParameters, orchestratorSettings.MaxWidth);
         return thumbnailSizesForImage;
     }
 

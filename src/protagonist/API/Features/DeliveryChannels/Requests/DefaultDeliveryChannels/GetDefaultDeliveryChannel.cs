@@ -10,11 +10,11 @@ public class GetDefaultDeliveryChannel : IRequest<FetchEntityResult<DefaultDeliv
 {
     public int Customer { get; }
     
-    public int Space { get; }
-    
+    public int? Space { get; }
+
     public Guid DefaultDeliveryChannelId { get; }
 
-    public GetDefaultDeliveryChannel(int customer, int space, Guid defaultDeliveryChannelId)
+    public GetDefaultDeliveryChannel(int customer, int? space, Guid defaultDeliveryChannelId)
     {
         Customer = customer;
         Space = space;

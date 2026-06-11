@@ -64,6 +64,7 @@ public static class ControllerBaseX
     /// <summary>
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
     /// </summary>
+    /// <param name="controller">Current controller.</param>
     /// <param name="statusCode">The value for <see cref="Error.Status" />.</param>
     /// <param name="detail">The value for <see cref="Error.Detail" />.</param>
     /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
@@ -76,22 +77,8 @@ public static class ControllerBaseX
         string? instance = null,
         int? statusCode = null,
         string? title = null,
-        string? type = null)
-    {
-        var hydraError = new Error
-        {
-            Detail = detail,
-            Instance = instance ?? controller.Request.GetDisplayUrl(),
-            Status = statusCode ?? 500,
-            Title = title,
-            ErrorTypeUri = type,
-        };
-
-        return new ObjectResult(hydraError)
-        {
-            StatusCode = hydraError.Status
-        };
-    }
+        string? type = null) => HydraResponseBuilder.CreateHydraErrorResult(detail,
+        instance ?? controller.Request.GetDisplayUrl(), statusCode ?? 500, title, type);
 
     /// <summary>
     /// Creates an <see cref="ObjectResult"/> that produces a <see cref="Error"/> response.
@@ -156,8 +143,8 @@ public static class ControllerBaseX
         where T : class =>
         entityResult.WriteResult switch
         {
-            WriteResult.Updated => controller.Ok(hydraBuilder(entityResult.Entity)),
-            WriteResult.Created => controller.HydraCreated(hydraBuilder(entityResult.Entity)),
+            WriteResult.Updated => controller.Ok(hydraBuilder(entityResult.Entity!)),
+            WriteResult.Created => controller.HydraCreated(hydraBuilder(entityResult.Entity!)),
             WriteResult.NotFound => controller.HydraNotFound(entityResult.Error),
             WriteResult.Error => controller.HydraProblem(entityResult.Error, instance, 500, errorTitle),
             WriteResult.BadRequest => controller.HydraProblem(entityResult.Error, instance, 400, errorTitle),

@@ -2,6 +2,7 @@
 using DLCS.AWS.Settings;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using Microsoft.Extensions.Options;
 
 namespace DLCS.AWS.S3;
@@ -23,12 +24,12 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
     /// Key of the json file that contains available sizes
     /// </summary>
     public const string SizesJsonKey = "s.json";
-    
+
     /// <summary>
     /// Key of the file that contains metadata about asset
     /// </summary>
     public const string MetadataKey = "metadata";
-    
+
     /// <summary>
     /// S3 slug where open thumbnails are stored.
     /// </summary>
@@ -51,11 +52,20 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
         var key = GetStorageKey(assetId);
         return new RegionalisedObjectInBucket(s3Options.StorageBucket, key, awsSettings.Region);
     }
-    
+
     public ObjectInBucket GetStorageLocationRoot(AssetId assetId)
     {
         var key = GetStorageKey(assetId);
         return new ObjectInBucket(s3Options.StorageBucket, $"{key}/");
+    }
+
+    public RegionalisedObjectInBucket GetStoredAdjunctLocation(AssetId assetId, Adjunct adjunct)
+        => GetStoredAdjunctLocation(assetId, adjunct.Id);
+    
+    public RegionalisedObjectInBucket GetStoredAdjunctLocation(AssetId assetId, string adjunctId)
+    {
+        var key = $"{GetStorageKey(assetId)}/adjuncts/{adjunctId}";
+        return new RegionalisedObjectInBucket(s3Options.StorageBucket, key, awsSettings.Region);
     }
 
     public RegionalisedObjectInBucket GetStoredOriginalLocation(AssetId assetId)
@@ -82,7 +92,7 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
         var key = $"{GetStorageKey(assetId)}/{SizesJsonKey}";
         return new ObjectInBucket(s3Options.ThumbsBucket, key);
     }
-    
+
     public ObjectInBucket GetThumbnailsRoot(AssetId assetId)
     {
         var key = $"{GetStorageKey(assetId)}/";
@@ -107,7 +117,8 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
         return new ObjectInBucket(s3Options.StorageBucket, key);
     }
 
-    public ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer, IIIF.ImageApi.Version imageApiVersion)
+    public ObjectInBucket GetInfoJsonLocation(AssetId assetId, string imageServer,
+        IIIF.ImageApi.Version imageApiVersion)
     {
         var versionSlug = imageApiVersion == IIIF.ImageApi.Version.V2 ? "v2" : "v3";
         var key = $"{GetStorageKey(assetId)}/info/{imageServer}/{versionSlug}/info.json";
@@ -159,7 +170,7 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
         var key = GetStorageKey(assetId);
         return new ObjectInBucket(s3Options.OriginBucket, $"{key}/");
     }
-    
+
     public ObjectInBucket GetOriginStrategyCredentialsLocation(int customerId, string originStrategyId)
     {
         var key = $"{customerId}/origin-strategy/{originStrategyId}/credentials.json";

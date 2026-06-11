@@ -17,25 +17,13 @@ public interface IAssetIngester
 /// <summary>
 /// Contains operations for ingesting assets.
 /// </summary>
-public class AssetIngester : IAssetIngester
+public class AssetIngester(
+    ICustomerOriginStrategyRepository customerOriginRepository,
+    ILogger<AssetIngester> logger,
+    IngestExecutor executor,
+    IEngineAssetRepository engineAssetRepository)
+    : IAssetIngester
 {
-    private readonly IngestExecutor executor;
-    private readonly ILogger<AssetIngester> logger;
-    private readonly ICustomerOriginStrategyRepository customerOriginRepository;
-    private readonly IEngineAssetRepository engineAssetRepository;
-
-    public AssetIngester(
-        ICustomerOriginStrategyRepository customerOriginRepository,
-        ILogger<AssetIngester> logger,
-        IngestExecutor executor,
-        IEngineAssetRepository engineAssetRepository)
-    {
-        this.customerOriginRepository = customerOriginRepository;
-        this.logger = logger;
-        this.executor = executor;
-        this.engineAssetRepository = engineAssetRepository;
-    }
-    
     /// <summary>
     /// Run ingest based on <see cref="IngestAssetRequest"/>.
     /// </summary>
@@ -59,14 +47,8 @@ public class AssetIngester : IAssetIngester
     }
 }
 
-public class IngestResult
+public class IngestResult(AssetId? assetId, IngestResultStatus ingestResult)
 {
-    public AssetId? AssetId { get; }
-    public IngestResultStatus Status { get; }
-
-    public IngestResult(AssetId? assetId, IngestResultStatus ingestResult)
-    {
-        AssetId = assetId;
-        Status = ingestResult;
-    }
+    public AssetId? AssetId { get; } = assetId;
+    public IngestResultStatus Status { get; } = ingestResult;
 }

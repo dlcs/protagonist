@@ -97,7 +97,7 @@ public class TimeBasedRequestHandler
     private async Task<bool> IsAuthenticated(TimeBasedAssetDeliveryRequest assetRequest, OrchestrationAsset asset,
         HttpRequest httpRequest)
     {
-        // IAssetAccessValidator is in container with a Lifetime.Scope
+        // IAssetAccessValidator is in container with a ServiceLifetime.Scoped
         using var scope = scopeFactory.CreateScope();
         var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
 

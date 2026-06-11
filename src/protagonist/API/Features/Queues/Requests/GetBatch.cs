@@ -10,31 +10,17 @@ namespace API.Features.Queues.Requests;
 /// <summary>
 /// Get details of specified batch
 /// </summary>
-public class GetBatch : IRequest<FetchEntityResult<Batch>>
+public class GetBatch(int customerId, int batchId) : IRequest<FetchEntityResult<Batch>>
 {
-    public int CustomerId { get; }
-    public int BatchId { get; }
-    
-    public GetBatch(int customerId, int batchId)
-    {
-        CustomerId = customerId;
-        BatchId = batchId;
-    }
+    public int CustomerId { get; } = customerId;
+    public int BatchId { get; } = batchId;
 }
 
-public class GetBatchHandler : IRequestHandler<GetBatch, FetchEntityResult<Batch>>
+public class GetBatchHandler(
+    DlcsContext dlcsContext,
+    ILogger<GetBatchHandler> logger)
+    : IRequestHandler<GetBatch, FetchEntityResult<Batch>>
 {
-    private readonly DlcsContext dlcsContext;
-    private readonly ILogger<GetBatchHandler> logger;
-
-    public GetBatchHandler(
-        DlcsContext dlcsContext,
-        ILogger<GetBatchHandler> logger)
-    {
-        this.dlcsContext = dlcsContext;
-        this.logger = logger;
-    }
-    
     public async Task<FetchEntityResult<Batch>> Handle(GetBatch request, CancellationToken cancellationToken)
     {
         try

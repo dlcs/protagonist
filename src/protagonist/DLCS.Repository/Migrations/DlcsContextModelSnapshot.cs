@@ -25,6 +25,9 @@ namespace DLCS.Repository.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "tablefunc");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.HasSequence<int>("adjunct_batch_id_sequence")
+                .HasMin(1L);
+
             modelBuilder.HasSequence("batch_id_sequence")
                 .StartsAt(570185L)
                 .HasMin(1L)
@@ -39,21 +42,29 @@ namespace DLCS.Repository.Migrations
                     b.Property<string>("AssetId")
                         .HasColumnType("character varying(500)");
 
+                    b.Property<int?>("Batch")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("Created")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("now()");
 
-                    b.Property<string>("ExternalId")
-                        .IsRequired()
+                    b.Property<string>("Error")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("Finished")
+                    b.Property<string>("ExternalId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("Finished")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("IIIFLink")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool?>("Ingesting")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Label")
                         .HasColumnType("jsonb");
@@ -66,7 +77,16 @@ namespace DLCS.Repository.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Motivation")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Origin")
+                        .HasColumnType("text");
+
                     b.Property<string>("Profile")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Provides")
                         .HasColumnType("text");
 
                     b.Property<long?>("Size")
@@ -80,7 +100,69 @@ namespace DLCS.Repository.Migrations
 
                     b.HasIndex("AssetId");
 
+                    b.HasIndex("Batch");
+
                     b.ToTable("Adjuncts");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.AdjunctBatch", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValueSql("nextval('adjunct_batch_id_sequence'::regclass)");
+
+                    b.Property<int>("Completed")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Customer")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Errors")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("Finished")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("Submitted")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex(new[] { "Customer", "Submitted" }, "IX_AdjunctBatchesByCustomerSubmitted");
+
+                    b.ToTable("AdjunctBatches");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.AdjunctBatchAdjunct", b =>
+                {
+                    b.Property<int>("BatchId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AdjunctId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("AssetId")
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("Finished")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("BatchId", "AdjunctId", "AssetId");
+
+                    b.HasIndex("AdjunctId", "AssetId");
+
+                    b.ToTable("AdjunctBatchAdjuncts");
                 });
 
             modelBuilder.Entity("DLCS.Model.Assets.Asset", b =>
@@ -142,6 +224,9 @@ namespace DLCS.Repository.Migrations
                     b.Property<int>("MaxUnauthorised")
                         .HasColumnType("integer");
 
+                    b.Property<int>("MaxWidth")
+                        .HasColumnType("integer");
+
                     b.Property<string>("MediaType")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -159,6 +244,9 @@ namespace DLCS.Repository.Migrations
                         .HasColumnType("integer");
 
                     b.Property<int>("NumberReference3")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OpenFullMax")
                         .HasColumnType("integer");
 
                     b.Property<string>("Origin")
@@ -388,6 +476,9 @@ namespace DLCS.Repository.Migrations
 
                     b.Property<int>("Space")
                         .HasColumnType("integer");
+
+                    b.Property<long>("AdjunctSize")
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("CheckingInProgress")
                         .HasColumnType("boolean");
@@ -718,7 +809,7 @@ namespace DLCS.Repository.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<int>("Space")
+                    b.Property<int?>("Space")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -922,21 +1013,33 @@ namespace DLCS.Repository.Migrations
 
             modelBuilder.Entity("DLCS.Model.Storage.CustomerStorage", b =>
                 {
-                    b.Property<int>("Customer")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    b.Property<int>("Space")
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Customer")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("LastCalculated")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<long>("NumberOfStoredAdjuncts")
+                        .HasColumnType("bigint");
+
                     b.Property<long>("NumberOfStoredImages")
                         .HasColumnType("bigint");
+
+                    b.Property<int?>("Space")
+                        .HasColumnType("integer");
 
                     b.Property<string>("StoragePolicy")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<long>("TotalSizeOfStoredAdjuncts")
+                        .HasColumnType("bigint");
 
                     b.Property<long>("TotalSizeOfStoredImages")
                         .HasColumnType("bigint");
@@ -944,7 +1047,16 @@ namespace DLCS.Repository.Migrations
                     b.Property<long>("TotalSizeOfThumbnails")
                         .HasColumnType("bigint");
 
-                    b.HasKey("Customer", "Space");
+                    b.HasKey("Id");
+
+                    b.HasIndex("Customer")
+                        .IsUnique()
+                        .HasDatabaseName("IX_CustomerStorage_Customer_Aggregate")
+                        .HasFilter("\"Space\" IS NULL");
+
+                    b.HasIndex("Customer", "Space")
+                        .IsUnique()
+                        .HasFilter("\"Space\" IS NOT NULL");
 
                     b.ToTable("CustomerStorage", (string)null);
                 });
@@ -1144,7 +1256,29 @@ namespace DLCS.Repository.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DLCS.Model.Assets.AdjunctBatch", null)
+                        .WithMany()
+                        .HasForeignKey("Batch")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Asset");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.AdjunctBatchAdjunct", b =>
+                {
+                    b.HasOne("DLCS.Model.Assets.AdjunctBatch", "Batch")
+                        .WithMany("BatchAdjuncts")
+                        .HasForeignKey("BatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DLCS.Model.Assets.Adjunct", null)
+                        .WithMany("AdjunctBatchAdjuncts")
+                        .HasForeignKey("AdjunctId", "AssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Batch");
                 });
 
             modelBuilder.Entity("DLCS.Model.Assets.BatchAsset", b =>
@@ -1203,6 +1337,16 @@ namespace DLCS.Repository.Migrations
                         .IsRequired();
 
                     b.Navigation("DeliveryChannelPolicy");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.Adjunct", b =>
+                {
+                    b.Navigation("AdjunctBatchAdjuncts");
+                });
+
+            modelBuilder.Entity("DLCS.Model.Assets.AdjunctBatch", b =>
+                {
+                    b.Navigation("BatchAdjuncts");
                 });
 
             modelBuilder.Entity("DLCS.Model.Assets.Asset", b =>

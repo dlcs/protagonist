@@ -1,4 +1,5 @@
-﻿using API.Infrastructure.Requests;
+﻿using API.Features.DeliveryChannels.Helpers;
+using API.Infrastructure.Requests;
 using API.Infrastructure.Requests.Pipelines;
 using DLCS.Core;
 using DLCS.Core.Collections;
@@ -13,17 +14,17 @@ namespace API.Features.DeliveryChannels.Requests.DefaultDeliveryChannels;
 /// </summary>
 public class DeleteDefaultDeliveryChannel : IRequest<DeleteEntityResult>, IInvalidateCaches
 {
-    public DeleteDefaultDeliveryChannel(int customer, int space, Guid defaultDeliveryChannelId)
+    public DeleteDefaultDeliveryChannel(int customer, int? space, Guid defaultDeliveryChannelId)
     {
         Customer = customer;
         Space = space;
         DefaultDeliveryChannelId = defaultDeliveryChannelId;
     }
-    
+
     public int Customer { get; }
-    
-    public int Space { get; }
-    
+
+    public int? Space { get; }
+
     public Guid DefaultDeliveryChannelId { get; }
     
     public string[] InvalidatedCacheKeys => CacheKeys.DefaultDeliveryChannels(Customer).AsArray();
@@ -40,8 +41,11 @@ public class DeleteDefaultDeliveryChannelHandler : IRequestHandler<DeleteDefault
 
     public async Task<DeleteEntityResult> Handle(DeleteDefaultDeliveryChannel request, CancellationToken cancellationToken)
     {
+        var spaceZeroError = DefaultDeliveryChannelHelper.GetSpaceZeroErrorMessage(request.Space);
+        if (spaceZeroError != null) return DeleteEntityResult.Failure(spaceZeroError, DeleteResult.Conflict);
+
         var defaultDeliveryChannel = await dbContext.DefaultDeliveryChannels.SingleOrDefaultAsync(
-            ch => ch.Customer == request.Customer && 
+            ch => ch.Customer == request.Customer &&
                   ch.Id == request.DefaultDeliveryChannelId &&
                   ch.Space == request.Space,
             cancellationToken: cancellationToken);

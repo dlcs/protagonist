@@ -191,13 +191,13 @@ Below is a summary of use-cases from Orchestrator PoV; how these are currently m
   * Now: `maxWidth=0,openFullMax=0,role=null` OR `maxWidth=0,openFullMax=1000,role=null`
 * No sizes/regions available to any user
   * Was: `maxUnauthorised=0,role=null`
-  * Now: `maxWidth=0,openFullMax=0,role="unobtainable"`
+  * Now: `maxWidth=0,openFullMax=0,role="https://dlcs.io/roles/unobtainable"`
 * No sizes/regions available to anonymous user, logged in users can see any size
   * Was: `maxUnauthorised=0,role="foo"` OR `maxUnauthorised=-1,role="foo"`
   * Now: `maxWidth=0,openFullMax=0,role="foo"`
 * `/full/` requests up to 1000px available to anonymous. Deep zoom unavailable to any user.
   * Was: `maxUnauthorised=1000,role=null`
-  * Now: `maxWidth=0,openFullMax=1000,role="unobtainable"`
+  * Now: `maxWidth=0,openFullMax=1000,role="https://dlcs.io/roles/unobtainable"`
 * `/full/` requests up to 1000px available to anonymous. Deep zoom and larger sizes available to logged in user.
   * Was: `maxUnauthorised=1000,role="foo"`
   * Now: `maxWidth=0,openFullMax=1000,role="foo"`
@@ -208,7 +208,7 @@ Below is a summary of use-cases from Orchestrator PoV; how these are currently m
 > [!IMPORTANT]
 > The above highlights a key difference with new properties and the need to use a 'fake' role in some scenarios.
 > The current implementation allows an image to be effectively unavailable to anyone by setting `maxUnauthorised=0,role=null`. 
-> We cannot directly replicate this - there needs to be a "fake" unobtainable role used to get equivalent behaviour.
+> We cannot directly replicate this - there needs to be a "fake" unobtainable role used to get equivalent behaviour, this will be `https://dlcs.io/roles/unobtainable`
 
 ### Implementation / Rollout Considerations
 

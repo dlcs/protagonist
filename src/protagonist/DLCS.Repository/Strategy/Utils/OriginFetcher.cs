@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy.DependencyInjection;
 
@@ -9,51 +9,21 @@ namespace DLCS.Repository.Strategy.Utils;
 /// <summary>
 /// Helper class that gets appropriate origin strategy for a resource and fetches from origin to local disk
 /// </summary>
-public class OriginFetcher
+public class OriginFetcher(OriginStrategyResolver originStrategyResolver)
 {
-    private readonly ICustomerOriginStrategyRepository customerOriginStrategyRepository;
-    private readonly OriginStrategyResolver originStrategyResolver;
-
-    public OriginFetcher(
-        ICustomerOriginStrategyRepository customerOriginStrategyRepository,
-        OriginStrategyResolver originStrategyResolver
-    )
-    {
-        this.customerOriginStrategyRepository = customerOriginStrategyRepository;
-        this.originStrategyResolver = originStrategyResolver;
-    }
-
-    /// <summary>
-    /// Get <see cref="OriginResponse"/> object for provided asset, loading from origin using relevant origin
-    /// strategy for customer
-    /// </summary>
-    /// <param name="assetId">Asset to load</param>
-    /// <param name="location">Location to load asset from</param>
-    /// <param name="cancellationToken">Current cancellation token</param>
-    /// <returns><see cref="OriginResponse"/></returns>
-    public async Task<OriginResponse> LoadAssetFromLocation(AssetId assetId, string location,
-        CancellationToken cancellationToken)
-    {
-        var customerOriginStrategy =
-            await customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, location);
-
-        return await LoadAssetFromLocation(assetId, location, customerOriginStrategy, cancellationToken);
-    }
-    
     /// <summary>
     /// Get <see cref="OriginResponse"/> object for provided asset, loading from origin passed origin strategy
     /// </summary>
-    /// <param name="assetId">Asset to load</param>
-    /// <param name="location">Location to load asset from</param>
+    /// <param name="originItem">Item that has an origin, used to fetch it</param>
     /// <param name="customerOriginStrategy">OriginStrategy to use</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns><see cref="OriginResponse"/></returns>
-    public async Task<OriginResponse> LoadAssetFromLocation(AssetId assetId, string location,
+    public async Task<OriginResponse> LoadFromOrigin(IOriginItem originItem,
         CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
     {
         var originStrategy = originStrategyResolver(customerOriginStrategy.Strategy);
 
-        return await originStrategy.LoadAssetFromOrigin(assetId, location, customerOriginStrategy,
+        return await originStrategy.LoadFromOrigin(originItem, customerOriginStrategy,
             cancellationToken);
     }
 }

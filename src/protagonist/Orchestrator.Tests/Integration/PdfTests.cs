@@ -55,12 +55,12 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-1"), num1: 2, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-2"), num1: 1, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-3-auth"), num1: 3, ref1: "my-ref",
-            maxUnauthorised: 10, roles: "default");
+            openFullMax: 10, roles: "default");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-4"), num1: 4, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-5"), num1: 5, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-6"), num1: 6, ref1: "my-ref");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-pdf-6-auth"), num1: 6, ref1: "my-ref",
-            maxUnauthorised: 10, roles: "clickthrough");
+            openFullMax: 10, roles: "clickthrough");
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/not-for-delivery"), num1: 6, ref1: "my-ref",
             notForDelivery: true);
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/limited-projection"), num1: 2,

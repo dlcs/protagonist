@@ -42,7 +42,7 @@ public class QueueController : ControllerBase
         model.Batches.Add(batch);
         foreach (var incomingImage in images.Members)
         {
-            var newImage = MockHelp.MakeImage(model.BaseUrl, customerId, incomingImage.Space, incomingImage.ModelId, 
+            var newImage = MockHelp.MakeImage(model.BaseUrl, customerId, incomingImage.Space.GetValueOrDefault(), incomingImage.ModelId,
                 DateTime.UtcNow, incomingImage.Origin, 
                 0, 0, incomingImage.MaxUnauthorised, null, null, null, true, null, 
                 incomingImage.Tags, incomingImage.String1, incomingImage.String2, incomingImage.String3,

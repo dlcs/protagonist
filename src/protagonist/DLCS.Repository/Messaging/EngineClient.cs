@@ -17,45 +17,32 @@ using DLCS.Model.Messaging;
 using LazyCache;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using static DLCS.AWS.SQS.SqsQueueUtilities.Constants.MessageAttributeNames;
 
 namespace DLCS.Repository.Messaging;
 
 /// <summary>
 /// A thin wrapper to manage interactions with the Engine - direct and indirect 
 /// </summary>
-public class EngineClient : IEngineClient
+public class EngineClient(
+    IQueueLookup queueLookup,
+    IQueueSender queueSender,
+    HttpClient httpClient,
+    IAppCache appCache,
+    IOptions<CacheSettings> cacheOptions,
+    ILogger<EngineClient> logger)
+    : IEngineClient
 {
-    private readonly IQueueLookup queueLookup;
-    private readonly IQueueSender queueSender;
-    private readonly HttpClient httpClient;
-    private readonly CacheSettings cacheSettings;
-    private readonly IAppCache appCache;
-    private readonly ILogger<EngineClient> logger;
+    private readonly CacheSettings cacheSettings = cacheOptions.Value;
 
-    private static readonly JsonSerializerOptions SerializerOptions = new (JsonSerializerDefaults.Web)
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
     private static readonly IReadOnlyDictionary<string, TranscoderPreset> NullPresetDictionary =
         new Dictionary<string, TranscoderPreset>();
-    
-    public EngineClient(
-        IQueueLookup queueLookup,
-        IQueueSender queueSender,
-        HttpClient httpClient,
-        IAppCache appCache,
-        IOptions<CacheSettings> cacheOptions,
-        ILogger<EngineClient> logger)
-    {
-        this.queueLookup = queueLookup;
-        this.queueSender = queueSender;
-        this.httpClient = httpClient;
-        this.appCache = appCache;
-        cacheSettings = cacheOptions.Value;
-        this.logger = logger;
-    }
-    
+
     public async Task<HttpStatusCode> SynchronousIngest(Asset asset, CancellationToken cancellationToken = default)
     {
         var jsonString = GetJsonString(asset);
@@ -68,12 +55,9 @@ public class EngineClient : IEngineClient
         }
         catch (WebException ex)
         {
-            if (ex.Status == WebExceptionStatus.ProtocolError)
+            if (ex is { Status: WebExceptionStatus.ProtocolError, Response: HttpWebResponse response })
             {
-                if (ex.Response is HttpWebResponse response)
-                {
-                    return response.StatusCode;
-                }
+                return response.StatusCode;
             }
         }
         catch (HttpRequestException httpEx)
@@ -90,21 +74,22 @@ public class EngineClient : IEngineClient
 
         return HttpStatusCode.InternalServerError;
     }
-
-    public async Task<bool> AsynchronousIngest(Asset asset,
-        CancellationToken cancellationToken = default)
+    
+    public async Task<bool> AsynchronousIngest(IDeliverable deliverable, CancellationToken cancellationToken = default)
     {
-        var queueName = queueLookup.GetQueueNameForFamily(asset.Family ?? new AssetFamily());
-        var jsonString = GetJsonString(asset);
-        var success = await queueSender.QueueMessage(queueName, jsonString, cancellationToken);
+        var queueName = GetQueueName(deliverable); 
+        var jsonString = GetJsonString(deliverable);
+        var ingestType = GetIngestType(deliverable);
+        var attributes = new Dictionary<string, string> { [IngestType] = ingestType };
+        var success = await queueSender.QueueMessage(queueName, jsonString, attributes, cancellationToken);
 
         if (!success)
         {
-            logger.LogInformation("Error queueing ingest request for {AssetId}", asset.Id);
+            logger.LogInformation("Error queueing ingest request for {DeliverableId}", deliverable.Identifier());
         }
         else
         {
-            logger.LogDebug("Successfully enqueued ingest request for {AssetId}", asset.Id);
+            logger.LogDebug("Successfully enqueued ingest request for {DeliverableId}", deliverable.Identifier());
         }
 
         return success;
@@ -115,35 +100,59 @@ public class EngineClient : IEngineClient
     {
         var overallSent = 0;
         var batchId = (assets.First().Batch ?? 0).ToString();
-        
+
         // Get a grouping of items in batch by Family - different families can use different queues 
-        var byFamily  = assets.GroupBy(a => a.Family);
+        var byFamily = assets.GroupBy(a => a.Family);
         
         foreach (var familyGrouping in byFamily)
         {
             logger.LogDebug("Sending '{Family}' notifications for {BatchId}", familyGrouping.Key, batchId);
-            var queueName = queueLookup.GetQueueNameForFamily(familyGrouping.Key ?? new AssetFamily(), isPriority);
-            var capacity = familyGrouping.Count();
             
-            var jsonStrings = new List<string>(capacity);
-            foreach (var asset in familyGrouping.Select(a => a))
-            {
-                jsonStrings.Add(GetJsonString(asset));
-            }
-
-            var sentCount = await queueSender.QueueMessages(queueName, jsonStrings, batchId, cancellationToken);
+            var queueName = GetQueueName(familyGrouping.First(), isPriority);
+            var sentCount =
+                await AsynchronousIngestBatch(familyGrouping.ToList(), queueName, cancellationToken);
             overallSent += sentCount;
-            if (sentCount < capacity)
-            {
-                logger.LogWarning("Some messages failed to queue for {BatchId}, family {Family}", batchId,
-                    familyGrouping.Key);
-            }
         }
 
         return overallSent;
     }
-    
-    public async Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(CancellationToken cancellationToken = default)
+
+    public Task<int> AsynchronousIngestBatch(IReadOnlyCollection<Adjunct> adjuncts,
+        CancellationToken cancellationToken = default)
+        => AsynchronousIngestBatch(adjuncts, GetQueueName(adjuncts.First()), cancellationToken);
+
+    private async Task<int> AsynchronousIngestBatch(IReadOnlyCollection<IDeliverable> deliverables, string queueName,
+        CancellationToken cancellationToken)
+    {
+        // Grab the first deliverable to derive some values representative of the whole batch 
+        var firstDeliverable = deliverables.First();
+        var batchId = (firstDeliverable.Batch ?? 0).ToString();
+        var deliverableType = firstDeliverable.GetType().Name;
+        
+        logger.LogDebug("Sending '{DeliverableType}' notifications for {BatchId}", deliverableType, batchId);
+        var capacity = deliverables.Count;
+
+        var jsonStrings = new List<string>(capacity);
+        var ingestType = GetIngestType(firstDeliverable);
+
+        foreach (var deliverable in deliverables)
+        {
+            jsonStrings.Add(GetJsonString(deliverable));
+        }
+
+        var attributes = new Dictionary<string, string> { [IngestType] = ingestType };
+        var sentCount = await queueSender.QueueMessages(queueName, jsonStrings, batchId, attributes, cancellationToken);
+        if (sentCount < capacity)
+        {
+            logger.LogWarning("Some messages failed to queue for {BatchId}, '{DeliverableType}'", batchId,
+                deliverableType);
+        }
+
+        return sentCount;
+    }
+
+    public async Task<IReadOnlyCollection<string>?> GetAllowedAvPolicyOptions(
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -151,14 +160,15 @@ public class EngineClient : IEngineClient
             return await response.Content.ReadFromJsonAsync<IReadOnlyCollection<string>>(
                 cancellationToken: cancellationToken);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             logger.LogError(ex, "Failed to retrieve allowed iiif-av policy options from Engine");
             return null;
         }
     }
-    
-    public async Task<IReadOnlyDictionary<string, TranscoderPreset>> GetAvPresets(CancellationToken cancellationToken = default)
+
+    public async Task<IReadOnlyDictionary<string, TranscoderPreset>> GetAvPresets(
+        CancellationToken cancellationToken = default)
     {
         const string key = "avPresetList";
         return await appCache.GetOrAddAsync(key, async entry =>
@@ -177,12 +187,33 @@ public class EngineClient : IEngineClient
             }
         }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
     }
-    
-    private static string GetJsonString(Asset asset)
-    {
-        var ingestAssetRequest = new IngestAssetRequest(asset.Id, DateTime.UtcNow, asset.Batch);
-        var jsonString = JsonSerializer.Serialize(ingestAssetRequest, SerializerOptions);
-        return jsonString;
-    }
-}
 
+    private static string GetIngestType(IDeliverable deliverable) => deliverable switch
+    {
+        Adjunct => IngestAdjunctRequest.IngestType,
+        Asset => IngestAssetRequest.IngestType,
+        _ => ThrowUnknownType(deliverable)
+    };
+
+    private static string GetJsonString(IDeliverable deliverable)
+    {
+        object request = deliverable switch
+        {
+            Adjunct adjunct => new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow, adjunct.Batch),
+            Asset asset => new IngestAssetRequest(asset.Id, DateTime.UtcNow, asset.Batch),
+            _ => ThrowUnknownType(deliverable)
+        };
+        return JsonSerializer.Serialize(request, SerializerOptions);
+    }
+
+    private string GetQueueName(IDeliverable? deliverable, bool isPriority = false) =>
+        deliverable switch
+        {
+            Adjunct => queueLookup.GetAdjunctsQueueName(),
+            Asset asset => queueLookup.GetQueueNameForFamily(asset.Family ?? new AssetFamily(), isPriority),
+            _ => ThrowUnknownType(deliverable)
+        };
+
+    private static string ThrowUnknownType(IDeliverable? deliverable) =>
+        throw new ArgumentException($"Unknown deliverable type {deliverable?.GetType().Name ?? "unknown"}");
+}

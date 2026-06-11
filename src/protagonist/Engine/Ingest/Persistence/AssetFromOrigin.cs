@@ -1,7 +1,17 @@
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 
 namespace Engine.Ingest.Persistence;
+
+/// <summary>
+/// An adjunct that has been copied from Origin.
+/// </summary>
+public class AdjunctFromOrigin(string adjunctId, AssetId assetId, long assetSize, string location, string contentType)
+    : AssetFromOrigin(assetId, assetSize, location, contentType)
+{
+    public string AdjunctId { get; } = adjunctId;
+}
 
 /// <summary>
 /// An asset that has been copied from Origin.

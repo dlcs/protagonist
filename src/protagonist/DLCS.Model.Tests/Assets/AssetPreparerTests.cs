@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 
@@ -78,7 +79,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset 
         { 
             MediaType = mediaType, 
-            ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+            ImageDeliveryChannels = new List<ImageDeliveryChannel>
             {
                 new()
                 {
@@ -176,7 +177,7 @@ public class AssetPreparerTests
         var existingAsset = new Asset { ImageDeliveryChannels = new List<ImageDeliveryChannel>(), MediaType = mediaType, Height = 99 };
         foreach (var channel in dc.Split(","))
         {
-            existingAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+            existingAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
             {
                 Channel = channel
             });
@@ -261,6 +262,34 @@ public class AssetPreparerTests
         // Assert
         result.RequiresReingest.Should().BeTrue();
     }
+    
+    [Fact]
+    public void PrepareAssetForUpsert_RequiresReingest_IfOpenFullMaxChanged()
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "https://whatever", OpenFullMax = 0 };
+        var existingAsset = new Asset { Origin = "https://whatever", OpenFullMax = 10 };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.RequiresReingest.Should().BeTrue();
+    }
+    
+    [Fact]
+    public void PrepareAssetForUpsert_RequiresReingest_IfMaxWidthChanged()
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "https://whatever", MaxWidth = 1024 };
+        var existingAsset = new Asset { Origin = "https://whatever", MaxWidth = null };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.RequiresReingest.Should().BeTrue();
+    }
 
     [Theory]
     [MemberData(nameof(DeliveryChannels))]
@@ -276,21 +305,11 @@ public class AssetPreparerTests
 
         // Assert
         result.RequiresReingest.Should().BeTrue(reason);
-    }
+        return;
 
-    private List<ImageDeliveryChannel> GenerateImageDeliveryChannels(string[] deliveryChannels)
-    {
-        var imageDeliveryChannels = new List<ImageDeliveryChannel>();
-
-        foreach (var deliveryChannel in deliveryChannels)
-        {
-            imageDeliveryChannels.Add(new ImageDeliveryChannel()
-            {
-                Channel = deliveryChannel
-            });
-        }
-
-        return imageDeliveryChannels;
+        List<ImageDeliveryChannel> GenerateImageDeliveryChannels(string[] deliveryChannels)
+            => deliveryChannels.Select(deliveryChannel => new ImageDeliveryChannel { Channel = deliveryChannel })
+                .ToList();
     }
 
     [Theory]
@@ -315,7 +334,7 @@ public class AssetPreparerTests
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
 
         // Assert
-        result.UpdatedAsset.Family.Should().Be(expected);
+        result.UpdatedAsset!.Family.Should().Be(expected);
     }
     
     [Theory]
@@ -332,7 +351,7 @@ public class AssetPreparerTests
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
 
         // Assert
-        result.UpdatedAsset.Family.Should().Be(expected);
+        result.UpdatedAsset!.Family.Should().Be(expected);
     }
     
     [Theory]
@@ -353,7 +372,7 @@ public class AssetPreparerTests
         
         foreach (var channel in dc.Split(","))
         {
-            updateAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+            updateAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
             {
                 Channel = channel
             });
@@ -363,7 +382,7 @@ public class AssetPreparerTests
         var result = AssetPreparer.PrepareAssetForUpsert(null, updateAsset, false, false, restrictedCharacters);
 
         // Assert
-        result.UpdatedAsset.Family.Should().Be(expected);
+        result.UpdatedAsset!.Family.Should().Be(expected);
     }
 
     [Theory]
@@ -379,7 +398,7 @@ public class AssetPreparerTests
         var updateAsset = new Asset { Origin = "required", ImageDeliveryChannels = new List<ImageDeliveryChannel>()};
         foreach (var channel in dc.Split(","))
         {
-            updateAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel()
+            updateAsset.ImageDeliveryChannels.Add(new ImageDeliveryChannel
             {
                 Channel = channel
             });
@@ -387,7 +406,7 @@ public class AssetPreparerTests
         
         var existingAsset = new Asset
         {
-            Family = current, ImageDeliveryChannels = new List<ImageDeliveryChannel>()
+            Family = current, ImageDeliveryChannels = new List<ImageDeliveryChannel>
             {
                 new()
                 {
@@ -400,7 +419,7 @@ public class AssetPreparerTests
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
 
         // Assert
-        result.UpdatedAsset.Family.Should().Be(expected);
+        result.UpdatedAsset!.Family.Should().Be(expected);
     }
 
     [Theory]

@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy;
 using FakeItEasy;
@@ -24,7 +25,7 @@ public class DefaultOriginStrategyTests
         var httpClientFactory = A.Fake<IHttpClientFactory>();
         var httpClient = new HttpClient(httpHandler);
         A.CallTo(() => httpClientFactory.CreateClient("OriginStrategy")).Returns(httpClient);
-        
+
         sut = new DefaultOriginStrategy(httpClientFactory, new NullLogger<DefaultOriginStrategy>());
     }
 
@@ -35,23 +36,23 @@ public class DefaultOriginStrategyTests
         var response = httpHandler.GetResponseMessage("this is a test", HttpStatusCode.OK);
         const string contentType = "application/json";
         const long contentLength = 4324;
-        
+
         response.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
         response.Content.Headers.ContentLength = contentLength;
         httpHandler.SetResponse(response);
 
         const string originUri = "https://test.example.com/string";
-        
+
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId, originUri, new CustomerOriginStrategy());
-        
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, new CustomerOriginStrategy());
+
         // Assert
         httpHandler.CallsMade.Should().Contain(originUri);
         result.Stream.Should().NotBeNull();
         result.ContentLength.Should().Be(contentLength);
         result.ContentType.Should().Be(contentType);
     }
-    
+
     [Fact]
     public async Task LoadAssetFromOrigin_HandlesNoContentLengthAndType()
     {
@@ -59,17 +60,17 @@ public class DefaultOriginStrategyTests
         var response = httpHandler.GetResponseMessage("", HttpStatusCode.OK);
         httpHandler.SetResponse(response);
         const string originUri = "https://test.example.com/string";
-        
+
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId, originUri, new CustomerOriginStrategy());
-        
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, new CustomerOriginStrategy());
+
         // Assert
         httpHandler.CallsMade.Should().Contain(originUri);
         result.Stream.Should().NotBeNull();
         result.ContentLength.Should().BeNull();
         result.ContentType.Should().Be("text/plain");
     }
-    
+
     [Theory]
     [InlineData(HttpStatusCode.Forbidden)]
     [InlineData(HttpStatusCode.InternalServerError)]
@@ -79,10 +80,10 @@ public class DefaultOriginStrategyTests
         var response = httpHandler.GetResponseMessage("uh-oh", statusCode);
         httpHandler.SetResponse(response);
         const string originUri = "https://test.example.com/string";
-        
+
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId, originUri, new CustomerOriginStrategy());
-        
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, new CustomerOriginStrategy());
+
         // Assert
         httpHandler.CallsMade.Should().Contain(originUri);
         result.Stream.Should().BeSameAs(Stream.Null);

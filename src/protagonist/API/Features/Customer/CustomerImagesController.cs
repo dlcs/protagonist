@@ -1,4 +1,5 @@
 ﻿using API.Converters;
+using API.Features.Assets.Query;
 using API.Features.Customer.Requests;
 using API.Features.Customer.Validation;
 using API.Features.Image.Validation;
@@ -23,12 +24,9 @@ namespace API.Features.Customer;
 /// </summary>
 [Route("/customers/{customerId}")]
 [ApiController]
-public class CustomerImagesController : HydraController
+public class CustomerImagesController(IOptions<ApiSettings> settings, IMediator mediator)
+    : HydraController(settings.Value, mediator)
 {
-    public CustomerImagesController(IOptions<ApiSettings> settings, IMediator mediator) : base(settings.Value, mediator)
-    {
-    }
-    
     /// <summary>
     /// Accepts a list of image identifiers, will return a list of matching images.
     ///
@@ -63,11 +61,13 @@ public class CustomerImagesController : HydraController
             return this.ValidationFailed(validationResult);
         }
 
-        var request = new GetMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(), customerId);
+        var assetQueryModel = Request.GetAssetQuery();
+        var request = new GetMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(), customerId,
+            assetQueryModel.Include);
 
         return await HandleListFetch<Asset, GetMultipleImagesById, DLCS.HydraModel.Image>(
             request,
-            a => a.ToHydra(GetUrlRoots()),
+            a => a.ToHydra(GetUrlRoots(), assetQueryModel.IncludesField(IncludeFields.Adjuncts)),
             "Get customer images failed",
             cancellationToken: cancellationToken);
     }
@@ -86,18 +86,17 @@ public class CustomerImagesController : HydraController
         [FromQuery] string? q = null,
         CancellationToken cancellationToken = default)
     {
-        var assetFilter = Request.GetAssetFilterFromQParam(q);
-        assetFilter = Request.UpdateAssetFilterFromQueryStringParams(assetFilter);
-        if (q.HasText() && assetFilter == null)
+        var assetQueryModel = Request.GetAssetQuery();
+        if (q.HasText() && assetQueryModel.Filter == null)
         {
             return this.HydraProblem("Could not parse query", null, 400);
         }
 
-        var getQueriedAllImages = new GetQueriedAllImages(customerId, assetFilter);
+        var getQueriedAllImages = new GetQueriedAllImages(customerId, assetQueryModel);
 
         return await HandlePagedFetch<Asset, GetQueriedAllImages, DLCS.HydraModel.Image>(
             getQueriedAllImages,
-            image => image.ToHydra(GetUrlRoots()),
+            image => image.ToHydra(GetUrlRoots(), assetQueryModel.IncludesField(IncludeFields.Adjuncts)),
             errorTitle: "Get All Images failed",
             cancellationToken: cancellationToken
         );
@@ -190,20 +189,17 @@ public class CustomerImagesController : HydraController
 
         var additionalDeletion = ImageCacheTypeConverter.ConvertToImageCacheType(deleteFrom, ',');
 
-        return await HandleHydraRequest(async () =>
+        var request =
+            new DeleteMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(),
+                customerId, additionalDeletion);
+        var deletedRows = await Mediator.Send(request, cancellationToken);
+
+        if (deletedRows == 0)
         {
-            var request =
-                new DeleteMultipleImagesById(imageIdentifiers.Members!.Select(m => m.Id).ToList(),
-                    customerId, additionalDeletion);
-            var deletedRows = await Mediator.Send(request, cancellationToken);
+            return this.HydraProblem("No assets found", null, 400, "Delete images failed");
+        }
 
-            if (deletedRows == 0)
-            {
-                return this.HydraProblem("No assets found", null, 400, "Delete images failed");
-            }
-
-            // TODO - return a better message (or 204?). This is for backwards compat with Deliverator and
-            return Ok(new { message = "images deleted" });
-        }, "Delete images failed");
+        // TODO - return a better message (or 204?). This is for backwards compat with Deliverator and
+        return Ok(new { message = "images deleted" });
     }
 }

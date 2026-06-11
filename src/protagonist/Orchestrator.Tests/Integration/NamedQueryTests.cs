@@ -55,7 +55,7 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .WithTestThumbnailMetadata()
             .WithTestDeliveryChannel(AssetDeliveryChannels.Image);
         dbFixture.DbContext.Images.AddTestAsset(AssetId.FromString("99/1/matching-nothumbs"), num1: 3, ref1: "my-ref",
-            maxUnauthorised: 10, roles: "default")
+            openFullMax: 10, roles: "default")
             .WithTestThumbnailMetadata()
             .WithTestDeliveryChannel(AssetDeliveryChannels.Image)
             .WithTestAdjunct("test-adjunct", externalId: "https://example.com/see-also-1");

@@ -126,12 +126,48 @@ public class QueuePostValidatorTests
     }
     
     [Fact]
-    public void Member_Space_Default()
+    public void Member_Space_Default_Valid()
     {
         var sut = GetSut();
-        var model = new HydraCollection<Image> { Members = new[] { new Image { Space = 0 } } };
+        var model = new HydraCollection<Image> { Members = new[] { new Image { Space = 0, ModelId = "foo" } } };
         var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor("Members[0].Space");
+        result.ShouldNotHaveValidationErrorFor("Members[0].Space");
+        result.ShouldNotHaveValidationErrorFor("Members[0].MediaType");
+    }
+
+    [Fact]
+    public void Member_Space_NotProvided_Invalid()
+    {
+        var sut = GetSut();
+        var model = new HydraCollection<Image> { Members = new[] { new Image { ModelId = "foo" } } };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].Space")
+            .WithErrorMessage("Space must be specified");
+    }
+
+    [Fact]
+    public void Member_Space_Negative_Invalid()
+    {
+        var sut = GetSut();
+        var model = new HydraCollection<Image> { Members = new[] { new Image { Space = -1, ModelId = "foo", MediaType = "image/jpeg" } } };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].Space")
+            .WithErrorMessage("Space must be 0 or greater");
+    }
+
+    [Fact]
+    public void Member_MediaType_Required_ForSpaceZero_WhenDeliveryChannelsPresent()
+    {
+        var sut = GetSut();
+        var model = new HydraCollection<Image>
+        {
+            Members = new[]
+            {
+                new Image { Space = 0, ModelId = "foo", DeliveryChannels = [new DeliveryChannel { Channel = "file" }] }
+            }
+        };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].MediaType");
     }
     
     [Theory]
@@ -141,7 +177,7 @@ public class QueuePostValidatorTests
     public void Member_MediaType_NullOrEmpty(string mediaType)
     {
         var sut = GetSut();
-        var model = new HydraCollection<Image> { Members = new[] { new Image { MediaType = mediaType } } };
+        var model = new HydraCollection<Image> { Members = new[] { new Image { MediaType = mediaType, Space = 1 } } };
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].MediaType");
     }

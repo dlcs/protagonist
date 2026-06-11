@@ -88,7 +88,7 @@ public class GetImageHandler : IRequestHandler<GetImage, GetImageResult?>
     {
         try
         {
-            return await dlcsClient.GetImageStorage(image.Space, image.ModelId);
+            return await dlcsClient.GetImageStorage(image.Space ?? 0, image.ModelId);
         }
         catch (Exception ex) 
         {  

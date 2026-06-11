@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
 using DLCS.Core.Collections;
 using Microsoft.AspNetCore.Http;
 
@@ -53,7 +51,7 @@ public static class HttpRequestX
     /// <summary>
     /// Generate the "@id" property for a JSON-LD API response.
     /// </summary>
-    public static string GetJsonLdId(this HttpRequest request) => GetDisplayUrl(request, request.Path, false);
+    public static string GetJsonLdId(this HttpRequest request) => request.GetDisplayUrl(request.Path, false);
 
     public static string? GetFirstQueryParamValue(this HttpRequest request, string paramName)
     {
@@ -68,7 +66,7 @@ public static class HttpRequestX
 
     public static int? GetFirstQueryParamValueAsInt(this HttpRequest request, string paramName)
     {
-        var value = GetFirstQueryParamValue(request, paramName);
+        var value = request.GetFirstQueryParamValue(paramName);
         if (value.IsNullOrEmpty()) return null;
         if (int.TryParse(value, out var num))
         {
@@ -82,7 +80,7 @@ public static class HttpRequestX
     {
         if (request.Query.ContainsKey(paramName))
         {
-            return request.Query[paramName].ToString().Split(',').ToArray();
+            return request.Query[paramName].ToString().Split(',');
         }
 
         return null;

@@ -21,20 +21,28 @@ public interface IEngineClient
     /// <summary>
     /// Queue an ingest request for engine to asynchronously process.
     /// </summary>
-    /// <param name="asset">The asset the request is for</param>
+    /// <param name="deliverable">The <see cref="IDeliverable"/> to be ingested</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Boolean representing whether request successfully queued</returns>
-    Task<bool> AsynchronousIngest(Asset asset, CancellationToken cancellationToken = default);
+    Task<bool> AsynchronousIngest(IDeliverable deliverable, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Queue a batch of ingest requests for engine to process
+    /// Queue a batch of Assets for engine to process
     /// </summary>
     /// <param name="assets">List of assets</param>
     /// <param name="isPriority">Whether request is for priority ingest</param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns>Count of items successfully processed</returns>
-    Task<int> AsynchronousIngestBatch(IReadOnlyCollection<Asset> assets,
-        bool isPriority, CancellationToken cancellationToken);
+    Task<int> AsynchronousIngestBatch(IReadOnlyCollection<Asset> assets, bool isPriority,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Queue a batch of Adjuncts for engine to process
+    /// </summary>
+    /// <param name="adjuncts">List of adjuncts to ingest</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Count of items successfully processed</returns>
+    Task<int> AsynchronousIngestBatch(IReadOnlyCollection<Adjunct> adjuncts, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Retrieve a list of iiif-policy options from engine

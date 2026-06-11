@@ -57,7 +57,7 @@ public static class ImageRouteHandlers
             logger.LogDebug("Handling request '{Path}'", httpContext.Request.Path);
             if (RequestIIIFIdentifier(httpContext))
             {
-                HandleStatusCodeResult(httpContext, StatusCodeResult.NotFound);
+                await HandleStatusCodeResult(httpContext, StatusCodeResult.NotFound);
                 return;
             }
 
@@ -72,7 +72,7 @@ public static class ImageRouteHandlers
     {
         if (proxyActionResult is StatusCodeResult statusCodeResult)
         {
-            HandleStatusCodeResult(httpContext, statusCodeResult);
+            await HandleStatusCodeResult(httpContext, statusCodeResult);
             return;
         }
 
@@ -84,12 +84,12 @@ public static class ImageRouteHandlers
             
             if (orchestrationResult == OrchestrationResult.NotFound)
             {
-                HandleStatusCodeResult(httpContext, new StatusCodeResult(HttpStatusCode.NotFound));
+                await HandleStatusCodeResult(httpContext, new StatusCodeResult(HttpStatusCode.NotFound));
                 return;
             }
             if (orchestrationResult == OrchestrationResult.Error)
             {
-                HandleStatusCodeResult(httpContext, new StatusCodeResult(HttpStatusCode.InternalServerError));
+                await HandleStatusCodeResult(httpContext, new StatusCodeResult(HttpStatusCode.InternalServerError));
                 return;
             }
         }
@@ -98,12 +98,18 @@ public static class ImageRouteHandlers
         await ProxyRequest(logger, httpContext, forwarder, destinationSelector, proxyAction);
     }
     
-    private static void HandleStatusCodeResult(HttpContext httpContext, StatusCodeResult statusCodeResult)
+    private static async Task HandleStatusCodeResult(HttpContext httpContext, StatusCodeResult statusCodeResult)
     {
         httpContext.Response.StatusCode = (int)statusCodeResult.StatusCode;
         foreach (var header in statusCodeResult.Headers)
         {
             httpContext.Response.Headers.Add(header);
+        }
+
+        if (!string.IsNullOrEmpty(statusCodeResult.Message) && !httpContext.Response.HasStarted)
+        {
+            httpContext.Response.ContentType = "text/plain; charset=utf-8";
+            await httpContext.Response.WriteAsync(statusCodeResult.Message);
         }
     }
 

@@ -31,6 +31,13 @@ public class PutSpaceHandler : IRequestHandler<PutSpace, ModifyEntityResult<DLCS
     
     public async Task<ModifyEntityResult<DLCS.Model.Spaces.Space>> Handle(PutSpace request, CancellationToken cancellationToken)
     {
+        if (request.SpaceId <= 0)
+        {
+            return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure(
+                "Space id must be a positive integer",
+                WriteResult.FailedValidation);
+        }
+
         var sameIdSpace = await spaceRepository.GetSpace(request.CustomerId, request.SpaceId, cancellationToken);
         if (sameIdSpace == null && !request.Name.HasText())
         {
@@ -46,7 +53,7 @@ public class PutSpaceHandler : IRequestHandler<PutSpace, ModifyEntityResult<DLCS
                     WriteResult.Conflict);
         }
         
-        var putSpaceResult = await spaceRepository.PutSpace(
+        var putSpaceResult = await spaceRepository.UpsertSpace(
             request.CustomerId, request.SpaceId, request.Name, request.ImageBucket,
             request.MaxUnauthorised, request.Tags, request.Roles,
             cancellationToken);

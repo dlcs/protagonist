@@ -1,22 +1,24 @@
 using System.Security.Claims;
 using API.Auth;
 using API.Features.Customer;
-using API.Features.Customer.Requests;
 using API.Features.DeliveryChannels.Validation;
 using API.Features.Image.Ingest;
 using API.Features.OriginStrategies.Credentials;
 using API.Infrastructure;
-using API.Infrastructure.Messaging;
+using API.Infrastructure.Messaging.General;
 using API.Infrastructure.Validation;
 using API.Settings;
 using DLCS.Core.Caching;
 using DLCS.Core.Encryption;
 using DLCS.Core.Settings;
+using DLCS.HydraModel;
+using DLCS.HydraModel.Converters;
 using DLCS.Model.Messaging;
 using DLCS.Repository;
 using DLCS.Repository.Messaging;
 using DLCS.Repository.NamedQueries;
 using DLCS.Repository.NamedQueries.Infrastructure;
+using DLCS.Web;
 using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
 using DLCS.Web.Handlers;
@@ -75,7 +77,8 @@ public class Startup
             .AddCaching(cacheSettings)
             .AddDataAccess(configuration)
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
-            .AddScoped<IAssetNotificationSender, AssetNotificationSender>()
+            .AddScoped<IDeliverableNotificationSender, DeliverableNotificationSender>()
+            .AddScoped<ModificationSender>()
             .AddScoped<AssetProcessor>()
             .AddScoped<IBulkAssetPatcher, BulkAssetPatcher>()
             .AddScoped<DeliveryChannelProcessor>()
@@ -111,11 +114,13 @@ public class Startup
                     .AllowCredentials());
         });
 
+        services.AddScoped<HydraExceptionFilter>();
         services
-            .AddControllers()
+            .AddControllers(options => options.Filters.Add<HydraExceptionFilter>())
             .AddNewtonsoftJson(options =>
             {
                 options.SerializerSettings.ApplyHydraSerializationSettings();
+                FlexCollectionConverter<Adjunct>.Register(options.SerializerSettings);
             });
 
         services.AddSwaggerGenNewtonsoftSupport();
@@ -162,6 +167,7 @@ public class Startup
                     .MapControllers()
                     .RequireAuthorization();
                 endpoints.MapHealthChecks("/ping").AllowAnonymous();
+                endpoints.AddVersionEndpoint();
             });
     }
 }

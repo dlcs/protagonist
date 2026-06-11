@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Linq;
+using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 
@@ -78,7 +79,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var hydraImage = await response.ReadAsHydraResponseAsync<Image>();
         hydraImage.Id.Should().EndWith(getUrl);
-        hydraImage.Adjuncts.Should().Be($"http://localhost/customers/99/spaces/1/images/{modelId}/adjuncts");
+        hydraImage.Adjuncts!.ToString().Should().Be($"http://localhost/customers/99/spaces/1/images/{modelId}/adjuncts");
     }
     
     [Fact]
@@ -227,6 +228,92 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         coll.Members.Length.Should().Be(count);
     }
     
+    [Fact]
+    public async Task Get_SpaceImages_Adjuncts_IsUriString_WhenNoIncludeParam()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId(customer: 204, space: 201);
+        await dbContext.Spaces.AddTestSpace(assetId.Customer, assetId.Space);
+        await dbContext.Images.AddTestAsset(assetId, customer: assetId.Customer, space: assetId.Space)
+            .WithTestAdjunct("adj1");
+        await dbContext.SaveChangesAsync();
+        var url = $"/customers/{assetId.Customer}/spaces/{assetId.Space}/images";
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).GetAsync(url);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        var asset = collection.Members.Single();
+        asset.Adjuncts!.Type.Should().Be(JTokenType.String);
+        asset.Adjuncts.ToString().Should().EndWith($"/images/{assetId.Asset}/adjuncts");
+    }
+
+    [Fact]
+    public async Task Get_SpaceImages_Adjuncts_IsUriString_WhenUnknownIncludeParam()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId(customer: 2042, space: 1201);
+        await dbContext.Spaces.AddTestSpace(assetId.Customer, assetId.Space);
+        await dbContext.Images.AddTestAsset(assetId, customer: assetId.Customer, space: assetId.Space)
+            .WithTestAdjunct("adj1");
+        await dbContext.SaveChangesAsync();
+        var url = $"/customers/{assetId.Customer}/spaces/{assetId.Space}/images?include=something";
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).GetAsync(url);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        collection.Members.Single().Adjuncts!.Type.Should().Be(JTokenType.String);
+    }
+
+    [Fact]
+    public async Task Get_SpaceImages_Adjuncts_IsEmptyArray_WhenIncludeAdjunctsButNoneExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId(customer: 202, space: 101);
+        await dbContext.Spaces.AddTestSpace(assetId.Customer, assetId.Space);
+        await dbContext.Images.AddTestAsset(assetId, customer: assetId.Customer, space: assetId.Space);
+        await dbContext.SaveChangesAsync();
+        var url = $"/customers/{assetId.Customer}/spaces/{assetId.Space}/images?include=adjuncts";
+        
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).GetAsync(url);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        var asset = collection.Members.Single();
+        asset.Adjuncts!.Type.Should().Be(JTokenType.Array);
+        ((JArray)asset.Adjuncts).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Get_SpaceImages_Adjuncts_IsInlineArray_WhenIncludeAdjunctsAndAdjunctsExist()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId(customer: 203, space: 102);
+        await dbContext.Spaces.AddTestSpace(assetId.Customer, assetId.Space);
+        await dbContext.Images.AddTestAsset(assetId, customer: assetId.Customer, space: assetId.Space)
+            .WithTestAdjunct("adj1")
+            .WithTestAdjunct("adj2");
+        await dbContext.SaveChangesAsync();
+        var url = $"/customers/{assetId.Customer}/spaces/{assetId.Space}/images?include=adjuncts";
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer).GetAsync(url);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
+        var asset = collection.Members.Single();
+        asset.Adjuncts!.Type.Should().Be(JTokenType.Array);
+        ((JArray)asset.Adjuncts).Should().HaveCount(2);
+    }
+
     private async Task AddMultipleAssets(int space, string name)
     {
         await dbContext.Spaces.AddTestSpace(99, space, name);

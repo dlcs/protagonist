@@ -6,7 +6,7 @@ using DLCS.Core.Types;
 namespace DLCS.Model.Assets;
 
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
-public class Batch
+public class Batch : IDeliverableBatch
 {
     public int Id { get; set; }
     public int Customer { get; set; }
@@ -32,9 +32,9 @@ public static class BatchX
     /// <summary>
     /// Add a new <see cref="BatchAsset"/> to <see cref="Batch"/>
     /// </summary>
-    public static Batch AddBatchAsset(this Batch batch, AssetId assetId, BatchAssetStatus status = BatchAssetStatus.Waiting)
+    public static Batch AddBatchAsset(this Batch batch, AssetId assetId, BatchStatus status = BatchStatus.Waiting)
     {
-        (batch.BatchAssets ??= new List<BatchAsset>()).Add(new BatchAsset { AssetId = assetId, Status = status });
+        (batch.BatchAssets ??= []).Add(new BatchAsset { AssetId = assetId, Status = status });
         return batch;
     }
 }

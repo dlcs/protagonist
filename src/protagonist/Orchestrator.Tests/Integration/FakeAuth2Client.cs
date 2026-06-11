@@ -9,13 +9,13 @@ namespace Orchestrator.Tests.Integration;
 
 public class FakeAuth2Client : IIIIFAuthBuilder
 {
-    public Task<IService> GetAuthServicesForAsset(AssetId assetId, List<string> roles, CancellationToken cancellationToken = default)
+    public Task<IService> GetAuthServicesForAsset(AssetId assetId, IReadOnlyList<string> roles, CancellationToken cancellationToken = default)
     {
         var probeService = new AuthProbeService2
         {
             Id = $"http://localhost/auth/v2/probe/{assetId}",
-            Service = new List<IService>
-            {
+            Service =
+            [
                 new AuthAccessService2
                 {
                     Id = $"http://localhost/auth/v2/access/{assetId.Customer}/clickthrough",
@@ -32,7 +32,7 @@ public class FakeAuth2Client : IIIIFAuthBuilder
                         }
                     }
                 }
-            }
+            ]
         };
 
         return Task.FromResult((IService)probeService);

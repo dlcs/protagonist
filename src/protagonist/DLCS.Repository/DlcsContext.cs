@@ -83,6 +83,8 @@ public partial class DlcsContext : DbContext
     public virtual DbSet<AssetApplicationMetadata> AssetApplicationMetadata { get; set; }
     public virtual DbSet<BatchAsset> BatchAssets { get; set; }
     public virtual DbSet<Adjunct> Adjuncts { get; set; }
+    public virtual DbSet<AdjunctBatch> AdjunctBatches { get; set; }
+    public virtual DbSet<AdjunctBatchAdjunct> AdjunctBatchAdjuncts { get; set; }
 
     public virtual DbSet<SignupLink> SignupLinks { get; set; }
 
@@ -283,9 +285,23 @@ public partial class DlcsContext : DbContext
 
         modelBuilder.Entity<CustomerStorage>(entity =>
         {
-            entity.HasKey(e => new { e.Customer, e.Space });
+            entity.HasKey(e => e.Id);
 
             entity.ToTable("CustomerStorage");
+
+            entity.Property(e => e.Id).UseIdentityByDefaultColumn();
+
+            // One row per real space per customer (Space IS NOT NULL)
+            entity.HasIndex(e => new { e.Customer, e.Space })
+                .IsUnique()
+                .HasFilter("\"Space\" IS NOT NULL")
+                .HasDatabaseName("IX_CustomerStorage_Customer_Space");
+
+            // One aggregate row per customer (Space IS NULL)
+            entity.HasIndex(e => e.Customer)
+                .IsUnique()
+                .HasFilter("\"Space\" IS NULL")
+                .HasDatabaseName("IX_CustomerStorage_Customer_Aggregate");
 
             entity.Property(e => e.LastCalculated).HasColumnType("timestamp with time zone");
 
@@ -391,6 +407,8 @@ public partial class DlcsContext : DbContext
             entity.HasIndex(e => e.Manifests)
                 .HasMethod("gin");
 
+            entity.Property(e => e.MaxWidth).IsRequired();
+            entity.Property(e => e.OpenFullMax).IsRequired();
             entity.Property(e => e.MaxUnauthorised).IsRequired();
             entity.Property(e => e.Width).IsRequired();
             entity.Property(e => e.Height).IsRequired();
@@ -684,7 +702,6 @@ public partial class DlcsContext : DbContext
         {
             entity.HasIndex(e => new {e.Customer, e.Space, e.MediaType, e.DeliveryChannelPolicyId}).IsUnique();
             entity.Property(e => e.Customer).IsRequired();
-            entity.Property(e => e.Space).IsRequired();
             entity.Property(e => e.DeliveryChannelPolicyId).IsRequired();
             
             entity.Property(e => e.MediaType).IsRequired().HasMaxLength(255);
@@ -711,12 +728,12 @@ public partial class DlcsContext : DbContext
             // Ideally model with something like the following but that is not supported in EF, so added via migration
             // see https://github.com/npgsql/efcore.pg/issues/119
             // entity.HasIndex(a => a.Id.ToLower()).IsUnique();
-            
+
             entity.HasKey(a => new { a.Id, a.AssetId });
-            
+
             entity.Property(a => a.Id)
                 .HasMaxLength(Adjunct.MaxIdLength);
-            
+
             entity.Property(a => a.Label).HasColumnType("jsonb");
             entity.Property(a => a.Language)
                 .HasMaxLength(500)
@@ -724,14 +741,51 @@ public partial class DlcsContext : DbContext
                     l => string.Join(",", l),
                     l => l.Split(",", StringSplitOptions.RemoveEmptyEntries),
                     stringArrayComparer);
-            
+
             entity.Property(a => a.IIIFLink)
                 .IsRequired()
                 .HasConversion(
                     i => i.GetDescription(),
                     i => i.GetEnumFromString<IIIFLinkType>(true));
-            
+
             entity.Property(p => p.Created).HasDefaultValueSql("now()");
+
+            entity.HasOne<AdjunctBatch>()
+                .WithMany()
+                .HasForeignKey(a => a.Batch)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.HasSequence<int>("adjunct_batch_id_sequence")
+            .StartsAt(1)
+            .IncrementsBy(1)
+            .HasMin(1);
+
+        modelBuilder.Entity<AdjunctBatch>(entity =>
+        {
+            entity.Property(e => e.Id).HasDefaultValueSql("nextval('adjunct_batch_id_sequence'::regclass)");
+
+            entity.Property(e => e.Submitted).HasColumnType("timestamp with time zone");
+            entity.Property(e => e.Finished).HasColumnType("timestamp with time zone");
+
+            entity.HasIndex(e => new { e.Customer, e.Submitted }, "IX_AdjunctBatchesByCustomerSubmitted");
+        });
+
+        modelBuilder.Entity<AdjunctBatchAdjunct>(entity =>
+        {
+            entity.HasKey(e => new { e.BatchId, e.AdjunctId, e.AssetId });
+
+            entity.Property(e => e.AdjunctId).HasMaxLength(Adjunct.MaxIdLength);
+
+            entity.HasOne(e => e.Batch)
+                .WithMany(b => b.BatchAdjuncts)
+                .HasForeignKey(e => e.BatchId);
+
+            entity.HasOne<Adjunct>()
+                .WithMany(a => a.AdjunctBatchAdjuncts)
+                .HasForeignKey(e => new { e.AdjunctId, e.AssetId })
+                .HasPrincipalKey(a => new { a.Id, a.AssetId });
         });
     }
 }

@@ -1,5 +1,4 @@
 ﻿using DLCS.Core.Types;
-using DLCS.Model.Assets;
 
 namespace CleanupHandler.Repository;
 
@@ -10,7 +9,7 @@ public interface ICleanupHandlerAssetRepository
     /// </summary>
     /// <param name="assetId">The asset id to retrieve details for</param>
     /// <returns>an asset</returns>
-    Task<Asset?> RetrieveAssetWithDeliveryChannels(AssetId assetId);
+    Task<DLCS.Model.Assets.Asset?> RetrieveAssetWithDeliveryChannels(AssetId assetId);
 
     /// <summary>
     /// Check whether an asset exists in the database

@@ -49,7 +49,7 @@ public class ImageIngesterWorker : IAssetIngesterWorker, IAssetIngesterPostProce
         try
         {
             var stopwatch = Stopwatch.StartNew();
-            var assetOnDisk = await assetToDisk.CopyAssetToLocalDisk(
+            var assetOnDisk = await assetToDisk.CopyItemToLocalDisk(
                 ingestionContext,
                 sourceTemplate,
                 !assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer),

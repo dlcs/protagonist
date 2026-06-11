@@ -40,9 +40,24 @@ public class SQSSettings
     public string? DeleteNotificationQueueName { get; set; }
     
     /// <summary>
+    /// Name of queue for handling notifications that adjuncts have been deleted
+    /// </summary>
+    public string? AdjunctDeleteNotificationQueueName { get; set; }
+    
+    /// <summary>
+    /// Name of queue for handling notifications that adjuncts have been updated
+    /// </summary>
+    public string? AdjunctUpdateNotificationQueueName { get; set; }
+    
+    /// <summary>
     /// Name of queue for handling notifications that assets have been updated
     /// </summary>
     public string? UpdateNotificationQueueName { get; set; }
+    
+    /// <summary>
+    /// Name of queue for ingesting adjuncts
+    /// </summary>
+    public string? AdjunctQueueName { get; set; }
     
     /// <summary>
     /// The duration (in seconds) for which the call waits for a message to arrive in the queue before returning

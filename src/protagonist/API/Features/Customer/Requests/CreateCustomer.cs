@@ -6,6 +6,7 @@ using DLCS.Core;
 using DLCS.Model;
 using DLCS.Model.Auth;
 using DLCS.Model.Processing;
+using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Entities;
 using DLCS.Repository.Exceptions;
@@ -19,54 +20,35 @@ namespace API.Features.Customer.Requests;
 /// <summary>
 /// Create a new Customer
 /// </summary>
-public class CreateCustomer : IRequest<ModifyEntityResult<CustomerEntity>>, IInvalidateCaches
+public class CreateCustomer(string name, string displayName)
+    : IRequest<ModifyEntityResult<CustomerEntity>>, IInvalidateCaches
 {
     /// <summary>
     /// Customer name. Will be checked for uniqueness.
     /// Used as the URL component.
     /// </summary>
-    public string Name { get; }
-    
+    public string Name { get; } = name;
+
     /// <summary>
     /// Display name, must also be unique.
     /// </summary>
-    public string DisplayName { get; }
-    
-    public CreateCustomer(string name, string displayName)
-    {
-        Name = name;
-        DisplayName = displayName;
-    }
+    public string DisplayName { get; } = displayName;
 
-    public string[] InvalidatedCacheKeys => new[] { CacheKeys.CustomerIdLookup, CacheKeys.CustomerNameLookup };
+    public string[] InvalidatedCacheKeys => [CacheKeys.CustomerIdLookup, CacheKeys.CustomerNameLookup];
 }
 
-public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEntityResult<CustomerEntity>>
+public class CreateCustomerHandler(
+    DlcsContext dbContext,
+    IEntityCounterRepository entityCounterRepository,
+    IAuthServicesRepository authServicesRepository,
+    IStorageRepository storageRepository,
+    DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository,
+    ICustomerNotificationSender customerNotificationSender,
+    ILogger<CreateCustomerHandler> logger)
+    : IRequestHandler<CreateCustomer, ModifyEntityResult<CustomerEntity>>
 {
     private const string CustomerNameTaken = "A customer with this name (url part) already exists.";
     private const string CustomerDisplayNameTaken = "A customer with this display name (label) already exists.";
-    private readonly DlcsContext dbContext;
-    private readonly IEntityCounterRepository entityCounterRepository;
-    private readonly IAuthServicesRepository authServicesRepository;
-    private readonly DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository;
-    private readonly ICustomerNotificationSender customerNotificationSender;
-    private readonly ILogger<CreateCustomerHandler> logger;
-
-    public CreateCustomerHandler(
-        DlcsContext dbContext,
-        IEntityCounterRepository entityCounterRepository,
-        IAuthServicesRepository authServicesRepository,
-        DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository,
-        ICustomerNotificationSender customerNotificationSender,
-        ILogger<CreateCustomerHandler> logger)
-    {
-        this.dbContext = dbContext;
-        this.entityCounterRepository = entityCounterRepository;
-        this.authServicesRepository = authServicesRepository;
-        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
-        this.customerNotificationSender = customerNotificationSender;
-        this.logger = logger;
-    }
 
     public async Task<ModifyEntityResult<CustomerEntity>> Handle(CreateCustomer request, CancellationToken cancellationToken)
     {
@@ -95,6 +77,25 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
                 new Queue { Customer = newCustomerId, Name = QueueNames.Default, Size = 0 },
                 new Queue { Customer = newCustomerId, Name = QueueNames.Priority, Size = 0 }
             );
+
+            // Create space 0 for stub assets
+            await dbContext.Spaces.AddAsync(new DLCS.Model.Spaces.Space
+            {
+                Customer = newCustomerId,
+                Id = 0,
+                Name = "stub-assets",
+                Created = DateTime.UtcNow,
+                ImageBucket = string.Empty,
+                Tags = [],
+                Roles = [],
+                MaxUnauthorised = -1
+            }, cancellationToken);
+
+            // Create null-space aggregate CustomerStorage row for storage tracking
+            await storageRepository.TryCreateCustomerStorage(newCustomerId, null, cancellationToken: cancellationToken);
+
+            // Pre-seed a per-space row for space 0 (stub-assets) so that Engine storage increments
+            await storageRepository.TryCreateCustomerStorage(newCustomerId, 0, cancellationToken: cancellationToken);
 
             await dbContext.SaveChangesAsync(cancellationToken);
 

@@ -7,17 +7,17 @@ public class DlcsSettings
     /// <summary>
     /// The base URI of DLCS to hand-off requests to.
     /// </summary>
-    public Uri ApiRoot { get; set; }
-    
+    public Uri ApiRoot { get; set; } = null!;
+
     /// <summary>
     /// The base URI for image services and other public-facing resources
     /// </summary>
-    public Uri ResourceRoot { get; set; }
+    public Uri ResourceRoot { get; set; } = null!;
     
     /// <summary>
     /// The base URI for the engine
     /// </summary>
-    public Uri EngineRoot { get; set; } 
+    public Uri EngineRoot { get; set; } = null!;
 
     /// <summary>
     /// Default timeout for dlcs api requests.
@@ -27,12 +27,12 @@ public class DlcsSettings
     /// <summary>
     /// URL format of NamedQuery for generating manifest for space.
     /// </summary>
-    public string SpaceManifestQuery { get; set; }
+    public string SpaceManifestQuery { get; set; } = null!;
     
     /// <summary>
     /// URL format for generating manifests for single assets
     /// </summary>
-    public string SingleAssetManifestTemplate { get; set; }
+    public string SingleAssetManifestTemplate { get; set; } = null!;
     
     /// <summary>
     /// 256bit or longer, Base64 encoded, JWT secret
@@ -42,7 +42,7 @@ public class DlcsSettings
     /// <summary>
     /// List of valid issuers of JWT for authentication
     /// </summary>
-    public string[] JwtValidIssuers { get; set; } = Array.Empty<string>();
+    public string[] JwtValidIssuers { get; set; } = [];
 
     /// <summary>
     /// Max number of stored items for "default" storage policy 

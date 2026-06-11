@@ -29,6 +29,7 @@ public class FireballPdfCreatorTests
     private readonly FireballPdfCreator sut;
     private const int Customer = 99;
     private readonly IBucketWriter bucketWriter;
+    private static readonly int[] item = new[] { 500, 500 };
 
     public FireballPdfCreatorTests()
     {
@@ -200,36 +201,36 @@ public class FireballPdfCreatorTests
             {
                 Roles = "whitelist",
                 Id = AssetId.FromString("/99/1/image1.jpg"),
-                MaxUnauthorised = 0
+                OpenFullMax = 0
             },
             new()
             {
                 Roles = "whitelist,notwhitelist",
                 Id = AssetId.FromString("/99/1/image1.jpg"),
-                MaxUnauthorised = 0
+                OpenFullMax = 0
             },
             new()
             {
                 Roles = "notwhitelist",
                 Id = AssetId.FromString("/99/1/image1.jpg"),
-                MaxUnauthorised = 0
+                OpenFullMax = 0
             },
             new()
             {
                 Roles = string.Empty,
                 Id = AssetId.FromString("/99/1/image1.jpg"),
-                MaxUnauthorised = -1
+                OpenFullMax = 0
             },
             new()
             {
                 Roles = string.Empty,
                 Id = AssetId.FromString("/99/1/image1.jpg"),
-                MaxUnauthorised = -1
+                OpenFullMax = 0
             }
         };
 
         A.CallTo(() => thumbSizeProvider.GetThumbSizesForImage(A<Asset>._, CancellationToken.None))
-            .Returns(new ThumbnailSizes(new List<int[]>{ new[] { 500, 500 } }, new List<int[]>()));
+            .Returns(new ThumbnailSizes([item], []));
 
         var responseMessage = new HttpResponseMessage(HttpStatusCode.OK);
         responseMessage.Content =

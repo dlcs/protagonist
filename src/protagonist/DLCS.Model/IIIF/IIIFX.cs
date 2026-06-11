@@ -85,22 +85,45 @@ public static class IIIFX
     
     /// <summary>
     /// Checks if region parameter is /full/ or represents the full region.
-    /// E.g. if image is 200w 300h then /0,0,200,300/ represents the full region.
+    ///  - if image is 200w 300h then /0,0,200,300/ represents the full region.
+    ///  - if the image is square then /square/ represents the full region.
+    ///  - regardless of size /pct:0,0,100,100/ represents the full region.
     /// </summary>
-    public static bool IsFullOrEquivalent(this RegionParameter requestedRegion, int width, int height)
+    public static bool IsFullOrEquivalent(this RegionParameter requestedRegion, Size size)
     {
         if (requestedRegion.Full) return true;
-        if (requestedRegion.Square && width == height) return true;
+        if (requestedRegion.Square && size.GetShape() == ImageShape.Square) return true;
 
-        if (requestedRegion.Percent ||
-            requestedRegion.X + requestedRegion.Y != 0 ||
-            width != (int)requestedRegion.W ||
-            height != (int)requestedRegion.H)
-        {
-            return false;
-        }
+        // If x,y is not top left, then it's not full region 
+        if (requestedRegion is not { X: 0, Y: 0 }) return false;
 
-        return true;
+        // If asking for 100% width and height of image then it's full equivalent
+        if (requestedRegion is { Percent: true, W: 100, H: 100 }) return true;
 
+        // Else it's full equivalent if it's NOT pct: but asking for full region
+        return !requestedRegion.Percent && size.Width == (int)requestedRegion.W &&
+               size.Height == (int)requestedRegion.H;
+    }
+
+    private const string FullToken = "full";
+    private const string UpscaleFullToken = "^full";
+
+    /// <summary>
+    /// Check if the provided <see cref="ImageRequest"/> is for "full" size parameter. This returns true for full or
+    /// ^full, despite the latter being invalid.
+    /// </summary>
+    /// <remarks>
+    /// For backwards compatibility, <see cref="ImageRequest"/> parsing does not differentiate between "full" and "max"
+    /// size parameter - it marks both as "Max"=true.
+    /// </remarks>
+    public static bool IsExplicitFullSize(this ImageRequest imageRequest)
+    {
+        if (imageRequest.IsBase || imageRequest.IsInformationRequest) return false;
+        
+        var path = imageRequest.ImageRequestPath;
+        if (string.IsNullOrWhiteSpace(path)) return false;
+
+        var pathSegments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return pathSegments is [.., FullToken or UpscaleFullToken, _, _];
     }
 }

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Repository.SFTP;
@@ -36,7 +37,7 @@ public class SftpOriginStrategyTests
         var content = "this is a test";
 
         var stream = content.ToMemoryStream();
-        
+
         const string originUri = "sftp://www.someuri.com/public_ftp/someId";
 
         var basicCredentials = new BasicCredentials()
@@ -44,7 +45,7 @@ public class SftpOriginStrategyTests
             User = "correctTest",
             Password = "correctPassword"
         };
-        
+
         var customerOriginStrategy = new CustomerOriginStrategy
         {
             Strategy = OriginStrategyType.SFTP,
@@ -52,20 +53,20 @@ public class SftpOriginStrategyTests
         };
 
         A.CallTo(() =>
-            credentialsRepository.GetBasicCredentialsForOriginStrategy(
-                A<CustomerOriginStrategy>.That.Matches(a => a.Id == "correctResponse")))
+                credentialsRepository.GetBasicCredentialsForOriginStrategy(
+                    A<CustomerOriginStrategy>.That.Matches(a => a.Id == "correctResponse")))
             .Returns(basicCredentials);
-        
+
         A.CallTo(() =>
                 sftpReader.RetrieveFile(
-                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User), 
+                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User),
                     A<string>._,
                     A<CancellationToken>._))
             .Returns(stream);
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
-        
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
+
         // Assert
         A.CallTo(() =>
                 credentialsRepository.GetBasicCredentialsForOriginStrategy(
@@ -73,14 +74,14 @@ public class SftpOriginStrategyTests
             .MustHaveHappened();
         A.CallTo(() =>
                 sftpReader.RetrieveFile(
-                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User), 
+                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User),
                     A<string>._,
                     A<CancellationToken>._))
             .MustHaveHappened();
         result.Stream.Should().NotBeNull().And.Subject.Should().NotBeSameAs(Stream.Null);
         result.ContentLength.Should().Be(stream.Length);
     }
-    
+
     [Fact]
     public async Task LoadAssetFromOrigin_ReturnsExpectedResponseWithNonStandardPort_OnSuccess()
     {
@@ -88,7 +89,7 @@ public class SftpOriginStrategyTests
         var content = "this is a test";
 
         var stream = content.ToMemoryStream();
-        
+
         const string originUri = "sftp://www.someuri.com:23445/public_ftp/someId";
 
         var basicCredentials = new BasicCredentials()
@@ -96,7 +97,7 @@ public class SftpOriginStrategyTests
             User = "correctTest",
             Password = "correctPassword"
         };
-        
+
         var customerOriginStrategy = new CustomerOriginStrategy
         {
             Strategy = OriginStrategyType.SFTP,
@@ -107,22 +108,22 @@ public class SftpOriginStrategyTests
                 credentialsRepository.GetBasicCredentialsForOriginStrategy(
                     A<CustomerOriginStrategy>.That.Matches(a => a.Id == "correctResponse")))
             .Returns(basicCredentials);
-        
+
         A.CallTo(() =>
                 sftpReader.RetrieveFile(
-                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User), 
+                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User),
                     A<string>._,
                     A<CancellationToken>._))
             .Returns(stream);
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
-        
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
+
         // Assert
         result.Stream.Should().NotBeNull().And.Subject.Should().NotBeSameAs(Stream.Null);
         result.ContentLength.Should().Be(stream.Length);
     }
-    
+
     [Theory]
     [InlineData("sftp://www.someuri.com/public_ftp/some folder/someId")]
     [InlineData("sftp://www.someuri.com/public_ftp/some%20folder/someId")]
@@ -138,7 +139,7 @@ public class SftpOriginStrategyTests
             User = "correctTest",
             Password = "correctPassword"
         };
-        
+
         var customerOriginStrategy = new CustomerOriginStrategy
         {
             Strategy = OriginStrategyType.SFTP,
@@ -149,17 +150,17 @@ public class SftpOriginStrategyTests
                 credentialsRepository.GetBasicCredentialsForOriginStrategy(
                     A<CustomerOriginStrategy>.That.Matches(a => a.Id == "correctResponse")))
             .Returns(basicCredentials);
-        
+
         A.CallTo(() =>
                 sftpReader.RetrieveFile(
-                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User), 
+                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User),
                     A<string>._,
                     A<CancellationToken>._))
             .Returns(stream);
 
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
-        
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
+
         // Assert
         A.CallTo(() =>
                 credentialsRepository.GetBasicCredentialsForOriginStrategy(
@@ -167,20 +168,20 @@ public class SftpOriginStrategyTests
             .MustHaveHappened();
         A.CallTo(() =>
                 sftpReader.RetrieveFile(
-                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User), 
+                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User),
                     A<string>.That.Matches(a => a == "/public_ftp/some folder/someId"),
                     A<CancellationToken>._))
             .MustHaveHappened();
         result.Stream.Should().NotBeNull().And.Subject.Should().NotBeSameAs(Stream.Null);
         result.ContentLength.Should().Be(stream.Length);
     }
-    
+
     [Fact]
     public async Task LoadAssetFromOrigin_ReturnsNull_IfCallFailsToFindCredentials()
     {
         // Arrange
         const string originUri = "sftp://www.someuri.com/public_ftp/someId";
-        
+
         var customerOriginStrategy = new CustomerOriginStrategy
         {
             Strategy = OriginStrategyType.SFTP,
@@ -193,20 +194,21 @@ public class SftpOriginStrategyTests
                 credentialsRepository.GetBasicCredentialsForOriginStrategy(
                     A<CustomerOriginStrategy>.That.Matches(a => a.Id == "errorResponse")))
             .Returns(credentials);
-        
+
         // Act
-        Func<Task> action = async () =>  await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
-        
+        Func<Task> action = async () =>
+            await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
+
         // Assert
         await action.Should().ThrowAsync<ApplicationException>();
     }
-    
+
     [Fact]
     public async Task LoadAssetFromOrigin_ReturnsNull_IfCallFails()
     {
         // Arrange
         const string originUri = "sftp://www.someuri.com/public_ftp/someId";
-        
+
         var basicCredentials = new BasicCredentials()
         {
             User = "correctTest",
@@ -223,17 +225,17 @@ public class SftpOriginStrategyTests
                 credentialsRepository.GetBasicCredentialsForOriginStrategy(
                     A<CustomerOriginStrategy>.That.Matches(a => a.Id == "notFound")))
             .Returns(basicCredentials);
-        
+
         A.CallTo(() =>
                 sftpReader.RetrieveFile(
-                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User), 
+                    A<ConnectionInfo>.That.Matches(a => a.Username == basicCredentials.User),
                     A<string>._,
                     A<CancellationToken>._))
             .Throws<SftpPathNotFoundException>();
-        
+
         // Act
-        var result = await sut.LoadAssetFromOrigin(assetId, originUri, customerOriginStrategy);
-        
+        var result = await sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
+
         // Assert
         result.Stream.Should().BeSameAs(Stream.Null);
         result.IsEmpty.Should().BeTrue();

@@ -8,4 +8,10 @@ public interface IQueueLookup
     /// Get the name of queue used for processing assets of specified family
     /// </summary>
     string GetQueueNameForFamily(AssetFamily family, bool priority = false);
+
+    /// <summary>
+    /// Get the name of queue used for processing adjuncts
+    /// </summary>
+    /// <returns>Adjunct processing queue name</returns>
+    string GetAdjunctsQueueName();
 }

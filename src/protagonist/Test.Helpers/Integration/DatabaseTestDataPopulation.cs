@@ -30,7 +30,8 @@ public static class DatabaseTestDataPopulation
         string origin = "http://test",
         string roles = "",
         string mediaType = "image/jpeg",
-        int maxUnauthorised = -1,
+        int maxWidth = 0,
+        int openFullMax = 0,
         int width = 8000,
         int height = 8000,
         string ref1 = "",
@@ -54,7 +55,8 @@ public static class DatabaseTestDataPopulation
         {
             Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
             Width = width, Height = height, Roles = roles, Family = family, MediaType = mediaType,
-            ThumbnailPolicy = thumbnailPolicy, MaxUnauthorised = maxUnauthorised,
+            ThumbnailPolicy = thumbnailPolicy, MaxUnauthorised = -1,
+            MaxWidth = maxWidth, OpenFullMax = openFullMax,
             Reference1 = ref1, Reference2 = ref2, Reference3 = ref3,
             NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
             NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = error,
@@ -69,10 +71,11 @@ public static class DatabaseTestDataPopulation
         string id, string type = "Image", string mediaType = "image/jpeg",
         IIIFLinkType iiifLinkType = IIIFLinkType.SeeAlso,
         string profile = null, LanguageMap label = null,
-        string[] language = null, string externalId = "https://someHost.com/someUri", DateTime? created = null,
-        long? size = null)
+        string[] language = null, string? externalId = null, DateTime? created = null,
+        long? size = null, string? motivation = null, string? origin = null, string? provides = null)
     {
         asset.Result.Entity.Adjuncts ??= [];
+        externalId ??= origin == null ? "https://someHost.com/someUri" : null;
         asset.Result.Entity.Adjuncts.Add(new Adjunct
         {
             Id = id,
@@ -83,9 +86,12 @@ public static class DatabaseTestDataPopulation
             Profile = profile,
             Label = label,
             Language = language,
-            ExternalId = new Uri(externalId),
+            ExternalId = externalId != null ?  new Uri(externalId) : null,
+            Origin = origin,
             Created = created ?? DateTime.UtcNow,
-            Size = size
+            Size = size,
+            Motivation = motivation,
+            Provides = provides
         });
 
         return asset;
@@ -159,8 +165,8 @@ public static class DatabaseTestDataPopulation
 
     public static Task AddTestDefaultDeliveryChannels(this DbSet<DefaultDeliveryChannel> defaultDeliveryChannels,
         int customerId) =>
-        defaultDeliveryChannels.AddRangeAsync(defaultDeliveryChannels.Where(d => d.Customer == 1 && d.Space == 0)
-            .Select(x => new DefaultDeliveryChannel()
+        defaultDeliveryChannels.AddRangeAsync(defaultDeliveryChannels.Where(d => d.Customer == 1 && (d.Space == null || d.Space == 0))
+            .Select(x => new DefaultDeliveryChannel
             {
                 Customer = customerId,
                 Space = x.Space,
@@ -171,7 +177,7 @@ public static class DatabaseTestDataPopulation
     public static Task AddTestDeliveryChannelPolicies(this DbSet<DeliveryChannelPolicy> deliveryChannelPolicies,
         int customerId) =>
         deliveryChannelPolicies.AddRangeAsync(deliveryChannelPolicies.Where(p => p.Customer == 1 && !p.System)
-            .Select(x => new DeliveryChannelPolicy()
+            .Select(x => new DeliveryChannelPolicy
             {
                 Customer = customerId,
                 Name = x.Name,
@@ -200,7 +206,7 @@ public static class DatabaseTestDataPopulation
         => locations.AddAsync(new ImageLocation { Id = id, S3 = s3, Nas = nas });
 
     public static ValueTask<EntityEntry<ImageStorage>> AddTestImageStorage(this DbSet<ImageStorage> storage,
-        AssetId id, int space = 1, int customer = 99, long size = 123, long thumbSize = 10)
+        AssetId id, int space = 1, int customer = 99, long size = 123, long thumbSize = 10, long adjunctSize = 0)
         => storage.AddAsync(new ImageStorage
         {
             Id = id,
@@ -208,7 +214,8 @@ public static class DatabaseTestDataPopulation
             Space = space,
             Size = size,
             LastChecked = DateTime.UtcNow.AddDays(-7),
-            ThumbnailSize = thumbSize
+            ThumbnailSize = thumbSize,
+            AdjunctSize = adjunctSize
         });
 
     public static ValueTask<EntityEntry<Batch>> AddTestBatch(this DbSet<Batch> batch, int id, int customer = 99,
@@ -220,10 +227,32 @@ public static class DatabaseTestDataPopulation
             Count = count, Errors = errors, Superseded = superseded, Finished = finished
         });
 
-    public static ValueTask<EntityEntry<CustomerStorage>> AddTestCustomerStorage(
-        this DbSet<CustomerStorage> customerStorages, int customer = 99, int space = 0, int numberOfImages = 0,
-        long sizeOfStored = 0, long sizeOfThumbs = 0, string storagePolicy = "default")
-        => customerStorages.AddAsync(new CustomerStorage
+    public static async Task<CustomerStorage> AddTestCustomerStorage(
+        this DbSet<CustomerStorage> customerStorages, int customer = 99, int? space = null, int numberOfImages = 0,
+        long sizeOfStored = 0, long sizeOfThumbs = 0, string storagePolicy = "default",
+        int numberOfAdjuncts = 0, long sizeOfAdjuncts = 0)
+    {
+        // Aggregate rows (space == null) may already exist (seeded by test fixture CleanUp).
+        // Update in place to avoid violating the unique partial index.
+        if (space == null)
+        {
+            var existing = await customerStorages
+                .FirstOrDefaultAsync(cs => cs.Customer == customer && cs.Space == null);
+            if (existing != null)
+            {
+                existing.NumberOfStoredImages = numberOfImages;
+                existing.TotalSizeOfStoredImages = sizeOfStored;
+                existing.TotalSizeOfThumbnails = sizeOfThumbs;
+                existing.NumberOfStoredAdjuncts = numberOfAdjuncts;
+                existing.TotalSizeOfStoredAdjuncts = sizeOfAdjuncts;
+                existing.StoragePolicy = storagePolicy;
+                existing.LastCalculated = DateTime.UtcNow;
+                customerStorages.Update(existing);
+                return existing;
+            }
+        }
+
+        var newRow = new CustomerStorage
         {
             Customer = customer,
             Space = space,
@@ -231,8 +260,13 @@ public static class DatabaseTestDataPopulation
             StoragePolicy = storagePolicy,
             NumberOfStoredImages = numberOfImages,
             TotalSizeOfStoredImages = sizeOfStored,
-            TotalSizeOfThumbnails = sizeOfThumbs
-        });
+            TotalSizeOfThumbnails = sizeOfThumbs,
+            NumberOfStoredAdjuncts = numberOfAdjuncts,
+            TotalSizeOfStoredAdjuncts = sizeOfAdjuncts
+        };
+        await customerStorages.AddAsync(newRow);
+        return newRow;
+    }
 
     public static ValueTask<EntityEntry<Asset>> WithTestThumbnailMetadata(
         this ValueTask<EntityEntry<Asset>> asset,
@@ -268,4 +302,13 @@ public static class DatabaseTestDataPopulation
 
     public static ValueTask<EntityEntry<BatchAsset>> AddTestBatchAsset(this DbSet<BatchAsset> batchAssets, int batchId,
         AssetId assetId) => batchAssets.AddAsync(new BatchAsset { AssetId = assetId, BatchId = batchId });
+
+    public static ValueTask<EntityEntry<AdjunctBatch>> AddTestAdjunctBatch(this DbSet<AdjunctBatch> adjunctBatches,
+        int id, int customer = 99, int count = 1, int completed = 0, int errors = 0,
+        DateTime? submitted = null, DateTime? finished = null)
+        => adjunctBatches.AddAsync(new AdjunctBatch
+        {
+            Id = id, Customer = customer, Submitted = submitted ?? DateTime.UtcNow,
+            Count = count, Completed = completed, Errors = errors, Finished = finished
+        });
 }

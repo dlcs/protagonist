@@ -10,6 +10,10 @@ on:
       - "docs/**"
       - "scripts/**"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test-dotnet:
     runs-on: ubuntu-latest
@@ -30,6 +34,8 @@ jobs:
         run: dotnet restore $SOLUTION
       - id: build-dotnet
         run: dotnet build $SOLUTION --configuration $BUILD_CONFIG --no-restore
+      - id: pre-pull-localstack
+        run: docker pull localstack/localstack:4.13
       - id: test-dotnet
         run: dotnet test $SOLUTION --filter 'Category!=Manual' --configuration $BUILD_CONFIG --no-restore --no-build --verbosity normal
 

@@ -12,10 +12,10 @@ namespace DLCS.Repository.Strategy;
 public interface IOriginStrategy
 {
     /// <summary>
-    /// Loads specified <see cref="Asset"/> from origin, using details in specified <see cref="CustomerOriginStrategy"/>
+    /// Loads specified item from origin, using details in specified <see cref="CustomerOriginStrategy"/>
     /// </summary>
     /// <returns>Asset as response</returns>
-    public Task<OriginResponse> LoadAssetFromOrigin(AssetId assetId, string origin,
+    public Task<OriginResponse> LoadFromOrigin(IOriginItem originItem,
         CustomerOriginStrategy? customerOriginStrategy, CancellationToken cancellationToken = default);
 }
 

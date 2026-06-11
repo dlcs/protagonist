@@ -9,4 +9,6 @@ public class CustomerStorageSummary
     public long NumberOfStoredImages { get; set; }
     public long TotalSizeOfStoredImages { get; set; }
     public long TotalSizeOfThumbnails { get; set; }
+    public long NumberOfStoredAdjuncts { get; set; }
+    public long TotalSizeOfStoredAdjuncts { get; set; }
 }

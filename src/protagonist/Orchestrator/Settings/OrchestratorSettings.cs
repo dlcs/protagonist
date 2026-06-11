@@ -18,6 +18,18 @@ public class OrchestratorSettings
     /// Regex for S3-origin, for objects uploaded directly to DLCS.
     /// </summary>
     public string S3OriginRegex { get; set; }
+    
+    /// <summary>
+    /// The system maximum width value. Images will not be generated that exceed this.
+    /// </summary>
+    public int MaxWidth { get; set; } = SystemDefaults.MaxWidth;
+    
+    /// <summary>
+    /// Whether to enforce strict image request validation, rejecting requests that are not in the expected format for
+    /// IIIF ImageApi version.
+    /// </summary>
+    /// <summary>See ADR 0011 for more details</summary>
+    public bool StrictImageRequestParsing { get; set; } = true;
 
     /// <summary>
     /// Which image-server is handling downstream tile requests
@@ -108,6 +120,12 @@ public class OrchestratorSettings
     public NamedQuerySettings NamedQuery { get; set; } = new();
 
     public ImageIngestSettings ImageIngest { get; set; } = new();
+
+    /// <summary>
+    /// Maximum permitted size in bytes for annotation adjuncts that are loaded into memory for id-rewriting.
+    /// Defaults to 5 MB.
+    /// </summary>
+    public long MaxAdjunctSizeBytes { get; set; } = 5 * 1024 * 1024;
 }
 
 public class ProxySettings

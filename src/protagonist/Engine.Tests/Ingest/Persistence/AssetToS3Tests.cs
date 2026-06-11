@@ -63,7 +63,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
 
         // Act
-        await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         A.CallTo(() => bucketWriter.CopyLargeObject(
@@ -102,7 +102,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
 
         // Act
-        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         actual.Should().BeEquivalentTo(expected);
@@ -136,7 +136,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
 
         // Act
-        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         actual.Should().BeEquivalentTo(expected);
@@ -168,7 +168,7 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
 
         // Act
-        Func<Task> action = () => sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        Func<Task> action = () => sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         action.Should().ThrowAsync<ApplicationException>();
@@ -197,15 +197,15 @@ public class AssetToS3Tests
         var assetFromOrigin = new AssetFromOrigin();
         assetFromOrigin.FileTooLarge();
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetFromOrigin);
 
         // Act
-        await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .MustHaveHappened();
     }
     
@@ -228,11 +228,11 @@ public class AssetToS3Tests
         var assetOnDisk = new AssetFromOrigin(asset.Id, 1234, "1", "video/mpeg");
         assetOnDisk.FileTooLarge();
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetOnDisk);
 
         // Act
-        var response = await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        var response = await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         A.CallTo(() => bucketWriter.WriteFileToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, ct))
@@ -258,14 +258,14 @@ public class AssetToS3Tests
 
         var assetOnDisk = new AssetFromOrigin(asset.Id, 1234, "1", "video/mpeg");
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetOnDisk);
 
         A.CallTo(() => bucketWriter.WriteFileToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, ct))
             .Returns(true);
 
         // Act
-        await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         A.CallTo(() => bucketWriter.WriteFileToBucket(
@@ -300,14 +300,14 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
         var assetOnDisk = new AssetFromOrigin(asset.Id, assetSize, "/on/disk", mediaType);
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetOnDisk);
 
         A.CallTo(() => bucketWriter.WriteFileToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, ct))
             .Returns(true);
 
         // Act
-        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        var actual = await sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         actual.Should().BeEquivalentTo(expected);
@@ -331,11 +331,11 @@ public class AssetToS3Tests
         var ct = new CancellationToken();
         var assetOnDisk = new AssetFromOrigin(asset.Id, 1234, "/on/disk", "video/mpeg");
         A.CallTo(() =>
-                assetToDisk.CopyAssetToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
             .Returns(assetOnDisk);
 
         // Act
-        Func<Task> action = () => sut.CopyOriginToStorage(destination, context, true, originStrategy, ct);
+        Func<Task> action = () => sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
 
         // Assert
         action.Should().ThrowAsync<ApplicationException>();

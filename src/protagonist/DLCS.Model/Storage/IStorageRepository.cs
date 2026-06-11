@@ -1,21 +1,28 @@
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Core.Types;
 
 namespace DLCS.Model.Storage;
 
 public interface IStorageRepository
 {
-    /// <summary>
-    /// Get an individual CustomerStorage record for a Space.
-    /// </summary>
-    /// <param name="customerId">The Customer</param>
-    /// <param name="spaceId">The Space</param>
-    /// <param name="createOnDemand">If true, create a new record if a record doesn't exist; otherwise return null.</param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public Task<CustomerStorage?> GetCustomerStorage(int customerId, int spaceId, bool createOnDemand,
-        CancellationToken cancellationToken);
-
     public Task<CustomerStorageSummary> GetCustomerStorageSummary(int customerId, CancellationToken cancellationToken);
     public Task<AssetStorageMetric> GetStorageMetrics(int customerId, CancellationToken cancellationToken);
+
+    /// <summary>Decrement adjunct counts in CustomerStorage and AdjunctSize in ImageStorage.</summary>
+    public Task DecrementAdjunctStorage(AssetId assetId, long adjunctSize, CancellationToken cancellationToken);
+
+    /// <summary>Decrement adjunct counts in CustomerStorage and AdjunctSize in ImageStorage when there are multiple adjuncts being removed.</summary>
+    public Task DecrementAdjunctStorage(AssetId assetId, long adjunctSize, int adjunctCount, CancellationToken cancellationToken);
+    
+    /// <summary>
+    /// Delete customer storage record
+    /// </summary>
+    public Task<bool> DeleteCustomerStorage(int customer, int space, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Create new customer storage record for given space
+    /// </summary>
+    public Task TryCreateCustomerStorage(int customer, int? space, string policy = StoragePolicy.DefaultStoragePolicyName,
+        CancellationToken cancellationToken = default);
 }

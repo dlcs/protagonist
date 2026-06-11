@@ -1,16 +1,18 @@
 using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
+using API.Features.Assets.Query;
+using API.Infrastructure.Page;
 using API.Infrastructure.Requests;
 using API.Settings;
 using DLCS.Core;
 using DLCS.HydraModel;
-using DLCS.Model.Page;
 using DLCS.Web.Requests;
 using Hydra;
 using Hydra.Collections;
 using Hydra.Model;
 using MediatR;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Infrastructure;
@@ -72,12 +74,50 @@ public abstract class HydraController : Controller
         CancellationToken cancellationToken = default)
         where T : class
     {
-        return await HandleHydraRequest(async () =>
-        {
-            var result = await Mediator.Send(request, cancellationToken);
+        var result = await Mediator.Send(request, cancellationToken);
+        return this.ModifyResultToHttpResult(result, hydraBuilder, instance, errorTitle);
+    }
 
-            return this.ModifyResultToHttpResult(result, hydraBuilder, instance, errorTitle);
-        }, errorTitle);
+    /// <summary>
+    /// Handle an upsert request - this takes a IRequest which returns a ModifyEntityResult{T}.
+    /// The request is sent and result is transformed to an http hydra result.
+    /// This is a collection variant that returns <see cref="HydraCollection{TLd}"/>
+    /// </summary>
+    /// <param name="request">IRequest to modify data</param>
+    /// <param name="hydraBuilder">Delegate to transform returned entity to a Hydra representation</param>
+    /// <param name="instance">The value for <see cref="Error.Instance" />.</param>
+    /// <param name="errorTitle">
+    /// The value for <see cref="Error.Title" />. In some instances this will be prepended to the actual error name.
+    /// e.g. errorTitle + ": Conflict"
+    /// </param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <typeparam name="T">Type of entity being upserted</typeparam>
+    /// <typeparam name="TLd">The <see cref="JsonLdBase"/>-derived type that will be used for response</typeparam>
+    /// <returns>
+    /// ActionResult generated from ModifyEntityResult. This will be the Hydra model + 200/201 on success. Or a Hydra
+    /// error and appropriate status code if failed.
+    /// </returns>
+    protected async Task<IActionResult> HandleUpsert<T, TLd>(
+        IRequest<ModifyEntityResult<T[]>> request,
+        Func<T, TLd> hydraBuilder,
+        string? instance = null,
+        string? errorTitle = "Operation failed",
+        CancellationToken cancellationToken = default)
+        where T : class
+        where TLd : JsonLdBase
+    {
+        var result = await Mediator.Send(request, cancellationToken);
+        var collectionId = Request.GetJsonLdId();
+        return this.ModifyResultToHttpResult(result, CollectionBuilder, instance, errorTitle);
+
+        HydraCollection<TLd> CollectionBuilder(T[] items) => new()
+        {
+            Id = collectionId,
+            TotalItems = items.Length,
+            PageSize = items.Length,
+            WithContext = true,
+            Members = items.Select(hydraBuilder).ToArray()
+        };
     }
 
     /// <summary>
@@ -97,14 +137,10 @@ public abstract class HydraController : Controller
         string? errorTitle = "Delete failed",
         CancellationToken cancellationToken = default)
     {
-        return await HandleHydraRequest(async () =>
-        {
-            var result = await Mediator.Send(request, cancellationToken);
-
-            return ConvertDeleteToHttp(result.Value, result.Message);
-        }, errorTitle);
+        var result = await Mediator.Send(request, cancellationToken);
+        return ConvertDeleteToHttp(result.Value, result.Message);
     }
-    
+
     /// <summary>
     /// Handles a deletion, turning DeleteResult to a http response
     /// </summary>
@@ -121,12 +157,8 @@ public abstract class HydraController : Controller
         string? errorTitle = "Delete failed",
         CancellationToken cancellationToken = default)
     {
-        return await HandleHydraRequest(async () =>
-        {
-            var result = await Mediator.Send(request, cancellationToken);
-
-            return ConvertDeleteToHttp(result.Value, result.Message);
-        }, errorTitle);
+        var result = await Mediator.Send(request, cancellationToken);
+        return ConvertDeleteToHttp(result.Value, result.Message);
     }
 
     private IActionResult ConvertDeleteToHttp(DeleteResult result, string? message)
@@ -169,12 +201,8 @@ public abstract class HydraController : Controller
         CancellationToken cancellationToken = default)
         where T : class
     {
-        return await HandleHydraRequest(async () =>
-        {
-            var result = await Mediator.Send(request, cancellationToken);
-
-            return this.FetchResultToHttpResult(result, instance, errorTitle, hydraBuilder);
-        }, errorTitle);
+        var result = await Mediator.Send(request, cancellationToken);
+        return this.FetchResultToHttpResult(result, instance, errorTitle, hydraBuilder);
     }
 
     /// <summary>
@@ -208,53 +236,59 @@ public abstract class HydraController : Controller
         where TRequest : IRequest<FetchEntityResult<PageOf<TEntity>>>, IPagedRequest
         where THydra : DlcsResource
     {
-        return await HandleHydraRequest(async () =>
+        SetPaging(request);
+        if (request is IOrderableRequest orderableRequest)
         {
-            SetPaging(request);
-            if (request is IOrderableRequest orderableRequest)
+            SetOrderBy(orderableRequest);
+        }
+
+        var result = await Mediator.Send(request, cancellationToken);
+
+        return this.FetchResultToHttpResult(
+            result,
+            instance,
+            errorTitle, pageOf =>
             {
-                SetOrderBy(orderableRequest);
-            }
-
-            var result = await Mediator.Send(request, cancellationToken);
-
-            return this.FetchResultToHttpResult(
-                result,
-                instance,
-                errorTitle, pageOf =>
+                var collection = new HydraCollection<THydra>
                 {
-                    var collection = new HydraCollection<THydra>
-                    {
-                        WithContext = true,
-                        Members = pageOf.Entities.Select(b => hydraBuilder(b)).ToArray(),
-                        TotalItems = pageOf.Total,
-                        PageSize = pageOf.PageSize,
-                        Id = Request.GetJsonLdId()
-                    };
-                    PartialCollectionView.AddPaging(collection, new PartialCollectionViewPagingValues
-                    {
-                        Page = pageOf.Page, PageSize = pageOf.PageSize,
-                        FurtherParameters = GetFurtherPageLinkParameters(request)
-                    });
-                    return collection;
+                    WithContext = true,
+                    Members = pageOf.Entities.Select(b => hydraBuilder(b)).ToArray(),
+                    TotalItems = pageOf.Total,
+                    PageSize = pageOf.PageSize,
+                    Id = Request.GetJsonLdId()
+                };
+                PartialCollectionView.AddPaging(collection, new PartialCollectionViewPagingValues
+                {
+                    Page = pageOf.Page, PageSize = pageOf.PageSize,
+                    FurtherParameters = GetFurtherPageLinkParameters(request)
                 });
-        }, errorTitle);
+                return collection;
+            });
     }
 
-    private List<KeyValuePair<string, string>>? GetFurtherPageLinkParameters(IPagedRequest pagedRequest)
+    private static List<KeyValuePair<string, string>>? GetFurtherPageLinkParameters(IPagedRequest pagedRequest)
     {
-        List<KeyValuePair<string, string>>? furtherParameters = null;
-        
-        if (pagedRequest is IAssetFilterableRequest assetFilterableRequest)
+        if (pagedRequest is not IAssetFilterableRequest assetFilterableRequest)
         {
-            if (assetFilterableRequest.AssetFilter != null)
-            {
-                var imageQuery = assetFilterableRequest.AssetFilter.ToImageQuery();
-                furtherParameters ??= new List<KeyValuePair<string, string>>();
-                furtherParameters.Add(new KeyValuePair<string, string>("q", imageQuery.ToQueryParam()));
-            }
+            return null;
         }
         
+        List<KeyValuePair<string, string>>? furtherParameters = null;
+
+        if (assetFilterableRequest.AssetQueryModel.Filter != null)
+        {
+            var imageQuery = assetFilterableRequest.AssetQueryModel.Filter.ToImageQuery();
+            furtherParameters ??= [];
+            furtherParameters.Add(new KeyValuePair<string, string>(QueryParameters.Query, imageQuery.ToQueryParam()));
+        }
+        
+        if (assetFilterableRequest.AssetQueryModel.Include is { Include: not null })
+        {
+            var includeQueryParam = string.Join(",", assetFilterableRequest.AssetQueryModel.Include.Include);
+            furtherParameters ??= [];
+            furtherParameters.Add(new KeyValuePair<string, string>(QueryParameters.Include, includeQueryParam));
+        }
+
         // Add any other parameters we want to pass through here
         
         return furtherParameters;
@@ -289,45 +323,18 @@ public abstract class HydraController : Controller
         where TRequest : IRequest<FetchEntityResult<IReadOnlyCollection<TEntity>>>
         where THydra : DlcsResource
     {
-        return await HandleHydraRequest(async () =>
-        {
-            var result = await Mediator.Send(request, cancellationToken);
-
-            return this.FetchResultToHttpResult(
-                result,
-                instance,
-                errorTitle, results =>
-                {
-                    return new HydraCollection<THydra>
-                    {
-                        WithContext = true,
-                        Members = results.Select(b => hydraBuilder(b)).ToArray(),
-                        TotalItems = results.Count,
-                        PageSize = results.Count,
-                        Id = Request.GetJsonLdId()
-                    };
-                });
-        }, errorTitle);
-    }
-
-    /// <summary>
-    /// Make a request and handle exceptions, converting to a HydraProblem 
-    /// </summary>
-    protected async Task<IActionResult> HandleHydraRequest(Func<Task<IActionResult>> handler,
-        string? errorTitle = "Request failed")
-    {
-        try
-        {
-            return await handler();
-        }
-        catch (APIException apiEx)
-        {
-            return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode ?? 500, apiEx.Label);
-        }
-        catch (Exception ex)
-        {
-            return this.HydraProblem(ex.Message, null, 500, errorTitle);
-        }
+        var result = await Mediator.Send(request, cancellationToken);
+        return this.FetchResultToHttpResult(
+            result,
+            instance,
+            errorTitle, results => new HydraCollection<THydra>
+            {
+                WithContext = true,
+                Members = results.Select(b => hydraBuilder(b)).ToArray(),
+                TotalItems = results.Count,
+                PageSize = results.Count,
+                Id = Request.GetJsonLdId()
+            });
     }
 
     /// <summary>

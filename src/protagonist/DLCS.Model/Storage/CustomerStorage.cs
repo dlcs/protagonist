@@ -6,11 +6,14 @@ namespace DLCS.Model.Storage;
 
 public partial class CustomerStorage
 {
+    public int Id { get; set; }
     public int Customer { get; set; }
     public string StoragePolicy { get; set; }
     public long NumberOfStoredImages { get; set; }
     public long TotalSizeOfStoredImages { get; set; }
     public long TotalSizeOfThumbnails { get; set; }
+    public long NumberOfStoredAdjuncts { get; set; }
+    public long TotalSizeOfStoredAdjuncts { get; set; }
     public DateTime? LastCalculated { get; set; }
-    public int Space { get; set; }
+    public int? Space { get; set; }
 }

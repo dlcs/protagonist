@@ -7,6 +7,7 @@ using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Assets;
 using DLCS.Repository.Entities;
+using DLCS.Repository.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -61,6 +62,7 @@ public class ApiAssetRepository : IApiAssetRepository
         {
             var asset = await dlcsContext.Images
                 .Include(a => a.ImageDeliveryChannels)
+                .Include(a => a.Adjuncts)
                 .SingleOrDefaultAsync(i => i.Id == assetId);
             if (asset == null)
             {
@@ -94,21 +96,25 @@ public class ApiAssetRepository : IApiAssetRepository
                 logger.LogInformation("No ImageStorage record found when deleting asset {AssetId}", assetId);
             }
             
+            var hostedAdjuncts = asset.Adjuncts?.Where(a => a.IsHosted()).ToList() ?? [];
+            var hostedAdjunctCount = hostedAdjuncts.Count;
+            var hostedAdjunctSize = hostedAdjuncts.Sum(a => a.Size ?? 0);
+
             void ReduceCustomerStorage(CustomerStorage customerStorage)
             {
                 // And reduce CustomerStorage record
                 customerStorage.NumberOfStoredImages -= 1;
                 customerStorage.TotalSizeOfThumbnails -= imageStorage?.ThumbnailSize ?? 0;
                 customerStorage.TotalSizeOfStoredImages -= imageStorage?.Size ?? 0;
+                customerStorage.NumberOfStoredAdjuncts -= hostedAdjunctCount;
+                customerStorage.TotalSizeOfStoredAdjuncts -= hostedAdjunctSize;
             }
 
-            // Reduce CustomerStorage for space
-            var customerSpaceStorage = await dlcsContext.CustomerStorages.FindAsync(customer, space);
-            if (customerSpaceStorage != null) ReduceCustomerStorage(customerSpaceStorage);
-
-            // Reduce CustomerStorage for overall customer
-            var customerStorage = await dlcsContext.CustomerStorages.FindAsync(customer, 0);
-            if (customerStorage != null) ReduceCustomerStorage(customerStorage);
+            // Reduce both the per-space row and the customer-wide aggregate row
+            var storageRows = await dlcsContext.CustomerStorages
+                .Where(cs => cs.Customer == customer && (cs.Space == space || cs.Space == null))
+                .ToListAsync();
+            foreach (var row in storageRows) ReduceCustomerStorage(row);
 
             var rowCount = await dlcsContext.SaveChangesAsync();
             if (rowCount == 0)
@@ -142,5 +148,18 @@ public class ApiAssetRepository : IApiAssetRepository
         await dlcsContext.SaveChangesAsync(cancellationToken);
         assetCachingHelper.RemoveAssetFromCache(asset.Id);
         return asset;
+    }
+
+    public async Task ResetImageStorage(AssetId assetId, CancellationToken cancellationToken)
+    {
+        var imageStorage = new ImageStorage
+        {
+            Id = assetId,
+            Customer = assetId.Customer,
+            Space = assetId.Space,
+            LastChecked = DateTime.UtcNow
+        };
+        
+        await dlcsContext.ImageStorages.UpsertImageStorageRecord(imageStorage, cancellationToken);
     }
 }

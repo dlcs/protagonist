@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
+using API.Features.Assets.Query;
 using API.Features.DeliveryChannels.DataAccess;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Caching;
+using DLCS.Model.Assets;
 using DLCS.Model.DeliveryChannels;
 using DLCS.Model.Policies;
 using DLCS.Repository;
@@ -49,10 +51,18 @@ public class DefaultDeliveryChannelRepositoryTests
        
        dbContext.DefaultDeliveryChannels.Add(new DefaultDeliveryChannel
        {
-           Space = 0,
+           Space = null,
            Customer = 2,
            DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.ImageDefault,
            MediaType = "image/*"
+       });
+       
+       dbContext.DefaultDeliveryChannels.Add(new DefaultDeliveryChannel
+       {
+           Space = AssetDeliveryChannels.StubAssetSpace,
+           Customer = 2,
+           DeliveryChannelPolicyId = KnownDeliveryChannelPolicies.None,
+           MediaType = "*/*"
        });
        
        dbContext.SaveChanges();
@@ -97,5 +107,16 @@ public class DefaultDeliveryChannelRepositoryTests
 
         // Assert
         await action.Should().ThrowExactlyAsync<InvalidOperationException>();
+    }
+    
+    [Fact]
+    public async Task MatchedDeliveryChannels_ReturnsOnlyNoneDeliveryChannelPolicy_WhenCalledFromStubAssetSpace()
+    {
+        // Arrange and Act
+        var matches = await sut.MatchedDeliveryChannels("image/tiff", AssetDeliveryChannels.StubAssetSpace, 2);
+
+        // Assert
+        matches.Count.Should().Be(1);
+        matches.Count(x => x.Channel == "none").Should().Be(1);
     }
 }

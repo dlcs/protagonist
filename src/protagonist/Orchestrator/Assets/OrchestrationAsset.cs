@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using DLCS.Core.Types;
+using DLCS.Model.Assets;
+using IIIF;
 using Microsoft.Extensions.Primitives;
 
 namespace Orchestrator.Assets;
@@ -8,15 +10,15 @@ namespace Orchestrator.Assets;
 /// <summary>
 /// Represents an asset during orchestration.
 /// </summary>
-public class OrchestrationAsset
+public class OrchestrationAsset : IOriginItem
 {
     /// <summary>
     /// Get or set the AssetId for tracked Asset
     /// </summary>
-    public AssetId AssetId { get; set; }
+    public AssetId AssetId { get; set; } = null!;
 
     /// <summary>
-    /// Get boolean indicating whether asset is restricted or not.
+    /// Get boolean indicating whether asset is restricted or not. 
     /// </summary>
     public bool RequiresAuth { get; set; }
 
@@ -30,7 +32,13 @@ public class OrchestrationAsset
     /// </summary>
     /// <remarks>This is currently only used when "File" channel is available</remarks>
     public string? Origin { get; set; }
-    
+
+    /// <inheritdoc/>
+    public string ItemId => AssetId.Asset;
+
+    /// <inheritdoc/>
+    public string Identifier() => AssetId.ToString();
+
     /// <summary>
     /// Get or set whether this asset has an optimised origin 
     /// </summary>
@@ -48,32 +56,39 @@ public class OrchestrationAsset
     public StringValues? MediaType { get; set; }
 }
 
-public class OrchestrationImage : OrchestrationAsset
+public class OrchestrationImage : OrchestrationAsset, IOriginItem
 {
     /// <summary>
-    /// Get or set asset Width
+    /// Get or set the image dimensions
     /// </summary>
-    public int Width { get; set; }
+    public Size Size { get; set; } = null!;
     
     /// <summary>
-    /// Get or set asset Height
+    /// The maximum size available for any user. This will be asset MaxWidth, falling back to system default 
     /// </summary>
-    public int Height { get; set; }
+    public int MaxWidth { get; set; }
     
     /// <summary>
-    /// Get maximum dimension available for unauthorised user
+    /// The maximum dimension available for /full/ requests for an unauthorised user
     /// </summary>
-    public int MaxUnauthorised { get; set; }
+    public int? OpenFullMax { get; set; }
 
     /// <summary>
     /// Gets or sets list of thumbnail sizes
     /// </summary>
-    public List<int[]> OpenThumbs { get; set; } = new();
+    public List<int[]> OpenThumbs { get; set; } = [];
     
     /// <summary>
     /// Get or set location in S3 where image-server source is located 
     /// </summary>
     public string? S3Location { get; set; }
+
+    /// <summary>
+    /// When this is treated as an <see cref="IOriginItem"/>, e.g. in an origin strategy, we actually want to use
+    /// the <see cref="S3Location"/>. The actual <see cref="OrchestrationAsset.Origin"/> is only used in a specific
+    /// channel ("File"), which is not using the <see cref="IOriginItem"/>
+    /// </summary>
+    string? IOriginItem.Origin => S3Location;
     
     /// <summary>
     /// Does this image need to be reingested on the fly?
