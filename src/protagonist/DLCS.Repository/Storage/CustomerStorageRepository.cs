@@ -10,22 +10,12 @@ using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Storage;
 
-public class CustomerStorageRepository : IStorageRepository
+public class CustomerStorageRepository(
+    DlcsContext dlcsContext,
+    IPolicyRepository policyRepository,
+    ILogger<CustomerStorageRepository> logger)
+    : IStorageRepository
 {
-    private readonly DlcsContext dlcsContext;
-    private readonly IPolicyRepository policyRepository;
-    private readonly ILogger<CustomerStorageRepository> logger;
-
-    public CustomerStorageRepository(
-        DlcsContext dlcsContext,
-        IPolicyRepository policyRepository,
-        ILogger<CustomerStorageRepository> logger)
-    {
-        this.dlcsContext = dlcsContext;
-        this.policyRepository = policyRepository;
-        this.logger = logger;
-    }
-
     public async Task<CustomerStorageSummary> GetCustomerStorageSummary(
         int customerId, CancellationToken cancellationToken)
     {
@@ -67,6 +57,38 @@ public class CustomerStorageRepository : IStorageRepository
             }, cancellationToken);
 
         await dlcsContext.ImageStorages.DecrementAdjunctSize(assetId, adjunctSize, cancellationToken);
+    }
+
+    public async Task<bool> DeleteCustomerStorage(int customer, int space, CancellationToken cancellationToken)
+    {
+        var deleted = await dlcsContext.CustomerStorages
+            .Where(cs => cs.Customer == customer && cs.Space == space)
+            .DeleteFromQueryAsync(cancellationToken);
+        return deleted > 0;
+    }
+
+    public async Task TryCreateCustomerStorage(int customer, int? space,
+        string policy = StoragePolicy.DefaultStoragePolicyName, CancellationToken cancellationToken = default)
+    {
+        var exists = await dlcsContext.CustomerStorages.AnyAsync(cs =>
+            cs.Customer == customer && cs.Space == space, cancellationToken: cancellationToken);
+
+        if (exists)
+        {
+            // NOTE - CustomerStorage creation on Space creation was added after some instances have been running for a 
+            // long time, so some instances may have duplicate rows. This is not a bug!
+            logger.LogWarning("CustomerStorage already exists for customer {CustomerId} and space {SpaceId}", customer,
+                space);
+            return;
+        }
+
+        await dlcsContext.CustomerStorages.AddAsync(new CustomerStorage
+        {
+            Customer = customer,
+            Space = space,
+            StoragePolicy = policy,
+        }, cancellationToken);
+        await dlcsContext.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<AssetStorageMetric> GetStorageMetrics(int customerId, CancellationToken cancellationToken)

@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Text;
 using API.Client;
 using API.Tests.Integration.Infrastructure;
@@ -13,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
+using CustomerStorage = DLCS.Model.Storage.CustomerStorage;
 
 namespace API.Tests.Integration;
 
@@ -137,6 +140,29 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 ec.Scope == next.ToString());
         spaceImageCounter.Should().NotBeNull();
         spaceImageCounter.Next.Should().Be(1); // Deliverator makes 0 here. But that doesn't feel right!
+    }
+    
+    [Fact]
+    public async Task Create_Space_Creates_CustomerStorage()
+    {
+        int? customerId = await EnsureCustomerForSpaceTests();
+
+        var currentCounter = await dbContext.CustomerStorages.AnyAsync(cs => cs.Customer == customerId && cs.Space > 0);
+        currentCounter.Should().BeFalse("Confirm no CustomerStorage beyond the defaults");
+
+        const string newSpaceJson = @"{
+  ""@type"": ""Space"",
+  ""name"": ""Entity Counter Test Space""
+}";
+        
+        var content = new StringContent(newSpaceJson, Encoding.UTF8, "application/json");
+        var postUrl = $"/customers/{customerId}/spaces";
+        var response = await httpClient.AsCustomer(customerId.Value).PostAsync(postUrl, content);
+        var apiSpace = await response.ReadAsHydraResponseAsync<Space>();
+
+        var spaceId = apiSpace.Id.GetLastPathElementAsInt();
+        var customerStorage = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == customerId && cs.Space == spaceId);
+        customerStorage.Should().NotBeNull("Confirm CustomerStorage created");
     }
 
     [Fact]
@@ -263,7 +289,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Patch_Space_Updates_Name()
     {
-        int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Updates_Name");
+        int? customerId = await EnsureCustomerForSpaceTests();
         await dbContext.Spaces.AddTestSpace(customerId.Value, 1, "Patch Space Before");
         await dbContext.SaveChangesAsync();
         
@@ -283,7 +309,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Patch_Space_Prevents_Name_Conflict()
     {
-        int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Prevents_Name_Conflict");
+        int? customerId = await EnsureCustomerForSpaceTests();
         await dbContext.Spaces.AddTestSpace(customerId.Value, 1, "Patch Space Name 1");
         await dbContext.Spaces.AddTestSpace(customerId.Value, 2, "Patch Space Name 2");
         await dbContext.SaveChangesAsync();
@@ -302,7 +328,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Patch_Space_Leaves_Omitted_Fields_Intact()
     {
         // arrange
-        int? customerId = await EnsureCustomerForSpaceTests("Patch_Space_Leaves_Omitted_Fields_Intact");
+        int? customerId = await EnsureCustomerForSpaceTests();
         
         const string newSpaceJson = @"{
           ""@type"": ""Space"",
@@ -334,9 +360,13 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Put_Space_Creates_Space()
+    public async Task Put_Space_Creates_Space_AndCustomerStorage()
     {
-        int? customerId = await EnsureCustomerForSpaceTests("Put_Space_Creates_Space");
+        int? customerId = await EnsureCustomerForSpaceTests();
+        
+        var currentCounter = await dbContext.CustomerStorages.AnyAsync(cs => cs.Customer == customerId && cs.Space > 0);
+        currentCounter.Should().BeFalse("Confirm no CustomerStorage beyond the defaults");
+        
         const int spaceId = 1;
         
         const string newSpaceJson = @"{
@@ -357,12 +387,16 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         apiSpace.ModelId.Should().Be(spaceId);
         apiSpace.Name.Should().Be("Test Space");
         apiSpace.MaxUnauthorised.Should().Be(-1);
+        
+        var customerStorages = await dbContext.CustomerStorages.Where(cs => cs.Customer == customerId).ToListAsync();
+        var customerStorage = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == customerId && cs.Space == spaceId);
+        customerStorage.Should().NotBeNull("Confirm CustomerStorage created");
     }
     
     [Fact]
     public async Task Put_Space_Updates_Name()
     {
-        int? customerId = await EnsureCustomerForSpaceTests("Put_Space_Updates_Name");
+        int? customerId = await EnsureCustomerForSpaceTests();
         await dbContext.Spaces.AddTestSpace(customerId.Value, 1, "Put Space Before");
         await dbContext.SaveChangesAsync();
         
@@ -382,7 +416,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [Fact]
     public async Task Put_Space_Prevents_Name_Conflict()
     {
-        int? customerId = await EnsureCustomerForSpaceTests("Put_Space_Prevents_Name_Conflict");
+        int? customerId = await EnsureCustomerForSpaceTests();
         await dbContext.Spaces.AddTestSpace(customerId.Value, 1, "Put Space Name 1");
         await dbContext.Spaces.AddTestSpace(customerId.Value, 2, "Put Space Name 2");
         await dbContext.SaveChangesAsync();
@@ -401,7 +435,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Put_Space_Leaves_Omitted_Fields_Intact()
     {
         // arrange
-        int? customerId = await EnsureCustomerForSpaceTests("Put_Space_Leaves_Omitted_Fields_Intact");
+        int? customerId = await EnsureCustomerForSpaceTests();
         
         const string newSpaceJson = @"{
           ""@type"": ""Space"",
@@ -432,8 +466,40 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         putSpace.MaxUnauthorised.Should().Be(400);
     }
     
+    [Fact]
+    public async Task Put_Space_Creates_Space_IfCustomerStorageAlreadyExists()
+    {
+        int? customerId = await EnsureCustomerForSpaceTests();
+        const int spaceId = 1;
+
+        await dbContext.CustomerStorages.AddAsync(new CustomerStorage
+            { Customer = customerId.Value, Space = spaceId });
+        await dbContext.SaveChangesAsync();
+        
+        const string newSpaceJson = @"{
+          ""@type"": ""Space"",
+          ""name"": ""Test Space""
+        }";
+        
+        // Act
+        var content = new StringContent(newSpaceJson, Encoding.UTF8, "application/json");
+        var postUrl = $"/customers/{customerId}/spaces/{spaceId}";
+        var response = await httpClient.AsCustomer(customerId.Value).PutAsync(postUrl, content);
+        var apiSpace = await response.ReadAsHydraResponseAsync<Space>();
+        
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        
+        apiSpace.Should().NotBeNull();
+        apiSpace.ModelId.Should().Be(spaceId);
+        apiSpace.Name.Should().Be("Test Space");
+        apiSpace.MaxUnauthorised.Should().Be(-1);
+        
+        var customerStorage = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == customerId && cs.Space == spaceId);
+        customerStorage.Should().NotBeNull("Confirm CustomerStorage created");
+    }
     
-    private async Task<int?> EnsureCustomerForSpaceTests(string customerName = "space-test-customer")
+    private async Task<int?> EnsureCustomerForSpaceTests([CallerMemberName] string customerName = "space-test-customer")
     {
         var spaceTestCustomer = await dbContext.Customers.SingleOrDefaultAsync(c => c.Name == customerName);
 
@@ -484,7 +550,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task DeleteSpace_Returns_Ok()
     {
         // Arrange
-        int? customerId = await EnsureCustomerForSpaceTests(nameof(DeleteSpace_Returns_Ok));
+        int? customerId = await EnsureCustomerForSpaceTests();
         const string spaceJson = @"{
   ""name"": ""test space""
 }";
@@ -493,26 +559,30 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer().PostAsync($"/customers/{customerId}/spaces", content);
         var space = await response.ReadAsHydraResponseAsync<Space>();
         var spaceCounterBeforeDeletion = await 
-            dbContext.EntityCounters.FirstOrDefaultAsync(s => 
+            dbContext.EntityCounters.SingleOrDefaultAsync(s => 
                 s.Customer == customerId && s.Scope == customerId.ToString() && s.Type == "space");
+        
+        var newSpaceId = space.ModelId!;
 
         // Act
         var deleteResponse = await httpClient.AsCustomer()
-            .DeleteAsync($"/customers/{customerId}/spaces/{space.ModelId}");
+            .DeleteAsync($"/customers/{customerId}/spaces/{newSpaceId}");
         
         var spaceCounterAfterDeletion = await 
-            dbContext.EntityCounters.FirstOrDefaultAsync(s => 
+            dbContext.EntityCounters.SingleOrDefaultAsync(s => 
                 s.Customer == customerId && s.Scope == customerId.ToString() && s.Type == "space");
         
         // Assert
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var deletedSpace = await dbContext.Spaces.SingleOrDefaultAsync(s => s.Id == space.ModelId && s.Customer == customerId );
+        var deletedSpace = await dbContext.Spaces.SingleOrDefaultAsync(s => s.Id == newSpaceId && s.Customer == customerId );
         deletedSpace.Should().BeNull();
 
         spaceCounterBeforeDeletion.Should().NotBeNull();
         spaceCounterAfterDeletion.Should().NotBeNull();
-        spaceCounterAfterDeletion.Next.Should().Be(spaceCounterBeforeDeletion.Next - 1
-                , "because we perform a decrement on the space entity counter on deletion");
+        spaceCounterAfterDeletion.Next.Should().Be(spaceCounterBeforeDeletion.Next - 1,
+            "because we perform a decrement on the space entity counter on deletion");
+        (await dbContext.CustomerStorages.AnyAsync(s => s.Customer == customerId && s.Space == newSpaceId))
+            .Should().BeFalse("CustomerStorage deleted");
     }
     
     [Fact]

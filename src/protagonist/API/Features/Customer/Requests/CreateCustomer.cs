@@ -20,54 +20,35 @@ namespace API.Features.Customer.Requests;
 /// <summary>
 /// Create a new Customer
 /// </summary>
-public class CreateCustomer : IRequest<ModifyEntityResult<CustomerEntity>>, IInvalidateCaches
+public class CreateCustomer(string name, string displayName)
+    : IRequest<ModifyEntityResult<CustomerEntity>>, IInvalidateCaches
 {
     /// <summary>
     /// Customer name. Will be checked for uniqueness.
     /// Used as the URL component.
     /// </summary>
-    public string Name { get; }
-    
+    public string Name { get; } = name;
+
     /// <summary>
     /// Display name, must also be unique.
     /// </summary>
-    public string DisplayName { get; }
-    
-    public CreateCustomer(string name, string displayName)
-    {
-        Name = name;
-        DisplayName = displayName;
-    }
+    public string DisplayName { get; } = displayName;
 
-    public string[] InvalidatedCacheKeys => new[] { CacheKeys.CustomerIdLookup, CacheKeys.CustomerNameLookup };
+    public string[] InvalidatedCacheKeys => [CacheKeys.CustomerIdLookup, CacheKeys.CustomerNameLookup];
 }
 
-public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEntityResult<CustomerEntity>>
+public class CreateCustomerHandler(
+    DlcsContext dbContext,
+    IEntityCounterRepository entityCounterRepository,
+    IAuthServicesRepository authServicesRepository,
+    IStorageRepository storageRepository,
+    DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository,
+    ICustomerNotificationSender customerNotificationSender,
+    ILogger<CreateCustomerHandler> logger)
+    : IRequestHandler<CreateCustomer, ModifyEntityResult<CustomerEntity>>
 {
     private const string CustomerNameTaken = "A customer with this name (url part) already exists.";
     private const string CustomerDisplayNameTaken = "A customer with this display name (label) already exists.";
-    private readonly DlcsContext dbContext;
-    private readonly IEntityCounterRepository entityCounterRepository;
-    private readonly IAuthServicesRepository authServicesRepository;
-    private readonly DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository;
-    private readonly ICustomerNotificationSender customerNotificationSender;
-    private readonly ILogger<CreateCustomerHandler> logger;
-
-    public CreateCustomerHandler(
-        DlcsContext dbContext,
-        IEntityCounterRepository entityCounterRepository,
-        IAuthServicesRepository authServicesRepository,
-        DapperNewCustomerDeliveryChannelRepository deliveryChannelPolicyRepository,
-        ICustomerNotificationSender customerNotificationSender,
-        ILogger<CreateCustomerHandler> logger)
-    {
-        this.dbContext = dbContext;
-        this.entityCounterRepository = entityCounterRepository;
-        this.authServicesRepository = authServicesRepository;
-        this.deliveryChannelPolicyRepository = deliveryChannelPolicyRepository;
-        this.customerNotificationSender = customerNotificationSender;
-        this.logger = logger;
-    }
 
     public async Task<ModifyEntityResult<CustomerEntity>> Handle(CreateCustomer request, CancellationToken cancellationToken)
     {
@@ -105,33 +86,16 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomer,  ModifyEnti
                 Name = "stub-assets",
                 Created = DateTime.UtcNow,
                 ImageBucket = string.Empty,
-                Tags = Array.Empty<string>(),
-                Roles = Array.Empty<string>(),
+                Tags = [],
+                Roles = [],
                 MaxUnauthorised = -1
             }, cancellationToken);
 
             // Create null-space aggregate CustomerStorage row for storage tracking
-            await dbContext.CustomerStorages.AddAsync(new CustomerStorage
-            {
-                Customer = newCustomerId,
-                Space = null,
-                StoragePolicy = StoragePolicy.DefaultStoragePolicyName,
-                NumberOfStoredImages = 0,
-                TotalSizeOfStoredImages = 0,
-                TotalSizeOfThumbnails = 0
-            }, cancellationToken);
+            await storageRepository.TryCreateCustomerStorage(newCustomerId, null, cancellationToken: cancellationToken);
 
             // Pre-seed a per-space row for space 0 (stub-assets) so that Engine storage increments
-            // hit an existing row rather than silently no-oping on their first UPDATE.
-            await dbContext.CustomerStorages.AddAsync(new CustomerStorage
-            {
-                Customer = newCustomerId,
-                Space = 0,
-                StoragePolicy = StoragePolicy.DefaultStoragePolicyName,
-                NumberOfStoredImages = 0,
-                TotalSizeOfStoredImages = 0,
-                TotalSizeOfThumbnails = 0
-            }, cancellationToken);
+            await storageRepository.TryCreateCustomerStorage(newCustomerId, 0, cancellationToken: cancellationToken);
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
