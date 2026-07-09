@@ -2,7 +2,6 @@
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Streams;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy.Utils;
@@ -72,16 +71,25 @@ public class FileChannelWorker(
         {
             if (customerOriginStrategy.Optimised)
             {
-                // The adjunct bytes remain in the (optimised) origin bucket - Protagonist isn't storing them,
-                // so they don't count against the customer's storage. We still need to record the adjunct's size.
-                ingestionContext.WithoutStorageTracking();
-
+                // The adjunct bytes remain in the (optimised) origin - Protagonist isn't storing them, so they
+                // don't count towards the customer's stored-adjunct size. We still record the adjunct's size.
+                long? contentSize;
                 if (isAnnotation)
                 {
-                    return await ValidateAnnotationAtOrigin(ingestionContext, customerOriginStrategy, cancellationToken);
+                    var (annotationStatus, annotationSize) =
+                        await ValidateAnnotationAtOrigin(ingestionContext, customerOriginStrategy, cancellationToken);
+                    if (annotationStatus != IngestResultStatus.Success) return annotationStatus;
+                    contentSize = annotationSize;
+                }
+                else
+                {
+                    logger.LogDebug(
+                        "Adjunct {AdjunctId} for Asset {Asset} is at optimised origin, no 'file' handling required - recording size only",
+                        adjunct.Id, ingestionContext.AssetId);
+                    contentSize = await GetOptimisedAdjunctSize(ingestionContext, cancellationToken);
                 }
 
-                await SetOptimisedAdjunctSize(ingestionContext, cancellationToken);
+                RecordAdjunctSizeChange(ingestionContext, contentSize, isOptimised: true);
                 return IngestResultStatus.Success;
             }
 
@@ -99,11 +107,8 @@ public class FileChannelWorker(
                 return IngestResultStatus.StorageLimitExceeded;
             }
 
-            UpdateIngestionContext(ingestionContext, adjunctInBucket, targetStorageLocation);
-
-            // Adjunct-specific behaviour:
-            // We have just determined the size of the Adjunct, and we will want to persist it to use in case of update
-            adjunct.Size = adjunctInBucket.AssetSize;
+            ingestionContext.StoredObjects[targetStorageLocation] = adjunctInBucket.AssetSize;
+            RecordAdjunctSizeChange(ingestionContext, adjunctInBucket.AssetSize, isOptimised: false);
 
             return IngestResultStatus.Success;
         }
@@ -119,36 +124,47 @@ public class FileChannelWorker(
     private static void UpdateIngestionContext(IngestionContext ingestionContext, AssetFromOrigin itemInBucket,
         RegionalisedObjectInBucket targetStorageLocation)
     {
+        // Asset ingestion. Adjuncts have their own size/storage handling (see RecordAdjunctSizeChange).
         ingestionContext.StoredObjects[targetStorageLocation] = itemInBucket.AssetSize;
-
-        if (ingestionContext is AdjunctIngestionContext adjunctIngestionContext)
-        {
-            // We don't track individual adjunct size in the ImageStorage
-            // Instead, we run a running tally of all asset's adjuncts
-
-            // In creation of new adjunct scenario this is simple: we add the size as reported by the item in bucket
-            // For update, we're interested in the difference between previous and current size of the _specific_ adjunct,
-            // as it can be negative
-
-            // If the adjunct has been previously external one, then the API would've updated it's Size to 0, signifying
-            // it didn't use to count against limits. Otherwise, the Size of Adjunct retrieved from DB is the size
-            // of the previous version of a hosted adjunct
-
-            // size to add to the tally = size of the just uploaded adjunct minus size of a previous hosted version (or 0)
-            var adjunctSize = itemInBucket.AssetSize - (adjunctIngestionContext.Adjunct.Size ?? 0);
-
-            ingestionContext.WithStorage(adjunctSize: adjunctSize);
-        }
-        else
-        {
-            // Asset ingestion
-            // NOTE: should a third type (Asset, Adjunct, ?) appear, this will need a suitable case added
-            ingestionContext.WithStorage(assetSize: itemInBucket.AssetSize);
-        }
+        ingestionContext.WithStorage(assetSize: itemInBucket.AssetSize);
     }
 
-    private async Task<IngestResultStatus> ValidateAnnotationAtOrigin(AdjunctIngestionContext ingestionContext,
-        CustomerOriginStrategy customerOriginStrategy, CancellationToken cancellationToken)
+    /// <summary>
+    /// Records the ingested adjunct's content <see cref="Adjunct.Size"/> and computes the signed delta to apply to
+    /// the customer's stored-adjunct size totals (<see cref="AdjunctIngestionContext.StoredSizeDelta"/>).
+    /// </summary>
+    /// <remarks>
+    /// The delta is <c>newContribution - prevContribution</c>. Optimised adjuncts keep their bytes in the origin so
+    /// contribute 0 regardless of size; this correctly decrements when a hosted adjunct moves to an optimised origin,
+    /// and increments in the reverse direction. Must be called with the adjunct's <em>pre-ingest</em> DB values still
+    /// in place (i.e. before this method overwrites them).
+    /// </remarks>
+    private void RecordAdjunctSizeChange(AdjunctIngestionContext context, long? newContentSize, bool isOptimised)
+    {
+        var adjunct = context.Adjunct;
+
+        var prevContribution = adjunct.Optimised ? 0 : (adjunct.Size ?? 0);
+        var newContribution = isOptimised ? 0 : (newContentSize ?? 0);
+
+        context.WithStoredSizeDelta(newContribution - prevContribution);
+
+        if (newContentSize is > 0)
+        {
+            adjunct.Size = newContentSize.Value;
+        }
+        else if (isOptimised)
+        {
+            logger.LogWarning(
+                "Unable to determine size for optimised adjunct {AdjunctId}, Asset {AssetId}; leaving size unchanged",
+                adjunct.Id, context.AssetId);
+        }
+
+        adjunct.Optimised = isOptimised;
+    }
+
+    private async Task<(IngestResultStatus status, long? size)> ValidateAnnotationAtOrigin(
+        AdjunctIngestionContext ingestionContext, CustomerOriginStrategy customerOriginStrategy,
+        CancellationToken cancellationToken)
     {
         var adjunct = ingestionContext.Adjunct;
 
@@ -161,7 +177,7 @@ public class FileChannelWorker(
                 "Unable to read annotation adjunct {AdjunctId} for Asset {AssetId} content from origin for validation",
                 adjunct.Id, ingestionContext.AssetId);
             adjunct.Error = "Unable to read annotation content for validation";
-            return IngestResultStatus.Failed;
+            return (IngestResultStatus.Failed, null);
         }
 
         var validationError = await GetJsonValidationError(originResponse.Stream, cancellationToken);
@@ -171,27 +187,21 @@ public class FileChannelWorker(
                 "Annotation adjunct {AdjunctId} for Asset {AssetId} content is not valid JSON",
                 adjunct.Id, ingestionContext.AssetId);
             adjunct.Error = validationError;
-            return IngestResultStatus.Failed;
+            return (IngestResultStatus.Failed, null);
         }
 
-        // We fetched the content to validate it, so we can record its size at the same time
-        SetAdjunctSize(adjunct, originResponse.ContentLength, ingestionContext.AssetId);
-
-        return IngestResultStatus.Success;
+        // We fetched the content to validate it, so we can capture its size at the same time
+        return (IngestResultStatus.Success, originResponse.ContentLength);
     }
 
     /// <summary>
-    /// Determines the size of an adjunct held at an optimised origin (where Protagonist doesn't fetch/copy
-    /// the bytes) via an S3 HEAD request, and records it on the adjunct.
+    /// Determines the size of an adjunct held at an optimised origin (where Protagonist doesn't fetch/copy the
+    /// bytes) via an S3 HEAD request. Returns null if the size cannot be determined.
     /// </summary>
-    private async Task SetOptimisedAdjunctSize(AdjunctIngestionContext ingestionContext,
+    private async Task<long?> GetOptimisedAdjunctSize(AdjunctIngestionContext ingestionContext,
         CancellationToken cancellationToken)
     {
         var adjunct = ingestionContext.Adjunct;
-
-        logger.LogDebug(
-            "Adjunct {AdjunctId} for Asset {Asset} is at optimised origin, no 'file' handling required - recording size only",
-            adjunct.Id, ingestionContext.AssetId);
 
         var origin = RegionalisedObjectInBucket.Parse(adjunct.Origin ?? string.Empty);
         if (origin == null)
@@ -199,25 +209,11 @@ public class FileChannelWorker(
             logger.LogWarning(
                 "Unable to parse origin '{Origin}' for optimised adjunct {AdjunctId}, Asset {AssetId}; size not recorded",
                 adjunct.Origin, adjunct.Id, ingestionContext.AssetId);
-            return;
+            return null;
         }
 
         var headers = await bucketReader.GetObjectHeaders(origin, cancellationToken);
-        SetAdjunctSize(adjunct, headers?.ContentLength, ingestionContext.AssetId);
-    }
-
-    private void SetAdjunctSize(Adjunct adjunct, long? size, AssetId assetId)
-    {
-        if (size is > 0)
-        {
-            adjunct.Size = size.Value;
-        }
-        else
-        {
-            logger.LogWarning(
-                "Unable to determine size for adjunct {AdjunctId}, Asset {AssetId}; leaving size unchanged",
-                adjunct.Id, assetId);
-        }
+        return headers?.ContentLength;
     }
 
     private async Task<string?> IsValidAnnotationJsonFile(string filePath, CancellationToken cancellationToken)

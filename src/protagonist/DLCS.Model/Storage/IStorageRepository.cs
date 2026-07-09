@@ -14,6 +14,13 @@ public interface IStorageRepository
 
     /// <summary>Decrement adjunct counts in CustomerStorage and AdjunctSize in ImageStorage when there are multiple adjuncts being removed.</summary>
     public Task DecrementAdjunctStorage(AssetId assetId, long adjunctSize, int adjunctCount, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Atomically apply a signed size delta to the stored-adjunct size totals: <c>TotalSizeOfStoredAdjuncts</c> in
+    /// CustomerStorage and <c>AdjunctSize</c> in ImageStorage (both clamped at zero). Does not change adjunct counts.
+    /// </summary>
+    /// <remarks>Use for adjunct ingest, where the delta may be negative (e.g. a hosted adjunct moving to an optimised origin).</remarks>
+    public Task AdjustAdjunctStoredSize(AssetId assetId, long sizeDelta, CancellationToken cancellationToken);
     
     /// <summary>
     /// Delete customer storage record

@@ -5,6 +5,7 @@ using System.Text.Json;
 using Amazon.S3.Model;
 using DLCS.AWS.S3;
 using DLCS.Core.FileSystem;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
@@ -260,6 +261,55 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
+    public async Task IngestAdjunct_MultipleAdjunctsOnOneAsset_CustomerStorageSumsAll()
+    {
+        // Regression: CustomerStorage previously over-counted when an asset had >1 adjunct (it added the whole
+        // cumulative ImageStorage tally each ingest). It should equal the true sum of the adjuncts.
+        await dbContext.CustomerStorages.AddTestCustomerStorage(customer: 99, space: 1);
+        await dbContext.SaveChangesAsync();
+        dbContext.ChangeTracker.Clear();
+
+        var asset = await CreateParentAsset();
+
+        var aggregateRow = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == 99 && cs.Space == null);
+        var spaceRow = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == 99 && cs.Space == 1);
+        var adjunctSizeBefore = aggregateRow.TotalSizeOfStoredAdjuncts;
+        var spaceAdjunctSizeBefore = spaceRow.TotalSizeOfStoredAdjuncts;
+
+        // Add both adjuncts (FK only, no Asset navigation, so the tracked asset graph isn't re-inserted)
+        dbContext.Adjuncts.Add(new Adjunct
+        {
+            Id = "multi-adjunct-a", AssetId = asset.Id, IIIFLink = IIIFLinkType.SeeAlso, MediaType = "image/jpeg",
+            Type = "Image", Origin = origin2k, Created = DateTime.UtcNow, Error = string.Empty, Ingesting = true
+        });
+        dbContext.Adjuncts.Add(new Adjunct
+        {
+            Id = "multi-adjunct-b", AssetId = asset.Id, IIIFLink = IIIFLinkType.SeeAlso, MediaType = "image/jpeg",
+            Type = "Image", Origin = origin4k, Created = DateTime.UtcNow, Error = string.Empty, Ingesting = true
+        });
+        await dbContext.SaveChangesAsync();
+
+        // Act - ingest both hosted adjuncts (2048 + 4096) on the same asset
+        foreach (var id in new[] { "multi-adjunct-a", "multi-adjunct-b" })
+        {
+            var message = new IngestAdjunctRequest(id, asset.Id, DateTime.UtcNow);
+            var jsonContent = new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
+            (await httpClient.PostAsync("adjunct-ingest", jsonContent)).Should().BeSuccessful();
+        }
+
+        // Assert
+        await dbContext.Entry(aggregateRow).ReloadAsync();
+        await dbContext.Entry(spaceRow).ReloadAsync();
+
+        aggregateRow.TotalSizeOfStoredAdjuncts.Should().Be(adjunctSizeBefore + 2048 + 4096,
+            "customer storage should equal the sum of both hosted adjuncts");
+        spaceRow.TotalSizeOfStoredAdjuncts.Should().Be(spaceAdjunctSizeBefore + 2048 + 4096);
+
+        var storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == asset.Id);
+        storage.AdjunctSize.Should().Be(2048 + 4096, "the per-asset ImageStorage tally should also equal the sum");
+    }
+
+    [Fact]
     public async Task IngestAdjunct_OptimisedS3Ambient_RecordsSize_WithoutCountingTowardsStorage()
     {
         // Arrange
@@ -378,7 +428,7 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     // -- helpers ---
-    
+
     private async Task<Asset> CreateParentAsset(int customer = 99, int space = 1, [CallerMemberName] string assetName = "",
         string assetPostfix = "")
     {
