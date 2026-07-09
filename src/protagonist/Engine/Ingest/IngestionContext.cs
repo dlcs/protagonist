@@ -93,6 +93,17 @@ public class IngestionContext(Asset asset)
         return this;
     }
 
+    /// <summary>
+    /// Clears any tracked <see cref="ImageStorage"/> so that this ingestion does not alter stored-bytes
+    /// accounting (ImageStorage / CustomerStorage). Used when the item's bytes remain in the origin (e.g.
+    /// optimised s3-ambient adjuncts) and therefore don't count against a customer's storage.
+    /// </summary>
+    public IngestionContext WithoutStorageTracking()
+    {
+        ImageStorage = null;
+        return this;
+    }
+
     public IngestionContext WithStorage(long? assetSize = null, long? thumbnailSize = null, long? adjunctSize = null)
     {
         ImageStorage ??= new ImageStorage

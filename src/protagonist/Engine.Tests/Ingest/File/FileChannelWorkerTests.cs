@@ -20,6 +20,7 @@ public class FileChannelWorkerTests
     private readonly IAssetToS3 assetToS3;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IOriginStrategy originStrategy;
+    private readonly IBucketReader bucketReader;
     private readonly FileChannelWorker sut;
 
     public FileChannelWorkerTests()
@@ -28,11 +29,12 @@ public class FileChannelWorkerTests
         assetToS3 = A.Fake<IAssetToS3>();
         storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         originStrategy = A.Fake<IOriginStrategy>();
+        bucketReader = A.Fake<IBucketReader>();
         OriginStrategyResolver resolver = _ => originStrategy;
         var originFetcher = new OriginFetcher(resolver);
 
         sut = new FileChannelWorker(assetToS3, assetIngestorSizeCheck, storageKeyGenerator, originFetcher,
-            new NullLogger<FileChannelWorker>());
+            bucketReader, new NullLogger<FileChannelWorker>());
     }
 
     [Fact]
@@ -186,6 +188,48 @@ public class FileChannelWorkerTests
     }
 
     [Fact]
+    public async Task IngestAdjunct_Optimised_NonAnnotation_RecordsSizeFromHead_WithoutStorageTracking()
+    {
+        // Arrange - adjunct bytes stay in the optimised origin, so size is read via a HEAD request and
+        // does not count against the customer's storage
+        var seededStorage = new ImageStorage { Id = AssetId.FromString("/1/2/something"), Customer = 1, Space = 2 };
+        var context = GetAdjunctIngestionContext(imageStorage: seededStorage, origin: "s3://origin-bucket/adjunct-key");
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = true };
+        A.CallTo(() => bucketReader.GetObjectHeaders(A<ObjectInBucket>._, A<CancellationToken>._))
+            .Returns(new ObjectInBucketHeaders { ContentLength = 2048L });
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+
+        // Assert
+        result.Should().Be(IngestResultStatus.Success);
+        context.Adjunct.Size.Should().Be(2048L);
+        context.ImageStorage.Should().BeNull("optimised adjuncts don't count against storage");
+        context.StoredObjects.Should().BeEmpty();
+        A.CallTo(() =>
+                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, cos,
+                    A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._))
+            .MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_Optimised_NonAnnotation_LeavesSizeUnchanged_IfObjectNotFound()
+    {
+        // Arrange
+        var context = GetAdjunctIngestionContext(origin: "s3://origin-bucket/adjunct-key");
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = true };
+        A.CallTo(() => bucketReader.GetObjectHeaders(A<ObjectInBucket>._, A<CancellationToken>._))
+            .Returns((ObjectInBucketHeaders?)null);
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+
+        // Assert
+        result.Should().Be(IngestResultStatus.Success);
+        context.Adjunct.Size.Should().BeNull();
+    }
+
+    [Fact]
     public async Task IngestAdjunct_CopiesFileToStorage_SetsImageStorage_AndStoredObject()
     {
         // Arrange
@@ -303,7 +347,7 @@ public class FileChannelWorkerTests
     
     // Helpers
     
-    private static AdjunctIngestionContext GetAdjunctIngestionContext(string assetId = "/1/2/something", string adjunctId = "someAdjunct", ImageStorage? imageStorage = null)
+    private static AdjunctIngestionContext GetAdjunctIngestionContext(string assetId = "/1/2/something", string adjunctId = "someAdjunct", ImageStorage? imageStorage = null, string? origin = null)
     {
         var id = AssetId.FromString(assetId);
         var asset = new Asset
@@ -315,7 +359,7 @@ public class FileChannelWorkerTests
         var adjunct = new Adjunct
         {
             Id = adjunctId, AssetId = id, Asset = asset, IIIFLink = IIIFLinkType.SeeAlso,
-            MediaType = "image/jpeg", Type = "Image"
+            MediaType = "image/jpeg", Type = "Image", Origin = origin
         };
 
         var context = new AdjunctIngestionContext(adjunct, imageStorage);
@@ -341,8 +385,11 @@ public class FileChannelWorkerTests
         return new AdjunctIngestionContext(adjunct, null);
     }
 
-    private static OriginResponse MakeOriginResponse(string content)
-        => new(new MemoryStream(Encoding.UTF8.GetBytes(content)));
+    private static OriginResponse MakeOriginResponse(string content, long? contentLength = null)
+    {
+        var response = new OriginResponse(new MemoryStream(Encoding.UTF8.GetBytes(content)));
+        return contentLength.HasValue ? response.WithContentLength(contentLength) : response;
+    }
 
     // Annotation adjuncts - Optimised path (validate via OriginFetcher, no S3 copy)
 
@@ -364,6 +411,24 @@ public class FileChannelWorkerTests
                 assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, cos,
                     A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._))
             .MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_Annotation_Optimised_ValidJson_RecordsSizeFromContentLength()
+    {
+        // Arrange - annotation content is already fetched for JSON validation, so its size is recorded too
+        var context = GetAnnotationAdjunctIngestionContext();
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = true };
+        A.CallTo(() => originStrategy.LoadFromOrigin(context.Adjunct, cos, A<CancellationToken>._))
+            .Returns(MakeOriginResponse("""{"type":"AnnotationPage"}""", contentLength: 512L));
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+
+        // Assert
+        result.Should().Be(IngestResultStatus.Success);
+        context.Adjunct.Size.Should().Be(512L);
+        context.ImageStorage.Should().BeNull("optimised adjuncts don't count against storage");
     }
 
     [Fact]

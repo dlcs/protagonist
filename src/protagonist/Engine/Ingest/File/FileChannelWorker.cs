@@ -2,6 +2,7 @@
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Streams;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy.Utils;
@@ -17,6 +18,7 @@ public class FileChannelWorker(
     IAssetIngestorSizeCheck assetIngestorSizeCheck,
     IStorageKeyGenerator storageKeyGenerator,
     OriginFetcher originFetcher,
+    IBucketReader bucketReader,
     ILogger<FileChannelWorker> logger)
     : IAssetIngesterWorker, IAdjunctIngesterWorker
 {
@@ -70,15 +72,17 @@ public class FileChannelWorker(
         {
             if (customerOriginStrategy.Optimised)
             {
-                if (!isAnnotation)
+                // The adjunct bytes remain in the (optimised) origin bucket - Protagonist isn't storing them,
+                // so they don't count against the customer's storage. We still need to record the adjunct's size.
+                ingestionContext.WithoutStorageTracking();
+
+                if (isAnnotation)
                 {
-                    logger.LogDebug(
-                        "Non-annotation adjunct {AdjunctId} for Asset {Asset} is at optimised origin, no 'file' handling required",
-                        adjunct.Id, ingestionContext.AssetId);
-                    return IngestResultStatus.Success;
+                    return await ValidateAnnotationAtOrigin(ingestionContext, customerOriginStrategy, cancellationToken);
                 }
 
-                return await ValidateAnnotationAtOrigin(ingestionContext, customerOriginStrategy, cancellationToken);
+                await SetOptimisedAdjunctSize(ingestionContext, cancellationToken);
+                return IngestResultStatus.Success;
             }
 
             var targetStorageLocation = storageKeyGenerator.GetStoredAdjunctLocation(ingestionContext.AssetId, adjunct);
@@ -170,7 +174,50 @@ public class FileChannelWorker(
             return IngestResultStatus.Failed;
         }
 
+        // We fetched the content to validate it, so we can record its size at the same time
+        SetAdjunctSize(adjunct, originResponse.ContentLength, ingestionContext.AssetId);
+
         return IngestResultStatus.Success;
+    }
+
+    /// <summary>
+    /// Determines the size of an adjunct held at an optimised origin (where Protagonist doesn't fetch/copy
+    /// the bytes) via an S3 HEAD request, and records it on the adjunct.
+    /// </summary>
+    private async Task SetOptimisedAdjunctSize(AdjunctIngestionContext ingestionContext,
+        CancellationToken cancellationToken)
+    {
+        var adjunct = ingestionContext.Adjunct;
+
+        logger.LogDebug(
+            "Adjunct {AdjunctId} for Asset {Asset} is at optimised origin, no 'file' handling required - recording size only",
+            adjunct.Id, ingestionContext.AssetId);
+
+        var origin = RegionalisedObjectInBucket.Parse(adjunct.Origin ?? string.Empty);
+        if (origin == null)
+        {
+            logger.LogWarning(
+                "Unable to parse origin '{Origin}' for optimised adjunct {AdjunctId}, Asset {AssetId}; size not recorded",
+                adjunct.Origin, adjunct.Id, ingestionContext.AssetId);
+            return;
+        }
+
+        var headers = await bucketReader.GetObjectHeaders(origin, cancellationToken);
+        SetAdjunctSize(adjunct, headers?.ContentLength, ingestionContext.AssetId);
+    }
+
+    private void SetAdjunctSize(Adjunct adjunct, long? size, AssetId assetId)
+    {
+        if (size is > 0)
+        {
+            adjunct.Size = size.Value;
+        }
+        else
+        {
+            logger.LogWarning(
+                "Unable to determine size for adjunct {AdjunctId}, Asset {AssetId}; leaving size unchanged",
+                adjunct.Id, assetId);
+        }
     }
 
     private async Task<string?> IsValidAnnotationJsonFile(string filePath, CancellationToken cancellationToken)
