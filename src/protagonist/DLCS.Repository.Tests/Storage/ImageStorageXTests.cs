@@ -72,9 +72,9 @@ public class ImageStorageXTests
         var imageStorageRecord = dbContext.ImageStorages.Single(x => x.Id == imageStorage.Id);
         imageStorageRecord.Should().BeEquivalentTo(imageStorage);
     }
-
+    
     [Fact]
-    private async Task DecrementAdjunctSize_DecrementsAdjunctSize()
+    private async Task AdjustAdjunctSize_Untouched_IfDelta0()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -83,15 +83,49 @@ public class ImageStorageXTests
         dbContext.ChangeTracker.Clear();
 
         // Act
-        await dbContext.ImageStorages.DecrementAdjunctSize(assetId, 400L, CancellationToken.None);
+        await dbContext.ImageStorages.AdjustAdjunctSize(assetId, 0, CancellationToken.None);
+
+        // Assert
+        var record = dbContext.ImageStorages.Single(x => x.Id == assetId);
+        record.AdjunctSize.Should().Be(1000L);
+    }
+    
+    [Fact]
+    private async Task AdjustAdjunctSize_DecrementsAdjunctSize()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.ImageStorages.AddTestImageStorage(assetId, adjunctSize: 1000L);
+        await dbContext.SaveChangesAsync(CancellationToken.None);
+        dbContext.ChangeTracker.Clear();
+
+        // Act
+        await dbContext.ImageStorages.AdjustAdjunctSize(assetId, -400L, CancellationToken.None);
 
         // Assert
         var record = dbContext.ImageStorages.Single(x => x.Id == assetId);
         record.AdjunctSize.Should().Be(600L);
     }
+    
+    [Fact]
+    private async Task AdjustAdjunctSize_IncrementsAdjunctSize()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.ImageStorages.AddTestImageStorage(assetId, adjunctSize: 1000L);
+        await dbContext.SaveChangesAsync(CancellationToken.None);
+        dbContext.ChangeTracker.Clear();
+
+        // Act
+        await dbContext.ImageStorages.AdjustAdjunctSize(assetId, 400L, CancellationToken.None);
+
+        // Assert
+        var record = dbContext.ImageStorages.Single(x => x.Id == assetId);
+        record.AdjunctSize.Should().Be(1400L);
+    }
 
     [Fact]
-    private async Task DecrementAdjunctSize_ClampsToZero_WhenDecrementExceedsCurrentSize()
+    private async Task AdjustAdjunctSize_ClampsToZero_WhenDecrementExceedsCurrentSize()
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
@@ -100,7 +134,7 @@ public class ImageStorageXTests
         dbContext.ChangeTracker.Clear();
 
         // Act
-        await dbContext.ImageStorages.DecrementAdjunctSize(assetId, 500L, CancellationToken.None);
+        await dbContext.ImageStorages.AdjustAdjunctSize(assetId, -500L, CancellationToken.None);
 
         // Assert
         var record = dbContext.ImageStorages.Single(x => x.Id == assetId);

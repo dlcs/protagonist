@@ -25,14 +25,16 @@ public static class ImageStorageX
     }
 
     /// <summary>
-    /// Decrement adjunct size for specified asset.
+    /// Apply a signed delta to the adjunct size tally for specified asset (clamped at zero).
     /// </summary>
-    public static Task DecrementAdjunctSize(this DbSet<ImageStorage> imageStorages, AssetId assetId,
-        long adjunctSize, CancellationToken cancellationToken) =>
-        imageStorages
-            .Where(s => s.Id == assetId)
-            .UpdateFromQueryAsync(s => new ImageStorage
-            {
-                AdjunctSize = s.AdjunctSize > adjunctSize ? s.AdjunctSize - adjunctSize : 0
-            }, cancellationToken);
+    public static Task AdjustAdjunctSize(this DbSet<ImageStorage> imageStorages, AssetId assetId,
+        long sizeDelta, CancellationToken cancellationToken) =>
+        sizeDelta == 0
+            ? Task.CompletedTask
+            : imageStorages
+                .Where(s => s.Id == assetId)
+                .UpdateFromQueryAsync(s => new ImageStorage
+                {
+                    AdjunctSize = s.AdjunctSize + sizeDelta > 0 ? s.AdjunctSize + sizeDelta : 0
+                }, cancellationToken);
 }
