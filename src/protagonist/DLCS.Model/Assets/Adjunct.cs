@@ -86,6 +86,11 @@ public class Adjunct : IDeliverable
     /// The size in bytes of the adjunct
     /// </summary>
     public long? Size { get; set; }
+
+    /// <summary>
+    /// Whether this (hosted) adjunct's bytes live at an optimised origin.
+    /// </summary>
+    public bool Optimised { get; set; }
     
     /// <summary>
     /// The reason why this adjunct exists.
