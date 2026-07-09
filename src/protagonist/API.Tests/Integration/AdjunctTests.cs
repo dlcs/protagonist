@@ -1655,6 +1655,67 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
+    public async Task DeleteAdjunct_DecrementsCountButNotSize_WhenOptimisedAdjunct()
+    {
+        // An optimised adjunct counts towards the adjunct count but never contributed its size (bytes stay in origin),
+        // so deleting it must decrement the count but leave the size totals untouched.
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string adjunctId = "optimised-del";
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct(adjunctId, origin: "s3://bucket/key.jpg", size: 3000, optimised: true);
+        // 1000 bytes of adjunct size exist from elsewhere; the optimised adjunct is in the count but not the size
+        await dbContext.CustomerStorages.AddTestCustomerStorage(numberOfAdjuncts: 1, sizeOfAdjuncts: 1000);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(space: assetId.Space, numberOfAdjuncts: 1, sizeOfAdjuncts: 1000);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        await httpClient.AsCustomer(assetId.Customer)
+            .DeleteAsync($"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}");
+
+        // Assert
+        var storage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
+        storage.NumberOfStoredAdjuncts.Should().Be(0, "optimised adjunct still counts towards the adjunct count");
+        storage.TotalSizeOfStoredAdjuncts.Should().Be(1000, "optimised adjunct size was never counted, so must not be subtracted");
+    }
+
+    [Fact]
+    public async Task PutAdjunct_DecrementsCountButNotSize_WhenOptimisedHostedBecomesExternal()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string adjunctId = "optimised-to-ext";
+        await dbContext.Images.AddTestAsset(assetId)
+            .WithTestAdjunct(adjunctId, origin: "s3://bucket/key.jpg", size: 3000, optimised: true);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(numberOfAdjuncts: 1, sizeOfAdjuncts: 1000);
+        await dbContext.CustomerStorages.AddTestCustomerStorage(space: assetId.Space, numberOfAdjuncts: 1, sizeOfAdjuncts: 1000);
+        await dbContext.SaveChangesAsync();
+
+        var json = $$"""
+                     {
+                       "id": "{{adjunctId}}",
+                       "@type": "Image",
+                       "externalId": "https://example.com/external",
+                       "iiifLink": "seeAlso",
+                       "mediaType": "image/jpeg"
+                     }
+                     """;
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .PutAsync($"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var storage = await dbContext.CustomerStorages
+            .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
+        storage.NumberOfStoredAdjuncts.Should().Be(0, "count decremented on transition to external");
+        storage.TotalSizeOfStoredAdjuncts.Should().Be(1000, "optimised adjunct size was never counted, so must not be subtracted");
+    }
+
+    [Fact]
     public async Task DeleteAdjunct_ReducesImageStorageAdjunctSize_WhenHostedAdjunct()
     {
         // Arrange

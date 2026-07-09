@@ -67,8 +67,9 @@ public class DeleteMultipleAdjunctsByIdHandler(
         var grouped = adjuncts.Where(a => a.IsHosted()).GroupBy(a => a.AssetId);
         foreach (var group in grouped)
         {
-            await storageRepository.DecrementAdjunctStorage(group.Key, group.Sum(a => a.Size ?? 0), group.Count(),
-                cancellationToken);
+            // Optimised adjuncts count towards the adjunct count but not its size (their bytes stay in the origin)
+            var storedSize = group.Sum(a => a.CountsTowardStoredSize() ? a.Size ?? 0 : 0);
+            await storageRepository.DecrementAdjunctStorage(group.Key, storedSize, group.Count(), cancellationToken);
         }
     }
 
