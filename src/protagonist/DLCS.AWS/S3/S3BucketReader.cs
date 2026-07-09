@@ -62,6 +62,28 @@ public class S3BucketReader : IBucketReader
         }
     }
 
+    public async Task<ObjectInBucketHeaders?> GetObjectHeaders(ObjectInBucket objectInBucket,
+        CancellationToken cancellationToken = default)
+    {
+        var metadataRequest = objectInBucket.AsObjectMetadataRequest();
+        try
+        {
+            var response = await s3Client.GetObjectMetadataAsync(metadataRequest, cancellationToken);
+            return response.AsObjectInBucketHeaders();
+        }
+        catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
+        {
+            logger.LogDebug("Could not find S3 object '{Bucket}/{Key}'", objectInBucket.Bucket, objectInBucket.Key);
+            return null;
+        }
+        catch (AmazonS3Exception e)
+        {
+            logger.LogWarning(e, "Could not get S3 object headers for {Bucket}/{Key}; {StatusCode}",
+                objectInBucket.Bucket, objectInBucket.Key, e.StatusCode);
+            throw new HttpException(e.StatusCode, $"Error getting S3 headers for {objectInBucket.Bucket}/{objectInBucket.Key}", e);
+        }
+    }
+
     public async Task<string[]> GetMatchingKeys(ObjectInBucket rootKey)
     {
         var listObjectsRequest = rootKey.AsListObjectsRequest();

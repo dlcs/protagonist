@@ -20,6 +20,15 @@ public interface IBucketReader
     /// <param name="cancellationToken">Current cancellation token</param>
     Task<Stream?> GetObjectContentFromBucket(ObjectInBucket objectInBucket,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get headers/metadata for object (via a HEAD request), without downloading the object body.
+    /// </summary>
+    /// <param name="objectInBucket">Object to read.</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns><see cref="ObjectInBucketHeaders"/> for the object, or null if it does not exist.</returns>
+    Task<ObjectInBucketHeaders?> GetObjectHeaders(ObjectInBucket objectInBucket,
+        CancellationToken cancellationToken = default);
     
     /// <summary>
     /// Get a list of all keys within specified root.
