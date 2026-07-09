@@ -2,9 +2,11 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
+using Amazon.S3.Model;
 using DLCS.AWS.S3;
 using DLCS.Core.FileSystem;
 using DLCS.Model.Assets;
+using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using DLCS.Model.Policies;
 using DLCS.Repository;
@@ -35,6 +37,7 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     private readonly DlcsContext dbContext;
     private static readonly TestBucketWriter BucketWriter = new();
     private readonly ApiStub apiStub;
+    private readonly LocalStackFixture localStack;
     
     // These spaces are used in tests 
     private const int CustomerForLimits = -20;
@@ -47,6 +50,7 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         dbContext = engineFixture.DbFixture.DbContext;
         apiStub = engineFixture.ApiStub;
+        localStack = engineFixture.LocalStackFixture;
         
         // Fake http images
         apiStub.Get("/image", (request, args) => "anything")
@@ -76,6 +80,7 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .WithConfigValue("OrchestratorBaseUrl", apiStub.Address)
             .WithConfigValue("ImageIngest:ImageProcessorUrl", apiStub.Address)
             .WithConnectionString(engineFixture.DbFixture.ConnectionString)
+            .WithLocalStack(localStack)
             .CreateClient();
         
         // Stubbed appetiser
@@ -252,6 +257,67 @@ public class AdjunctIngestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             "hosted adjunct size should be reflected in the per-space CustomerStorage row");
         spaceRow.TotalSizeOfStoredImages.Should().Be(spaceImagesSizeBefore,
             "adjunct ingest should not affect the image size column");
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_OptimisedS3Ambient_RecordsSize_WithoutCountingTowardsStorage()
+    {
+        // Arrange
+        var asset = await CreateParentAsset();
+
+        const string adjunctId = nameof(IngestAdjunct_OptimisedS3Ambient_RecordsSize_WithoutCountingTowardsStorage);
+        const int adjunctByteCount = 4321;
+        var originKey = $"{asset.Id}/optimised-adjunct-source";
+
+        // The adjunct bytes live in the customer's (optimised) origin bucket - Protagonist doesn't copy them
+        var s3 = localStack.AWSS3ClientFactory();
+        await s3.PutObjectAsync(new PutObjectRequest
+        {
+            BucketName = LocalStackFixture.OriginBucketName,
+            Key = originKey,
+            InputStream = new MemoryStream(new byte[adjunctByteCount])
+        });
+
+        var origin = $"s3://{LocalStackFixture.OriginBucketName}/{originKey}";
+
+        // Register an optimised s3-ambient strategy that matches the origin
+        dbContext.CustomerOriginStrategies.Add(new CustomerOriginStrategy
+        {
+            Id = adjunctId, Customer = asset.Customer, Regex = $"s3://{LocalStackFixture.OriginBucketName}/.*",
+            Strategy = OriginStrategyType.S3Ambient, Optimised = true, Order = 0
+        });
+
+        var adjunct = new Adjunct
+        {
+            Id = adjunctId, AssetId = asset.Id, Asset = asset, IIIFLink = IIIFLinkType.SeeAlso,
+            MediaType = "image/jpeg", Type = "Image", Origin = origin, Created = DateTime.UtcNow,
+            Error = string.Empty, Ingesting = true
+        };
+        dbContext.Adjuncts.Add(adjunct);
+        await dbContext.SaveChangesAsync();
+
+        var message = new IngestAdjunctRequest(adjunct.Id, adjunct.AssetId, DateTime.UtcNow);
+        var jsonContent =
+            new StringContent(JsonSerializer.Serialize(message, settings), Encoding.UTF8, "application/json");
+
+        // Act
+        var result = await httpClient.PostAsync("adjunct-ingest", jsonContent);
+
+        // Assert
+        result.Should().BeSuccessful();
+
+        // Size is recorded from the origin object (via a HEAD request)...
+        var updatedAdjunct = await dbContext.Adjuncts.SingleAsync(a => a.Id == adjunctId && a.AssetId == asset.Id);
+        updatedAdjunct.Ingesting.Should().BeFalse();
+        updatedAdjunct.Error.Should().BeEmpty();
+        updatedAdjunct.Size.Should().Be(adjunctByteCount);
+
+        // ...but the bytes aren't stored by Protagonist, so they don't count against storage
+        var storage = await dbContext.ImageStorages.SingleAsync(a => a.Id == asset.Id);
+        storage.AdjunctSize.Should().Be(0);
+
+        // And no adjunct object is copied into the storage bucket
+        BucketWriter.ShouldNotHaveKey($"{asset.Id}/adjuncts/{adjunct.Id}");
     }
 
     [Fact]
