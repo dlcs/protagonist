@@ -4,6 +4,7 @@ using CleanupHandler.Infrastructure.Messages;
 using CleanupHandler.Repository;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
+using DLCS.AWS.SNS;
 using DLCS.AWS.SQS;
 using DLCS.AWS.Transcoding;
 using DLCS.Core.Collections;
@@ -167,7 +168,7 @@ public class AssetUpdatedHandler(
 
     private static bool NoCleanupRequired(QueueMessage message, DLCS.Model.Assets.Asset assetAfter, DLCS.Model.Assets.Asset assetBefore)
     {
-        return !message.MessageAttributes.ContainsKey("engineNotified") &&
+        return !message.MessageAttributes.ContainsKey(ModifiedNotificationAttributes.EngineNotified) &&
             (assetBefore.Roles ?? string.Empty) == (assetAfter.Roles ?? string.Empty);
     }
 

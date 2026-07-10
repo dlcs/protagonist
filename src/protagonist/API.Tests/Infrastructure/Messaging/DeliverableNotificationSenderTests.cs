@@ -14,6 +14,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using API.Infrastructure;
 using API.Infrastructure.Messaging.General;
+using Test.Helpers.Data;
 
 namespace API.Tests.Infrastructure.Messaging;
 
@@ -173,7 +174,7 @@ public class DeliverableNotificationSenderTests
     {
         var assetId = new AssetId(1, 2, "foo");
         
-        var adjunct = new Adjunct()
+        var adjunct = new Adjunct
         {
             Id = "foo",
             MediaType = "something",
@@ -205,5 +206,109 @@ public class DeliverableNotificationSenderTests
         deleted.AssetId.Should().Be(adjunct.AssetId, "Confirm entire message not cleared");
         deleted.Asset.Should().BeNull("Asset ignored");
         deleted.Motivation.Should().Be(adjunct.Motivation, "Optional parameters not cleared as well");
+    }
+
+    [Fact]
+    public async Task SendDeliverableModifiedMessage_Asset_SetsEngineNotifiedAttribute_IfUpdateNotifiedEngine()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var assetModifiedRecord =
+            NotificationRecord<Asset>.Update(new Asset(assetId), new Asset(assetId), true);
+        var payload = CapturePayload(DeliverableTopicType.Asset);
+
+        // Act
+        await sut.SendDeliverableModifiedMessage(assetModifiedRecord, CancellationToken.None);
+
+        // Assert
+        var attributes = payload.Single().Attributes;
+        attributes.Should()
+            .Contain(ModifiedNotificationAttributes.EngineNotified,
+                ModifiedNotificationAttributes.EngineNotifiedValue).And
+            .Contain(ModifiedNotificationAttributes.MessageType, ChangeType.Update.ToString());
+    }
+
+    [Fact]
+    public async Task SendDeliverableModifiedMessage_Asset_OmitsEngineNotifiedAttribute_IfUpdateDidNotNotifyEngine()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var assetModifiedRecord =
+            NotificationRecord<Asset>.Update(new Asset(assetId), new Asset(assetId), false);
+        var payload = CapturePayload(DeliverableTopicType.Asset);
+
+        // Act
+        await sut.SendDeliverableModifiedMessage(assetModifiedRecord, CancellationToken.None);
+
+        // Assert
+        payload.Single().Attributes.Should().NotContainKey(ModifiedNotificationAttributes.EngineNotified);
+    }
+
+    [Fact]
+    public async Task SendDeliverableModifiedMessage_Asset_OmitsEngineNotifiedAttribute_IfCreate()
+    {
+        // Arrange
+        var assetModifiedRecord = NotificationRecord<Asset>.Create(new Asset(AssetIdGenerator.GetAssetId()));
+        var payload = CapturePayload(DeliverableTopicType.Asset);
+
+        // Act
+        await sut.SendDeliverableModifiedMessage(assetModifiedRecord, CancellationToken.None);
+
+        // Assert
+        payload.Single().Attributes.Should().NotContainKey(ModifiedNotificationAttributes.EngineNotified);
+    }
+
+    [Fact]
+    public async Task SendDeliverableModifiedMessage_Asset_OmitsEngineNotifiedAttribute_IfDelete()
+    {
+        // Arrange
+        var assetModifiedRecord =
+            NotificationRecord<Asset>.Delete(new Asset(AssetIdGenerator.GetAssetId()), ImageCacheType.Cdn);
+        var payload = CapturePayload(DeliverableTopicType.Asset);
+
+        // Act
+        await sut.SendDeliverableModifiedMessage(assetModifiedRecord, CancellationToken.None);
+
+        // Assert
+        payload.Single().Attributes.Should().NotContainKey(ModifiedNotificationAttributes.EngineNotified);
+    }
+
+    [Fact]
+    public async Task SendDeliverableModifiedMessage_Adjunct_SetsEngineNotifiedAttribute_IfUpdateNotifiedEngine()
+    {
+        // Arrange
+        var adjunct = new Adjunct
+        {
+            Id = "foo",
+            MediaType = "something",
+            IIIFLink = IIIFLinkType.Annotations,
+            AssetId = AssetIdGenerator.GetAssetId(),
+            Type = "something"
+        };
+        var adjunctModifiedRecord = NotificationRecord<Adjunct>.Update(adjunct, adjunct, true);
+        var payload = CapturePayload(DeliverableTopicType.Adjunct);
+
+        // Act
+        await sut.SendDeliverableModifiedMessage(adjunctModifiedRecord, CancellationToken.None);
+
+        // Assert
+        payload.Single().Attributes.Should()
+            .Contain(ModifiedNotificationAttributes.EngineNotified,
+                ModifiedNotificationAttributes.EngineNotifiedValue);
+    }
+
+    /// <summary>
+    /// Capture the notifications published to <paramref name="topicType"/>. The returned list is populated when
+    /// the publisher is called, so must only be read after the "act" step.
+    /// </summary>
+    private List<DeliverableModifiedNotification> CapturePayload(DeliverableTopicType topicType)
+    {
+        var payload = new List<DeliverableModifiedNotification>();
+        A.CallTo(() =>
+                topicPublisher.PublishToDeliverableModifiedTopic(A<IReadOnlyList<DeliverableModifiedNotification>>._,
+                    topicType, CancellationToken.None))
+            .Invokes((IReadOnlyList<DeliverableModifiedNotification> n, DeliverableTopicType _, CancellationToken _) =>
+                payload.AddRange(n));
+        return payload;
     }
 }
