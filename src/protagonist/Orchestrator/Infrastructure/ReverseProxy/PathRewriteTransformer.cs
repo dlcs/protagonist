@@ -51,9 +51,10 @@ public class PathRewriteTransformer : HttpTransformer
 
     public override ValueTask<bool> TransformResponseAsync(
         HttpContext httpContext,
-        HttpResponseMessage? proxyResponse)
+        HttpResponseMessage? proxyResponse,
+        CancellationToken cancellation)
     {
-        base.TransformResponseAsync(httpContext, proxyResponse);
+        base.TransformResponseAsync(httpContext, proxyResponse, cancellation);
 
         CleanResponseHeaders(httpContext);
         EnsureCorsHeaders(httpContext);
@@ -91,7 +92,7 @@ public class PathRewriteTransformer : HttpTransformer
         const string accessControlAllowOrigin = "Access-Control-Allow-Origin";
         if (!httpContext.Response.Headers.ContainsKey(accessControlAllowOrigin))
         {
-            httpContext.Response.Headers.Add(accessControlAllowOrigin, "*");
+            httpContext.Response.Headers.Append(accessControlAllowOrigin, "*");
         }
     }
     
