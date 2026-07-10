@@ -46,12 +46,17 @@ public class AdjunctUpsertService(
             {
                 if (dbAdjunct.IsHosted())
                 {
-                    // Was hosted, now external — decrement count and reduce stored size
-                    await storageRepository.DecrementAdjunctStorage(adjunct.AssetId, dbAdjunct.Size ?? 0, cancellationToken);
+                    // Was hosted, now external — decrement count and reduce stored size. Optimised adjuncts were
+                    // never counted towards size (their bytes stayed in the origin), so only reduce size for others.
+                    var storedSize = dbAdjunct.CountsTowardStoredSize() ? dbAdjunct.Size ?? 0 : 0;
+                    await storageRepository.DecrementAdjunctStorage(adjunct.AssetId, storedSize, cancellationToken);
                 }
 
                 // External adjunct — size is irrelevant for storage limits, copy submitted value
                 dbAdjunct.Size = adjunct.Size;
+
+                // No origin, so it can't be at an optimised origin
+                dbAdjunct.Optimised = false;
             }
             else if (!dbAdjunct.IsHosted())
             {

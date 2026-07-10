@@ -19,12 +19,12 @@ public class IngestExecutor(
 {
     private const int MinimumAssetSize = 100;
 
-    public async Task<AdjunctIngestResult> IngestAdjunct(Adjunct adjunct, ImageStorage? imageStorage,
+    public async Task<AdjunctIngestResult> IngestAdjunct(Adjunct adjunct,
         CustomerOriginStrategy customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
         var sw = Stopwatch.StartNew();
-        var context = new AdjunctIngestionContext(adjunct, imageStorage);
+        var context = new AdjunctIngestionContext(adjunct);
 
         var customerId = adjunct.Asset.Customer;
         var assetId = adjunct.Asset.Id;
@@ -84,6 +84,13 @@ public class IngestExecutor(
         var dbSuccess = await CompleteAdjunctInDatabase(context,
             overallStatus != IngestResultStatus.QueuedForProcessing,
             cancellationToken);
+
+        // Apply the (signed) stored-adjunct size delta atomically once the adjunct is finalised. Kept separate from
+        // the ImageStorage-record path used by assets so it applies a true delta (not the cumulative tally).
+        if (dbSuccess && overallStatus is IngestResultStatus.Success or IngestResultStatus.QueuedForProcessing)
+        {
+            await storageRepository.AdjustAdjunctStoredSize(assetId, context.StoredSizeDelta, cancellationToken);
+        }
 
         foreach (var postProcessor in postProcessors)
         {
@@ -176,7 +183,9 @@ public class IngestExecutor(
 
     private async Task<bool> CompleteAdjunctInDatabase(AdjunctIngestionContext context, bool ingestFinished,
         CancellationToken cancellationToken)
-        => await assetRepository.UpdateIngestedDeliverable(context.Adjunct, null, context.ImageStorage,
+        // ImageStorage is null: adjunct stored-size accounting is handled separately via a signed atomic delta
+        // (AdjustAdjunctStoredSize) rather than the cumulative ImageStorage-record path used for assets.
+        => await assetRepository.UpdateIngestedDeliverable(context.Adjunct, null, null,
             ingestFinished, cancellationToken);
 
     private async Task<bool> CompleteAssetInDatabase(IngestionContext context, bool ingestFinished,

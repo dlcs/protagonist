@@ -9,30 +9,40 @@ namespace DLCS.Repository.Storage;
 
 public static class ImageStorageX
 {
-    public static async Task UpsertImageStorageRecord(this DbSet<ImageStorage> imageStorages, ImageStorage? imageStorage, CancellationToken cancellationToken)
+    /// <summary>
+    /// Upsert ImageStorage record, note that only update Size, ThumbnailSize and LastChecked.
+    /// See AdjustAdjunctSize for altering the AdjunctSize
+    /// </summary>
+    public static async Task UpsertImageStorageRecord(this DbSet<ImageStorage> imageStorages,
+        ImageStorage? imageStorage, CancellationToken cancellationToken)
     {
-        if (imageStorage != null)
+        if (imageStorage == null) return;
+
+        var existing = await imageStorages.SingleOrDefaultAsync(l => l.Id == imageStorage.Id, cancellationToken);
+        if (existing == null)
         {
-            if (await imageStorages.AnyAsync(l => l.Id == imageStorage.Id, cancellationToken))
-            {
-                imageStorages.Update(imageStorage);
-            }
-            else
-            {
-                imageStorages.Add(imageStorage);
-            }
+            imageStorages.Add(imageStorage);
+        }
+        else
+        {
+            // AdjunctSize is a running tally maintained by AdjustAdjunctSize - asset ingest must not overwrite it
+            existing.Size = imageStorage.Size;
+            existing.ThumbnailSize = imageStorage.ThumbnailSize;
+            existing.LastChecked = imageStorage.LastChecked;
         }
     }
 
     /// <summary>
-    /// Decrement adjunct size for specified asset.
+    /// Apply a signed delta to the adjunct size tally for specified asset (clamped at zero).
     /// </summary>
-    public static Task DecrementAdjunctSize(this DbSet<ImageStorage> imageStorages, AssetId assetId,
-        long adjunctSize, CancellationToken cancellationToken) =>
-        imageStorages
-            .Where(s => s.Id == assetId)
-            .UpdateFromQueryAsync(s => new ImageStorage
-            {
-                AdjunctSize = s.AdjunctSize > adjunctSize ? s.AdjunctSize - adjunctSize : 0
-            }, cancellationToken);
+    public static Task AdjustAdjunctSize(this DbSet<ImageStorage> imageStorages, AssetId assetId,
+        long sizeDelta, CancellationToken cancellationToken) =>
+        sizeDelta == 0
+            ? Task.CompletedTask
+            : imageStorages
+                .Where(s => s.Id == assetId)
+                .UpdateFromQueryAsync(s => new ImageStorage
+                {
+                    AdjunctSize = s.AdjunctSize + sizeDelta > 0 ? s.AdjunctSize + sizeDelta : 0
+                }, cancellationToken);
 }
