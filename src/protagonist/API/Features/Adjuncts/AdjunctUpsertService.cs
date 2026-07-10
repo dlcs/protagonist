@@ -54,6 +54,9 @@ public class AdjunctUpsertService(
 
                 // External adjunct — size is irrelevant for storage limits, copy submitted value
                 dbAdjunct.Size = adjunct.Size;
+
+                // No origin, so it can't be at an optimised origin
+                dbAdjunct.Optimised = false;
             }
             else if (!dbAdjunct.IsHosted())
             {

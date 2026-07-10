@@ -1713,6 +1713,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .SingleAsync(cs => cs.Customer == assetId.Customer && cs.Space == null);
         storage.NumberOfStoredAdjuncts.Should().Be(0, "count decremented on transition to external");
         storage.TotalSizeOfStoredAdjuncts.Should().Be(1000, "optimised adjunct size was never counted, so must not be subtracted");
+
+        var dbAdjunct = await dbContext.Adjuncts.AsNoTracking()
+            .SingleAsync(a => a.Id == adjunctId && a.AssetId == assetId);
+        dbAdjunct.Optimised.Should().BeFalse("external adjunct has no origin, so cannot be at an optimised origin");
     }
 
     [Fact]
