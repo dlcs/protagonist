@@ -180,8 +180,10 @@ public class TopicPublisherTests
         A.CallTo(() =>
             snsClient.PublishAsync(
                 A<PublishRequest>.That.Matches(r =>
-                    r.Message == "message" && r.MessageAttributes["messageType"].StringValue == "Update" && 
-                    r.MessageAttributes["engineNotified"].StringValue == "True"),
+                    r.Message == "message" &&
+                    r.MessageAttributes[ModifiedNotificationAttributes.MessageType].StringValue == "Update" &&
+                    r.MessageAttributes[ModifiedNotificationAttributes.EngineNotified].StringValue ==
+                    ModifiedNotificationAttributes.EngineNotifiedValue),
                 A<CancellationToken>._)).MustHaveHappened();
     }
 
@@ -200,9 +202,10 @@ public class TopicPublisherTests
             snsClient.PublishBatchAsync(
                 A<PublishBatchRequest>.That.Matches(b => b.PublishBatchRequestEntries.All(r =>
                                                              r.Message == "message" &&
-                                                             r.MessageAttributes["messageType"].StringValue ==
-                                                             "Update"&& 
-                                                             r.MessageAttributes["engineNotified"].StringValue == "True") &&
+                                                             r.MessageAttributes[ModifiedNotificationAttributes.MessageType].StringValue ==
+                                                             "Update"&&
+                                                             r.MessageAttributes[ModifiedNotificationAttributes.EngineNotified].StringValue ==
+                                                             ModifiedNotificationAttributes.EngineNotifiedValue) &&
                                                          b.PublishBatchRequestEntries.Count == 2),
                 A<CancellationToken>._)).MustHaveHappened();
     }
@@ -461,11 +464,12 @@ public class TopicPublisherTests
     {
         var attributes = new Dictionary<string, string>()
         {
-            { "messageType", changeType.ToString() }
+            { ModifiedNotificationAttributes.MessageType, changeType.ToString() }
         };
         if (engineNotified)
         {
-            attributes.Add("engineNotified", "True");
+            attributes.Add(ModifiedNotificationAttributes.EngineNotified,
+                ModifiedNotificationAttributes.EngineNotifiedValue);
         }
 
         return attributes;

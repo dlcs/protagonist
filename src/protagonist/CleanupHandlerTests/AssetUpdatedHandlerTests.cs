@@ -7,6 +7,7 @@ using CleanupHandler.Repository;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
+using DLCS.AWS.SNS;
 using DLCS.AWS.SQS;
 using DLCS.AWS.Transcoding.Models;
 using DLCS.Core.Types;
@@ -1285,7 +1286,7 @@ public class AssetUpdatedHandlerTests
             Body = JsonNode.Parse(serialized)!.AsObject(),
             MessageAttributes = new Dictionary<string, string>
             {
-                { "engineNotified", "True" }
+                { ModifiedNotificationAttributes.EngineNotified, ModifiedNotificationAttributes.EngineNotifiedValue }
             }
         };
         return (queueMessage, assetAfter);
@@ -1327,7 +1328,7 @@ public class AssetUpdatedHandlerTests
             Body = JsonNode.Parse(serialized)!.AsObject(),
             MessageAttributes = new Dictionary<string, string>
             {
-                { "engineNotified", "True" }
+                { ModifiedNotificationAttributes.EngineNotified, ModifiedNotificationAttributes.EngineNotifiedValue }
             }
         };
         return (queueMessage, assetAfter);
