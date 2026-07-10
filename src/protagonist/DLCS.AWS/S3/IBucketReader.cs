@@ -25,9 +25,13 @@ public interface IBucketReader
     /// Get headers/metadata for object (via a HEAD request), without downloading the object body.
     /// </summary>
     /// <param name="objectInBucket">Object to read.</param>
+    /// <param name="throwOnError">
+    /// If true, any (other than 404) will be thrown.
+    /// If false, any error will be logged and null returned.
+    /// </param>
     /// <param name="cancellationToken">Current cancellation token</param>
     /// <returns><see cref="ObjectInBucketHeaders"/> for the object, or null if it does not exist.</returns>
-    Task<ObjectInBucketHeaders?> GetObjectHeaders(ObjectInBucket objectInBucket,
+    Task<ObjectInBucketHeaders?> GetObjectHeaders(ObjectInBucket objectInBucket, bool throwOnError = false,
         CancellationToken cancellationToken = default);
     
     /// <summary>

@@ -194,7 +194,7 @@ public class FileChannelWorkerTests
         // contributes nothing to the customer's stored-adjunct size (new adjunct -> delta 0)
         var context = GetAdjunctIngestionContext(origin: "s3://origin-bucket/adjunct-key");
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = true };
-        A.CallTo(() => bucketReader.GetObjectHeaders(A<ObjectInBucket>._, A<CancellationToken>._))
+        A.CallTo(() => bucketReader.GetObjectHeaders(A<ObjectInBucket>._, false, A<CancellationToken>._))
             .Returns(new ObjectInBucketHeaders { ContentLength = 2048L });
 
         // Act
@@ -219,7 +219,7 @@ public class FileChannelWorkerTests
         var context = GetAdjunctIngestionContext(origin: "s3://origin-bucket/adjunct-key",
             existingSize: 2048L, existingOptimised: false);
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = true };
-        A.CallTo(() => bucketReader.GetObjectHeaders(A<ObjectInBucket>._, A<CancellationToken>._))
+        A.CallTo(() => bucketReader.GetObjectHeaders(A<ObjectInBucket>._, false, A<CancellationToken>._))
             .Returns(new ObjectInBucketHeaders { ContentLength = 4096L });
 
         // Act
@@ -238,7 +238,7 @@ public class FileChannelWorkerTests
         // Arrange
         var context = GetAdjunctIngestionContext(origin: "s3://origin-bucket/adjunct-key");
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = true };
-        A.CallTo(() => bucketReader.GetObjectHeaders(A<ObjectInBucket>._, A<CancellationToken>._))
+        A.CallTo(() => bucketReader.GetObjectHeaders(A<ObjectInBucket>._, false, A<CancellationToken>._))
             .Returns((ObjectInBucketHeaders?)null);
 
         // Act

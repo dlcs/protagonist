@@ -62,7 +62,7 @@ public class S3BucketReader : IBucketReader
         }
     }
 
-    public async Task<ObjectInBucketHeaders?> GetObjectHeaders(ObjectInBucket objectInBucket,
+    public async Task<ObjectInBucketHeaders?> GetObjectHeaders(ObjectInBucket objectInBucket, bool throwOnError = false,
         CancellationToken cancellationToken = default)
     {
         var metadataRequest = objectInBucket.AsObjectMetadataRequest();
@@ -74,14 +74,19 @@ public class S3BucketReader : IBucketReader
         catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
         {
             logger.LogDebug("Could not find S3 object '{Bucket}/{Key}'", objectInBucket.Bucket, objectInBucket.Key);
-            return null;
         }
         catch (AmazonS3Exception e)
         {
             logger.LogWarning(e, "Could not get S3 object headers for {Bucket}/{Key}; {StatusCode}",
                 objectInBucket.Bucket, objectInBucket.Key, e.StatusCode);
-            throw new HttpException(e.StatusCode, $"Error getting S3 headers for {objectInBucket.Bucket}/{objectInBucket.Key}", e);
+            if (throwOnError)
+            {
+                throw new HttpException(e.StatusCode,
+                    $"Error getting S3 headers for {objectInBucket.Bucket}/{objectInBucket.Key}", e);
+            }
         }
+        
+        return null;
     }
 
     public async Task<string[]> GetMatchingKeys(ObjectInBucket rootKey)

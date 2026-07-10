@@ -212,7 +212,7 @@ public class FileChannelWorker(
             return null;
         }
 
-        var headers = await bucketReader.GetObjectHeaders(origin, cancellationToken);
+        var headers = await bucketReader.GetObjectHeaders(origin, cancellationToken: cancellationToken);
         return headers?.ContentLength;
     }
 

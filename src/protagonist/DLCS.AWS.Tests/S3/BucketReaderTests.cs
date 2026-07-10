@@ -120,8 +120,10 @@ public class BucketReaderTests
         result.ContentType.Should().Be("image/jpeg");
     }
 
-    [Fact]
-    public async Task GetObjectHeaders_ReturnsNull_IfKeyNotFound()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task GetObjectHeaders_ReturnsNull_IfKeyNotFound(bool throwOnError)
     {
         // Arrange
         A.CallTo(() =>
@@ -133,7 +135,7 @@ public class BucketReaderTests
         var objectInBucket = new ObjectInBucket("MyBucket", "MyKey");
 
         // Act
-        var result = await sut.GetObjectHeaders(objectInBucket);
+        var result = await sut.GetObjectHeaders(objectInBucket, throwOnError);
 
         // Assert
         result.Should().BeNull();
@@ -143,7 +145,7 @@ public class BucketReaderTests
     [InlineData(HttpStatusCode.Redirect)]
     [InlineData(HttpStatusCode.BadRequest)]
     [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task GetObjectHeaders_ThrowsHttpException_DueToNon404(HttpStatusCode statusCode)
+    public async Task GetObjectHeaders_ThrowsHttpException_DueToNon404_IfThrowOnErrorTrue(HttpStatusCode statusCode)
     {
         // Arrange
         A.CallTo(() =>
@@ -155,9 +157,31 @@ public class BucketReaderTests
         var objectInBucket = new ObjectInBucket("MyBucket", "MyKey");
 
         // Act
-        Func<Task> action = () => sut.GetObjectHeaders(objectInBucket);
+        Func<Task> action = () => sut.GetObjectHeaders(objectInBucket, throwOnError: true);
 
         // Assert
         (await action.Should().ThrowAsync<HttpException>()).Which.StatusCode.Should().Be(statusCode);
+    }
+    
+    [Theory]
+    [InlineData(HttpStatusCode.Redirect)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    public async Task GetObjectHeaders_ReturnsNull_DueToNon404_IfThrowOnErrorFalse(HttpStatusCode statusCode)
+    {
+        // Arrange
+        A.CallTo(() =>
+                s3Client.GetObjectMetadataAsync(
+                    A<GetObjectMetadataRequest>.Ignored,
+                    A<CancellationToken>.Ignored))
+            .ThrowsAsync(new AmazonS3Exception("uh-oh", ErrorType.Unknown, "123", "xxx-1", statusCode));
+
+        var objectInBucket = new ObjectInBucket("MyBucket", "MyKey");
+
+        // Act
+        var result = await sut.GetObjectHeaders(objectInBucket);
+
+        // Assert
+        result.Should().BeNull("throwOnError=false should return null on err");
     }
 }
