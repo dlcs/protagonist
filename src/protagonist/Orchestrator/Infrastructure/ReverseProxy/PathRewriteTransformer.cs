@@ -49,12 +49,12 @@ public class PathRewriteTransformer : HttpTransformer
         }
     }
 
-    public override ValueTask<bool> TransformResponseAsync(
+    public override async ValueTask<bool> TransformResponseAsync(
         HttpContext httpContext,
         HttpResponseMessage? proxyResponse,
         CancellationToken cancellation)
     {
-        base.TransformResponseAsync(httpContext, proxyResponse, cancellation);
+        var shouldProxyBody = await base.TransformResponseAsync(httpContext, proxyResponse, cancellation);
 
         CleanResponseHeaders(httpContext);
         EnsureCorsHeaders(httpContext);
@@ -63,7 +63,7 @@ public class PathRewriteTransformer : HttpTransformer
         EnsureCacheHeaders(httpContext, isDownstreamError);
         SetCustomHeaders(httpContext, isDownstreamError);
 
-        return new ValueTask<bool>(true);
+        return shouldProxyBody;
     }
 
     private bool IsDownstreamError(HttpResponseMessage? proxyResponse) 
