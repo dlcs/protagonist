@@ -198,6 +198,33 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
+    public async Task Get_StripsAuthorizationHeader_BeforeProxyingToS3()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        var s3Key = $"{id}/this-is-where";
+        await dbFixture.DbContext.Images.AddTestAsset(id,
+            mediaType: "text/plain",
+            origin: $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{s3Key}",
+            imageDeliveryChannels: deliveryChannelsForFile);
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        var expectedPathRegex = GetExpectedPathRegex(s3Key);
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"file/{id}");
+        request.Headers.TryAddWithoutValidation("Authorization", ValidAuth);
+        var response = await httpClient.SendAsync(request);
+        var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        proxyResponse.Uri.ToString().Should().MatchRegex(expectedPathRegex);
+        proxyResponse.Headers.Should().NotContainKey("Authorization",
+            "S3 rejects requests that present both a presigned URL and an Authorization header");
+    }
+
+    [Fact]
     public async Task Get_RequiresAuth_Returns401_IfNoCookie()
     {
         // Arrange

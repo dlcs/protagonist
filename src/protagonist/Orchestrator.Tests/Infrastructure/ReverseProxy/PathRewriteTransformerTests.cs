@@ -109,6 +109,41 @@ public class PathRewriteTransformerTests
         request.Headers.Should().NotContainKey("x-amz-cf-id");
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("Bearer foo")]
+    public async Task TransformRequestAsync_S3Target_RemovesAuthorizationHeaderIfPresent(string authValue)
+    {
+        // Arrange
+        var request = new HttpRequestMessage();
+        request.Headers.TryAddWithoutValidation("Authorization", authValue);
+        var actionResult = new ProxyActionResult(ProxyDestination.S3, true, "new/path");
+        var sut = new PathRewriteTransformer(actionResult, false);
+        request.Headers.Should().ContainKey("Authorization", "header must be set for test to be meaningful");
+
+        // Act
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com", CancellationToken.None);
+
+        // Assert
+        request.Headers.Should().NotContainKey("Authorization");
+    }
+
+    [Fact]
+    public async Task TransformRequestAsync_NonS3Target_LeavesAuthorizationHeader()
+    {
+        // Arrange
+        var request = new HttpRequestMessage();
+        request.Headers.TryAddWithoutValidation("Authorization", "Bearer foo");
+        var actionResult = new ProxyActionResult(ProxyDestination.ImageServer, true, "new/path");
+        var sut = new PathRewriteTransformer(actionResult, false);
+
+        // Act
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com", CancellationToken.None);
+
+        // Assert
+        request.Headers.Should().ContainKey("Authorization");
+    }
+
     [Fact]
     public async Task TransformResponseAsync_AddsCORSHeader_IfMissing()
     {

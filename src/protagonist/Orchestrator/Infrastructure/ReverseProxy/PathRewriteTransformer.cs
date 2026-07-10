@@ -42,14 +42,19 @@ public class PathRewriteTransformer : HttpTransformer
         {
             // Added by CloudFront, can cause issues proxying to S3
             proxyRequest.Headers.Remove("x-amz-cf-id");
+
+            // Presigned URLs carry their auth in the querystring; S3 rejects requests that also have an
+            // Authorization header, regardless of its value
+            proxyRequest.Headers.Remove("Authorization");
         }
     }
 
-    public override ValueTask<bool> TransformResponseAsync(
+    public override async ValueTask<bool> TransformResponseAsync(
         HttpContext httpContext,
-        HttpResponseMessage? proxyResponse)
+        HttpResponseMessage? proxyResponse,
+        CancellationToken cancellation)
     {
-        base.TransformResponseAsync(httpContext, proxyResponse);
+        var shouldProxyBody = await base.TransformResponseAsync(httpContext, proxyResponse, cancellation);
 
         CleanResponseHeaders(httpContext);
         EnsureCorsHeaders(httpContext);
@@ -58,7 +63,7 @@ public class PathRewriteTransformer : HttpTransformer
         EnsureCacheHeaders(httpContext, isDownstreamError);
         SetCustomHeaders(httpContext, isDownstreamError);
 
-        return new ValueTask<bool>(true);
+        return shouldProxyBody;
     }
 
     private bool IsDownstreamError(HttpResponseMessage? proxyResponse) 
@@ -87,7 +92,7 @@ public class PathRewriteTransformer : HttpTransformer
         const string accessControlAllowOrigin = "Access-Control-Allow-Origin";
         if (!httpContext.Response.Headers.ContainsKey(accessControlAllowOrigin))
         {
-            httpContext.Response.Headers.Add(accessControlAllowOrigin, "*");
+            httpContext.Response.Headers.Append(accessControlAllowOrigin, "*");
         }
     }
     
