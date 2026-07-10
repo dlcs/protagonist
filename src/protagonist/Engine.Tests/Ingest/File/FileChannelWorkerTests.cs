@@ -276,6 +276,32 @@ public class FileChannelWorkerTests
         context.StoredObjects.Should().ContainKey(destination).WhoseValue.Should().Be(1234L);
         result.Should().Be(IngestResultStatus.Success);
     }
+    
+    [Fact]
+    public async Task IngestAdjunct_Reingest_CorrectlyResetsSize_ForEmptyAdjunct()
+    {
+        // Arrange - a previously-counted 1000-byte adjunct re-ingested at 0 bytes (empty)
+        // Ensures we can handle 0-byte adjuncts
+        var context = GetAdjunctIngestionContext(existingSize: 1000L, existingOptimised: false);
+
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = false };
+        var destination = new RegionalisedObjectInBucket("test-bucket", "origin-key", "eu-west-1");
+        A.CallTo(() => storageKeyGenerator.GetStoredAdjunctLocation(context.AssetId, context.Adjunct))
+            .Returns(destination);
+
+        A.CallTo(() =>
+                assetToS3.CopyOriginToStorage(destination, context, true, cos, A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._))
+            .Returns(new AdjunctFromOrigin(context.Adjunct.Id, context.AssetId, 0L, "anywhere", "application/docx"));
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+
+        // Assert
+        context.StoredSizeDelta.Should().Be(-1000L, "delta is new size minus previously-counted size");
+        context.Adjunct.Size.Should().Be(0L);
+        context.StoredObjects.Should().ContainKey(destination).WhoseValue.Should().Be(0L);
+        result.Should().Be(IngestResultStatus.Success);
+    }
 
     [Fact]
     public async Task IngestAdjunct_Reingest_StoredSizeDelta_IsDifferenceFromPreviousSize()

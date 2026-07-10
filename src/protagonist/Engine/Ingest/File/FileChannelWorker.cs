@@ -148,7 +148,7 @@ public class FileChannelWorker(
 
         context.WithStoredSizeDelta(newContribution - prevContribution);
 
-        if (newContentSize is > 0)
+        if (newContentSize.HasValue)
         {
             adjunct.Size = newContentSize.Value;
         }
