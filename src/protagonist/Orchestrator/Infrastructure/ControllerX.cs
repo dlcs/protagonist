@@ -70,7 +70,7 @@ public static class ControllerX
     /// </summary>
     public static IActionResult InProcess(this ControllerBase controller, int retryAfter)
     {
-        controller.Response.Headers.Add("Retry-After", retryAfter.ToString());
+        controller.Response.Headers.Append("Retry-After", retryAfter.ToString());
         return new StatusCodeResult(202);
     }
 }
