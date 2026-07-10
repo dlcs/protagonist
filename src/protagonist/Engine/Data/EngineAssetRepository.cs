@@ -184,6 +184,7 @@ public class EngineAssetRepository(
 
     private async Task IncreaseCustomerStorage(ImageStorage imageStorage, CancellationToken cancellationToken)
     {
+        // Don't touch `TotalSizeOfStoredAdjuncts` here - that's managed by AdjustAdjunctStoredSize
         try
         {
             await DlcsContext.CustomerStorages
@@ -192,7 +193,6 @@ public class EngineAssetRepository(
                 .UpdateFromQueryAsync(cs => new CustomerStorage
                 {
                     TotalSizeOfStoredImages = cs.TotalSizeOfStoredImages + imageStorage.Size,
-                    TotalSizeOfStoredAdjuncts = cs.TotalSizeOfStoredAdjuncts + imageStorage.AdjunctSize,
                     TotalSizeOfThumbnails = cs.TotalSizeOfThumbnails + imageStorage.ThumbnailSize
                 }, cancellationToken);
         }

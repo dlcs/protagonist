@@ -9,18 +9,26 @@ namespace DLCS.Repository.Storage;
 
 public static class ImageStorageX
 {
-    public static async Task UpsertImageStorageRecord(this DbSet<ImageStorage> imageStorages, ImageStorage? imageStorage, CancellationToken cancellationToken)
+    /// <summary>
+    /// Upsert ImageStorage record, note that only update Size, ThumbnailSize and LastChecked.
+    /// See AdjustAdjunctSize for altering the AdjunctSize
+    /// </summary>
+    public static async Task UpsertImageStorageRecord(this DbSet<ImageStorage> imageStorages,
+        ImageStorage? imageStorage, CancellationToken cancellationToken)
     {
-        if (imageStorage != null)
+        if (imageStorage == null) return;
+
+        var existing = await imageStorages.SingleOrDefaultAsync(l => l.Id == imageStorage.Id, cancellationToken);
+        if (existing == null)
         {
-            if (await imageStorages.AnyAsync(l => l.Id == imageStorage.Id, cancellationToken))
-            {
-                imageStorages.Update(imageStorage);
-            }
-            else
-            {
-                imageStorages.Add(imageStorage);
-            }
+            imageStorages.Add(imageStorage);
+        }
+        else
+        {
+            // AdjunctSize is a running tally maintained by AdjustAdjunctSize - asset ingest must not overwrite it
+            existing.Size = imageStorage.Size;
+            existing.ThumbnailSize = imageStorage.ThumbnailSize;
+            existing.LastChecked = imageStorage.LastChecked;
         }
     }
 

@@ -26,7 +26,7 @@ public class AdjunctIngestionContext : IngestionContext
 
     public AdjunctIngestionContext WithStoredSizeDelta(long sizeDelta)
     {
-        StoredSizeDelta = sizeDelta;
+        StoredSizeDelta += sizeDelta;
         return this;
     }
 
