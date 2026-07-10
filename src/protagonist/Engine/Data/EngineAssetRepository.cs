@@ -101,9 +101,6 @@ public class EngineAssetRepository(
         return adjunct.SingleOrDefaultAsync(a => a.Id == id && a.AssetId == assetId, cancellationToken);
     }
 
-    public ValueTask<ImageStorage?> GetImageStorage(AssetId assetId, CancellationToken cancellationToken = default)
-        => new(DlcsContext.ImageStorages.SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
-
     public async Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default)
     {
         var imageSize = await DlcsContext.ImageStorages.AsNoTracking()
