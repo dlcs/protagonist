@@ -42,6 +42,10 @@ public class PathRewriteTransformer : HttpTransformer
         {
             // Added by CloudFront, can cause issues proxying to S3
             proxyRequest.Headers.Remove("x-amz-cf-id");
+
+            // Presigned URLs carry their auth in the querystring; S3 rejects requests that also have an
+            // Authorization header, regardless of its value
+            proxyRequest.Headers.Remove("Authorization");
         }
     }
 
