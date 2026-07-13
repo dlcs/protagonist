@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using DLCS.Core.Caching;
 using Microsoft.Extensions.Caching.Memory;
@@ -123,7 +123,7 @@ public class CacheSettingsTests
     public void GetTtl_Named_IsCaseInsensitive_WhenBoundFromConfiguration()
     {
         var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
+            .AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["Caching:TimeToLive:Memory:LongTtlSecs"] = "30",
                 ["Caching:TimeToLive:Memory:Overrides:POLICY"] = "50"

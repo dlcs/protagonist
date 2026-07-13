@@ -51,7 +51,7 @@ public static class CacheOverrideKeys
     public const string CustomerPath = "CustomerPath";
 
     /// <summary>
-    /// All valid override keys, used to validate configured overrides
+    /// All valid override keys.
     /// </summary>
     public static readonly IReadOnlySet<string> Known = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
