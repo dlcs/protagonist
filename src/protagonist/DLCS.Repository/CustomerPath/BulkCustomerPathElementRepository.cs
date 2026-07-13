@@ -71,5 +71,6 @@ public class BulkCustomerPathElementRepository : CustomerPathElementTemplate
             logger.LogDebug("Refreshing customer lookup {CacheKey} from database", cacheKey);
             var customerIdLookup = await customerRepository.GetCustomerIdLookup();
             return transformer(customerIdLookup);
-        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.High));
+        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.High,
+            named: CacheOverrideKeys.CustomerPath));
 }

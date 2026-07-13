@@ -64,7 +64,8 @@ public class GranularCustomerPathElementRepository : CustomerPathElementTemplate
                 return nullValue;
             }
             return propertyFinder(customer);
-        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.High));
+        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, priority: CacheItemPriority.High,
+            named: CacheOverrideKeys.CustomerPath));
 
         return customerProp == null || customerProp.Equals(nullValue)
             ? throw new KeyNotFoundException($"Customer {customerLookup} not found")
