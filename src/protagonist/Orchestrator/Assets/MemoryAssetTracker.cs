@@ -65,7 +65,8 @@ public class MemoryAssetTracker(
         var cacheKey = GetCacheKey(assetId);
 
         var newOrchestrationAsset = await GetOrchestrationAssetFromSource(assetId, true);
-        appCache.Add(cacheKey, newOrchestrationAsset, cacheSettings.GetMemoryCacheOptions());
+        appCache.Add(cacheKey, newOrchestrationAsset,
+            cacheSettings.GetMemoryCacheOptions(named: CacheOverrideKeys.OrchestrationAsset));
 
         return newOrchestrationAsset as T;
     }
@@ -75,7 +76,8 @@ public class MemoryAssetTracker(
         var cacheKey = GetCacheKey(assetId, adjunctId);
 
         var newOrchestrationAsset = await GetOrchestrationAdjunctFromSource(adjunctId, assetId, true);
-        appCache.Add(cacheKey, newOrchestrationAsset, cacheSettings.GetMemoryCacheOptions());
+        appCache.Add(cacheKey, newOrchestrationAsset,
+            cacheSettings.GetMemoryCacheOptions(named: CacheOverrideKeys.OrchestrationAdjunct));
 
         return newOrchestrationAsset;
     }
@@ -103,7 +105,7 @@ public class MemoryAssetTracker(
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
             return NullOrchestrationAdjunct;
 
-        }, cacheSettings.GetMemoryCacheOptions());
+        }, cacheSettings.GetMemoryCacheOptions(named: CacheOverrideKeys.OrchestrationAdjunct));
     }
     
     private async Task<OrchestrationAsset> GetOrchestrationAssetInternal(AssetId assetId)
@@ -128,7 +130,7 @@ public class MemoryAssetTracker(
 
             return orchestrationAsset;
 
-        }, cacheSettings.GetMemoryCacheOptions());
+        }, cacheSettings.GetMemoryCacheOptions(named: CacheOverrideKeys.OrchestrationAsset));
     }
 
     private async Task<OrchestrationAdjunct?> GetOrchestrationAdjunctFromSource(string adjunctId, AssetId assetId, bool noCache = false)

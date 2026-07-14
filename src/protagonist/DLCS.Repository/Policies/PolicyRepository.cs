@@ -93,7 +93,7 @@ public class PolicyRepository : IPolicyRepository
             var storagePolicies = await dlcsContext.StoragePolicies.AsNoTracking()
                 .ToListAsync(cancellationToken: cancellationToken);
             return storagePolicies;
-        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long));
+        }, cacheSettings.GetMemoryCacheOptions(CacheDuration.Long, named: CacheOverrideKeys.Policy));
     }
 
     private async Task<List<DeliveryChannelPolicy>> GetThumbnailDeliveryChannelPolicies(int customerId, CancellationToken cancellationToken)
@@ -107,7 +107,7 @@ public class PolicyRepository : IPolicyRepository
                     .Where(d => d.Customer == customerId && d.Channel == AssetDeliveryChannels.Thumbnails)
                     .AsNoTracking().ToListAsync(cancellationToken: cancellationToken);
             return thumbnailPolicies;
-        }, cacheSettings.GetMemoryCacheOptions());
+        }, cacheSettings.GetMemoryCacheOptions(named: CacheOverrideKeys.Policy));
     }
     
     private Task<List<ImageOptimisationPolicy>> GetImageOptimisationPolicies(CancellationToken cancellationToken)
@@ -120,6 +120,6 @@ public class PolicyRepository : IPolicyRepository
                 await dlcsContext.ImageOptimisationPolicies.AsNoTracking()
                     .ToListAsync(cancellationToken: cancellationToken);
             return imageOptimisationPolicies;
-        }, cacheSettings.GetMemoryCacheOptions());
+        }, cacheSettings.GetMemoryCacheOptions(named: CacheOverrideKeys.Policy));
     }
 }
