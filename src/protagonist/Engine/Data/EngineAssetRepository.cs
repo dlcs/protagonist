@@ -53,7 +53,14 @@ public class EngineAssetRepository(
 
             if (updatedRows && imageStorage != null)
             {
-                await IncreaseCustomerStorage(imageStorage, deliverable is Adjunct, cancellationToken);
+                // This can only be hit by Asset. Adjuncts don't pass ImageStorage records, they apply delta instead
+                if (deliverable is Adjunct)
+                {
+                    logger.LogWarning(
+                        "Updating ingested item {Item} is adjunct but has ImageStorage record - this shouldn't happen!",
+                        deliverable.Identifier());
+                }
+                await IncreaseCustomerStorage(imageStorage, cancellationToken);
             }
             
             return updatedRows || !ingestFinished; // if the ingestion hasn't finished, rows can be not updated - meaning success
@@ -100,9 +107,6 @@ public class EngineAssetRepository(
 
         return adjunct.SingleOrDefaultAsync(a => a.Id == id && a.AssetId == assetId, cancellationToken);
     }
-
-    public ValueTask<ImageStorage?> GetImageStorage(AssetId assetId, CancellationToken cancellationToken = default)
-        => new(DlcsContext.ImageStorages.SingleOrDefaultAsync(i => i.Id == assetId, cancellationToken));
 
     public async Task<long?> GetImageSize(AssetId assetId, CancellationToken cancellationToken = default)
     {
@@ -178,23 +182,18 @@ public class EngineAssetRepository(
         return batch?.Finished.HasValue ?? false ? batch : default;
     }
 
-    private async Task IncreaseCustomerStorage(ImageStorage imageStorage, bool isAdjunct,
-        CancellationToken cancellationToken)
+    private async Task IncreaseCustomerStorage(ImageStorage imageStorage, CancellationToken cancellationToken)
     {
+        // Don't touch `TotalSizeOfStoredAdjuncts` here - that's managed by AdjustAdjunctStoredSize
         try
         {
-            // skip image/thumb size delta when the deliverable is an adjunct
-            var imageSizeDelta = isAdjunct ? 0 : imageStorage.Size;
-            var thumbSizeDelta = isAdjunct ? 0 : imageStorage.ThumbnailSize;
-
             await DlcsContext.CustomerStorages
                 .Where(cs => cs.Customer == imageStorage.Customer &&
                              (cs.Space == null || cs.Space == imageStorage.Space))
                 .UpdateFromQueryAsync(cs => new CustomerStorage
                 {
-                    TotalSizeOfStoredImages = cs.TotalSizeOfStoredImages + imageSizeDelta,
-                    TotalSizeOfStoredAdjuncts = cs.TotalSizeOfStoredAdjuncts + imageStorage.AdjunctSize,
-                    TotalSizeOfThumbnails = cs.TotalSizeOfThumbnails + thumbSizeDelta
+                    TotalSizeOfStoredImages = cs.TotalSizeOfStoredImages + imageStorage.Size,
+                    TotalSizeOfThumbnails = cs.TotalSizeOfThumbnails + imageStorage.ThumbnailSize
                 }, cancellationToken);
         }
         catch (Exception ex)

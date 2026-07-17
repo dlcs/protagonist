@@ -53,9 +53,17 @@ public static class S3Extensions
         };
 
     private static ObjectInBucketHeaders AsObjectInBucketHeaders(this GetObjectResponse getObjectResponse)
-    {
-        var headersCollection = getObjectResponse.Headers;
-        var fromHeaders = new ObjectInBucketHeaders
+        => getObjectResponse.Headers.ToObjectInBucketHeaders(getObjectResponse.ETag, getObjectResponse.LastModified);
+
+    /// <summary>
+    /// Convert <see cref="GetObjectMetadataResponse"/> (from a HEAD request) to <see cref="ObjectInBucketHeaders"/>
+    /// </summary>
+    public static ObjectInBucketHeaders AsObjectInBucketHeaders(this GetObjectMetadataResponse metadataResponse)
+        => metadataResponse.Headers.ToObjectInBucketHeaders(metadataResponse.ETag, metadataResponse.LastModified);
+
+    private static ObjectInBucketHeaders ToObjectInBucketHeaders(this HeadersCollection headersCollection, string eTag,
+        DateTime lastModified)
+        => new()
         {
             CacheControl = headersCollection.CacheControl,
             ContentDisposition = headersCollection.ContentDisposition,
@@ -64,9 +72,7 @@ public static class S3Extensions
             ContentMD5 = headersCollection.ContentMD5,
             ContentType = headersCollection.ContentType,
             ExpiresUtc = headersCollection.ExpiresUtc,
-            ETag = getObjectResponse.ETag,
-            LastModified = getObjectResponse.LastModified,
+            ETag = eTag,
+            LastModified = lastModified,
         };
-        return fromHeaders;
-    }
 }

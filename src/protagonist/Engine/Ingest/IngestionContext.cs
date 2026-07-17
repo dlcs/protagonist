@@ -11,13 +11,24 @@ namespace Engine.Ingest;
 
 public class AdjunctIngestionContext : IngestionContext
 {
-    public AdjunctIngestionContext(Adjunct adjunct, ImageStorage? imageStorage) : base(adjunct.Asset)
+    public AdjunctIngestionContext(Adjunct adjunct) : base(adjunct.Asset)
     {
         Adjunct = adjunct;
-        ImageStorage = imageStorage;
     }
 
     public Adjunct Adjunct { get; }
+
+    /// <summary>
+    /// Signed delta (may be negative) to apply to the <see cref="ImageStorage"/> adjunct size totals as a result of
+    /// this ingest. Applied atomically after the adjunct is finalised in the DB. This may be zero.
+    /// </summary>
+    public long StoredSizeDelta { get; private set; }
+
+    public AdjunctIngestionContext WithStoredSizeDelta(long sizeDelta)
+    {
+        StoredSizeDelta += sizeDelta;
+        return this;
+    }
 
     public override IOriginItem GetOriginItem() => Adjunct;
 

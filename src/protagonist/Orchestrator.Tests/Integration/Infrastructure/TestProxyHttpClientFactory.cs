@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -72,6 +74,7 @@ public class ProxyResponse
     public Uri Uri { get; set; }
     public HttpMethod Method { get; set;}
     public TimeSpan? ActivityTimeout { get; set; }
+    public Dictionary<string, string[]> Headers { get; set; } = new();
 
     public ProxyResponse()
     {
@@ -82,5 +85,6 @@ public class ProxyResponse
         ActivityTimeout = activityTimeout;
         Uri = request.RequestUri;
         Method = request.Method;
+        Headers = request.Headers.ToDictionary(h => h.Key, h => h.Value.ToArray());
     }
 }

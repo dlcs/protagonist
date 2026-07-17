@@ -56,7 +56,23 @@ public class CustomerStorageRepository(
                     : 0
             }, cancellationToken);
 
-        await dlcsContext.ImageStorages.DecrementAdjunctSize(assetId, adjunctSize, cancellationToken);
+        await dlcsContext.ImageStorages.AdjustAdjunctSize(assetId, -adjunctSize, cancellationToken);
+    }
+
+    public async Task AdjustAdjunctStoredSize(AssetId assetId, long sizeDelta, CancellationToken cancellationToken)
+    {
+        if (sizeDelta == 0) return;
+
+        await dlcsContext.CustomerStorages
+            .Where(cs => cs.Customer == assetId.Customer && (cs.Space == null || cs.Space == assetId.Space))
+            .UpdateFromQueryAsync(cs => new CustomerStorage
+            {
+                TotalSizeOfStoredAdjuncts = cs.TotalSizeOfStoredAdjuncts + sizeDelta > 0
+                    ? cs.TotalSizeOfStoredAdjuncts + sizeDelta
+                    : 0
+            }, cancellationToken);
+
+        await dlcsContext.ImageStorages.AdjustAdjunctSize(assetId, sizeDelta, cancellationToken);
     }
 
     public async Task<bool> DeleteCustomerStorage(int customer, int space, CancellationToken cancellationToken)

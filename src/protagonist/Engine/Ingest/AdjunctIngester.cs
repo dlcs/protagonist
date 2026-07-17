@@ -47,13 +47,11 @@ public class AdjunctIngester(
             return new IngestResult(null, IngestResultStatus.Failed);
         }
         
-        var storage = await engineAssetRepository.GetImageStorage(request.AssetId, cancellationToken);
-        
-        // get any matching CustomerOriginStrategy 
+        // get any matching CustomerOriginStrategy
         var customerOriginStrategy = await customerOriginRepository.GetCustomerOriginStrategy(adjunct);
 
         // now ingest the adjunct
-        var status = await executor.IngestAdjunct(adjunct, storage, customerOriginStrategy, cancellationToken);
+        var status = await executor.IngestAdjunct(adjunct, customerOriginStrategy, cancellationToken);
         return status;
     }
 }

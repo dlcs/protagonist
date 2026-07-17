@@ -57,7 +57,7 @@ public class AssetCachingHelper(
 
             return dbAsset;
 
-        }, cacheSettings.GetMemoryCacheOptions(cacheDuration));
+        }, cacheSettings.GetMemoryCacheOptions(cacheDuration, named: CacheOverrideKeys.Asset));
 
         return asset.Id == NullAsset.Id ? null : asset;
     }
@@ -84,7 +84,7 @@ public class AssetCachingHelper(
             entry.AbsoluteExpirationRelativeToNow =
                 TimeSpan.FromSeconds(cacheSettings.GetTtl(CacheDuration.Short));
             return NullAdjunct;
-        }, cacheSettings.GetMemoryCacheOptions(cacheDuration));
+        }, cacheSettings.GetMemoryCacheOptions(cacheDuration, named: CacheOverrideKeys.Adjunct));
 
         return adjunct.Id == NullAdjunct.Id && adjunct.AssetId == NullAdjunct.AssetId ? null : adjunct;
     }

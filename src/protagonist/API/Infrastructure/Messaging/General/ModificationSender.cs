@@ -34,8 +34,15 @@ public class ModificationSender(
             {
                 var attributes = new Dictionary<string, string>()
                 {
-                    { "messageType", notification.ChangeType.ToString() }
+                    { ModifiedNotificationAttributes.MessageType, notification.ChangeType.ToString() }
                 };
+
+                // Consumers test for presence of this key, so omit it entirely rather than setting it to "False"
+                if (notification.EngineNotified)
+                {
+                    attributes.Add(ModifiedNotificationAttributes.EngineNotified,
+                        ModifiedNotificationAttributes.EngineNotifiedValue);
+                }
 
                 changes.Add(new DeliverableModifiedNotification(serialisedNotification, attributes));
             }

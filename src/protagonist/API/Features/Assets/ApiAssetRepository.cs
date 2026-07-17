@@ -98,7 +98,8 @@ public class ApiAssetRepository : IApiAssetRepository
             
             var hostedAdjuncts = asset.Adjuncts?.Where(a => a.IsHosted()).ToList() ?? [];
             var hostedAdjunctCount = hostedAdjuncts.Count;
-            var hostedAdjunctSize = hostedAdjuncts.Sum(a => a.Size ?? 0);
+            // Optimised adjuncts count towards the adjunct count but not its size (their bytes stay in the origin)
+            var hostedAdjunctSize = hostedAdjuncts.Sum(a => a.CountsTowardStoredSize() ? a.Size ?? 0 : 0);
 
             void ReduceCustomerStorage(CustomerStorage customerStorage)
             {

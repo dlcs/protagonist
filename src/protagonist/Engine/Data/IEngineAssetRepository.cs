@@ -38,15 +38,6 @@ public interface IEngineAssetRepository
     Task<Adjunct?> GetAdjunct(string id, AssetId assetId, int? batchId = null, CancellationToken cancellationToken = default);
     
     /// <summary>
-    /// Get the <see cref="ImageStorage"/> for the specified <paramref name="assetId"/>
-    /// </summary>
-    /// <param name="assetId">AssetId for which the image storage data to retrieve</param>
-    /// <param name="cancellationToken">Current cancellation token</param>
-    /// <returns>The image storage data for the specified AssetId or null if not exists</returns>
-    /// <remarks>At this time, this is used for Adjunct ingestion in the update scenario</remarks>
-    ValueTask<ImageStorage?> GetImageStorage(AssetId assetId, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// Retrieves the size of an image from the database, or null if the image is not found
     /// </summary>
     /// <param name="assetId">The asset id of the image to check</param>

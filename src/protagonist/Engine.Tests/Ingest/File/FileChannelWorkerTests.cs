@@ -20,6 +20,7 @@ public class FileChannelWorkerTests
     private readonly IAssetToS3 assetToS3;
     private readonly IStorageKeyGenerator storageKeyGenerator;
     private readonly IOriginStrategy originStrategy;
+    private readonly IBucketReader bucketReader;
     private readonly FileChannelWorker sut;
 
     public FileChannelWorkerTests()
@@ -28,11 +29,12 @@ public class FileChannelWorkerTests
         assetToS3 = A.Fake<IAssetToS3>();
         storageKeyGenerator = A.Fake<IStorageKeyGenerator>();
         originStrategy = A.Fake<IOriginStrategy>();
+        bucketReader = A.Fake<IBucketReader>();
         OriginStrategyResolver resolver = _ => originStrategy;
         var originFetcher = new OriginFetcher(resolver);
 
         sut = new FileChannelWorker(assetToS3, assetIngestorSizeCheck, storageKeyGenerator, originFetcher,
-            new NullLogger<FileChannelWorker>());
+            bucketReader, new NullLogger<FileChannelWorker>());
     }
 
     [Fact]
@@ -186,11 +188,75 @@ public class FileChannelWorkerTests
     }
 
     [Fact]
-    public async Task IngestAdjunct_CopiesFileToStorage_SetsImageStorage_AndStoredObject()
+    public async Task IngestAdjunct_Optimised_NonAnnotation_RecordsSizeFromHead_NoStorageDelta()
+    {
+        // Arrange - adjunct bytes stay in the optimised origin, so size is read via a HEAD request but
+        // contributes nothing to the customer's stored-adjunct size (new adjunct -> delta 0)
+        var context = GetAdjunctIngestionContext(origin: "s3://origin-bucket/adjunct-key");
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = true };
+        A.CallTo(() => bucketReader.GetObjectHeaders(A<ObjectInBucket>._, false, A<CancellationToken>._))
+            .Returns(new ObjectInBucketHeaders { ContentLength = 2048L });
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+
+        // Assert
+        result.Should().Be(IngestResultStatus.Success);
+        context.Adjunct.Size.Should().Be(2048L);
+        context.Adjunct.Optimised.Should().BeTrue();
+        context.StoredSizeDelta.Should().Be(0L, "optimised adjuncts don't count towards stored-adjunct size");
+        context.StoredObjects.Should().BeEmpty();
+        A.CallTo(() =>
+                assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, cos,
+                    A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._))
+            .MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_Optimised_NonAnnotation_DecrementsStorage_WhenPreviouslyNonOptimised()
+    {
+        // Arrange - a hosted (counted) adjunct of size 2048 moving to an optimised origin -> delta -2048
+        var context = GetAdjunctIngestionContext(origin: "s3://origin-bucket/adjunct-key",
+            existingSize: 2048L, existingOptimised: false);
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = true };
+        A.CallTo(() => bucketReader.GetObjectHeaders(A<ObjectInBucket>._, false, A<CancellationToken>._))
+            .Returns(new ObjectInBucketHeaders { ContentLength = 4096L });
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+
+        // Assert
+        result.Should().Be(IngestResultStatus.Success);
+        context.Adjunct.Size.Should().Be(4096L, "content size is still recorded");
+        context.Adjunct.Optimised.Should().BeTrue();
+        context.StoredSizeDelta.Should().Be(-2048L, "the previously-counted size is removed from storage");
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_Optimised_NonAnnotation_LeavesSizeUnchanged_IfObjectNotFound()
+    {
+        // Arrange
+        var context = GetAdjunctIngestionContext(origin: "s3://origin-bucket/adjunct-key");
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = true };
+        A.CallTo(() => bucketReader.GetObjectHeaders(A<ObjectInBucket>._, false, A<CancellationToken>._))
+            .Returns((ObjectInBucketHeaders?)null);
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+
+        // Assert
+        result.Should().Be(IngestResultStatus.Success);
+        context.Adjunct.Size.Should().BeNull();
+        context.Adjunct.Optimised.Should().BeTrue();
+        context.StoredSizeDelta.Should().Be(0L);
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_CopiesFileToStorage_SetsStoredSizeDelta_AndStoredObject()
     {
         // Arrange
         var context = GetAdjunctIngestionContext();
-        
+
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = false };
         var destination = new RegionalisedObjectInBucket("test-bucket", "origin-key", "eu-west-1");
         A.CallTo(() => storageKeyGenerator.GetStoredAdjunctLocation(context.AssetId, context.Adjunct))
@@ -202,20 +268,47 @@ public class FileChannelWorkerTests
 
         // Act
         var result = await sut.Ingest(context, cos);
-        
+
         // Assert
-        context.ImageStorage!.AdjunctSize.Should().Be(1234L);
+        context.StoredSizeDelta.Should().Be(1234L);
+        context.Adjunct.Size.Should().Be(1234L);
+        context.Adjunct.Optimised.Should().BeFalse();
         context.StoredObjects.Should().ContainKey(destination).WhoseValue.Should().Be(1234L);
         result.Should().Be(IngestResultStatus.Success);
     }
     
     [Fact]
-    public async Task IngestAdjunct_CopiesFileToStorage_IncrementsImageStorage_AndStoredObject()
+    public async Task IngestAdjunct_Reingest_CorrectlyResetsSize_ForEmptyAdjunct()
     {
-        // Arrange
-        var context = GetAdjunctIngestionContext();
-        context.WithStorage(adjunctSize: 1000L);
-        
+        // Arrange - a previously-counted 1000-byte adjunct re-ingested at 0 bytes (empty)
+        // Ensures we can handle 0-byte adjuncts
+        var context = GetAdjunctIngestionContext(existingSize: 1000L, existingOptimised: false);
+
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = false };
+        var destination = new RegionalisedObjectInBucket("test-bucket", "origin-key", "eu-west-1");
+        A.CallTo(() => storageKeyGenerator.GetStoredAdjunctLocation(context.AssetId, context.Adjunct))
+            .Returns(destination);
+
+        A.CallTo(() =>
+                assetToS3.CopyOriginToStorage(destination, context, true, cos, A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._))
+            .Returns(new AdjunctFromOrigin(context.Adjunct.Id, context.AssetId, 0L, "anywhere", "application/docx"));
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+
+        // Assert
+        context.StoredSizeDelta.Should().Be(-1000L, "delta is new size minus previously-counted size");
+        context.Adjunct.Size.Should().Be(0L);
+        context.StoredObjects.Should().ContainKey(destination).WhoseValue.Should().Be(0L);
+        result.Should().Be(IngestResultStatus.Success);
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_Reingest_StoredSizeDelta_IsDifferenceFromPreviousSize()
+    {
+        // Arrange - a previously-counted 1000-byte adjunct re-ingested at 1234 bytes -> delta +234
+        var context = GetAdjunctIngestionContext(existingSize: 1000L, existingOptimised: false);
+
         var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = false };
         var destination = new RegionalisedObjectInBucket("test-bucket", "origin-key", "eu-west-1");
         A.CallTo(() => storageKeyGenerator.GetStoredAdjunctLocation(context.AssetId, context.Adjunct))
@@ -227,10 +320,36 @@ public class FileChannelWorkerTests
 
         // Act
         var result = await sut.Ingest(context, cos);
-        
+
         // Assert
-        context.ImageStorage!.AdjunctSize.Should().Be(2234L, "Was 1000 from previous operation");
+        context.StoredSizeDelta.Should().Be(234L, "delta is new size minus previously-counted size");
+        context.Adjunct.Size.Should().Be(1234L);
         context.StoredObjects.Should().ContainKey(destination).WhoseValue.Should().Be(1234L);
+        result.Should().Be(IngestResultStatus.Success);
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_NonOptimised_AfterPreviouslyOptimised_CountsFullNewSize()
+    {
+        // Arrange - previously optimised (uncounted, size 3000) now moving to a counted origin -> delta +1234 (full new size)
+        var context = GetAdjunctIngestionContext(existingSize: 3000L, existingOptimised: true);
+
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = false };
+        var destination = new RegionalisedObjectInBucket("test-bucket", "origin-key", "eu-west-1");
+        A.CallTo(() => storageKeyGenerator.GetStoredAdjunctLocation(context.AssetId, context.Adjunct))
+            .Returns(destination);
+
+        A.CallTo(() =>
+                assetToS3.CopyOriginToStorage(destination, context, true, cos, A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._))
+            .Returns(new AdjunctFromOrigin(context.Adjunct.Id, context.AssetId, 1234L, "anywhere", "application/docx"));
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+
+        // Assert
+        context.StoredSizeDelta.Should().Be(1234L, "the previous optimised size was never counted, so full new size is added");
+        context.Adjunct.Size.Should().Be(1234L);
+        context.Adjunct.Optimised.Should().BeFalse();
         result.Should().Be(IngestResultStatus.Success);
     }
     
@@ -303,7 +422,8 @@ public class FileChannelWorkerTests
     
     // Helpers
     
-    private static AdjunctIngestionContext GetAdjunctIngestionContext(string assetId = "/1/2/something", string adjunctId = "someAdjunct", ImageStorage? imageStorage = null)
+    private static AdjunctIngestionContext GetAdjunctIngestionContext(string assetId = "/1/2/something",
+        string adjunctId = "someAdjunct", string? origin = null, long? existingSize = null, bool existingOptimised = false)
     {
         var id = AssetId.FromString(assetId);
         var asset = new Asset
@@ -315,11 +435,11 @@ public class FileChannelWorkerTests
         var adjunct = new Adjunct
         {
             Id = adjunctId, AssetId = id, Asset = asset, IIIFLink = IIIFLinkType.SeeAlso,
-            MediaType = "image/jpeg", Type = "Image"
+            MediaType = "image/jpeg", Type = "Image", Origin = origin,
+            Size = existingSize, Optimised = existingOptimised
         };
 
-        var context = new AdjunctIngestionContext(adjunct, imageStorage);
-        return context;
+        return new AdjunctIngestionContext(adjunct);
     }
 
     private static AdjunctIngestionContext GetAnnotationAdjunctIngestionContext(string assetId = "/1/2/something",
@@ -338,11 +458,14 @@ public class FileChannelWorkerTests
             MediaType = "application/json", Type = "AnnotationPage", Origin = origin
         };
 
-        return new AdjunctIngestionContext(adjunct, null);
+        return new AdjunctIngestionContext(adjunct);
     }
 
-    private static OriginResponse MakeOriginResponse(string content)
-        => new(new MemoryStream(Encoding.UTF8.GetBytes(content)));
+    private static OriginResponse MakeOriginResponse(string content, long? contentLength = null)
+    {
+        var response = new OriginResponse(new MemoryStream(Encoding.UTF8.GetBytes(content)));
+        return contentLength.HasValue ? response.WithContentLength(contentLength) : response;
+    }
 
     // Annotation adjuncts - Optimised path (validate via OriginFetcher, no S3 copy)
 
@@ -364,6 +487,25 @@ public class FileChannelWorkerTests
                 assetToS3.CopyOriginToStorage(A<ObjectInBucket>._, A<IngestionContext>._, A<bool>._, cos,
                     A<Func<string, CancellationToken, Task<string?>>>._, A<CancellationToken>._))
             .MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_Annotation_Optimised_ValidJson_RecordsSizeFromContentLength()
+    {
+        // Arrange - annotation content is already fetched for JSON validation, so its size is recorded too
+        var context = GetAnnotationAdjunctIngestionContext();
+        var cos = new CustomerOriginStrategy { Strategy = OriginStrategyType.S3Ambient, Optimised = true };
+        A.CallTo(() => originStrategy.LoadFromOrigin(context.Adjunct, cos, A<CancellationToken>._))
+            .Returns(MakeOriginResponse("""{"type":"AnnotationPage"}""", contentLength: 512L));
+
+        // Act
+        var result = await sut.Ingest(context, cos);
+
+        // Assert
+        result.Should().Be(IngestResultStatus.Success);
+        context.Adjunct.Size.Should().Be(512L);
+        context.Adjunct.Optimised.Should().BeTrue();
+        context.StoredSizeDelta.Should().Be(0L, "optimised adjuncts don't count towards stored-adjunct size");
     }
 
     [Fact]

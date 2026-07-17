@@ -40,7 +40,9 @@ public class DeleteAdjunctHandler(DlcsContext dbContext, IStorageRepository stor
 
         if (adjunct.IsHosted())
         {
-            await storageRepository.DecrementAdjunctStorage(adjunct.AssetId, adjunct.Size ?? 0, cancellationToken);
+            // Optimised adjuncts count towards the adjunct count but not its size (their bytes stay in the origin)
+            var storedSize = adjunct.CountsTowardStoredSize() ? adjunct.Size ?? 0 : 0;
+            await storageRepository.DecrementAdjunctStorage(adjunct.AssetId, storedSize, cancellationToken);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);

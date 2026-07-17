@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace DLCS.Core.Caching;
 
@@ -25,34 +26,25 @@ public class CacheSettings
 
     /// <summary>
     /// Get pre configured Ttl for a source.
-    /// Falls back to Memory cache duration if not found.
+    /// If a named override is configured for the source that value is used, else the value for specified duration.
+    /// Falls back to Memory cache duration if source not found.
     /// </summary>
-    /// <param name="duration">Pre configured ttl to fetch</param>
+    /// <param name="duration">Pre configured ttl to fetch, used if no override configured for <paramref name="named"/></param>
     /// <param name="source">Cache source to get ttl for</param>
+    /// <param name="named">Optional name of cache override to fetch, see <see cref="CacheOverrideKeys"/></param>
     /// <returns>Ttl, in secs</returns>
-    public int GetTtl(CacheDuration duration = CacheDuration.Default, CacheSource source = CacheSource.Memory)
+    public int GetTtl(CacheDuration duration = CacheDuration.Default, CacheSource source = CacheSource.Memory,
+        string? named = null)
         => TimeToLive.TryGetValue(source, out var settings)
-            ? settings.GetTtl(duration)
-            : GetFallback(duration);
-    
-    /// <summary>
-    /// Get specific named cache override for source.
-    /// Falls back to default memory duration if not found.
-    /// </summary>
-    /// <param name="named">Name of cache override to fetch</param>
-    /// <param name="source">Cache source to get ttl for</param>
-    /// <returns>Ttl, in secs</returns>
-    public int GetTtl(string named, CacheSource source = CacheSource.Memory)
-        => TimeToLive.TryGetValue(source, out var settings)
-            ? settings.GetTtl(named)
-            : GetFallback();
+            ? settings.GetTtl(duration, named)
+            : GetFallback(duration, named);
 
     private readonly CacheGroupSettings fallback = new();
 
-    private int GetFallback(CacheDuration duration = CacheDuration.Default) =>
+    private int GetFallback(CacheDuration duration, string? named) =>
         TimeToLive.TryGetValue(CacheSource.Memory, out var settings)
-            ? settings.GetTtl(duration)
-            : fallback.GetTtl(duration);
+            ? settings.GetTtl(duration, named)
+            : fallback.GetTtl(duration, named);
 }
 
 public class CacheGroupSettings
@@ -60,9 +52,19 @@ public class CacheGroupSettings
     public int ShortTtlSecs { get; set; } = 60;
     public int DefaultTtlSecs { get; set; } = 600;
     public int LongTtlSecs { get; set; } = 1800;
-    public Dictionary<string, int> Overrides { get; set; }
 
-    public int GetTtl(CacheDuration duration)
+    /// <summary>
+    /// Ttl overrides, in secs, for specific caching actions. Keyed by <see cref="CacheOverrideKeys"/> value.
+    /// Case-insensitive, as envvar-supplied keys can't be relied on to match the casing of the constant.
+    /// </summary>
+    public Dictionary<string, int> Overrides { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public int GetTtl(CacheDuration duration, string? named = null)
+        => named != null && Overrides.TryGetValue(named, out var ttl)
+            ? ttl
+            : GetDurationTtl(duration);
+
+    private int GetDurationTtl(CacheDuration duration)
         => duration switch
         {
             CacheDuration.Short => ShortTtlSecs,
@@ -70,9 +72,6 @@ public class CacheGroupSettings
             CacheDuration.Long => LongTtlSecs,
             _ => DefaultTtlSecs
         };
-
-    public int GetTtl(string named)
-        => Overrides.TryGetValue(named, out var ttl) ? ttl : DefaultTtlSecs;
 }
 
 /// <summary>
