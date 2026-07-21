@@ -48,6 +48,57 @@ public class CustomerAdjunctQueueController(
     }
 
     /// <summary>
+    /// Get details of all adjuncts currently associated with specified batch.
+    ///
+    /// Supports the following query parameters:
+    ///   ?orderBy= and ?orderByDescending= for ordering (Created is the only supported field)
+    ///   ?page= and ?pageSize= for paging
+    /// </summary>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="batchId">Id of adjunct batch to load adjuncts from</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Hydra JSON-LD collection of Adjunct objects</returns>
+    [HttpGet]
+    [Route("batches/{batchId:int}/current")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<Adjunct>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
+    public async Task<IActionResult> GetBatchCurrentAdjuncts(
+        [FromRoute] int customerId, [FromRoute] int batchId, CancellationToken cancellationToken)
+    {
+        return await HandlePagedFetch<DLCS.Model.Assets.Adjunct, GetBatchCurrentAdjuncts, Adjunct>(
+            new GetBatchCurrentAdjuncts(customerId, batchId),
+            adjunct => adjunct.ToHydra(GetUrlRoots()),
+            errorTitle: "Get current batch adjuncts failed",
+            cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Get details of all adjuncts within specified batch. This includes adjuncts that were part of the batch
+    /// at creation time, as long as they still exist, even if they have since been reassigned to another batch.
+    ///
+    /// Supports the following query parameters:
+    ///   ?orderBy= and ?orderByDescending= for ordering (Created is the only supported field)
+    ///   ?page= and ?pageSize= for paging
+    /// </summary>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="batchId">Id of adjunct batch to load adjuncts from</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Hydra JSON-LD collection of Adjunct objects</returns>
+    [HttpGet]
+    [Route("batches/{batchId:int}/adjuncts")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<Adjunct>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
+    public async Task<IActionResult> GetBatchAdjuncts(
+        [FromRoute] int customerId, [FromRoute] int batchId, CancellationToken cancellationToken)
+    {
+        return await HandlePagedFetch<DLCS.Model.Assets.Adjunct, GetBatchAdjuncts, Adjunct>(
+            new GetBatchAdjuncts(customerId, batchId),
+            adjunct => adjunct.ToHydra(GetUrlRoots()),
+            errorTitle: "Get batch adjuncts failed",
+            cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
     /// Submit a batch of adjuncts to the adjunct queue.
     /// </summary>
     /// <returns>A Hydra JSON-LD AdjunctBatch object representing the created batch.</returns>
