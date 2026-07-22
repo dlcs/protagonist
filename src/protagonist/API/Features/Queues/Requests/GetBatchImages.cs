@@ -18,7 +18,7 @@ public class GetBatchImages(int customerId, int batchId, AssetQueryModel assetQu
 
 public class GetBatchImagesHandler(DlcsContext dlcsContext) : GetBatchAssetsBase<GetBatchImages>(dlcsContext)
 {
-    protected override IQueryable<Asset> GetBatchAssets(DlcsContext dlcsContext, GetBatchImages request)
+    protected override IQueryable<Asset> GetEntities(DlcsContext dlcsContext, GetBatchImages request)
         => dlcsContext.Images
             .AsNoTracking()
             .IncludeDeliveryChannelsWithPolicy()
