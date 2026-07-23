@@ -16,4 +16,13 @@ public static class AdjunctQueryX
         => orderable.Descending
             ? query.OrderByDescending(a => a.Created)
             : query.OrderBy(a => a.Created);
+
+    /// <summary>
+    /// Order adjunct batches by Submitted date - currently the only supported orderBy field for adjunct batches.
+    /// Any other/unrecognised orderBy value is silently ignored and Submitted is used.
+    /// </summary>
+    public static IQueryable<AdjunctBatch> AsOrderedAdjunctBatchQuery(this IQueryable<AdjunctBatch> query, IOrderableRequest orderable)
+        => orderable.Descending
+            ? query.OrderByDescending(b => b.Submitted)
+            : query.OrderBy(b => b.Submitted);
 }

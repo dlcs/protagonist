@@ -25,6 +25,86 @@ public class CustomerAdjunctQueueController(
     : HydraController(options.Value, mediator)
 {
     /// <summary>
+    /// Get details of default customer adjunct queue
+    /// </summary>
+    /// <param name="customerId">Id of customer to get adjunct queue details for</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Hydra JSON-LD CustomerAdjunctQueue object</returns>
+    [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CustomerAdjunctQueue))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCustomerAdjunctQueue([FromRoute] int customerId,
+        CancellationToken cancellationToken)
+    {
+        return await HandleFetch(
+            new GetCustomerAdjunctQueue(customerId),
+            queue => queue.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Get Customer Adjunct Queue failed",
+            cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Get details of all customer adjunct batches.
+    ///
+    /// Supports ?page= and ?pageSize= query parameters for paging
+    /// </summary>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Hydra JSON-LD collection of AdjunctBatch objects</returns>
+    [HttpGet]
+    [Route("batches")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<AdjunctBatch>))]
+    public async Task<IActionResult> GetAdjunctBatches([FromRoute] int customerId, CancellationToken cancellationToken)
+    {
+        return await HandlePagedFetch<DLCS.Model.Assets.AdjunctBatch, GetAdjunctBatches, AdjunctBatch>(
+            new GetAdjunctBatches(customerId),
+            batch => batch.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Get adjunct batches failed",
+            cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Get details of customer active adjunct batches. An "active" batch is one that is incomplete.
+    ///
+    /// Supports ?page= and ?pageSize= query parameters for paging
+    /// </summary>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Hydra JSON-LD collection of AdjunctBatch objects</returns>
+    [HttpGet]
+    [Route("active")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<AdjunctBatch>))]
+    public async Task<IActionResult> GetActiveAdjunctBatches([FromRoute] int customerId, CancellationToken cancellationToken)
+    {
+        return await HandlePagedFetch<DLCS.Model.Assets.AdjunctBatch, GetActiveAdjunctBatches, AdjunctBatch>(
+            new GetActiveAdjunctBatches(customerId),
+            batch => batch.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Get active adjunct batches failed",
+            cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
+    /// Get details of customer recent adjunct batches. These are all batches that are finished, ordered by latest
+    /// finished.
+    ///
+    /// Supports ?page= and ?pageSize= query parameters for paging
+    /// </summary>
+    /// <param name="customerId">Id of customer</param>
+    /// <param name="cancellationToken">Current cancellation token</param>
+    /// <returns>Hydra JSON-LD collection of AdjunctBatch objects</returns>
+    [HttpGet]
+    [Route("recent")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<AdjunctBatch>))]
+    public async Task<IActionResult> GetRecentAdjunctBatches([FromRoute] int customerId, CancellationToken cancellationToken)
+    {
+        return await HandlePagedFetch<DLCS.Model.Assets.AdjunctBatch, GetRecentAdjunctBatches, AdjunctBatch>(
+            new GetRecentAdjunctBatches(customerId),
+            batch => batch.ToHydra(GetUrlRoots().BaseUrl),
+            errorTitle: "Get recent adjunct batches failed",
+            cancellationToken: cancellationToken);
+    }
+
+    /// <summary>
     /// Get details of specified adjunct batch.
     /// </summary>
     /// <param name="customerId">Id of customer</param>

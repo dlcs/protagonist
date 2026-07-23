@@ -41,6 +41,8 @@ public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"AuthTokens\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Batches\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"Queues\"");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"AdjunctBatchAdjuncts\"");
+        DbContext.Database.ExecuteSqlRaw("DELETE FROM \"AdjunctBatches\"");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'space-images' AND \"Customer\" != 99");
         DbContext.Database.ExecuteSqlRaw("DELETE FROM \"EntityCounters\" WHERE \"Type\" = 'customer-images' AND \"Scope\" != '99'");

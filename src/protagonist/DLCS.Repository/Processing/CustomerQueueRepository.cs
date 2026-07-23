@@ -38,6 +38,29 @@ q.""Customer"", q.""Size"", q.""Name"", b.""BatchesWaiting"", b.""ImagesWaiting"
         }
     }
 
+    public async Task<AdjunctQueue?> GetAdjunctQueue(int customer, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // NOTE - unlike Get() above, BatchesWaiting/AdjunctsWaiting only count batches that haven't started
+            // processing yet (nothing Completed or Errored) - this excludes batches currently being worked on,
+            // which still count towards Size
+            const string sql = @"SELECT
+q.""Customer"", q.""Size"", b.""BatchesWaiting"", b.""AdjunctsWaiting"" FROM ""Queues"" q,
+	(SELECT COUNT(""Id"") AS ""BatchesWaiting"", COALESCE(SUM(""Count""), 0) AS ""AdjunctsWaiting""
+    FROM ""AdjunctBatches""
+    WHERE ""Customer"" = @customer AND ""Finished"" IS NULL AND ""Completed"" = 0 AND ""Errors"" = 0) b
+  WHERE q.""Customer"" = @customer AND q.""Name"" = 'adjunct'
+";
+            return await this.QueryFirstOrDefaultAsync<AdjunctQueue>(sql, new { customer });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting adjunct queue counts for customer {Customer}", customer);
+            return null;
+        }
+    }
+
     public async Task IncrementSize(int customer, string name, int incrementAmount = 1,
         CancellationToken cancellationToken = default)
     {
