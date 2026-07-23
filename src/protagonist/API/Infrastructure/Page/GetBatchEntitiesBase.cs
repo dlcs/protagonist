@@ -1,4 +1,5 @@
 using API.Infrastructure.Requests;
+using DLCS.Model.Assets;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,7 @@ namespace API.Infrastructure.Page;
 /// </summary>
 public abstract class GetBatchEntitiesBase<TEntity, TRequest>(DlcsContext dlcsContext)
     : IRequestHandler<TRequest, FetchEntityResult<PageOf<TEntity>>>
-    where TEntity : class
+    where TEntity : class, IDeliverable
     where TRequest : IRequest<FetchEntityResult<PageOf<TEntity>>>, IPagedRequest, IOrderableRequest
 {
     /// <summary>

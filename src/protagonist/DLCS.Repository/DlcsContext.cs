@@ -782,7 +782,7 @@ public partial class DlcsContext : DbContext
                 .WithMany(b => b.BatchAdjuncts)
                 .HasForeignKey(e => e.BatchId);
 
-            entity.HasOne<Adjunct>()
+            entity.HasOne(e => e.Adjunct)
                 .WithMany(a => a.AdjunctBatchAdjuncts)
                 .HasForeignKey(e => new { e.AdjunctId, e.AssetId })
                 .HasPrincipalKey(a => new { a.Id, a.AssetId });

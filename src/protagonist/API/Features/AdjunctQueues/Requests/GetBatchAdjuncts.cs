@@ -32,9 +32,6 @@ public class GetBatchAdjunctsHandler(DlcsContext dlcsContext) : GetBatchAdjuncts
     protected override IQueryable<Adjunct> GetEntities(DlcsContext dlcsContext, GetBatchAdjuncts request)
         => dlcsContext.AdjunctBatchAdjuncts
             .AsNoTracking()
-            .Where(x => x.BatchId == request.BatchId && x.Batch.Customer == request.CustomerId)
-            .Join(dlcsContext.Adjuncts,
-                x => new { x.AdjunctId, x.AssetId },
-                a => new { AdjunctId = a.Id, a.AssetId },
-                (x, a) => a);
+            .Where(aba => aba.BatchId == request.BatchId && aba.Batch.Customer == request.CustomerId)
+            .Select(aba => aba.Adjunct!);
 }

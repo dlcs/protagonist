@@ -635,6 +635,38 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
     }
 
     [Fact]
+    public async Task GetBatchCurrentAdjuncts_Returns200_OrdersByCreatedDescending_WhenUnknownOrderByField()
+    {
+        // Arrange
+        var assetIdOne = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetIdTwo = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+
+        var batch = new DLCS.Model.Assets.AdjunctBatch
+        {
+            Customer = assetIdOne.Customer, Submitted = DateTime.UtcNow, Count = 2, Completed = 2, Errors = 0
+        };
+        dbContext.AdjunctBatches.Add(batch);
+        await dbContext.SaveChangesAsync();
+
+        var earlier = DateTime.UtcNow.AddMinutes(-10);
+        var later = DateTime.UtcNow;
+        await dbContext.Images.AddTestAsset(assetIdOne).WithTestAdjunct("adj-early", batch: batch.Id, created: earlier);
+        await dbContext.Images.AddTestAsset(assetIdTwo).WithTestAdjunct("adj-late", batch: batch.Id, created: later);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetIdOne.Customer)
+            .GetAsync($"/customers/{assetIdOne.Customer}/adjunctQueue/batches/{batch.Id}/current?orderByDescending=notAllowed");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjuncts = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        adjuncts.Members.Should().HaveCount(2);
+        adjuncts.Members![0].Id.Should().EndWith("/adj-late");
+        adjuncts.Members![1].Id.Should().EndWith("/adj-early");
+    }
+
+    [Fact]
     public async Task GetBatchAdjuncts_Returns404_WhenBatchNotFound()
     {
         // Arrange
