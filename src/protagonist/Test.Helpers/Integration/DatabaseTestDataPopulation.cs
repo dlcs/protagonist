@@ -73,7 +73,7 @@ public static class DatabaseTestDataPopulation
         string profile = null, LanguageMap label = null,
         string[] language = null, string? externalId = null, DateTime? created = null,
         long? size = null, string? motivation = null, string? origin = null, string? provides = null,
-        bool optimised = false)
+        bool optimised = false, int? batch = null)
     {
         asset.Result.Entity.Adjuncts ??= [];
         externalId ??= origin == null ? "https://someHost.com/someUri" : null;
@@ -93,7 +93,8 @@ public static class DatabaseTestDataPopulation
             Size = size,
             Motivation = motivation,
             Provides = provides,
-            Optimised = optimised
+            Optimised = optimised,
+            Batch = batch
         });
 
         return asset;

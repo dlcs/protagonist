@@ -1,43 +1,23 @@
-﻿using API.Features.Assets.Query;
+using API.Features.Assets.Query;
 using API.Infrastructure.Page;
-using API.Infrastructure.Requests;
 using DLCS.Model.Assets;
 using DLCS.Repository;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace API.Features.Queues.Requests;
 
 public abstract class GetBatchAssetsBase<T>(DlcsContext dlcsContext)
-    : IRequestHandler<T, FetchEntityResult<PageOf<Asset>>>
+    : GetBatchEntitiesBase<Asset, T>(dlcsContext)
     where T : GetBatchAssets
 {
-    protected abstract IQueryable<Asset> GetBatchAssets(DlcsContext dlcsContext, T request);
+    protected override IQueryable<Asset> ApplyFilter(IQueryable<Asset> query, T request) =>
+        query.ApplyAssetFilter(request.AssetQueryModel.Filter, true).AsSingleQuery();
 
-    public async Task<FetchEntityResult<PageOf<Asset>>> Handle(
-        T request, CancellationToken cancellationToken)
-    {
-        var result = await GetBatchAssets(dlcsContext, request).CreatePagedResult(
-            request,
-            i => i
-                .ApplyAssetFilter(request.AssetQueryModel.Filter, true)
-                .AsSingleQuery(),
-            images => images.AsOrderedAssetQuery(request),
-            cancellationToken);
+    protected override IQueryable<Asset> ApplyOrdering(IQueryable<Asset> query, T request) =>
+        query.AsOrderedAssetQuery(request);
 
-        // Any empty result set could be the result of an applied asset filter - check if batch exists
-        if (result.Total == 0 && !await DoesBatchExist(request, cancellationToken))
-        {
-            return FetchEntityResult<PageOf<Asset>>.NotFound();
-        }
-
-        return FetchEntityResult<PageOf<Asset>>.Success(result);
-    }
-
-    private async Task<bool> DoesBatchExist(T request, CancellationToken cancellationToken)
-    {
-        var batchExists = await dlcsContext.Batches.AsNoTracking()
+    protected override Task<bool> DoesBatchExist(DlcsContext dlcsContext, T request,
+        CancellationToken cancellationToken)
+        => dlcsContext.Batches.AsNoTracking()
             .AnyAsync(b => b.Customer == request.CustomerId && b.Id == request.BatchId, cancellationToken);
-        return batchExists;
-    }
 }
