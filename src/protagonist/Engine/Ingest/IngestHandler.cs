@@ -46,7 +46,7 @@ public class IngestHandler(
 
             logger.LogDebug("Message {MessageId} handled with result {IngestResult}", message.MessageId,
                 ingestResult.Status);
-            await UpdateCustomerQueue(message, ingestResult, GetQueueName<T>(message), cancellationToken);
+            await UpdateCustomerQueue(ingestResult, GetQueueName<T>(message), cancellationToken);
         }
 
         // return true so that the message is deleted from the queue in all instances.
@@ -63,7 +63,7 @@ public class IngestHandler(
         _ => QueueNames.Default
     };
 
-    private async Task UpdateCustomerQueue(QueueMessage message,
+    private async Task UpdateCustomerQueue(
         IngestResult ingestResult, string queue, CancellationToken cancellationToken)
     {
         var customer = 0;
