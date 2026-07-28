@@ -45,24 +45,17 @@ q.""Customer"", q.""Size"", q.""Name"", b.""BatchesWaiting"", b.""ImagesWaiting"
         {
             // BatchesWaiting/AdjunctsWaiting only count batches that haven't started processing yet (nothing
             // Completed or Errored) - this excludes batches currently being worked on, which still count towards
-            // Size. Translated as correlated subqueries - Sum() over an empty set is coalesced to 0 by EF Core,
-            // matching the COALESCE the raw-SQL equivalent needed to write out by hand.
-            // LongCount()/the (long) cast on Sum() aren't decorative - they pick the bigint-returning overloads so
-            // EF sums/counts as bigint throughout, matching the long properties below, rather than accumulating as
-            // int32 (via Count()/int Sum()) and casting down then back up again.
-            var waitingBatches = DlcsContext.AdjunctBatches.Where(b =>
-                b.Customer == customer && b.Finished == null && b.Completed == 0 && b.Errors == 0);
-
-            return await DlcsContext.Queues
-                .Where(q => q.Customer == customer && q.Name == "adjunct")
-                .Select(q => new AdjunctQueue
-                {
-                    Customer = q.Customer,
-                    Size = q.Size,
-                    BatchesWaiting = waitingBatches.LongCount(),
-                    AdjunctsWaiting = waitingBatches.Sum(b => (long)b.Count)
-                })
-                .FirstOrDefaultAsync(cancellationToken);
+            // Size. Raw SQL rather than EF, as above - a single scan of AdjunctBatches via the subquery, rather
+            // than the two correlated-subquery scans EF would generate for BatchesWaiting/AdjunctsWaiting.
+            const string sql = @"SELECT
+q.""Customer"", q.""Size"", b.""BatchesWaiting"", b.""AdjunctsWaiting"" FROM ""Queues"" q,
+	(SELECT COUNT(""Id"") AS ""BatchesWaiting"", COALESCE(SUM(""Count""), 0) AS ""AdjunctsWaiting""
+    FROM ""AdjunctBatches"" WHERE ""Customer"" = @customer AND ""Finished"" IS NULL AND ""Completed"" = 0
+    AND ""Errors"" = 0) b
+  WHERE q.""Customer"" = @customer AND ""Name"" = @name
+";
+            return await this.QueryFirstOrDefaultAsync<AdjunctQueue>(sql,
+                new { customer, name = QueueNames.Adjunct });
         }
         catch (Exception ex)
         {

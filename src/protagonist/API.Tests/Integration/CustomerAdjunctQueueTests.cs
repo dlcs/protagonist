@@ -441,7 +441,7 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        await dbContext.Queues.AddAsync(new Queue { Customer = assetId.Customer, Name = "adjunct", Size = 7 });
+        await dbContext.Queues.AddAsync(new Queue { Customer = assetId.Customer, Name = QueueNames.Adjunct, Size = 7 });
         await dbContext.SaveChangesAsync();
 
         // Act
@@ -461,7 +461,7 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        await dbContext.Queues.AddAsync(new Queue { Customer = assetId.Customer, Name = "adjunct", Size = 10 });
+        await dbContext.Queues.AddAsync(new Queue { Customer = assetId.Customer, Name = QueueNames.Adjunct, Size = 10 });
         // finished - excluded
         await dbContext.AdjunctBatches.AddTestAdjunctBatch(1, assetId.Customer, count: 5, completed: 5,
             finished: DateTime.UtcNow);
@@ -490,7 +490,7 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        await dbContext.Queues.AddAsync(new Queue { Customer = assetId.Customer, Name = "adjunct", Size = 0 });
+        await dbContext.Queues.AddAsync(new Queue { Customer = assetId.Customer, Name = QueueNames.Adjunct, Size = 0 });
         await dbContext.AdjunctBatches.AddTestAdjunctBatch(1, assetId.Customer, count: 1, completed: 0);
         await dbContext.AdjunctBatches.AddTestAdjunctBatch(2, assetId.Customer, count: 1, completed: 1,
             finished: DateTime.UtcNow);
