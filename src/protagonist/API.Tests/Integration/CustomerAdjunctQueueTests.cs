@@ -463,14 +463,14 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         var assetId = AssetIdGenerator.GetAssetId();
         await dbContext.Queues.AddAsync(new Queue { Customer = assetId.Customer, Name = QueueNames.Adjunct, Size = 10 });
         // finished - excluded
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(1, assetId.Customer, count: 5, completed: 5,
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 5, completed: 5,
             finished: DateTime.UtcNow);
         // unfinished, nothing started yet - counts as waiting
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(2, assetId.Customer, count: 5, completed: 0);
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 5, completed: 0);
         // unfinished but already partially processed - excluded, still being worked on
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(3, assetId.Customer, count: 8, completed: 6);
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 8, completed: 6);
         // unfinished but has an error recorded - also excluded, platform has started working on it
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(4, assetId.Customer, count: 3, errors: 1);
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 3, errors: 1);
         await dbContext.SaveChangesAsync();
 
         // Act
@@ -491,8 +491,8 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
         await dbContext.Queues.AddAsync(new Queue { Customer = assetId.Customer, Name = QueueNames.Adjunct, Size = 0 });
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(1, assetId.Customer, count: 1, completed: 0);
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(2, assetId.Customer, count: 1, completed: 1,
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 1, completed: 0);
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 1, completed: 1,
             finished: DateTime.UtcNow);
         await dbContext.SaveChangesAsync();
 
@@ -543,9 +543,10 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         var assetId = AssetIdGenerator.GetAssetId();
         var earlier = DateTime.UtcNow.AddMinutes(-10);
         var later = DateTime.UtcNow;
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(101, assetId.Customer, submitted: earlier,
-            finished: DateTime.UtcNow);
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(102, assetId.Customer, submitted: later);
+        var earlierBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: earlier, finished: DateTime.UtcNow)).Entity;
+        var laterBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: later)).Entity;
         await dbContext.SaveChangesAsync();
 
         // Act
@@ -555,7 +556,7 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var batches = await response.ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
-        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(102, 101);
+        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(laterBatch.Id, earlierBatch.Id);
     }
 
     [Fact]
@@ -565,8 +566,10 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         var assetId = AssetIdGenerator.GetAssetId();
         var earlier = DateTime.UtcNow.AddMinutes(-10);
         var later = DateTime.UtcNow;
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(111, assetId.Customer, submitted: earlier);
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(112, assetId.Customer, submitted: later);
+        var earlierBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: earlier)).Entity;
+        var laterBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: later)).Entity;
         await dbContext.SaveChangesAsync();
 
         // Act
@@ -576,7 +579,7 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var batches = await response.ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
-        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(111, 112);
+        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(earlierBatch.Id, laterBatch.Id);
     }
 
     [Fact]
@@ -584,8 +587,8 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(201, assetId.Customer);
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(202, assetId.Customer, finished: DateTime.UtcNow);
+        var activeBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer)).Entity;
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, finished: DateTime.UtcNow);
         await dbContext.SaveChangesAsync();
 
         // Act
@@ -595,7 +598,7 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var batches = await response.ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
-        batches.Members.Should().ContainSingle(b => b.GetLastPathElementAsInt() == 201);
+        batches.Members.Should().ContainSingle(b => b.GetLastPathElementAsInt() == activeBatch.Id);
     }
 
     [Fact]
@@ -605,8 +608,10 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         var assetId = AssetIdGenerator.GetAssetId();
         var earlier = DateTime.UtcNow.AddMinutes(-10);
         var later = DateTime.UtcNow;
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(211, assetId.Customer, submitted: earlier);
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(212, assetId.Customer, submitted: later);
+        var earlierBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: earlier)).Entity;
+        var laterBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: later)).Entity;
         await dbContext.SaveChangesAsync();
 
         // Act
@@ -616,7 +621,7 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var batches = await response.ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
-        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(212, 211);
+        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(laterBatch.Id, earlierBatch.Id);
     }
 
     [Fact]
@@ -624,10 +629,11 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(301, assetId.Customer);
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(302, assetId.Customer,
-            finished: DateTime.UtcNow.AddDays(-7));
-        await dbContext.AdjunctBatches.AddTestAdjunctBatch(303, assetId.Customer, finished: DateTime.UtcNow);
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer);
+        var olderFinishedBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            finished: DateTime.UtcNow.AddDays(-7))).Entity;
+        var newerFinishedBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            finished: DateTime.UtcNow)).Entity;
         await dbContext.SaveChangesAsync();
 
         // Act
@@ -637,7 +643,7 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var batches = await response.ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
-        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(303, 302);
+        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(newerFinishedBatch.Id, olderFinishedBatch.Id);
     }
 
     [Fact]
