@@ -307,11 +307,16 @@ public static class DatabaseTestDataPopulation
         AssetId assetId) => batchAssets.AddAsync(new BatchAsset { AssetId = assetId, BatchId = batchId });
 
     public static ValueTask<EntityEntry<AdjunctBatch>> AddTestAdjunctBatch(this DbSet<AdjunctBatch> adjunctBatches,
-        int id, int customer = 99, int count = 1, int completed = 0, int errors = 0,
+        int? id = null, int customer = 99, int count = 1, int completed = 0, int errors = 0,
         DateTime? submitted = null, DateTime? finished = null)
-        => adjunctBatches.AddAsync(new AdjunctBatch
+    {
+        var batch = new AdjunctBatch
         {
-            Id = id, Customer = customer, Submitted = submitted ?? DateTime.UtcNow,
+            Customer = customer, Submitted = submitted ?? DateTime.UtcNow,
             Count = count, Completed = completed, Errors = errors, Finished = finished
-        });
+        };
+        if (id.HasValue) batch.Id = id.Value;
+
+        return adjunctBatches.AddAsync(batch);
+    }
 }

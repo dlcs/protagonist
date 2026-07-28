@@ -1276,11 +1276,13 @@ namespace DLCS.Repository.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("DLCS.Model.Assets.Adjunct", null)
+                    b.HasOne("DLCS.Model.Assets.Adjunct", "Adjunct")
                         .WithMany("AdjunctBatchAdjuncts")
                         .HasForeignKey("AdjunctId", "AssetId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Adjunct");
 
                     b.Navigation("Batch");
                 });
