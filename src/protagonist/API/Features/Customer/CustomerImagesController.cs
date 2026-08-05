@@ -172,7 +172,7 @@ public class CustomerImagesController(IOptions<ApiSettings> settings, IMediator 
     /// </remarks>
     [HttpPost]
     [Route("deleteImages")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteImages(
         [FromRoute] int customerId,
@@ -199,7 +199,6 @@ public class CustomerImagesController(IOptions<ApiSettings> settings, IMediator 
             return this.HydraProblem("No assets found", null, 400, "Delete images failed");
         }
 
-        // TODO - return a better message (or 204?). This is for backwards compat with Deliverator and
-        return Ok(new { message = "images deleted" });
+        return NoContent();
     }
 }
