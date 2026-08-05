@@ -173,7 +173,7 @@ public class CustomerImagesController(IOptions<ApiSettings> settings, IMediator 
     [HttpPost]
     [Route("deleteImages")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> DeleteImages(
         [FromRoute] int customerId,
         [FromQuery] string? deleteFrom,

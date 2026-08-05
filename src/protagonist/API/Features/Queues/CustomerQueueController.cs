@@ -46,7 +46,7 @@ public class CustomerQueueController : HydraController
     /// <returns>Hydra JSON-LD Queue object</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.CustomerQueue))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetCustomerQueue([FromRoute] int customerId, CancellationToken cancellationToken)
     {
         var getCustomerRequest = new GetCustomerQueue(customerId);
@@ -94,7 +94,7 @@ public class CustomerQueueController : HydraController
     /// </remarks>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public Task<IActionResult> CreateBatch(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<DLCS.HydraModel.Image> images,
@@ -132,7 +132,7 @@ public class CustomerQueueController : HydraController
     [HttpPost]
     [Route("priority")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public Task<IActionResult> CreatePriorityBatch(
         [FromRoute] int customerId,
         [FromBody] HydraCollection<DLCS.HydraModel.Image> images,

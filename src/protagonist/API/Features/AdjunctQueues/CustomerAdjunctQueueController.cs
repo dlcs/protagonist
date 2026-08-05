@@ -32,7 +32,7 @@ public class CustomerAdjunctQueueController(
     /// <returns>Hydra JSON-LD CustomerAdjunctQueue object</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CustomerAdjunctQueue))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetCustomerAdjunctQueue([FromRoute] int customerId,
         CancellationToken cancellationToken)
     {

@@ -183,7 +183,7 @@ public class ImageController : HydraController
     /// and processed eventually. 
     /// </summary>
     [ProducesResponseType((int)HttpStatusCode.NoContent)]
-    [ProducesResponseType((int)HttpStatusCode.NotFound)]
+    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(Error))]
     [HttpDelete]
     public async Task<IActionResult> DeleteAsset([FromRoute] int customerId, [FromRoute] int spaceId,
         [FromRoute] string imageId, [FromQuery] string? deleteFrom, CancellationToken cancellationToken)
@@ -212,8 +212,8 @@ public class ImageController : HydraController
     ///     POST /customers/99/spaces/10/images/changed_image/reingest
     /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK)]
-    [ProducesResponseType((int)HttpStatusCode.NotFound)]
-    [ProducesResponseType((int)HttpStatusCode.BadRequest)]
+    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(Error))]
     [HttpPost]
     [Route("reingest")]
     public Task<IActionResult> ReingestAsset([FromRoute] int customerId, [FromRoute] int spaceId,

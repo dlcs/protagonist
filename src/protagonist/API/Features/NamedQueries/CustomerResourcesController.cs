@@ -1,6 +1,7 @@
 ﻿using API.Features.NamedQueries.Requests;
 using API.Infrastructure;
 using API.Settings;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -36,7 +37,7 @@ public class CustomerResourcesController : HydraController
     /// </remarks>
     [HttpDelete]
     [Route("pdf/{queryName}")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeletePdf(
         [FromRoute] int customerId,
