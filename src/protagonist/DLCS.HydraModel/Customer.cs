@@ -77,25 +77,6 @@ public class Customer : DlcsResource
     [JsonProperty(Order = 17, PropertyName = "defaultDeliveryChannels")]
     public string? DefaultDeliveryChannels { get; set; }
     
-    [HydraLink(Description = "Collection of IIIF Authentication services available for use with your images. The images are" +
-                             " associated with the auth services via Roles. An AuthService is a means of acquiring a role.",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 18, PropertyName = "authServices")]
-    public string? AuthServices { get; set; }
-    
-    [HydraLink(Description = "Collection of external services which provide aq login page (typically) and an endpoint " +
-                             " from which the DLCS acquires the user's named roles. This enables integration with external auth mechanisms.",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 19, PropertyName = "roleProviders")]
-    public string? RoleProviders { get; set; }
-    
-    [HydraLink(Description = "Collection of the available roles you can assign to your images. In order for a user to see an image, the " +
-                             "user must have the role associated with the image, or one of them. Users interact with an AuthService to " +
-                             "acquire a role or roles.",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 20, PropertyName = "roles")]
-    public string? Roles { get; set; }
-
     [HydraLink(Description = "The Customer's view on the DLCS ingest queue. As well as allowing you to query the status of batches you " +
                              "have registered, you can POST new batches to the queue.",
         Range = "vocab:Queue", ReadOnly = true, WriteOnly = false)]
@@ -171,12 +152,6 @@ public class CustomerClass : Class
 
         GetHydraLinkProperty("originStrategies").SupportedOperations = CommonOperations
             .GetStandardCollectionOperations(operationId + "originStrategy_", "Origin Strategy", "vocab:OriginStrategy");
-
-        GetHydraLinkProperty("authServices").SupportedOperations = CommonOperations
-            .GetStandardCollectionOperations(operationId + "authService_", "Auth Service", "vocab:AuthService");
-
-        GetHydraLinkProperty("roles").SupportedOperations = CommonOperations
-            .GetStandardCollectionOperations(operationId + "role_", "Role", "vocab:Role");
 
         GetHydraLinkProperty("queue").SupportedOperations = QueueClass.GetSpecialQueueOperations();
 
