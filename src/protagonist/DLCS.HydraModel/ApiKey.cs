@@ -52,7 +52,7 @@ public class ApiKey : DlcsResource
 
     [RdfProperty(Description = "API Secret (available at creation time only)",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 12, PropertyName = "secret")]
+    [JsonProperty(Order = 13, PropertyName = "secret")]
     public string? Secret { get; set; }
     
     public override string Type => "vocab:Key";
@@ -84,7 +84,7 @@ public class ApiKeyClass : Class
             {
                 Id = "_:customer_keys_create_key",
                 Method = "POST",
-                Label = "Submit an empty POST and the DLCS will generate a key and secret. Requires eleveated ",
+                Label = "Submit an empty POST and the DLCS will generate a key and secret. Requires elevated privileges.",
                 Description = "The secret is only available once in the returned key.",
                 Expects = Names.Owl.Nothing, // 
                 Returns = "vocab:Key",

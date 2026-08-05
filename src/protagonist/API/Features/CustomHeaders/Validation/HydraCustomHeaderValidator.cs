@@ -9,7 +9,7 @@ public class HydraCustomHeaderValidator : AbstractValidator<DLCS.HydraModel.Cust
     {
         RuleFor(ch => ch.Id)
             .Empty()
-            .WithMessage(ch => $"DLCS must allocate named query id, but id {ch.Id} was supplied");
+            .WithMessage(ch => $"DLCS must allocate custom header id, but id {ch.Id} was supplied");
         RuleFor(ch => ch.CustomerId)
             .Empty()
             .WithMessage("Should not include user id");
