@@ -47,6 +47,6 @@ public class UpdateCustomHeaderHandler : IRequestHandler<UpdateCustomHeader, Mod
 
         await dbContext.SaveChangesAsync(cancellationToken); 
         
-        return ModifyEntityResult<CustomHeader>.Success(existingCustomHeader, WriteResult.Created);
+        return ModifyEntityResult<CustomHeader>.Success(existingCustomHeader, WriteResult.Updated);
     }
 }
