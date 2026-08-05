@@ -81,12 +81,12 @@ public class ImageController : HydraController
     /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))]
     [ProducesResponseType((int)HttpStatusCode.Created, Type = typeof(DLCS.HydraModel.Image))]
-    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(Error))]
     [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000, ValueLengthLimit = 100_000_000)]
     [HttpPut]
     public async Task<IActionResult> PutImage(
@@ -153,12 +153,12 @@ public class ImageController : HydraController
     ///     }
     /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))]
-    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(Error))]
     [HttpPatch]
     public async Task<IActionResult> PatchImage(
         [FromRoute] int customerId,
@@ -241,7 +241,7 @@ public class ImageController : HydraController
     ///     }
     /// </remarks>
     [ProducesResponseType(201, Type = typeof(DLCS.HydraModel.Image))]
-    [ProducesResponseType(400, Type = typeof(ProblemDetails))]
+    [ProducesResponseType(400, Type = typeof(Error))]
     [HttpPost]  // This should be a PUT? But then it will be the same op to same location as a normal asset without File.
     [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000, ValueLengthLimit = 100_000_000)]
     public async Task<IActionResult> PostImageWithFileBytes(

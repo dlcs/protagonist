@@ -39,7 +39,7 @@ public class CustomerAdjunctsController(IOptions<ApiSettings> settings, IMediato
     [HttpPost]
     [Route("deleteAdjuncts")]
     [ProducesResponseType(204)]
-    [ProducesResponseType(404, Type = typeof(Error))]
+    [ProducesResponseType(400, Type = typeof(Error))]
     public async Task<IActionResult> DeleteAdjuncts(
         [FromRoute] int customerId,
         [FromQuery] string? deleteFrom,

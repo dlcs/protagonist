@@ -265,7 +265,7 @@ public class DeliveryChannelPoliciesController : HydraController
     /// </summary>
     [HttpDelete]
     [Route("{deliveryChannelName}/{deliveryChannelPolicyName}")]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteDeliveryChannelPolicy(
         [FromRoute] int customerId,

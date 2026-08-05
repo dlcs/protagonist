@@ -90,7 +90,8 @@ public class AdjunctsController(
     /// </summary>
     /// <returns>A Hydra JSON-LD Adjunct object representing the adjuncts.</returns>
     [HttpPut("{adjunctId}")]
-    [ProducesResponseType(200, Type = typeof(HydraCollection<Adjunct>))]
+    [ProducesResponseType(200, Type = typeof(Adjunct))]
+    [ProducesResponseType(201, Type = typeof(Adjunct))]
     [ProducesResponseType(404, Type = typeof(Error))]
     public async Task<IActionResult> PutAdjunct(int customerId, int spaceId, string imageId, string adjunctId, [FromBody] Adjunct hydraAdjunct, 
         [FromServices] HydraAdjunctValidator validator, CancellationToken cancellationToken = default)
