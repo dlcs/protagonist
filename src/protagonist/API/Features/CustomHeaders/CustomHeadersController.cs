@@ -125,6 +125,7 @@ public class CustomHeadersController : HydraController
     [Route("{customHeaderId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CustomHeader))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> PutCustomHeader(
         [FromRoute] int customerId,
         [FromRoute] string customHeaderId,
