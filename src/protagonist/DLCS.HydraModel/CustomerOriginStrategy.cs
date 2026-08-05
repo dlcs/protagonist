@@ -79,7 +79,7 @@ public class CustomerOriginStrategyClass : Class
     {
         SupportedOperations = CommonOperations.GetStandardResourceOperations(
             "_:customer_originStrategy_", "Origin Strategy", Id,
-            "GET", "PUT", "PATCH", "DELETE");
+            "GET", "PUT", "DELETE");
 
 
         GetHydraLinkProperty("credentials").SupportedOperations = new Operation[] {new Operation()
