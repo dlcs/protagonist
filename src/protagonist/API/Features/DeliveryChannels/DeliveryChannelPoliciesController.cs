@@ -124,7 +124,7 @@ public class DeliveryChannelPoliciesController : HydraController
         
         var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy, errorMessage,
             new[]{ "default", "post" }, cancellationToken);
-        if (validateResult is not OkResult)
+        if (validateResult != null)
         {
             return validateResult;
         }
@@ -195,7 +195,7 @@ public class DeliveryChannelPoliciesController : HydraController
 
         var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy, errorMessage,
             new[]{ "default", "put" }, cancellationToken);
-        if (validateResult is not OkResult)
+        if (validateResult != null)
         {
             return validateResult;
         }
@@ -243,7 +243,7 @@ public class DeliveryChannelPoliciesController : HydraController
 
         var validateResult = await TryValidateHydraDeliveryChannelPolicy(hydraDeliveryChannelPolicy, errorMessage,
             new[]{ "default", "patch" }, cancellationToken);
-        if (validateResult is not OkResult)
+        if (validateResult != null)
         {
             return validateResult;
         }
@@ -282,7 +282,8 @@ public class DeliveryChannelPoliciesController : HydraController
             cancellationToken);
     }
 
-    private async Task<IActionResult> TryValidateHydraDeliveryChannelPolicy(
+    /// <returns>An error result to return from the calling action, or null if the policy is valid</returns>
+    private async Task<IActionResult?> TryValidateHydraDeliveryChannelPolicy(
         DeliveryChannelPolicy hydraDeliveryChannelPolicy,
         string apiErrorMessage,
         string[] validatorRuleSets,
@@ -305,6 +306,6 @@ public class DeliveryChannelPoliciesController : HydraController
             return this.HydraProblem(apiEx.Message, null, apiEx.StatusCode, apiErrorMessage);
         }
 
-        return Ok();
+        return null;
     }
 }

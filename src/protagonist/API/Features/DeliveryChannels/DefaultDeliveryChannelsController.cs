@@ -111,7 +111,8 @@ public class DefaultDeliveryChannelsController : HydraController
         }
         catch (Exception)
         {
-            return BadRequest();
+            return this.HydraProblem("Failed to create Default Delivery Channel", null, 400,
+                "Failed to create Default Delivery Channel");
         }
     }
 
