@@ -80,16 +80,5 @@ public class CustomerOriginStrategyClass : Class
         SupportedOperations = CommonOperations.GetStandardResourceOperations(
             "_:customer_originStrategy_", "Origin Strategy", Id,
             "GET", "PUT", "DELETE");
-
-
-        GetHydraLinkProperty("credentials").SupportedOperations = new Operation[] {new Operation()
-        {
-            Id = "_:customer_originStrategy_credentials_upsert",
-            Method = "PUT",
-            Label = "create or replace customer credential object",
-            Expects = "vocab:Credentials",
-            Returns = "vocab:Credentials",
-            StatusCodes =new[] {new Status { StatusCode = 201, Description = "Created"} }
-        } };
     }
 }
