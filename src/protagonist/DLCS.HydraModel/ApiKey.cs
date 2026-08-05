@@ -92,8 +92,8 @@ public class ApiKeyClass : Class
                 {
                     new Status
                     {
-                        StatusCode = 201,
-                        Description = "Job has been accepted - key created and returned"
+                        StatusCode = 200,
+                        Description = "Key created and returned, with the one-time secret"
                     }
                 }
             }
