@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace DLCS.HydraModel;
 
-[HydraClass(typeof(QueueClass),
+[HydraClass(typeof(QueueSummaryClass),
     Description = "A summary of overall queue counts across all customers",
     UriTemplate = "/queue")]
 public class QueueSummary : DlcsResource
@@ -53,7 +53,7 @@ public class QueueSummaryClass : Class
 {
     public QueueSummaryClass()
     {
-        BootstrapViaReflection(typeof(QueueSummaryClass));
+        BootstrapViaReflection(typeof(QueueSummary));
     }
 
     public override void DefineOperations()
