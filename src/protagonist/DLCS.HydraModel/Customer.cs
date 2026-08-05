@@ -106,6 +106,12 @@ public class Customer : DlcsResource
     [JsonProperty(Order = 25, PropertyName = "keys")]
     public string? Keys { get; set; }
     
+    [HydraLink(Description = "The Customer's view on the DLCS adjunct queue. As well as allowing you to query the status " +
+                             "of adjunct batches you have registered, you can POST new collections of adjuncts to the queue.",
+        Range = "vocab:CustomerAdjunctQueue", ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 27, PropertyName = "adjunctQueue")]
+    public string? AdjunctQueue { get; set; }
+
     [HydraLink(Description = "Additional HTTP headers (e.g., for caching) that will be sent for assets that match a role.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 26, PropertyName = "customHeaders")]
@@ -154,6 +160,9 @@ public class CustomerClass : Class
             .GetStandardCollectionOperations(operationId + "originStrategy_", "Origin Strategy", "vocab:OriginStrategy");
 
         GetHydraLinkProperty("queue").SupportedOperations = QueueClass.GetSpecialQueueOperations();
+
+        GetHydraLinkProperty("adjunctQueue").SupportedOperations =
+            CustomerAdjunctQueueClass.GetSpecialAdjunctQueueOperations();
 
         GetHydraLinkProperty("spaces").SupportedOperations = CommonOperations
             .GetStandardCollectionOperations(operationId + "space_", "Space", "vocab:Space");
