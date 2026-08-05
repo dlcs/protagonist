@@ -52,7 +52,7 @@ public class ApiKey : DlcsResource
 
     [RdfProperty(Description = "API Secret (available at creation time only)",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 12, PropertyName = "secret")]
+    [JsonProperty(Order = 13, PropertyName = "secret")]
     public string? Secret { get; set; }
     
     public override string Type => "vocab:Key";

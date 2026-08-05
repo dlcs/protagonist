@@ -48,12 +48,12 @@ public class PortalUser : DlcsResource
                                " end users can have with your image resources. These PortalUser roles govern the actions that your handful" +
                                " of registered DLCS back end users can perform in the portal. ",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 13, PropertyName = "roles")]
+    [JsonProperty(Order = 14, PropertyName = "roles")]
     public string? Roles { get; set; }
 
     [RdfProperty(Description = "Whether the user can log in - for temporary or permanent rescinding of access.",
         Range = Names.XmlSchema.Boolean, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 14, PropertyName = "enabled")]
+    [JsonProperty(Order = 15, PropertyName = "enabled")]
     public bool? Enabled { get; set; }
 }
 
