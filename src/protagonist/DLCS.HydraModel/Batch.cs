@@ -72,16 +72,6 @@ public class Batch : DlcsResource
     [JsonProperty(Order = 20, PropertyName = "images")]
     public string? Images { get; set; }
 
-    [HydraLink(Description = "Collection of images that have completed processing",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 20, PropertyName = "completedImages")]
-    public string? CompletedImages { get; set; }
-
-    [HydraLink(Description = "Collection of images that encountered errors",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 20, PropertyName = "errorImages")]
-    public string? ErrorImages { get; set; }
-
     [HydraLink(Description = "POST to this to force an update of the batch's superseded property. " +
                              "Returns JSON object with single success property (boolean). ",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
@@ -113,20 +103,5 @@ public class BatchClass : Class
                 null)
         };
 
-        GetHydraLinkProperty("completedImages").SupportedOperations = new[]
-        {
-            CommonOperations.StandardCollectionGet(
-                operationId + "completedImage_collection_retrieve",
-                "Retrieves all COMPLETED images in batch",
-                null)
-        };
-
-        GetHydraLinkProperty("errorImages").SupportedOperations = new[]
-        {
-            CommonOperations.StandardCollectionGet(
-                operationId + "errorImage_collection_retrieve",
-                "Retrieves all ERROR images in batch",
-                null)
-        };
     }
 }

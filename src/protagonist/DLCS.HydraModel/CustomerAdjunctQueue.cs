@@ -62,6 +62,36 @@ public class CustomerAdjunctQueueClass : Class
         BootstrapViaReflection(typeof(CustomerAdjunctQueue));
     }
 
+    public static Operation[] GetSpecialAdjunctQueueOperations()
+    {
+        return new[]
+        {
+            new Operation
+            {
+                Id = "_:customer_adjunctQueue_retrieve",
+                Method = "GET",
+                Label = "Returns the adjunct queue resource",
+                Returns = "vocab:CustomerAdjunctQueue"
+            },
+            new Operation
+            {
+                Id = "_:customer_adjunctQueue_create_batch",
+                Method = "POST",
+                Label = "Submit a collection of Adjuncts and get an AdjunctBatch back",
+                Expects = Names.Hydra.Collection,
+                Returns = "vocab:AdjunctBatch",
+                StatusCodes = new[]
+                {
+                    new Status
+                    {
+                        StatusCode = 201,
+                        Description = "AdjunctBatch created and returned"
+                    }
+                }
+            }
+        };
+    }
+
     public override void DefineOperations()
     {
         SupportedOperations = CommonOperations.GetStandardResourceOperations(
