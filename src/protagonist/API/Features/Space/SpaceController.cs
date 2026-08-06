@@ -3,6 +3,7 @@ using API.Features.Space.Requests;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Web.Requests;
+using Hydra.Model;
 using Hydra.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -76,7 +77,7 @@ public class SpaceController : HydraController
     /// </remarks>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> CreateSpace(
         [FromRoute] int customerId,
         [FromBody] DLCS.HydraModel.Space space,
@@ -113,7 +114,7 @@ public class SpaceController : HydraController
     [HttpDelete]
     [Route("{spaceId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> DeleteSpace(int customerId, int spaceId)
     {
         var deleteRequest = new DeleteSpace(customerId, spaceId);
@@ -127,7 +128,7 @@ public class SpaceController : HydraController
     [HttpGet]
     [Route("{spaceId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.Space))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> GetSpace(
         [FromRoute] int customerId, 
         [FromRoute] int spaceId,
@@ -158,9 +159,9 @@ public class SpaceController : HydraController
     [HttpPatch]
     [Route("{spaceId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.Space))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> PatchSpace(
         [FromRoute] int customerId, 
         [FromRoute] int spaceId, 
@@ -198,9 +199,9 @@ public class SpaceController : HydraController
     [HttpPut]
     [Route("{spaceId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DLCS.HydraModel.Space))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> PutSpace(
         [FromRoute] int customerId,
         [FromRoute] int spaceId,

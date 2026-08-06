@@ -53,16 +53,16 @@ public class CustomerResourcesTests : IClassFixture<ProtagonistAppFactory<Startu
     }
     
     [Fact]
-    public async Task Delete_PDF_Returns200_IfLessArgsThanQuery()
+    public async Task Delete_PDF_Returns204_IfLessArgsThanQuery()
     {
         // Arrange
         var path = "/customers/99/resources/pdf/cust-resource?args=too-little";
-        
+
         // Act
         var response = await httpClient.AsCustomer().DeleteAsync(path);
-        
+
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
     
     [Fact]
@@ -79,22 +79,20 @@ public class CustomerResourcesTests : IClassFixture<ProtagonistAppFactory<Startu
     }
     
     [Fact]
-    public async Task Delete_PDF_Returns200_IfArgsCorrect_NoFilesExist()
+    public async Task Delete_PDF_Returns204_IfArgsCorrect_NoFilesExist()
     {
         // Arrange
         var path = "/customers/99/resources/pdf/cust-resource?args=foo/10/100";
-        
+
         // Act
         var response = await httpClient.AsCustomer().DeleteAsync(path);
-        
+
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var jsonDoc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
     
     [Fact]
-    public async Task Delete_PDF_Returns200_AndDeletesFiles_IfArgsCorrect_FilesExist()
+    public async Task Delete_PDF_Returns204_AndDeletesFiles_IfArgsCorrect_FilesExist()
     {
         // Arrange
         const string controlFileKey = "99/pdf/cust-resource/foo/10/100/tester.json";
@@ -119,9 +117,7 @@ public class CustomerResourcesTests : IClassFixture<ProtagonistAppFactory<Startu
         var response = await httpClient.AsCustomer().DeleteAsync(path);
         
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var jsonDoc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        jsonDoc.RootElement.GetProperty("success").GetBoolean().Should().BeTrue();
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var keys = await amazonS3.ListObjectsAsync(LocalStackFixture.OutputBucketName,
             "99/pdf/cust-resource/foo/10/100");

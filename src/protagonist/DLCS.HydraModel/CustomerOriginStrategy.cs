@@ -43,14 +43,14 @@ public class CustomerOriginStrategy : DlcsResource
 
 
     [HydraLink(Description = "Link to the origin strategy definition that will be used if the regex is matched.",
-        Range = "vocab:OriginStrategy", ReadOnly = true, WriteOnly = false, SetManually = true)]
+        Range = "vocab:OriginStrategy", ReadOnly = false, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 17, PropertyName = "strategy")]
     public string? OriginStrategy { get; set; }
 
 
-    [HydraLink(Description = "JSON object - credentials appropriate to the protocol, will vary. " +
+    [RdfProperty(Description = "JSON object - credentials appropriate to the protocol, will vary. " +
                                "These are stored in S3 and are not available via the API.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = true)]
     [JsonProperty(Order = 20, PropertyName = "credentials")]
     public string? Credentials { get; set; }
     
@@ -79,17 +79,6 @@ public class CustomerOriginStrategyClass : Class
     {
         SupportedOperations = CommonOperations.GetStandardResourceOperations(
             "_:customer_originStrategy_", "Origin Strategy", Id,
-            "GET", "PUT", "PATCH", "DELETE");
-
-
-        GetHydraLinkProperty("credentials").SupportedOperations = new Operation[] {new Operation()
-        {
-            Id = "_:customer_originStrategy_credentials_upsert",
-            Method = "PUT",
-            Label = "create or replace customer credential object",
-            Expects = "vocab:Credentials",
-            Returns = "vocab:Credentials",
-            StatusCodes =new[] {new Status { StatusCode = 201, Description = "Created"} }
-        } };
+            "GET", "PUT", "DELETE");
     }
 }

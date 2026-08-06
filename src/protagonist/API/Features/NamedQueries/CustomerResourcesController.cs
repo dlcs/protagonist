@@ -1,6 +1,7 @@
 ﻿using API.Features.NamedQueries.Requests;
 using API.Infrastructure;
 using API.Settings;
+using Hydra.Model;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -36,8 +37,8 @@ public class CustomerResourcesController : HydraController
     /// </remarks>
     [HttpDelete]
     [Route("pdf/{queryName}")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeletePdf(
         [FromRoute] int customerId,
         [FromRoute] string queryName,
@@ -53,7 +54,8 @@ public class CustomerResourcesController : HydraController
             return this.HydraProblem("Unable to parse named query request", null, 400, errorTitle);
         }
 
-        // TODO - return a better message. This is for backwards compat
-        return Ok(new { success = result });
+        return result.Value
+            ? NoContent()
+            : this.HydraProblem("Unable to delete PDF", null, 500, errorTitle);
     }
 }
