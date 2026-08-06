@@ -9,7 +9,7 @@ namespace DLCS.Hydra.Tests.Model;
 public class PropertyNameHygieneTests
 {
     [Fact]
-    public void No_JsonProperty_name_has_leading_or_trailing_whitespace()
+    public void No_JsonProperty_Name_Has_Leading_Or_Trailing_Whitespace()
     {
         var assemblies = new[] { typeof(Customer).Assembly, typeof(global::Hydra.Model.Class).Assembly };
 
