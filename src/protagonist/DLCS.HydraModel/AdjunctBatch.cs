@@ -50,9 +50,7 @@ public class AdjunctBatch : DlcsResource
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 15, PropertyName = "finished")]
     public DateTime? Finished { get; set; }
-
-    // The currentAdjuncts route is /current, which auto-generation cannot derive
-    // from the property name - the converter sets it explicitly.
+    
     [HydraLink(Description = "Collection of adjuncts currently claimed by this batch",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 20, PropertyName = "currentAdjuncts")]
