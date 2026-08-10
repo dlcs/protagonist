@@ -45,23 +45,36 @@ public class PatchPortalUserHandler : IRequestHandler<PatchPortalUser, PatchPort
     public async Task<PatchPortalUserResult> Handle(PatchPortalUser request, CancellationToken cancellationToken)
     {
         var dbUser = await dbContext.Users.FindAsync(new object?[]{request.PortalUser.Id}, cancellationToken);
-        if (dbUser == null)
+        if (dbUser == null || dbUser.Customer != request.PortalUser.Customer)
         {
+            // wrong-customer treated as not-found, mirroring DeletePortalUser's ownership check
             return new PatchPortalUserResult() { Error = "No such user" };
         }
 
         if (request.PortalUser.Email.HasText() && request.PortalUser.Email != dbUser.Email)
         {
-            var existingUserWithEmail = await dbContext.Users.SingleOrDefaultAsync(
-                u => u.Email == request.PortalUser.Email, cancellationToken: cancellationToken);
-            if (existingUserWithEmail != null)
-            {
-                return new PatchPortalUserResult() { Conflict = true, Error = "A user with that email already exists." };
-            }
             if (!request.PortalUser.Email.IsValidEmail())
             {
                 return new PatchPortalUserResult { Error = "Email address is invalid" };
             }
+
+            var requestEmail = request.PortalUser.Email.ToLower();
+            var emailInThisCustomer = await dbContext.Users.AnyAsync(
+                u => u.Customer == dbUser.Customer && u.Id != dbUser.Id && u.Email.ToLower() == requestEmail,
+                cancellationToken);
+            if (emailInThisCustomer)
+            {
+                return new PatchPortalUserResult() { Conflict = true, Error = "Portal user already exists." };
+            }
+
+            var emailInAnyCustomer = await dbContext.Users.AnyAsync(
+                u => u.Id != dbUser.Id && u.Email.ToLower() == requestEmail, cancellationToken);
+            if (emailInAnyCustomer)
+            {
+                // deliberately opaque: don't reveal that the email is in use by another customer
+                return new PatchPortalUserResult() { Conflict = true, Error = "Unable to Patch portal user." };
+            }
+
             dbUser.Email = request.PortalUser.Email;
         }
         if (request.Password.HasText())

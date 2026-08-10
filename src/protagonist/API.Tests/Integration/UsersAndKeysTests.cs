@@ -130,6 +130,87 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
+    public async Task Create_PortalUser_400_WhenEmailExistsForSameCustomer()
+    {
+        // arrange
+        await dbContext.Users.AddAsync(new DLCS.Model.Customers.User
+        {
+            Id = Guid.NewGuid().ToString(), Customer = 99, Email = "dupe@email.com",
+            Created = DateTime.UtcNow, Enabled = true, EncryptedPassword = "xxx", Roles = string.Empty
+        });
+        await dbContext.SaveChangesAsync();
+        const string portalUserJson = @"{
+  ""@type"": ""User"",
+  ""email"": ""dupe@email.com"",
+  ""password"": ""password123""
+}";
+
+        // act
+        var content = new StringContent(portalUserJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PostAsync("/customers/99/portalUsers", content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().Contain("Portal user already exists");
+    }
+
+    [Fact]
+    public async Task Create_PortalUser_400_Opaque_WhenEmailExistsForOtherCustomer()
+    {
+        // arrange
+        await dbContext.Users.AddAsync(new DLCS.Model.Customers.User
+        {
+            Id = Guid.NewGuid().ToString(), Customer = 98, Email = "other-customer@email.com",
+            Created = DateTime.UtcNow, Enabled = true, EncryptedPassword = "xxx", Roles = string.Empty
+        });
+        await dbContext.SaveChangesAsync();
+        const string portalUserJson = @"{
+  ""@type"": ""User"",
+  ""email"": ""other-customer@email.com"",
+  ""password"": ""password123""
+}";
+
+        // act
+        var content = new StringContent(portalUserJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PostAsync("/customers/99/portalUsers", content);
+
+        // assert - must not reveal that the email is in use by another customer
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadAsStringAsync();
+        body.Should().NotContain("exists").And.NotContain("in use");
+        body.Should().Contain("Unable to create user");
+    }
+
+    [Fact]
+    public async Task Patch_PortalUser_CannotTouch_Another_Customers_User()
+    {
+        // arrange
+        var victimId = Guid.NewGuid().ToString();
+        await dbContext.Users.AddAsync(new DLCS.Model.Customers.User
+        {
+            Id = victimId, Customer = 98, Email = "victim@email.com",
+            Created = DateTime.UtcNow, Enabled = true, EncryptedPassword = "original", Roles = string.Empty
+        });
+        await dbContext.SaveChangesAsync();
+        const string patchJson = @"{
+  ""@type"": ""User"",
+  ""email"": ""attacker@email.com"",
+  ""password"": ""newpassword""
+}";
+
+        // act - authenticated as customer 99, targeting customer 98's user
+        var content = new StringContent(patchJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync($"/customers/99/portalUsers/{victimId}", content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var victim = await dbContext.Users.AsNoTracking().SingleAsync(u => u.Id == victimId);
+        victim.Email.Should().Be("victim@email.com");
+        victim.EncryptedPassword.Should().Be("original");
+    }
+
+    [Fact]
     public async Task PortalUsers_Returned_For_Customer()
     {
         // arrange
