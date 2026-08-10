@@ -39,12 +39,13 @@ public class PortalUser : DlcsResource
     public string? Password { get; set; }
 
     [RdfProperty(Description = "Create date",
-        Range = Names.XmlSchema.DateTime, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 13, PropertyName = "created")]
     public DateTime? Created { get; set; }
 
-    [RdfProperty(Description = "Whether the user can log in - for temporary or permanent rescinding of access.",
-        Range = Names.XmlSchema.Boolean, ReadOnly = false, WriteOnly = false)]
+    [RdfProperty(Description = "Whether the user can log in - for temporary or permanent rescinding of access. " +
+                               "Set to true on creation; cannot currently be changed via the API.",
+        Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 15, PropertyName = "enabled")]
     public bool? Enabled { get; set; }
 }
