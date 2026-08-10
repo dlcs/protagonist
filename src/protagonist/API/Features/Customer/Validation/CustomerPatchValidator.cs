@@ -15,8 +15,7 @@ public class CustomerPatchValidator : AbstractValidator<DLCS.HydraModel.Customer
         RuleFor(c => c.Administrator).Empty().WithMessage("Should not include administrator field");
         RuleFor(c => c.Created).Empty().WithMessage("Should not include created field");
         RuleFor(c => c.Keys).Empty().WithMessage("Should not include keys");
-        RuleFor(c => c.AcceptedAgreement).Empty().WithMessage("Should not include acceptedAgreement field");
-        
+
         RuleFor(c => c.DisplayName).NotEmpty().WithMessage("DisplayName cannot be empty");
     }
 }
