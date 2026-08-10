@@ -84,7 +84,7 @@ public class ApiKeyClass : Class
             {
                 Id = "_:customer_keys_create_key",
                 Method = "POST",
-                Label = "Submit an empty POST and the DLCS will generate a key and secret. Requires elevated privileges.",
+                Label = "Submit an empty POST while authenticated as this customer and the DLCS will generate a key and secret.",
                 Description = "The secret is only available once in the returned key.",
                 Expects = Names.Owl.Nothing, // 
                 Returns = "vocab:Key",
