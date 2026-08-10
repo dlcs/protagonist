@@ -15,8 +15,7 @@ public static class CustomerConverter
         var customer = new DLCS.HydraModel.Customer(baseUrl, dbCustomer.Id, dbCustomer.Name, dbCustomer.DisplayName)
         {
             Created = dbCustomer.Created,
-            // null rather than false so that NullValueHandling.Ignore keeps the
-            // field off the wire for ordinary customers (hygiene ACC-03)
+            // null rather than false so that NullValueHandling.Ignore omits for ordinary customers
             Administrator = dbCustomer.Administrator ? true : null
         };
         return customer;
