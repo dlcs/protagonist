@@ -15,7 +15,7 @@ namespace API.Features.Customer.Requests;
 /// </summary>
 public class CreatePortalUser : IRequest<CreatePortalUserResult>
 {
-    public User PortalUser { get; set; }
+    public required User PortalUser { get; set; }
     public string? Password { get; set; }
     
 }
@@ -47,6 +47,8 @@ public class CreatePortalUserHandler : IRequestHandler<CreatePortalUser, CreateP
 
     public async Task<CreatePortalUserResult> Handle(CreatePortalUser request, CancellationToken cancellationToken)
     {
+        const string defaultErrorMessage = "Unable to create user";
+        
         if (request.PortalUser.Email.IsNullOrEmpty())
         {
             return new CreatePortalUserResult { Error = "Email address required" };
@@ -68,15 +70,15 @@ public class CreatePortalUserHandler : IRequestHandler<CreatePortalUser, CreateP
 
         var emailInAnyCustomer = await dbContext.Users.AnyAsync(
             user => user.Email.ToLower() == requestEmail, cancellationToken);
+        
         if (emailInAnyCustomer)
         {
             // deliberately opaque: don't reveal that the email is in use by another customer
-            return new CreatePortalUserResult { Conflict = true, Error = "Unable to create user" };
+            return new CreatePortalUserResult { Conflict = true, Error = defaultErrorMessage };
         }
 
         if (request.Password.IsNullOrEmpty())
         {
-            // What are our password requirements?
             return new CreatePortalUserResult { Error = "Need to set a password when creating a user." };
         }
 
@@ -92,7 +94,7 @@ public class CreatePortalUserHandler : IRequestHandler<CreatePortalUser, CreateP
             Customer = request.PortalUser.Customer,
             Email = request.PortalUser.Email,
             Enabled = true,
-            EncryptedPassword = encryption.Encrypt(String.Concat(settings.LoginSalt, request.Password)),
+            EncryptedPassword = encryption.Encrypt(string.Concat(settings.LoginSalt, request.Password)),
             Roles = string.Empty
         };
 
@@ -115,7 +117,7 @@ public class CreatePortalUserHandler : IRequestHandler<CreatePortalUser, CreateP
 
         return new CreatePortalUserResult
         {
-            Error = "Unable to create user"
+            Error = defaultErrorMessage
         };
     }
 }

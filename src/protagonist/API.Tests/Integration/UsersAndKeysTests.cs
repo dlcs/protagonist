@@ -133,11 +133,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Create_PortalUser_400_WhenEmailExistsForSameCustomer()
     {
         // arrange
-        await dbContext.Users.AddAsync(new DLCS.Model.Customers.User
-        {
-            Id = Guid.NewGuid().ToString(), Customer = 99, Email = "dupe@email.com",
-            Created = DateTime.UtcNow, Enabled = true, EncryptedPassword = "xxx", Roles = string.Empty
-        });
+        await dbContext.Users.AddTestUser(99, "dupe@email.com", "xxx");
         await dbContext.SaveChangesAsync();
         const string portalUserJson = @"{
   ""@type"": ""User"",
@@ -159,11 +155,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Create_PortalUser_400_Opaque_WhenEmailExistsForOtherCustomer()
     {
         // arrange
-        await dbContext.Users.AddAsync(new DLCS.Model.Customers.User
-        {
-            Id = Guid.NewGuid().ToString(), Customer = 98, Email = "other-customer@email.com",
-            Created = DateTime.UtcNow, Enabled = true, EncryptedPassword = "xxx", Roles = string.Empty
-        });
+        await dbContext.Users.AddTestUser(98, "other-customer@email.com", "xxx");
         await dbContext.SaveChangesAsync();
         const string portalUserJson = @"{
   ""@type"": ""User"",
@@ -186,13 +178,9 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task Patch_PortalUser_CannotTouch_Another_Customers_User()
     {
         // arrange
-        var victimId = Guid.NewGuid().ToString();
-        await dbContext.Users.AddAsync(new DLCS.Model.Customers.User
-        {
-            Id = victimId, Customer = 98, Email = "victim@email.com",
-            Created = DateTime.UtcNow, Enabled = true, EncryptedPassword = "original", Roles = string.Empty
-        });
+        var user = await dbContext.Users.AddTestUser(98, "victim@email.com", "original");
         await dbContext.SaveChangesAsync();
+        var victimId = user.Entity.Id;
         const string patchJson = @"{
   ""@type"": ""User"",
   ""email"": ""attacker@email.com"",
@@ -207,7 +195,7 @@ public class UsersAndKeysTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var victim = await dbContext.Users.AsNoTracking().SingleAsync(u => u.Id == victimId);
         victim.Email.Should().Be("victim@email.com");
-        victim.EncryptedPassword.Should().Be("original");
+        victim.EncryptedPassword.Should().Be("ENCRYPTED original");
     }
 
     [Fact]
