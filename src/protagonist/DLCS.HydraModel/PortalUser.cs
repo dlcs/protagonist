@@ -39,20 +39,13 @@ public class PortalUser : DlcsResource
     public string? Password { get; set; }
 
     [RdfProperty(Description = "Create date",
-        Range = Names.XmlSchema.DateTime, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 13, PropertyName = "created")]
     public DateTime? Created { get; set; }
 
-    [HydraLink(Description = "Collection of Role resources that the user has. These roles should not" +
-                               " be confused with the roles associated with images and authservices, which govern the interactions that" +
-                               " end users can have with your image resources. These PortalUser roles govern the actions that your handful" +
-                               " of registered DLCS back end users can perform in the portal. ",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 14, PropertyName = "roles")]
-    public string? Roles { get; set; }
-
-    [RdfProperty(Description = "Whether the user can log in - for temporary or permanent rescinding of access.",
-        Range = Names.XmlSchema.Boolean, ReadOnly = false, WriteOnly = false)]
+    [RdfProperty(Description = "Whether the user can log in - for temporary or permanent rescinding of access. " +
+                               "Set to true on creation; cannot currently be changed via the API.",
+        Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 15, PropertyName = "enabled")]
     public bool? Enabled { get; set; }
 }
@@ -67,11 +60,7 @@ public class PortalUserClass : Class
     public override void DefineOperations()
     {
         SupportedOperations = CommonOperations.GetStandardResourceOperations(
-            "_:customer_portalUser_", "Portal User", Id, 
-            "GET", "PUT", "PATCH", "DELETE");
-
-
-        GetHydraLinkProperty("roles").SupportedOperations = CommonOperations
-            .GetStandardCollectionOperations("_:customer_portalUser_portalRole_", "Portal Role", "vocab:PortalRole");
+            "_:customer_portalUser_", "Portal User", Id,
+            "GET", "PATCH", "DELETE");
     }
 }
