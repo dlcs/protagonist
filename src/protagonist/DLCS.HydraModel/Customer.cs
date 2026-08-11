@@ -100,8 +100,8 @@ public class Customer : DlcsResource
     public string? Storage { get; set; }
 
     [HydraLink(Description = "Api keys allocated to this customer. The accompanying secret is only available at creation time. " +
-                             "To obtain a key and a secret, make an empty POST to this collection with administrator privileges and the returned " +
-                             "Key object will include the generated secret.",
+                             "To obtain a key and a secret, make an empty POST to this collection while authenticated as this customer, " +
+                             "and the returned Key object will include the generated secret.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 25, PropertyName = "keys")]
     public string? Keys { get; set; }
