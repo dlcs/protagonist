@@ -117,20 +117,15 @@ public class Customer : DlcsResource
     [JsonProperty(Order = 26, PropertyName = "customHeaders")]
     public string? CustomHeaders { get; set; }
 
-    [RdfProperty(Description = "Is this user the admin customer?",
+    [RdfProperty(Description = "Is this user the admin customer? Only present (true) on the admin customer; never emitted as false.",
         Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 33, PropertyName = "administrator")]
     public bool? Administrator { get; set; }
-    
+
     [RdfProperty(Description = "Datetime this customer was created.",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 34, PropertyName = "created")]
     public DateTime? Created { get; set; }
-
-    [RdfProperty(Description = "Has the customer accepted the EULA?",
-        Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 35, PropertyName = "acceptedAgreement")]
-    public bool? AcceptedAgreement { get; set; }
 }
 
 public class CustomerClass : Class
