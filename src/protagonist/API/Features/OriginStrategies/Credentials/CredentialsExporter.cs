@@ -52,8 +52,7 @@ public class CredentialsExporter
     
     public async Task DeleteCredentials(CustomerOriginStrategy strategy)
     {
-        if (!strategy.Credentials.StartsWith("s3://"))
-            return;
+        if (!strategy.Credentials.StartsWith("s3://")) return;
         
         var objectInBucket = RegionalisedObjectInBucket.Parse(strategy.Credentials);
         if (objectInBucket == null)

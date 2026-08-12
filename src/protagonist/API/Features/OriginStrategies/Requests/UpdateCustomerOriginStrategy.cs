@@ -7,6 +7,7 @@ using DLCS.Model.Customers;
 using DLCS.Repository;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace API.Features.OriginStrategies.Requests;
 
@@ -27,30 +28,25 @@ public class UpdateCustomerOriginStrategy : IRequest<ModifyEntityResult<Customer
     }
 }
 
-public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustomerOriginStrategy, ModifyEntityResult<CustomerOriginStrategy>>
+public class UpdateCustomerOriginStrategyHandler(
+    DlcsContext dbContext,
+    CredentialsExporter credentialsExporter,
+    ILogger<UpdateCustomerOriginStrategyHandler> logger)
+    : IRequestHandler<UpdateCustomerOriginStrategy, ModifyEntityResult<CustomerOriginStrategy>>
 {
-    private readonly DlcsContext dbContext;
-    private readonly CredentialsExporter credentialsExporter;
-
-    public UpdateCustomerOriginStrategyHandler(DlcsContext dbContext, CredentialsExporter credentialsExporter)
-    {
-        this.dbContext = dbContext;
-        this.credentialsExporter = credentialsExporter;
-    }
-
     public async Task<ModifyEntityResult<CustomerOriginStrategy>> Handle(
         UpdateCustomerOriginStrategy request,
         CancellationToken cancellationToken)
     {
-        var wipeCredentialsOnSuccess = false;
-        
         var existingStrategy = await dbContext.CustomerOriginStrategies.SingleOrDefaultAsync(
             s => s.Id == request.StrategyId && s.Customer == request.CustomerId,
             cancellationToken);
 
         if (existingStrategy == null)
+        {
             return ModifyEntityResult<CustomerOriginStrategy>
                 .Failure($"Couldn't find an origin strategy with the id {request.StrategyId}", WriteResult.NotFound);
+        }
 
         if (request.Regex.HasText())
         {
@@ -59,88 +55,109 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
                 cancellationToken);
 
             if (regexUsed)
+            {
                 return ModifyEntityResult<CustomerOriginStrategy>.Failure(
                     "An origin strategy using the same regex already exists",
                     WriteResult.Conflict);
+            }
 
             existingStrategy.Regex = request.Regex;
         }
-        
+
+        var wipeCredentialsOnSuccess = false;
         if (request.Strategy.HasValue)
         {
-            if(request.Strategy == OriginStrategyType.BasicHttp && !request.Credentials.HasText())
-                return ModifyEntityResult<CustomerOriginStrategy>
-                    .Failure("Credentials must be specified when using basic-http-authentication as an origin strategy", WriteResult.FailedValidation);
-            
-            // If the strategy was previously basic-http-authentication, wipe the credentials stored on S3
-            if (existingStrategy.Strategy == OriginStrategyType.BasicHttp &&
-                request.Strategy != OriginStrategyType.BasicHttp)
-                wipeCredentialsOnSuccess = true;
-            
+            if (request.Strategy is OriginStrategyType.BasicHttp or OriginStrategyType.SFTP &&
+                !request.Credentials.HasText())
+            {
+                return ModifyEntityResult<CustomerOriginStrategy>.Failure(
+                    $"Credentials must be specified when using {request.Strategy.Value.GetDescription()} as an origin strategy",
+                    WriteResult.FailedValidation);
+            }
+
+            // If the strategy was previously basic-http-authentication OR sftp and no longer either, delete credentials
+            wipeCredentialsOnSuccess = ShouldClearCredentials(existingStrategy.Strategy, request.Strategy.Value);
+
             // If the strategy was previously s3-ambient, disable "optimised"
             if (existingStrategy.Strategy == OriginStrategyType.S3Ambient &&
                 request.Strategy != OriginStrategyType.S3Ambient)
+            {
                 existingStrategy.Optimised = false;
-            
+            }
+
             existingStrategy.Strategy = request.Strategy.Value;
         }
-        
+
         if (request.Optimised.HasValue)
         {
-            if(request.Optimised.Value && existingStrategy.Strategy != OriginStrategyType.S3Ambient)
+            if (request.Optimised.Value && existingStrategy.Strategy != OriginStrategyType.S3Ambient)
+            {
                 return ModifyEntityResult<CustomerOriginStrategy>
-                    .Failure("'Optimised' is only applicable when using s3-ambient as an origin strategy", WriteResult.FailedValidation);
-            
+                    .Failure("'Optimised' is only applicable when using s3-ambient as an origin strategy",
+                        WriteResult.FailedValidation);
+            }
+
             existingStrategy.Optimised = request.Optimised.Value;
         }
-        
+
         if (request.Credentials.HasText())
         {
-            if(!IsFullOriginStrategy(request))
+            if (!IsFullOriginStrategy(request))
+            {
                 return ModifyEntityResult<CustomerOriginStrategy>
                     .Failure("A full origin strategy object is required when updating credentials",
                         WriteResult.FailedValidation);
+            }
 
             if (existingStrategy.Strategy is OriginStrategyType.BasicHttp or OriginStrategyType.SFTP)
             {
-                
+
                 var exportCredentialsResult = await credentialsExporter.ExportCredentials(
                     request.Credentials, existingStrategy.Customer, existingStrategy.Id, cancellationToken);
-            
+
                 if (exportCredentialsResult.IsError)
+                {
                     return ModifyEntityResult<CustomerOriginStrategy>.Failure(exportCredentialsResult.ErrorMessage!,
                         WriteResult.FailedValidation);
-                
+                }
+
                 existingStrategy.Credentials = exportCredentialsResult.S3Uri;
             }
             else
             {
                 return ModifyEntityResult<CustomerOriginStrategy>
-                    .Failure($"Credentials cannot be specified for strategy type '{existingStrategy.Strategy.GetDescription()}'",
+                    .Failure(
+                        $"Credentials cannot be specified for strategy type '{existingStrategy.Strategy.GetDescription()}'",
                         WriteResult.FailedValidation);
             }
         }
-        
-        if (request.Order.HasValue)
-            existingStrategy.Order = request.Order.Value;
-        
+
+        if (request.Order.HasValue) existingStrategy.Order = request.Order.Value;
+
         await dbContext.SaveChangesAsync(cancellationToken);
 
         if (wipeCredentialsOnSuccess)
         {
+            logger.LogInformation("Deleting credentials for COS {StrategyId}", existingStrategy.Id);
             await credentialsExporter.DeleteCredentials(existingStrategy);
             existingStrategy.Credentials = string.Empty;
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
-       
+
         return ModifyEntityResult<CustomerOriginStrategy>.Success(existingStrategy);
     }
-    
-    private bool IsFullOriginStrategy(UpdateCustomerOriginStrategy request)
-        => (
-            request.Regex.HasText() &&
-            request.Credentials.HasText() &&
-            request.Strategy.HasValue &&
-            request.Optimised.HasValue &&
-            request.Order.HasValue
-            );
+
+    /// <summary>
+    /// If the origin strategy previously stored credentials but no longer does, delete them 
+    /// </summary>
+    private static bool ShouldClearCredentials(OriginStrategyType existingStrategy, OriginStrategyType newStrategy)
+        => existingStrategy is OriginStrategyType.BasicHttp or OriginStrategyType.SFTP
+           && newStrategy is not (OriginStrategyType.BasicHttp or OriginStrategyType.SFTP);
+
+    private static bool IsFullOriginStrategy(UpdateCustomerOriginStrategy request)
+        => request.Regex.HasText() &&
+           request.Credentials.HasText() &&
+           request.Strategy.HasValue &&
+           request.Optimised.HasValue &&
+           request.Order.HasValue;
 }
