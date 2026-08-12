@@ -59,11 +59,11 @@ public class SpaceRepository(
     public Task<Space?> GetSpace(int customerId, string name, CancellationToken cancellationToken) =>
         GetSpaceInternal(customerId, -1, cancellationToken, name, noCache: true);
 
-    public async Task<Space> CreateSpace(int customer, string name, string? imageBucket, 
-        string[]? tags, string[]? roles, CancellationToken cancellationToken)
+    public async Task<Space> CreateSpace(int customer, string name, string? imageBucket, string[]? tags,
+        string[]? roles, CancellationToken cancellationToken)
     {
         int newModelId = await GetIdForNewSpace(customer);
-        
+
         var space = await CreateSpaceInternal(newModelId, customer, name, imageBucket, tags, roles, cancellationToken);
         await dlcsContext.SaveChangesAsync(cancellationToken);
         return space;

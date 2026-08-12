@@ -8,9 +8,6 @@ internal static class SpaceConverter
     /// <summary>
     /// Converts the EF model object to an API resource.
     /// </summary>
-    /// <param name="dbSpace"></param>
-    /// <param name="baseUrl"></param>
-    /// <returns></returns>
     public static DLCS.HydraModel.Space ToHydra(this DLCS.Model.Spaces.Space dbSpace, string baseUrl)
     {
         var space = new DLCS.HydraModel.Space(baseUrl, dbSpace.Id, dbSpace.Customer)
@@ -23,5 +20,4 @@ internal static class SpaceConverter
         };
         return space;
     }
-
 }

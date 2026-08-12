@@ -18,15 +18,9 @@ public class PatchSpace : IRequest<ModifyEntityResult<DLCS.Model.Spaces.Space>>
     public string[]? Roles { get; set; }
 }
 
-public class PatchSpaceHandler : IRequestHandler<PatchSpace, ModifyEntityResult<DLCS.Model.Spaces.Space>>
+public class PatchSpaceHandler(ISpaceRepository spaceRepository)
+    : IRequestHandler<PatchSpace, ModifyEntityResult<DLCS.Model.Spaces.Space>>
 {
-    private readonly ISpaceRepository spaceRepository;
-
-    public PatchSpaceHandler(ISpaceRepository spaceRepository)
-    {
-        this.spaceRepository = spaceRepository;
-    }
-    
     public async Task<ModifyEntityResult<DLCS.Model.Spaces.Space>> Handle(PatchSpace request, CancellationToken cancellationToken)
     {
         if (request.SpaceId <= 0)
@@ -39,7 +33,8 @@ public class PatchSpaceHandler : IRequestHandler<PatchSpace, ModifyEntityResult<
         var sameIdSpace = await spaceRepository.GetSpace(request.CustomerId, request.SpaceId, cancellationToken);
         if (sameIdSpace == null)
         {
-            return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure($"Couldn't find a space with the id {request.SpaceId}", WriteResult.NotFound);
+            return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure(
+                $"Couldn't find a space with the id {request.SpaceId}", WriteResult.NotFound);
         }
           
         if (request.Name.HasText())
@@ -47,16 +42,15 @@ public class PatchSpaceHandler : IRequestHandler<PatchSpace, ModifyEntityResult<
             var sameNameSpace = await spaceRepository.GetSpace(request.CustomerId, request.Name, cancellationToken);
             if (sameNameSpace != null && sameNameSpace.Id != request.SpaceId)
             {
-                return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure($"The space name '{request.Name}' is already taken.", WriteResult.Conflict);
+                return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure(
+                    $"The space name '{request.Name}' is already taken.", WriteResult.Conflict);
             }
         }
         
         // The request customer and space override any values for these that may
         // (or more likely, may not) have been sent on the incoming Space to be patched.
-        var patchedSpace = await spaceRepository.PatchSpace(
-            request.CustomerId, request.SpaceId, request.Name,
-            request.Tags, request.Roles,
-            cancellationToken);
+        var patchedSpace = await spaceRepository.PatchSpace(request.CustomerId, request.SpaceId, request.Name,
+            request.Tags, request.Roles, cancellationToken);
         
         return ModifyEntityResult<DLCS.Model.Spaces.Space>.Success(patchedSpace);
     }

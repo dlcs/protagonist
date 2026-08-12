@@ -65,7 +65,7 @@ public class SpaceRepositoryTests
         var getResult = await sut.GetSpace(99, 1, CancellationToken.None);
 
         // Assert
-        getResult.Customer.Should().Be(99);
+        getResult!.Customer.Should().Be(99);
         getResult.Name.Should().Be("space-1");
     }
     
@@ -76,7 +76,7 @@ public class SpaceRepositoryTests
         var getResult = await sut.GetSpace(99, "space-1", CancellationToken.None);
 
         // Assert
-        getResult.Customer.Should().Be(99);
+        getResult!.Customer.Should().Be(99);
         getResult.Id.Should().Be(1);
     }
 

@@ -27,9 +27,9 @@ public interface ISpaceRepository
     Task<PageOfSpaces> GetPageOfSpaces(int customerId, int page, int pageSize, string orderBy, bool descending,
         CancellationToken cancellationToken);
 
-    Task<Space> PatchSpace(int customerId, int spaceId, string? name, string[]? tags,
-        string[]? roles, CancellationToken cancellationToken);
-    
+    Task<Space> PatchSpace(int customerId, int spaceId, string? name, string[]? tags, string[]? roles,
+        CancellationToken cancellationToken);
+
     Task<Space> UpsertSpace(int customerId, int spaceId, string? name, string? imageBucket, string[]? tags,
         string[]? roles, CancellationToken cancellationToken);
 
