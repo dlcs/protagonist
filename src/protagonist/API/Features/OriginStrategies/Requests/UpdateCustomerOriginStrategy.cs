@@ -68,9 +68,9 @@ public class UpdateCustomerOriginStrategyHandler : IRequestHandler<UpdateCustome
         
         if (request.Strategy.HasValue)
         {
-            if(request.Strategy == OriginStrategyType.BasicHttp && !request.Credentials.HasText())
+            if(request.Strategy is OriginStrategyType.BasicHttp or OriginStrategyType.SFTP && !request.Credentials.HasText())
                 return ModifyEntityResult<CustomerOriginStrategy>
-                    .Failure("Credentials must be specified when using basic-http-authentication as an origin strategy", WriteResult.FailedValidation);
+                    .Failure($"Credentials must be specified when using {request.Strategy.Value.GetDescription()} as an origin strategy", WriteResult.FailedValidation);
             
             // If the strategy was previously basic-http-authentication, wipe the credentials stored on S3
             if (existingStrategy.Strategy == OriginStrategyType.BasicHttp &&

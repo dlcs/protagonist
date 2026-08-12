@@ -69,4 +69,46 @@ public class HydraCustomerOriginStrategyValidatorTests
         var result = sut.TestValidate(strategy, s => s.IncludeRuleSets("default", "create"));
         result.ShouldHaveValidationErrorFor(s => s.Optimised);
     }
+
+    [Theory]
+    [InlineData("basic-http-authentication")]
+    [InlineData("sftp")]
+    public void NewCustomerOriginStrategy_Requires_Credentials(string originStrategy)
+    {
+        var strategy = new CustomerOriginStrategy()
+        {
+            OriginStrategy = originStrategy,
+            Regex = "someRegex"
+        };
+        var result = sut.TestValidate(strategy, s => s.IncludeRuleSets("default", "create"));
+        result.ShouldHaveValidationErrorFor(s => s.Credentials);
+    }
+
+    [Theory]
+    [InlineData("basic-http-authentication")]
+    [InlineData("sftp")]
+    public void NewCustomerOriginStrategy_WithCredentials_Valid(string originStrategy)
+    {
+        var strategy = new CustomerOriginStrategy()
+        {
+            OriginStrategy = originStrategy,
+            Regex = "someRegex",
+            Credentials = @"{""user"": ""u"", ""password"": ""p""}"
+        };
+        var result = sut.TestValidate(strategy, s => s.IncludeRuleSets("default", "create"));
+        result.ShouldNotHaveValidationErrorFor(s => s.Credentials);
+    }
+
+    [Fact]
+    public void NewCustomerOriginStrategy_Credentials_NotAllowedForS3Ambient()
+    {
+        var strategy = new CustomerOriginStrategy()
+        {
+            OriginStrategy = "s3-ambient",
+            Regex = "someRegex",
+            Credentials = @"{""user"": ""u"", ""password"": ""p""}"
+        };
+        var result = sut.TestValidate(strategy, s => s.IncludeRuleSets("default", "create"));
+        result.ShouldHaveValidationErrorFor(s => s.Credentials);
+    }
 }

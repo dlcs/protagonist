@@ -8,6 +8,7 @@ using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Model.Customers;
 using DLCS.Repository;
+using Microsoft.EntityFrameworkCore;
 using Hydra.Collections;
 using Test.Helpers;
 using Test.Helpers.Integration;
@@ -210,6 +211,28 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
             $"{customerId}/origin-strategy/{foundStrategy.Id}/credentials.json");
         storedCredentials.ResponseStream.GetContentString().Should()
             .Be(@"{""user"":""user-example"",""password"":""password-example""}");
+    }
+
+    [Fact]
+    public async Task Post_CustomerOriginStrategy_400_IfSftpWithoutCredentials()
+    {
+        // Arrange
+        const int customerId = 116;
+        const string newStrategyJson = @"{
+            ""strategy"": ""sftp"",
+            ""regex"": ""someRegex"",
+            ""order"": ""1""
+        }";
+
+        var path = $"customers/{customerId}/originStrategies";
+
+        // Act
+        var content = new StringContent(newStrategyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        dlcsContext.CustomerOriginStrategies.Any(s => s.Customer == customerId).Should().BeFalse();
     }
 
     [Fact]
@@ -481,6 +504,43 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
             .Be(@"{""user"":""user-updated"",""password"":""password-updated""}");
     }
     
+    [Fact]
+    public async Task Put_CustomerOriginStrategy_400_IfChangedToSftpWithoutCredentials()
+    {
+        // Arrange
+        const int customerId = 117;
+        const string strategyChangesJson = @"{
+            ""strategy"": ""sftp"",
+            ""regex"": ""someRegex"",
+            ""optimised"": ""false"",
+            ""order"": ""2""
+        }";
+
+        var strategy = new CustomerOriginStrategy()
+        {
+            Id = Guid.NewGuid().ToString(),
+            Customer = customerId,
+            Regex = "http[s]?://(.*).example.com",
+            Strategy = OriginStrategyType.S3Ambient,
+            Optimised = true,
+            Order = 1
+        };
+        var path = $"customers/{customerId}/originStrategies/{strategy.Id}";
+
+        await dlcsContext.CustomerOriginStrategies.AddAsync(strategy);
+        await dlcsContext.SaveChangesAsync();
+
+        // Act
+        var content = new StringContent(strategyChangesJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var foundStrategy = dlcsContext.CustomerOriginStrategies.AsNoTracking().Single(s => s.Id == strategy.Id);
+        foundStrategy.Strategy.Should().Be(OriginStrategyType.S3Ambient);
+    }
+
     [Fact]
     public async Task Put_CustomerOriginStrategy_409_IfRegexAlreadyExists()
     {
