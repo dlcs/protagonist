@@ -98,8 +98,7 @@ public class SpaceController : HydraController
         var command = new CreateSpace(customerId, space.Name)
         {
             Roles = space.DefaultRoles,
-            Tags = space.DefaultTags ?? Array.Empty<string>(),
-            MaxUnauthorised = space.MaxUnauthorised
+            Tags = space.DefaultTags ?? Array.Empty<string>()
         };
         
         return await HandleUpsert(command,
@@ -173,7 +172,6 @@ public class SpaceController : HydraController
             CustomerId = customerId,
             SpaceId = spaceId,
             Name = space.Name,
-            MaxUnauthorised = space.MaxUnauthorised,
             Tags = space.DefaultTags,
             Roles = space.DefaultRoles
         };
@@ -213,7 +211,6 @@ public class SpaceController : HydraController
             CustomerId = customerId,
             SpaceId = spaceId,
             Name = space.Name,
-            MaxUnauthorised = space.MaxUnauthorised,
             Tags = space.DefaultTags,
             Roles = space.DefaultRoles
         };

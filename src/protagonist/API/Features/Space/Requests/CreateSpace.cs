@@ -8,38 +8,22 @@ using MediatR;
 namespace API.Features.Space.Requests;
 
 /// <remark>
-/// See Deliverator: API/Architecture/Request/API/Entities/CustomerSpaces.cs
+/// Create a new space for customer
 /// </remark>
-public class CreateSpace : IRequest<ModifyEntityResult<DLCS.Model.Spaces.Space>>
+public class CreateSpace(int customer, string name) : IRequest<ModifyEntityResult<DLCS.Model.Spaces.Space>>
 {
-    public string Name { get; }
-    public int Customer { get; }
+    public string Name { get; } = name;
+    public int Customer { get; } = customer;
     public string? ImageBucket { get; set; }
     public string[]? Tags { get; set; }
     public string[]? Roles { get; set; }
-    public int? MaxUnauthorised { get; set; }
-
-    public CreateSpace(int customer, string name)
-    {
-        Customer = customer;
-        Name = name;
-    }
 }
 
-
-public class CreateSpaceHandler : IRequestHandler<CreateSpace, ModifyEntityResult<DLCS.Model.Spaces.Space>>
+public class CreateSpaceHandler(
+    ISpaceRepository spaceRepository,
+    ICustomerRepository customerRepository)
+    : IRequestHandler<CreateSpace, ModifyEntityResult<DLCS.Model.Spaces.Space>>
 {
-    private readonly ISpaceRepository spaceRepository;
-    private readonly ICustomerRepository customerRepository;
-
-    public CreateSpaceHandler(
-        ISpaceRepository spaceRepository,
-        ICustomerRepository customerRepository)
-    {
-        this.spaceRepository = spaceRepository;
-        this.customerRepository = customerRepository;
-    }
-    
     public async Task<ModifyEntityResult<DLCS.Model.Spaces.Space>> Handle(CreateSpace request, CancellationToken cancellationToken)
     {
         await ValidateRequest(request);
@@ -50,11 +34,9 @@ public class CreateSpaceHandler : IRequestHandler<CreateSpace, ModifyEntityResul
             return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure("A space with this name already exists.",
                 WriteResult.Conflict);
         }
-        
-        var newSpace = await spaceRepository.CreateSpace(
-            request.Customer, request.Name, request.ImageBucket, 
-            request.Tags, request.Roles, request.MaxUnauthorised,
-            cancellationToken);
+
+        var newSpace = await spaceRepository.CreateSpace(request.Customer, request.Name, request.ImageBucket,
+            request.Tags, request.Roles, cancellationToken);
 
         return ModifyEntityResult<DLCS.Model.Spaces.Space>.Success(newSpace, WriteResult.Created);
     }
