@@ -39,3 +39,18 @@ Link to any related issues -->
 > |---|---|---|---|---|
 > | Engine | `Service:Hostname` | Y | Service hostname | `null` |
 -->
+
+## Breaking Changes
+
+<!-- Does this PR introduce any breaking changes to any HTTP contracts? If not, delete this section.
+
+This includes changes to status codes, request/response payloads etc
+
+> [!CAUTION]
+> This PR introduces breaking changes.
+>
+> |Service | Description | Notes |
+> |---|---|---|
+> | API | GET `/foo/bar` no longer returns `"name"` property | Optional additional note |
+
+-->
