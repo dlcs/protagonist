@@ -16,7 +16,6 @@ public class PatchSpace : IRequest<ModifyEntityResult<DLCS.Model.Spaces.Space>>
     public string? Name { get; set; }
     public string[]? Tags { get; set; }
     public string[]? Roles { get; set; }
-    public int? MaxUnauthorised { get; set; }
 }
 
 public class PatchSpaceHandler : IRequestHandler<PatchSpace, ModifyEntityResult<DLCS.Model.Spaces.Space>>
@@ -56,7 +55,7 @@ public class PatchSpaceHandler : IRequestHandler<PatchSpace, ModifyEntityResult<
         // (or more likely, may not) have been sent on the incoming Space to be patched.
         var patchedSpace = await spaceRepository.PatchSpace(
             request.CustomerId, request.SpaceId, request.Name,
-            request.MaxUnauthorised, request.Tags, request.Roles,
+            request.Tags, request.Roles,
             cancellationToken);
         
         return ModifyEntityResult<DLCS.Model.Spaces.Space>.Success(patchedSpace);

@@ -19,7 +19,6 @@ internal static class SpaceConverter
             Created = dbSpace.Created,
             DefaultTags = dbSpace.Tags,
             DefaultRoles = dbSpace.Roles,
-            MaxUnauthorised = dbSpace.MaxUnauthorised,
             ApproximateNumberOfImages = dbSpace.ApproximateNumberOfImages
         };
         return space;

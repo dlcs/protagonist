@@ -17,7 +17,6 @@ public class PutSpace : IRequest<ModifyEntityResult<DLCS.Model.Spaces.Space>>
     public string? ImageBucket { get; set; }
     public string[]? Tags { get; set; }
     public string[]? Roles { get; set; }
-    public int? MaxUnauthorised { get; set; }
 }
 
 public class PutSpaceHandler : IRequestHandler<PutSpace, ModifyEntityResult<DLCS.Model.Spaces.Space>>
@@ -55,7 +54,7 @@ public class PutSpaceHandler : IRequestHandler<PutSpace, ModifyEntityResult<DLCS
         
         var putSpaceResult = await spaceRepository.UpsertSpace(
             request.CustomerId, request.SpaceId, request.Name, request.ImageBucket,
-            request.MaxUnauthorised, request.Tags, request.Roles,
+            request.Tags, request.Roles,
             cancellationToken);
         
         var result = sameIdSpace == null ? WriteResult.Created : WriteResult.Updated;

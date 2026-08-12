@@ -60,17 +60,17 @@ public class SpaceRepository(
         GetSpaceInternal(customerId, -1, cancellationToken, name, noCache: true);
 
     public async Task<Space> CreateSpace(int customer, string name, string? imageBucket, 
-        string[]? tags, string[]? roles, int? maxUnauthorised, CancellationToken cancellationToken)
+        string[]? tags, string[]? roles, CancellationToken cancellationToken)
     {
         int newModelId = await GetIdForNewSpace(customer);
         
-        var space = await CreateSpaceInternal(newModelId, customer, name, imageBucket, tags, roles, maxUnauthorised, cancellationToken);
+        var space = await CreateSpaceInternal(newModelId, customer, name, imageBucket, tags, roles, cancellationToken);
         await dlcsContext.SaveChangesAsync(cancellationToken);
         return space;
     }
 
     private async Task<Space> CreateSpaceInternal(int spaceId, int customer, string name, string? imageBucket,
-        string[]? tags, string[]? roles, int? maxUnauthorised, CancellationToken cancellationToken)
+        string[]? tags, string[]? roles, CancellationToken cancellationToken)
     {
         var space = new Space
         {
@@ -81,7 +81,7 @@ public class SpaceRepository(
             ImageBucket = imageBucket ?? string.Empty,
             Tags = tags ?? [],
             Roles = roles ?? [],
-            MaxUnauthorised = maxUnauthorised ?? DefaultMaxUnauthorised
+            MaxUnauthorised = DefaultMaxUnauthorised
         };
 
         await dlcsContext.Spaces.AddAsync(space, cancellationToken);
@@ -178,7 +178,7 @@ public class SpaceRepository(
     }
 
     public async Task<Space> PatchSpace(
-        int customerId, int spaceId, string? name, int? maxUnauthorised, 
+        int customerId, int spaceId, string? name, 
         string[]? tags, string[]? roles, 
         CancellationToken cancellationToken)
     {    
@@ -201,11 +201,6 @@ public class SpaceRepository(
             dbSpace.Roles = roles;
         }
 
-        if (maxUnauthorised != null)
-        {
-            dbSpace.MaxUnauthorised = (int)maxUnauthorised;
-        }
-
         await dlcsContext.SaveChangesAsync(cancellationToken);
 
         var retrievedSpace = await GetSpaceInternal(customerId, spaceId, cancellationToken, noCache: true);
@@ -213,7 +208,7 @@ public class SpaceRepository(
     }
 
     public async Task<Space> UpsertSpace(int customerId, int spaceId, string? name, string? imageBucket,
-        int? maxUnauthorised, string[]? tags, string[]? roles, CancellationToken cancellationToken)
+        string[]? tags, string[]? roles, CancellationToken cancellationToken)
     {
         var existingSpace = await dlcsContext.Spaces.SingleOrDefaultAsync(s =>
             s.Customer == customerId && s.Id == spaceId, cancellationToken: cancellationToken);
@@ -235,15 +230,11 @@ public class SpaceRepository(
                 existingSpace.Roles = roles;
             }
 
-            if (maxUnauthorised.HasValue)
-            {
-                existingSpace.MaxUnauthorised = (int)maxUnauthorised;
-            }
         }
         else
         {
             await CreateSpaceInternal(spaceId, customerId, name ?? spaceId.ToString(), imageBucket, tags, roles,
-                maxUnauthorised, cancellationToken);
+                cancellationToken);
         }
 
         await dlcsContext.SaveChangesAsync(cancellationToken);

@@ -10,8 +10,8 @@ namespace DLCS.HydraModel;
 [HydraClass(typeof(SpaceClass),
        Description = "Spaces allow you to partition images into groups. You can use them to organise your " +
                      "images logically, like folders. You can also define different default settings to apply " +
-                     "to images registered in a space. For example, default access control behaviour for all " +
-                     "images in a space, or default tags. These can be overridden for individual images. " +
+                     "to images registered in a space, for example default tags. " +
+                     "These can be overridden for individual images. " +
                      "There is no limit to the number of images you can register in a space.",
        UriTemplate = "/customers/{0}/spaces/{1}")]
 [Unstable(Note = "Under active development")]
@@ -52,12 +52,6 @@ public class Space : DlcsResource
     [JsonProperty(Order = 12, PropertyName = "defaultTags")]
     public string[]? DefaultTags { get; set; }
 
-    [RdfProperty(Description = "Default size at which role-based authorisation will be enforced. -1=open, 0=always require auth",
-        Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 14, PropertyName = "maxUnauthorised")]
-    public int? MaxUnauthorised { get; set; }
-    
-    
     [RdfProperty(Description = "Computed count of the number of images in the space.",
         Range = Names.XmlSchema.Integer, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 14, PropertyName = "approximateNumberOfImages")]

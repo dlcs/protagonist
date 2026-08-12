@@ -17,7 +17,6 @@ public class CreateSpace : IRequest<ModifyEntityResult<DLCS.Model.Spaces.Space>>
     public string? ImageBucket { get; set; }
     public string[]? Tags { get; set; }
     public string[]? Roles { get; set; }
-    public int? MaxUnauthorised { get; set; }
 
     public CreateSpace(int customer, string name)
     {
@@ -53,7 +52,7 @@ public class CreateSpaceHandler : IRequestHandler<CreateSpace, ModifyEntityResul
         
         var newSpace = await spaceRepository.CreateSpace(
             request.Customer, request.Name, request.ImageBucket, 
-            request.Tags, request.Roles, request.MaxUnauthorised,
+            request.Tags, request.Roles,
             cancellationToken);
 
         return ModifyEntityResult<DLCS.Model.Spaces.Space>.Success(newSpace, WriteResult.Created);

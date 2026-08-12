@@ -58,7 +58,6 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Location.PathAndQuery.Should().Be($"{postUrl}/{expectedSpace}");
         apiSpace.Should().NotBeNull();
         apiSpace.Name.Should().Be("Test Space");
-        apiSpace.MaxUnauthorised.Should().Be(-1);
     }
     
     [Fact]
@@ -94,8 +93,12 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
             space.Name.Should().Be("Test Complex Space");
             space.DefaultRoles.Should().BeEquivalentTo("role1", "role2");
             space.DefaultTags.Should().BeEquivalentTo("tag1", "tag2");
-            space.MaxUnauthorised.Should().Be(400);
         }
+
+        // maxUnauthorised in the request body is ignored - the space default no longer exists
+        var dbSpace = await dbContext.Spaces.SingleAsync(
+            s => s.Customer == customerId.Value && s.Name == "Test Complex Space");
+        dbSpace.MaxUnauthorised.Should().Be(-1);
     }
 
     [Fact]
@@ -334,8 +337,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""@type"": ""Space"",
           ""name"": ""Patch Complex Space"",
           ""defaultRoles"": [""role1"", ""role2""],
-          ""defaultTags"": [""tag1"", ""tag2""],
-          ""maxUnauthorised"": 400
+          ""defaultTags"": [""tag1"", ""tag2""]
         }";
         const string patchJson = @"{
           ""@type"": ""Space"",
@@ -356,7 +358,6 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         patchedSpace.Name.Should().Be("Patch Complex Space After");
         patchedSpace.DefaultRoles.Should().BeEquivalentTo("role1", "role2");
         patchedSpace.DefaultTags.Should().BeEquivalentTo("tag1", "tag2");
-        patchedSpace.MaxUnauthorised.Should().Be(400);
     }
     
     [Fact]
@@ -386,7 +387,6 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         apiSpace.Should().NotBeNull();
         apiSpace.ModelId.Should().Be(spaceId);
         apiSpace.Name.Should().Be("Test Space");
-        apiSpace.MaxUnauthorised.Should().Be(-1);
         
         var customerStorages = await dbContext.CustomerStorages.Where(cs => cs.Customer == customerId).ToListAsync();
         var customerStorage = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == customerId && cs.Space == spaceId);
@@ -441,8 +441,7 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
           ""@type"": ""Space"",
           ""name"": ""Put Complex Space"",
           ""defaultRoles"": [""role1"", ""role2""],
-          ""defaultTags"": [""tag1"", ""tag2""],
-          ""maxUnauthorised"": 400
+          ""defaultTags"": [""tag1"", ""tag2""]
         }";
         const string putJson = @"{
           ""@type"": ""Space"",
@@ -463,7 +462,6 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         putSpace.Name.Should().Be("Put Complex Space After");
         putSpace.DefaultRoles.Should().BeEquivalentTo("role1", "role2");
         putSpace.DefaultTags.Should().BeEquivalentTo("tag1", "tag2");
-        putSpace.MaxUnauthorised.Should().Be(400);
     }
     
     [Fact]
@@ -493,7 +491,6 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         apiSpace.Should().NotBeNull();
         apiSpace.ModelId.Should().Be(spaceId);
         apiSpace.Name.Should().Be("Test Space");
-        apiSpace.MaxUnauthorised.Should().Be(-1);
         
         var customerStorage = await dbContext.CustomerStorages.SingleAsync(cs => cs.Customer == customerId && cs.Space == spaceId);
         customerStorage.Should().NotBeNull("Confirm CustomerStorage created");

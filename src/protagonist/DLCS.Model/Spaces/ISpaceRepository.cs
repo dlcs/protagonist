@@ -22,15 +22,15 @@ public interface ISpaceRepository
     Task<Space?> GetSpace(int customerId, string name, CancellationToken cancellationToken);
 
     Task<Space> CreateSpace(int customer, string name, string? imageBucket, string[]? tags, string[]? roles,
-        int? maxUnauthorised, CancellationToken cancellationToken);
+        CancellationToken cancellationToken);
 
     Task<PageOfSpaces> GetPageOfSpaces(int customerId, int page, int pageSize, string orderBy, bool descending,
         CancellationToken cancellationToken);
 
-    Task<Space> PatchSpace(int customerId, int spaceId, string? name, int? maxUnauthorised, string[]? tags,
+    Task<Space> PatchSpace(int customerId, int spaceId, string? name, string[]? tags,
         string[]? roles, CancellationToken cancellationToken);
     
-    Task<Space> UpsertSpace(int customerId, int spaceId, string? name, string? imageBucket, int? maxUnauthorised, string[]? tags,
+    Task<Space> UpsertSpace(int customerId, int spaceId, string? name, string? imageBucket, string[]? tags,
         string[]? roles, CancellationToken cancellationToken);
 
     Task<ResultMessage<DeleteResult>> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken);
