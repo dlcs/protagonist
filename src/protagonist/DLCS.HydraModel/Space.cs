@@ -79,11 +79,6 @@ public class Space : DlcsResource
     [JsonProperty(Order = 23, PropertyName = "defaultDeliveryChannels")]
     public string? DefaultDeliveryChannels { get; set; }
     
-    [HydraLink(Description = "Metadata options for the space", // TOOD- what exactly?
-        Range = "vocab:Metadata", ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 24, PropertyName = "metadata")]
-    public string? Metadata { get; set; }
-
     [HydraLink(Description = "Storage policy for the space", 
         Range = "vocab:CustomerStorage", ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 28, PropertyName = "storage")]
@@ -114,26 +109,6 @@ public class SpaceClass : Class
 
         GetHydraLinkProperty("defaultRoles").SupportedOperations = CommonOperations
             .GetStandardCollectionOperations("_:customer_space_defaultRole_", "Role", "vocab:Role");
-
-        GetHydraLinkProperty("metadata").SupportedOperations = new []
-        {
-            new Operation
-            {
-                Id = Id,
-                Method = "GET",
-                Label = "Retrieve the metadata",
-                Description = "desc",
-                Returns = "vocab:Metadata",
-                StatusCodes = new[]
-                {
-                    new Status
-                    {
-                        StatusCode = 200,
-                        Description = "OK"
-                    }
-                }
-            }
-        };
     }
 }
 
