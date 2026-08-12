@@ -80,6 +80,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var hydraImage = await response.ReadAsHydraResponseAsync<Image>();
         hydraImage.Id.Should().EndWith(getUrl);
         hydraImage.Adjuncts!.ToString().Should().Be($"http://localhost/customers/99/spaces/1/images/{modelId}/adjuncts");
+        hydraImage.Manifest.Should().Be($"https://dlcs.digirati.io/iiif-manifest/99/1/{modelId}");
     }
     
     [Fact]
