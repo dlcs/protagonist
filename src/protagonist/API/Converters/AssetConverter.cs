@@ -66,6 +66,7 @@ public static class AssetConverter
             Family = (AssetFamily)dbAsset.Family,
             Roles = dbAsset.RolesList.ToArray(),
             Manifests = dbAsset.Manifests?.ToArray() ?? [],
+            Manifest = $"{urlRoots.ResourceRoot}iiif-manifest/{dbAsset.Id}",
         };
 
         if (dbAsset.Batch > 0)
