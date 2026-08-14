@@ -164,12 +164,26 @@ public class CustomerClass : Class
 
         
         var images = GetHydraLinkProperty("allImages");
-        images.SupportedOperations = CommonOperations
-            .GetStandardCollectionOperations("_:customer_image_", "Image", "vocab:Image");
-        images.SupportedOperations.WithMethod("GET").Description =
-            "Can take query parameters";
-        images.SupportedOperations.WithMethod("POST").Description =
-            "Push an image for immediate processing, asynchronously. Might fail or timeout. This operation is rate-limited.";
+        images.SupportedOperations = new[]
+        {
+            CommonOperations.StandardCollectionGet(
+                "_:customer_image_collection_retrieve", "Retrieves all Images", "Can take query parameters"),
+            new Operation
+            {
+                Id = "_:customer_image_retrieve_by_id",
+                Method = "POST",
+                Label = "Retrieve a specified list of images",
+                Description = "The body is a Collection whose members each carry an id; the matching images " +
+                              "are returned in a single, unpaged Collection.",
+                Expects = Names.Hydra.Collection,
+                Returns = Names.Hydra.Collection,
+                StatusCodes = new[]
+                {
+                    new Status { StatusCode = 200, Description = "OK" },
+                    new Status { StatusCode = 400, Description = "Bad Request" }
+                }
+            }
+        };
 
     }
 }

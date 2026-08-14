@@ -125,6 +125,7 @@ public class CustomerImagesController(IOptions<ApiSettings> settings, IMediator 
     /// </remarks>
     [HttpPatch]
     [Route("allImages")]
+    [ApiExplorerSettings(IgnoreApi = true)] // platform-internal (manifests maintenance) - not part of the public API surface
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HydraCollection<DLCS.HydraModel.Image>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> UpdateAllImages(
