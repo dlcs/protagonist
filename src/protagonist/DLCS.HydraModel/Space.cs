@@ -94,12 +94,26 @@ public class SpaceClass : Class
             "GET", "PUT", "PATCH", "DELETE");
 
         var images = GetHydraLinkProperty("images");
-        images.SupportedOperations = CommonOperations
-            .GetStandardCollectionOperations("_:customer_space_image_", "Image", "vocab:Image");
-        images.SupportedOperations.WithMethod("GET").Description =
-            "Can take query parameters";
-        images.SupportedOperations.WithMethod("POST").Description =
-            "Push an image for immediate processing, asynchronously. Might fail or timeout. This operation is rate-limited.";
+        images.SupportedOperations = new[]
+        {
+            CommonOperations.StandardCollectionGet(
+                "_:customer_space_image_collection_retrieve", "Retrieves all Images", "Can take query parameters"),
+            new Operation
+            {
+                Id = "_:customer_space_image_bulk_update",
+                Method = "PATCH",
+                Label = "Update one or more images in the space",
+                Description = "Each image in the supplied collection must have an id, and may only " +
+                              "set fields that do not require the asset to be reprocessed.",
+                Expects = Names.Hydra.Collection,
+                Returns = Names.Hydra.Collection,
+                StatusCodes = new[]
+                {
+                    new Status { StatusCode = 200, Description = "OK" },
+                    new Status { StatusCode = 400, Description = "Bad Request" }
+                }
+            }
+        };
 
         GetHydraLinkProperty("defaultRoles").SupportedOperations = CommonOperations
             .GetStandardCollectionOperations("_:customer_space_defaultRole_", "Role", "vocab:Role");
