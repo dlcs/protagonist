@@ -6,6 +6,7 @@ using API.Features.Customer;
 using API.Features.DeliveryChannels.DataAccess;
 using API.Infrastructure.Messaging;
 using API.Infrastructure.Requests.Pipelines;
+using API.Infrastructure.Swagger;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.MediaConvert;
 using DLCS.AWS.S3;
@@ -155,6 +156,9 @@ public static class ServiceCollectionX
                 },
             });
             
+            // Honour the Hydra ReadOnly/WriteOnly flags on model properties
+            c.SchemaFilter<HydraReadWriteSchemaFilter>();
+
             // Set the comments path for the Swagger JSON and UI.
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
