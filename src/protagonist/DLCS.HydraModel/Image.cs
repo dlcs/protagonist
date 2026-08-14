@@ -32,16 +32,20 @@ public class Image : DlcsResource
     [JsonIgnore]
     public string? StorageIdentifier { get; set; }
 
-    [RdfProperty(Description = "The identifier for the image within the space - its URI component.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+    [RdfProperty(Description = "The identifier for the image within the space - its URI component. " +
+                               "Determined by the request URL; a value in a request body must agree with it.",
+        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 10, PropertyName = "id")]
     public string? ModelId { get; set; }
-    
+
+    [RdfProperty(Description = "The identifier of the space this image belongs to. Determined by the request URL; " +
+                               "an image cannot be moved to another space.",
+        Range = Names.XmlSchema.Integer, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 10, PropertyName = "space")]
     public int? Space { get; set; }
 
     [RdfProperty(Description = "image service URI - where the IIIF Image API is exposed for this image",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 11, PropertyName = "imageService")]
     public string? ImageService  { get; set; }
     
@@ -53,7 +57,7 @@ public class Image : DlcsResource
     public string? DegradedInfoJson { get; set; }
     
     [RdfProperty(Description = "Thumbnail image service URI",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 13, PropertyName = "thumbnailImageService")]
     public string? ThumbnailImageService { get; set; }
 
@@ -114,7 +118,7 @@ public class Image : DlcsResource
     public bool? Ingesting { get; set; }
 
     [RdfProperty(Description = "Reported errors with this image",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 40, PropertyName = "error")]
     public string? Error { get; set; }
     
@@ -189,8 +193,8 @@ public class Image : DlcsResource
     [JsonProperty(Order = 82, PropertyName = "storage")]
     public string? Storage { get; set; } 
     
-    [RdfProperty(Description = "Media Type (content type)",
-        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
+    [RdfProperty(Description = "Media Type (content type). Required when registering an asset and on every PUT.",
+        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 120, PropertyName = "mediaType")]
     public string? MediaType { get; set; }
     
