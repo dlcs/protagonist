@@ -122,13 +122,12 @@ public class ThumbRepositoryTests
         
         // Act
         var result = await sut.GetAllSizes(new AssetId(1, 10, "foo"));
-        
+
         // Assert
-        var enumerated = result!.ToList();
-        enumerated.Should().BeEquivalentTo(expected);
-        enumerated.Should().BeInDescendingOrder(wh => wh[0]);
+        result.Should().BeEquivalentTo(expected);
+        result.Should().BeInDescendingOrder(wh => wh[0]);
     }
-    
+
     [Fact]
     public async Task GetAllSizes_ReturnsAllSizesOrdered_Mixed()
     {
@@ -142,13 +141,12 @@ public class ThumbRepositoryTests
         
         // Act
         var result = await sut.GetAllSizes(new AssetId(1, 10, "foo"));
-        
+
         // Assert
-        var enumerated = result!.ToList();
-        enumerated.Should().BeEquivalentTo(expected);
-        enumerated.Should().BeInDescendingOrder(wh => wh[0]);
+        result.Should().BeEquivalentTo(expected);
+        result.Should().BeInDescendingOrder(wh => wh[0]);
     }
-    
+
     [Fact]
     public async Task GetAllSizes_ReturnsAllSizesOrdered_AllAuth()
     {
@@ -159,11 +157,10 @@ public class ThumbRepositoryTests
         
         // Act
         var result = await sut.GetAllSizes(new AssetId(1, 10, "foo"));
-        
+
         // Assert
-        var enumerated = result!.ToList();
-        enumerated.Should().BeEquivalentTo(expected);
-        enumerated.Should().BeInDescendingOrder(wh => wh[0]);
+        result.Should().BeEquivalentTo(expected);
+        result.Should().BeInDescendingOrder(wh => wh[0]);
     }
     
     [Fact]

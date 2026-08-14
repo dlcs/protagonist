@@ -23,14 +23,15 @@ public class ThumbRepository(
     }
 
     /// <inheritdoc/>
-    public async Task<IOrderedEnumerable<int[]>?> GetAllSizes(AssetId assetId)
+    public async Task<List<int[]>?> GetAllSizes(AssetId assetId)
     {
         var thumbnailSizes = await GetThumbnailSizes(assetId);
 
-        // Thumbs maintain aspect ratio so return by 1 dimension
+        // Thumbs maintain aspect ratio so order by 1 dimension
         return thumbnailSizes?.Open
             .Union(thumbnailSizes.Auth)
-            .OrderByDescending(wh => wh[0]) ;
+            .OrderByDescending(wh => wh[0])
+            .ToList();
     }
     
     /// <inheritdoc/>

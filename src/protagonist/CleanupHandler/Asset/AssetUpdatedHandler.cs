@@ -56,7 +56,13 @@ public class AssetUpdatedHandler(
             
             logger.LogDebug("Processing update Asset notification for {AssetId}", assetBefore.Id);
 
-            if (NoCleanupRequired(message, assetAfter, assetBefore))
+            // These are used in other checks - precompute for ease
+            var rolesChanged = !string.Equals(assetAfter.Roles ?? string.Empty, assetBefore.Roles ?? string.Empty,
+                StringComparison.OrdinalIgnoreCase);
+            var maxWidthChanged = (assetAfter.MaxWidth ?? 0) != (assetBefore.MaxWidth ?? 0);
+            var openMaxWidthChanged = (assetBefore.OpenFullMax ?? 0) != (assetAfter.OpenFullMax ?? 0);
+
+            if (NoCleanupRequired(message, rolesChanged))
             {
                 logger.LogDebug("No cleanup required, aborting");
                 return true;
@@ -102,14 +108,15 @@ public class AssetUpdatedHandler(
                 }
             }
 
-            if (modifiedOrAddedChannels.All(c => c.Channel != AssetDeliveryChannels.Thumbnails) &&
-                (assetBefore.MaxWidth != assetAfter.MaxWidth || assetBefore.OpenFullMax != assetAfter.OpenFullMax))
+            if (assetAfter.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails) &&
+                modifiedOrAddedChannels.All(c => c.Channel != AssetDeliveryChannels.Thumbnails) &&
+                (rolesChanged || maxWidthChanged || openMaxWidthChanged))
             {
                 logger.LogInformation("Thumbnail channel unchanged but MaxWidth or OpenFullMax has changed");
-                await CleanupChangedThumbnailDeliveryChannel(assetAfter, s3Objects.objectsToRemove);
+                await CleanupChangedThumbnail(assetAfter, s3Objects.objectsToRemove);
             }
 
-            if (ShouldRemoveInfoJson(assetAfter, assetBefore))
+            if (ShouldRemoveInfoJson(rolesChanged, maxWidthChanged))
             {
                 RemoveInfoJson(assetAfter, s3Objects.foldersToRemove);
             }
@@ -160,23 +167,14 @@ public class AssetUpdatedHandler(
     }
 
     // If a value has changed that can affect info.json we need to replace it
-    private static bool ShouldRemoveInfoJson(DLCS.Model.Assets.Asset assetAfter, DLCS.Model.Assets.Asset assetBefore)
-    {
-        var rolesChanged = !string.Equals(assetAfter.Roles ?? string.Empty, assetBefore.Roles ?? string.Empty,
-            StringComparison.OrdinalIgnoreCase);
-
-        var maxWidthChanged = (assetAfter.MaxWidth ?? 0) != (assetBefore.MaxWidth ?? 0);
-        return rolesChanged || maxWidthChanged;
-    }
+    private static bool ShouldRemoveInfoJson(bool rolesChanged, bool maxWidthChanged) =>
+        rolesChanged || maxWidthChanged;
 
     private static bool AssetStillIngesting(DLCS.Model.Assets.Asset assetAfter, DLCS.Model.Assets.Asset assetBefore) =>
         assetAfter.Ingesting == true && assetBefore.Finished > assetAfter.Finished;
 
-    private static bool NoCleanupRequired(QueueMessage message, DLCS.Model.Assets.Asset assetAfter, DLCS.Model.Assets.Asset assetBefore)
-    {
-        return !message.MessageAttributes.ContainsKey(ModifiedNotificationAttributes.EngineNotified) &&
-            (assetBefore.Roles ?? string.Empty) == (assetAfter.Roles ?? string.Empty);
-    }
+    private static bool NoCleanupRequired(QueueMessage message, bool rolesChanged) => 
+        !message.MessageAttributes.ContainsKey(ModifiedNotificationAttributes.EngineNotified) && !rolesChanged;
 
     private void RemoveInfoJson(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> foldersToRemove)
     {
@@ -202,7 +200,7 @@ public class AssetUpdatedHandler(
     private async Task CleanupRemoved(ImageDeliveryChannel deliveryChannelRemoved, DLCS.Model.Assets.Asset assetAfter, 
         (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects)
     {
-        logger.LogDebug("Handling deletion of {PolicyName}", deliveryChannelRemoved.DeliveryChannelPolicy.Name);
+        logger.LogDebug("Handling deletion of {PolicyName}", deliveryChannelRemoved.DeliveryChannelPolicy?.Name);
         switch (deliveryChannelRemoved.Channel)
         {
             case AssetDeliveryChannels.Image:
@@ -219,7 +217,7 @@ public class AssetUpdatedHandler(
                 break;
             default:
                 logger.LogDebug("Policy {PolicyName} does not require any changes for asset {AssetId}",
-                    deliveryChannelRemoved.DeliveryChannelPolicy.Name, assetAfter.Id);
+                    deliveryChannelRemoved.DeliveryChannelPolicy?.Name, assetAfter.Id);
                 break;
         }
     }
@@ -227,21 +225,21 @@ public class AssetUpdatedHandler(
     private async Task CleanupChangedPolicy(ImageDeliveryChannel deliveryChannelModified, DLCS.Model.Assets.Asset assetAfter, 
         HashSet<ObjectInBucket> objectsToRemove)
     {
-        logger.LogDebug("Handling change to {PolicyName}", deliveryChannelModified.DeliveryChannelPolicy.Name);
+        logger.LogDebug("Handling change to {PolicyName}", deliveryChannelModified.DeliveryChannelPolicy?.Name);
         switch (deliveryChannelModified.Channel)
         {
             case AssetDeliveryChannels.Image:
                 CleanupChangedImageDeliveryChannel(deliveryChannelModified, assetAfter, objectsToRemove);
                 break;
             case AssetDeliveryChannels.Thumbnails:
-                await CleanupChangedThumbnailDeliveryChannel(assetAfter, objectsToRemove);
+                await CleanupChangedThumbnail(assetAfter, objectsToRemove);
                 break;
             case AssetDeliveryChannels.Timebased:
                 await CleanupChangedTimebasedDeliveryChannel(deliveryChannelModified, assetAfter, objectsToRemove);
                 break;
             default:
                 logger.LogDebug("Policy {PolicyName} does not require any changes for asset {AssetId}",
-                    deliveryChannelModified.DeliveryChannelPolicy.Name, assetAfter.Id);
+                    deliveryChannelModified.DeliveryChannelPolicy?.Name, assetAfter.Id);
                 break;
         }
     }
@@ -287,7 +285,7 @@ public class AssetUpdatedHandler(
        objectsToRemove.AddRange(assetsToDelete);
     }
 
-    private async Task CleanupChangedThumbnailDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+    private async Task CleanupChangedThumbnail(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
     {
         var thumbsToDelete = await ThumbsToBeDeleted(assetAfter);
         objectsToRemove.AddRange(thumbsToDelete);

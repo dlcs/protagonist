@@ -830,6 +830,31 @@ public class AssetUpdatedHandlerTests
     }
     
     [Fact]
+    public async Task Handle_DoesNotCheckThumbs_WhenMaxWidthChanged_ButAssetHasNoThumbsChannel()
+    {
+        /*
+         * maxWidth changing only matters for thumbs - if the asset has no thumbs channel there's nothing to check,
+         * so we shouldn't be making pointless S3 calls looking for a sizes file that will never exist
+         */
+        var requestDetails = CreateMinimalRequestDetails(
+            [imageDeliveryChannelUseOriginalImage], [imageDeliveryChannelUseOriginalImage],
+            customiseAssetBefore: asset => asset.MaxWidth = 400,
+            customiseAssetAfter: asset => asset.MaxWidth = 200);
+
+        A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(AssetId))
+            .Returns(requestDetails.assetAfter);
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(requestDetails.queueMessage);
+
+        // Assert
+        response.Should().BeTrue();
+        A.CallTo(() => thumbRepository.GetThumbnailSizes(A<AssetId>._)).MustNotHaveHappened();
+        A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._)).MustNotHaveHappened();
+    }
+
+    [Fact]
     public async Task Handle_DeletesValidPaths_WhenImageChannelUpdatedToDefault()
     {
         // Arrange
@@ -1282,7 +1307,8 @@ public class AssetUpdatedHandlerTests
     [InlineData(null, "")]
     [InlineData(null, null)]
     [InlineData("", "")]
-    public async Task Handle_DoesNotDeleteInfoJson_WhenRolesChangedBothNullOrEmpty(string? rolesBefore, string? rolesAfter)
+    [InlineData("ADMIN", "admin")]
+    public async Task Handle_DoesNotDeleteInfoJson_WhenRolesChangedBothNullOrEmptyorCaseOnly(string? rolesBefore, string? rolesAfter)
     {
         // Arrange
         var requestDetails = CreateMinimalRequestDetails(
