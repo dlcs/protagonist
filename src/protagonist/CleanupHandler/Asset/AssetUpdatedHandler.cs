@@ -16,7 +16,6 @@ using DLCS.Repository.Messaging;
 using DLCS.Web.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NuGet.Packaging;
 
 namespace CleanupHandler.Asset;
 
