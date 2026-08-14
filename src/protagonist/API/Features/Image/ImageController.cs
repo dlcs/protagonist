@@ -73,7 +73,6 @@ public class ImageController : HydraController
     ///     PUT: /customers/1/spaces/1/images/my-image
     ///     {
     ///         "@type":"Image",
-    ///         "family": "I",
     ///         "origin": "https://example.text/.../image.jpeg",
     ///         "mediaType": "image/jpeg",
     ///         "string1": "my-metadata"
