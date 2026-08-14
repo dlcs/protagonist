@@ -83,23 +83,18 @@ public class AssetUpdatedHandler(
                     assetBefore.Id);
             }
 
-            (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects;
-            s3Objects.objectsToRemove = [];
-            s3Objects.foldersToRemove = [];
+            var cleanupTargets = new CleanupTargets();
 
-            if (removedChannels.Count != 0)
+            foreach (var deliveryChannel in removedChannels)
             {
-                foreach (var deliveryChannel in removedChannels)
-                {
-                    await CleanupRemoved(deliveryChannel, assetAfter, s3Objects);
-                }
+                await CleanupRemoved(deliveryChannel, assetAfter, cleanupTargets);
             }
 
             if (modifiedOrAddedChannels.Count != 0)
             {
                 try
                 {
-                    await CleanupModified(modifiedOrAddedChannels, assetBefore, assetAfter, s3Objects);
+                    await CleanupModified(modifiedOrAddedChannels, assetBefore, assetAfter, cleanupTargets);
                 }
                 catch (Exception ex)
                 {
@@ -113,22 +108,22 @@ public class AssetUpdatedHandler(
                 (rolesChanged || maxWidthChanged || openMaxWidthChanged))
             {
                 logger.LogInformation("Thumbnail channel unchanged but MaxWidth or OpenFullMax has changed");
-                await CleanupChangedThumbnail(assetAfter, s3Objects.objectsToRemove);
+                await CleanupChangedThumbnail(assetAfter, cleanupTargets);
             }
 
             if (ShouldRemoveInfoJson(rolesChanged, maxWidthChanged))
             {
-                RemoveInfoJson(assetAfter, s3Objects.foldersToRemove);
+                RemoveInfoJson(assetAfter, cleanupTargets);
             }
 
-            if (s3Objects.objectsToRemove.Count > 0)
+            if (cleanupTargets.Objects.Count > 0)
             {
-                await RemoveObjectsFromBucket(s3Objects.objectsToRemove);
+                await RemoveObjectsFromBucket(cleanupTargets.Objects);
             }
 
-            if (s3Objects.foldersToRemove.Count > 0)
+            if (cleanupTargets.Folders.Count > 0)
             {
-                await RemoveFolderInBucket(s3Objects.foldersToRemove);
+                await RemoveFolderInBucket(cleanupTargets.Folders);
             }
 
             return true;
@@ -176,44 +171,43 @@ public class AssetUpdatedHandler(
     private static bool NoCleanupRequired(QueueMessage message, bool rolesChanged) => 
         !message.MessageAttributes.ContainsKey(ModifiedNotificationAttributes.EngineNotified) && !rolesChanged;
 
-    private void RemoveInfoJson(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> foldersToRemove)
+    private void RemoveInfoJson(DLCS.Model.Assets.Asset assetAfter, CleanupTargets cleanupTargets)
     {
         logger.LogDebug("Deleting info.json files for {AssetId}", assetAfter.Id);
         var infoJsonRoot = storageKeyGenerator.GetInfoJsonRoot(assetAfter.Id);
-        foldersToRemove.Add(infoJsonRoot);
+        cleanupTargets.AddFolder(infoJsonRoot);
     }
 
     private async Task CleanupModified(List<ImageDeliveryChannel> modifiedOrAdded, DLCS.Model.Assets.Asset assetBefore,
-        DLCS.Model.Assets.Asset assetAfter,
-        (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects)
+        DLCS.Model.Assets.Asset assetAfter, CleanupTargets cleanupTargets)
     {
         foreach (var deliveryChannel in modifiedOrAdded)
         {
             if (assetBefore.ImageDeliveryChannels.Any(x =>
                     x.Channel == deliveryChannel.Channel)) // checks for updated rather than added
             {
-                await CleanupChangedPolicy(deliveryChannel, assetAfter, s3Objects.objectsToRemove);
+                await CleanupChangedPolicy(deliveryChannel, assetAfter, cleanupTargets);
             }
         }
     }
 
-    private async Task CleanupRemoved(ImageDeliveryChannel deliveryChannelRemoved, DLCS.Model.Assets.Asset assetAfter, 
-        (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects)
+    private async Task CleanupRemoved(ImageDeliveryChannel deliveryChannelRemoved, DLCS.Model.Assets.Asset assetAfter,
+        CleanupTargets cleanupTargets)
     {
         logger.LogDebug("Handling deletion of {PolicyName}", deliveryChannelRemoved.DeliveryChannelPolicy?.Name);
         switch (deliveryChannelRemoved.Channel)
         {
             case AssetDeliveryChannels.Image:
-                CleanupRemovedImageDeliveryChannel(assetAfter, s3Objects.objectsToRemove);
+                CleanupRemovedImageDeliveryChannel(assetAfter, cleanupTargets);
                 break;
             case AssetDeliveryChannels.Thumbnails:
-                await CleanupRemovedThumbnailDeliveryChannel(assetAfter, s3Objects);
+                await CleanupRemovedThumbnailDeliveryChannel(assetAfter, cleanupTargets);
                 break;
             case AssetDeliveryChannels.Timebased:
-                await CleanupRemovedTimebasedDeliveryChannel(assetAfter, s3Objects.objectsToRemove);
+                await CleanupRemovedTimebasedDeliveryChannel(assetAfter, cleanupTargets);
                 break;
             case AssetDeliveryChannels.File:
-                CleanupFileDeliveryChannel(assetAfter, s3Objects.objectsToRemove);
+                CleanupFileDeliveryChannel(assetAfter, cleanupTargets);
                 break;
             default:
                 logger.LogDebug("Policy {PolicyName} does not require any changes for asset {AssetId}",
@@ -222,20 +216,20 @@ public class AssetUpdatedHandler(
         }
     }
 
-    private async Task CleanupChangedPolicy(ImageDeliveryChannel deliveryChannelModified, DLCS.Model.Assets.Asset assetAfter, 
-        HashSet<ObjectInBucket> objectsToRemove)
+    private async Task CleanupChangedPolicy(ImageDeliveryChannel deliveryChannelModified,
+        DLCS.Model.Assets.Asset assetAfter, CleanupTargets cleanupTargets)
     {
         logger.LogDebug("Handling change to {PolicyName}", deliveryChannelModified.DeliveryChannelPolicy?.Name);
         switch (deliveryChannelModified.Channel)
         {
             case AssetDeliveryChannels.Image:
-                CleanupChangedImageDeliveryChannel(deliveryChannelModified, assetAfter, objectsToRemove);
+                CleanupChangedImageDeliveryChannel(deliveryChannelModified, assetAfter, cleanupTargets);
                 break;
             case AssetDeliveryChannels.Thumbnails:
-                await CleanupChangedThumbnail(assetAfter, objectsToRemove);
+                await CleanupChangedThumbnail(assetAfter, cleanupTargets);
                 break;
             case AssetDeliveryChannels.Timebased:
-                await CleanupChangedTimebasedDeliveryChannel(deliveryChannelModified, assetAfter, objectsToRemove);
+                await CleanupChangedTimebasedDeliveryChannel(deliveryChannelModified, assetAfter, cleanupTargets);
                 break;
             default:
                 logger.LogDebug("Policy {PolicyName} does not require any changes for asset {AssetId}",
@@ -245,7 +239,7 @@ public class AssetUpdatedHandler(
     }
 
     private async Task CleanupChangedTimebasedDeliveryChannel(ImageDeliveryChannel imageDeliveryChannel,
-        DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+        DLCS.Model.Assets.Asset assetAfter, CleanupTargets cleanupTargets)
     {
         logger.LogDebug("Processing timebased delivery-channel change");
         var presetList = imageDeliveryChannel.DeliveryChannelPolicy.AsTimebasedPresets(); 
@@ -278,58 +272,49 @@ public class AssetUpdatedHandler(
         var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetAfter.Id);
         var keys = await bucketReader.GetMatchingKeys(timebasedFolder);
         
-        List<ObjectInBucket> assetsToDelete = keys.Where(k =>
+        var assetsToDelete = keys.Where(k =>
                 !extensions.Contains(k.Split('.').Last()) && k.Contains(mediaPath))
-            .Select(k => new ObjectInBucket(handlerSettings.AWS.S3.StorageBucket, k)).ToList();
-                    
-       objectsToRemove.AddRange(assetsToDelete);
+            .Select(k => new ObjectInBucket(handlerSettings.AWS.S3.StorageBucket, k));
+
+        cleanupTargets.AddObjects(assetsToDelete);
     }
 
-    private async Task CleanupChangedThumbnail(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+    private async Task CleanupChangedThumbnail(DLCS.Model.Assets.Asset assetAfter, CleanupTargets cleanupTargets)
     {
         var thumbsToDelete = await ThumbsToBeDeleted(assetAfter);
-        objectsToRemove.AddRange(thumbsToDelete);
+        cleanupTargets.AddObjects(thumbsToDelete);
     }
 
-    private void CleanupChangedImageDeliveryChannel(ImageDeliveryChannel modifiedDeliveryChannel, DLCS.Model.Assets.Asset assetAfter, 
-        HashSet<ObjectInBucket> objectsToRemove)
+    private void CleanupChangedImageDeliveryChannel(ImageDeliveryChannel modifiedDeliveryChannel,
+        DLCS.Model.Assets.Asset assetAfter, CleanupTargets cleanupTargets)
     {
-        List<ObjectInBucket> bucketObjectsToBeRemoved = new();
-        
         if (modifiedDeliveryChannel.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageUseOriginal)
         {
-            bucketObjectsToBeRemoved.Add(storageKeyGenerator.GetStorageLocation(assetAfter.Id));
+            cleanupTargets.AddObject(storageKeyGenerator.GetStorageLocation(assetAfter.Id));
         }
-        else
+        else if (assetAfter.DoesNotHaveDeliveryChannel(AssetDeliveryChannels.File))
         {
-            if (assetAfter.DoesNotHaveDeliveryChannel(AssetDeliveryChannels.File))
-            {
-                bucketObjectsToBeRemoved.Add(storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id));
-            }
+            cleanupTargets.AddObject(storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id));
         }
-
-        objectsToRemove.AddRange(bucketObjectsToBeRemoved);
     }
 
-    private void CleanupFileDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+    private void CleanupFileDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, CleanupTargets cleanupTargets)
     {
-        if (assetAfter.ImageDeliveryChannels.Any(i => i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageUseOriginal)) return;
-        List<ObjectInBucket> bucketObjectsTobeRemoved = [storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id)];
+        if (assetAfter.ImageDeliveryChannels.Any(i =>
+                i.DeliveryChannelPolicyId == KnownDeliveryChannelPolicies.ImageUseOriginal)) return;
 
-        objectsToRemove.AddRange(bucketObjectsTobeRemoved);
+        cleanupTargets.AddObject(storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id));
     }
 
-    private async Task CleanupRemovedTimebasedDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+    private async Task CleanupRemovedTimebasedDeliveryChannel(DLCS.Model.Assets.Asset assetAfter,
+        CleanupTargets cleanupTargets)
     {
-        List<ObjectInBucket> bucketObjectsTobeRemoved =
-        [
-            storageKeyGenerator.GetTimebasedMetadataLocation(assetAfter.Id)
-        ];
-        
+        cleanupTargets.AddObject(storageKeyGenerator.GetTimebasedMetadataLocation(assetAfter.Id));
+
         var timebasedFolder = storageKeyGenerator.GetStorageLocationRoot(assetAfter.Id);
         var keys = await bucketReader.GetMatchingKeys(timebasedFolder);
         var path = RetrieveMediaPath(assetAfter);
-        
+
         if (!handlerSettings.AssetModifiedSettings.DryRun)
         {
             await assetMetadataRepository.DeleteAssetApplicationMetadata(assetAfter.Id,
@@ -340,18 +325,17 @@ public class AssetUpdatedHandler(
         {
             if (key.Contains(path))
             {
-                bucketObjectsTobeRemoved.Add(new ObjectInBucket(handlerSettings.AWS.S3.StorageBucket, key));
+                cleanupTargets.AddObject(new ObjectInBucket(handlerSettings.AWS.S3.StorageBucket, key));
             }
         }
-
-        objectsToRemove.AddRange(bucketObjectsTobeRemoved);
     }
 
-    private async Task CleanupRemovedThumbnailDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects)
+    private async Task CleanupRemovedThumbnailDeliveryChannel(DLCS.Model.Assets.Asset assetAfter,
+        CleanupTargets cleanupTargets)
     {
         if (assetAfter.DoesNotHaveDeliveryChannel(AssetDeliveryChannels.Image))
         {
-            s3Objects.foldersToRemove.Add(storageKeyGenerator.GetThumbnailsRoot(assetAfter.Id));
+            cleanupTargets.AddFolder(storageKeyGenerator.GetThumbnailsRoot(assetAfter.Id));
 
             if (!handlerSettings.AssetModifiedSettings.DryRun)
             {
@@ -362,7 +346,7 @@ public class AssetUpdatedHandler(
         else
         {
             var thumbsToDelete = await ThumbsToBeDeleted(assetAfter);
-            s3Objects.objectsToRemove.AddRange(thumbsToDelete);
+            cleanupTargets.AddObjects(thumbsToDelete);
         }
     }
 
@@ -409,19 +393,17 @@ public class AssetUpdatedHandler(
         return deleteList;
     }
 
-    private void CleanupRemovedImageDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)
+    private void CleanupRemovedImageDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, CleanupTargets cleanupTargets)
     {
-        List<ObjectInBucket> bucketObjectsTobeRemoved = [storageKeyGenerator.GetStorageLocation(assetAfter.Id)];
-        
+        cleanupTargets.AddObject(storageKeyGenerator.GetStorageLocation(assetAfter.Id));
+
         if (assetAfter.DoesNotHaveDeliveryChannel(AssetDeliveryChannels.File))
         {
-            bucketObjectsTobeRemoved.Add(storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id));
+            cleanupTargets.AddObject(storageKeyGenerator.GetStoredOriginalLocation(assetAfter.Id));
         }
-        
-        objectsToRemove.AddRange(bucketObjectsTobeRemoved);
     }
-    
-    private async Task RemoveObjectsFromBucket(HashSet<ObjectInBucket> bucketObjectsTobeRemoved)
+
+    private async Task RemoveObjectsFromBucket(IReadOnlyCollection<ObjectInBucket> bucketObjectsTobeRemoved)
     {
         logger.LogInformation("Locations to potentially be removed: {Objects}", bucketObjectsTobeRemoved);
         
@@ -430,7 +412,7 @@ public class AssetUpdatedHandler(
         await bucketWriter.DeleteFromBucket(bucketObjectsTobeRemoved.ToArray());
     }
     
-    private async Task RemoveFolderInBucket(HashSet<ObjectInBucket> bucketFoldersToBeRemoved)
+    private async Task RemoveFolderInBucket(IReadOnlyCollection<ObjectInBucket> bucketFoldersToBeRemoved)
     {
         logger.LogInformation("Bucket folders to potentially be removed: {Objects}", bucketFoldersToBeRemoved);
         
