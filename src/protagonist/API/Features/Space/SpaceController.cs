@@ -92,6 +92,12 @@ public class SpaceController : HydraController
         {
             return this.HydraProblem("Space must be created for an existing Customer.", null, 400, "Invalid Space");
         }
+
+        if (space.ModelId.HasValue)
+        {
+            return this.HydraProblem("An id cannot be supplied when creating a space; the platform assigns it.",
+                null, 400, "Invalid Space");
+        }
          
         logger.LogDebug("API will create space {SpaceName} for {CustomerId}", space.Name, customerId);
 
@@ -167,6 +173,12 @@ public class SpaceController : HydraController
         [FromBody] DLCS.HydraModel.Space space,
         CancellationToken cancellationToken)
     {
+        if (space.ModelId.HasValue && space.ModelId.Value != spaceId)
+        {
+            return this.HydraProblem("The id in the request body does not agree with the request URL.",
+                null, 400, "Invalid Space");
+        }
+
         var request = new PatchSpace
         {
             CustomerId = customerId,
@@ -206,6 +218,12 @@ public class SpaceController : HydraController
         [FromBody] DLCS.HydraModel.Space space,
         CancellationToken cancellationToken)
     {
+        if (space.ModelId.HasValue && space.ModelId.Value != spaceId)
+        {
+            return this.HydraProblem("The id in the request body does not agree with the request URL.",
+                null, 400, "Invalid Space");
+        }
+
         var request = new PutSpace
         {
             CustomerId = customerId,
