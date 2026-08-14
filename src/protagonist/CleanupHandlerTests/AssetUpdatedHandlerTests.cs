@@ -278,7 +278,7 @@ public class AssetUpdatedHandlerTests
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
             .Returns([
-                "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg"
+                "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/open/1024.jpg"
             ]);
 
         // Act
@@ -316,8 +316,8 @@ public class AssetUpdatedHandlerTests
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
             .Returns([
-                "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg",
-                "1/99/foo/stuff/2048.jpg"
+                "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/open/1024.jpg",
+                "1/99/foo/open/2048.jpg"
             ]);
 
         // Act
@@ -329,7 +329,7 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
-                        o[0].Key == "1/99/foo/stuff/2048.jpg" &&
+                        o[0].Key == "1/99/foo/open/2048.jpg" &&
                         o[0].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
@@ -356,8 +356,8 @@ public class AssetUpdatedHandlerTests
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
             .Returns([
-                "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg",
-                "1/99/foo/stuff/2048.jpg"
+                "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/open/1024.jpg",
+                "1/99/foo/open/2048.jpg"
             ]);
 
         A.CallTo(() => thumbRepository.GetAllSizes(A<AssetId>._)).Returns([
@@ -373,7 +373,7 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
-                        o[0].Key == "1/99/foo/stuff/2048.jpg" &&
+                        o[0].Key == "1/99/foo/open/2048.jpg" &&
                         o[0].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
@@ -684,8 +684,8 @@ public class AssetUpdatedHandlerTests
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
             .Returns([
-                "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg",
-                "1/99/foo/stuff/2048.jpg" , "1/99/full/100,200/0/default.jpg"
+                "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/open/1024.jpg",
+                "1/99/foo/open/2048.jpg" , "1/99/full/100,200/0/default.jpg"
             ]);
 
         // Act
@@ -697,7 +697,7 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
-                        o[0].Key == "1/99/foo/stuff/2048.jpg" &&
+                        o[0].Key == "1/99/foo/open/2048.jpg" &&
                         o[0].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
         A.CallTo(() =>
@@ -708,7 +708,7 @@ public class AssetUpdatedHandlerTests
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
-                    A<ObjectInBucket[]>.That.Matches(o => o.Any(x => x.Key == "1/99/foo/stuff/200.jpg"))))
+                    A<ObjectInBucket[]>.That.Matches(o => o.Any(x => x.Key == "1/99/foo/open/200.jpg"))))
             .MustNotHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
@@ -996,8 +996,8 @@ public class AssetUpdatedHandlerTests
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
             .Returns([
-                "1/99/foo/stuff/100.jpg", "1/99/foo/stuff/200.jpg", "1/99/foo/stuff/400.jpg", "1/99/foo/stuff/1024.jpg",
-                "1/99/foo/stuff/2048.jpg", "1/99/full/100,200/0/default.jpg"
+                "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/open/1024.jpg",
+                "1/99/foo/auth/2048.jpg", "1/99/full/100,200/0/default.jpg"
             ]);
 
         // Act
@@ -1009,7 +1009,7 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
-                        o[0].Key == "1/99/foo/stuff/2048.jpg" &&
+                        o[0].Key == "1/99/foo/auth/2048.jpg" &&
                         o[0].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
         A.CallTo(() =>
@@ -1020,7 +1020,7 @@ public class AssetUpdatedHandlerTests
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
-                    A<ObjectInBucket[]>.That.Matches(o => o.Any(x => x.Key == "1/99/foo/stuff/200.jpg"))))
+                    A<ObjectInBucket[]>.That.Matches(o => o.Any(x => x.Key == "1/99/foo/open/200.jpg"))))
             .MustNotHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
