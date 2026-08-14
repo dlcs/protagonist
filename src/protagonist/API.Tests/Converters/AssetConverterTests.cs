@@ -153,8 +153,6 @@ public class AssetConverterTests
             Id = AssetApiId,
             Space = 99,
             Created = created,
-            Queued = queued,
-            Dequeued = dequeued,
             Finished = finished,
             Width = 1000,
             Height = 2000,
