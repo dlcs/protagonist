@@ -103,6 +103,13 @@ public class AssetUpdatedHandler(
                 }
             }
 
+            if (modifiedOrAddedChannels.All(c => c.Channel != AssetDeliveryChannels.Thumbnails) &&
+                (assetBefore.MaxWidth != assetAfter.MaxWidth || assetBefore.OpenFullMax != assetAfter.OpenFullMax))
+            {
+                logger.LogInformation("Thumbnail channel unchanged but MaxWidth or OpenFullMax has changed");
+                await CleanupChangedThumbnailDeliveryChannel(assetAfter, s3Objects.objectsToRemove);
+            }
+
             if (ShouldRemoveInfoJson(assetAfter, assetBefore))
             {
                 RemoveInfoJson(assetAfter, s3Objects.foldersToRemove);
@@ -179,21 +186,24 @@ public class AssetUpdatedHandler(
         foldersToRemove.Add(infoJsonRoot);
     }
 
-    private async Task CleanupModified(List<ImageDeliveryChannel> modifiedOrAdded, DLCS.Model.Assets.Asset assetBefore, DLCS.Model.Assets.Asset assetAfter, 
+    private async Task CleanupModified(List<ImageDeliveryChannel> modifiedOrAdded, DLCS.Model.Assets.Asset assetBefore,
+        DLCS.Model.Assets.Asset assetAfter,
         (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects)
     {
         foreach (var deliveryChannel in modifiedOrAdded)
         {
-            if (assetBefore.ImageDeliveryChannels.Any(x => x.Channel == deliveryChannel.Channel)) // checks for updated rather than added
+            if (assetBefore.ImageDeliveryChannels.Any(x =>
+                    x.Channel == deliveryChannel.Channel)) // checks for updated rather than added
             {
                 await CleanupChangedPolicy(deliveryChannel, assetAfter, s3Objects.objectsToRemove);
             }
         }
     }
-    
+
     private async Task CleanupRemoved(ImageDeliveryChannel deliveryChannelRemoved, DLCS.Model.Assets.Asset assetAfter, 
         (HashSet<ObjectInBucket> objectsToRemove, HashSet<ObjectInBucket> foldersToRemove) s3Objects)
     {
+        logger.LogDebug("Handling deletion of {PolicyName}", deliveryChannelRemoved.DeliveryChannelPolicy.Name);
         switch (deliveryChannelRemoved.Channel)
         {
             case AssetDeliveryChannels.Image:
@@ -218,6 +228,7 @@ public class AssetUpdatedHandler(
     private async Task CleanupChangedPolicy(ImageDeliveryChannel deliveryChannelModified, DLCS.Model.Assets.Asset assetAfter, 
         HashSet<ObjectInBucket> objectsToRemove)
     {
+        logger.LogDebug("Handling change to {PolicyName}", deliveryChannelModified.DeliveryChannelPolicy.Name);
         switch (deliveryChannelModified.Channel)
         {
             case AssetDeliveryChannels.Image:
@@ -360,26 +371,45 @@ public class AssetUpdatedHandler(
 
     private async Task<List<ObjectInBucket>> ThumbsToBeDeleted(DLCS.Model.Assets.Asset assetAfter)
     {
-        var thumbSizes = await thumbRepository.GetAllSizes(assetAfter.Id) ?? [];
+        // Get all thumb sizes based on sizes.json file in S3 - this is the index card for what the system knows about
+        var thumbSizes = await thumbRepository.GetThumbnailSizes(assetAfter.Id) ?? ThumbnailSizes.Empty;
         var thumbsBucketKeys = await bucketReader.GetMatchingKeys(storageKeyGenerator.GetThumbnailsRoot(assetAfter.Id));
 
-        var thumbsBucketSizes = GetThumbSizesFromKeys(thumbsBucketKeys);
-        var convertedThumbSizes = thumbSizes.Select(s => Math.Max(s[0], s[1]).ToString());
-
-        var thumbsToDelete = thumbsBucketSizes.Where(t => !convertedThumbSizes.Contains(t.size))
-            .Select(t => new ObjectInBucket(handlerSettings.AWS.S3.ThumbsBucket, t.path)).ToList();
-        
+        var thumbnailKeysToDelete = GetThumbsToDelete(thumbsBucketKeys, thumbSizes);
+        var thumbsToDelete = thumbnailKeysToDelete
+            .Select(k => new ObjectInBucket(handlerSettings.AWS.S3.ThumbsBucket, k))
+            .ToList();
         return thumbsToDelete;
     }
-
-    private List<(string size, string path)> GetThumbSizesFromKeys(string[] thumbsBucketKeys)
+    
+    private List<string> GetThumbsToDelete(string[] thumbsBucketKeys, ThumbnailSizes thumbnailSizes)
     {
-        var filteredFilenames = thumbsBucketKeys.Where(t => FileSystemName.MatchesSimpleExpression("*.jpg", t));
+        // Get the longest edge for Open and Auth thumbs, this makes comparisons simpler
+        var authLongest = thumbnailSizes.Auth.Select(s => Math.Max(s[0], s[1])).ToList();
+        var openLongest = thumbnailSizes.Open.Select(s => Math.Max(s[0], s[1])).ToList();
+        
+        // All thumbnail keys to be deleted
+        var deleteList = new List<string>();
+    
+        // We'll only delete jpegs, filter those
+        foreach (var k in thumbsBucketKeys.Where(t => FileSystemName.MatchesSimpleExpression("*.jpg", t)))
+        {
+            logger.LogTrace("Parsing {ThumbnailKey}", k);
+            var pathParts = k.Split("/");
+            
+            // Guard against legacy style thumbs that aren't {longestEdge}.jpg format - these will always go
+            if (!int.TryParse(pathParts[^1].Split('.')[0], out var longestEdge))
+            {
+                deleteList.Add(k);
+                continue;
+            }
 
-        var thumbBucketSizes = filteredFilenames
-            .Select(f => (f.Split("/").Last().Split('.').First(), f)).ToList();
+            // Check gainst the "auth" or "open" sizes depending on path slug
+            var toCheck = pathParts[^2] == S3StorageKeyGenerator.AuthorisedSlug ? authLongest : openLongest;
+            if (!toCheck.Contains(longestEdge)) deleteList.Add(k);
+        }
 
-        return thumbBucketSizes;
+        return deleteList;
     }
 
     private void CleanupRemovedImageDeliveryChannel(DLCS.Model.Assets.Asset assetAfter, HashSet<ObjectInBucket> objectsToRemove)

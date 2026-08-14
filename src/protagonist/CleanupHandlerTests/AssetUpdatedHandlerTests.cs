@@ -130,8 +130,8 @@ public class AssetUpdatedHandlerTests
         thumbRepository = A.Fake<IThumbRepository>();
         cleanupHandlerAssetRepository = A.Fake<ICleanupHandlerAssetRepository>();
 
-        A.CallTo(() => thumbRepository.GetAllSizes(AssetId))
-            .Returns([[50, 100], [100, 200], [200, 400], [516, 1024]]);
+        A.CallTo(() => thumbRepository.GetThumbnailSizes(AssetId))
+            .Returns(new ThumbnailSizes([[50, 100], [100, 200], [200, 400], [516, 1024]], null));
     }
 
     private AssetUpdatedHandler GetSut()
@@ -266,7 +266,7 @@ public class AssetUpdatedHandlerTests
     }
     
     [Fact]
-    public async Task Handle_DeletesThumbnailAssets_WhenThumbnailChannelRemoved()
+    public async Task Handle_DeletesAllThumbnailDerivatives_WhenThumbnailChannelRemoved()
     {
         // Arrange
         var requestDetails = CreateMinimalRequestDetails([imageDeliveryChannelThumbnail], []);
@@ -279,7 +279,7 @@ public class AssetUpdatedHandlerTests
             .Returns(true);
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
             .Returns([
-                "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/open/1024.jpg"
+                "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/auth/1024.jpg"
             ]);
 
         // Act
@@ -297,7 +297,7 @@ public class AssetUpdatedHandlerTests
     }
     
     [Fact]
-    public async Task Handle_DeletesSomeThumbnailAssets_WhenThumbnailChannelRemovedWithImageChannel()
+    public async Task Handle_DeletesSomeThumbnailDerivatives_WhenThumbnailChannelRemoved_LeavingImageChannel()
     {
         // Arrange
         var imageDeliveryChannelsBefore = new List<ImageDeliveryChannel>
@@ -318,7 +318,7 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
             .Returns([
                 "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/open/1024.jpg",
-                "1/99/foo/open/2048.jpg"
+                "1/99/foo/open/2048.jpg", "1/99/foo/s.json" 
             ]);
 
         // Act
@@ -330,6 +330,7 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
+                        o.Length == 1 &&
                         o[0].Key == "1/99/foo/open/2048.jpg" &&
                         o[0].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
@@ -337,7 +338,7 @@ public class AssetUpdatedHandlerTests
     }
     
     [Fact]
-    public async Task Handle_DeletesSomePortraitThumbnailAssets_WhenThumbnailChannelRemovedWithImageChannel()
+    public async Task Handle_DeletesSomePortraitThumbnailDerivatives_WhenThumbnailChannelRemoved_LeavingImageChannel()
     {
         // Arrange
         var imageDeliveryChannelsBefore = new List<ImageDeliveryChannel>
@@ -355,15 +356,18 @@ public class AssetUpdatedHandlerTests
                 assetMetadataRepository.DeleteAssetApplicationMetadata(AssetId, A<string>._,
                     A<CancellationToken>._))
             .Returns(true);
+        // Simulte moving from Landscape to Portrait, and include some older style thumbnails
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
             .Returns([
                 "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/open/1024.jpg",
-                "1/99/foo/open/2048.jpg"
+                "1/99/foo/open/2048.jpg", "1/99/foo/full/50,/0/default.jpg", "1/99/foo/full/50,100/0/default.jpg"
             ]);
 
-        A.CallTo(() => thumbRepository.GetAllSizes(AssetId)).Returns([
-            [100, 50], [200, 100], [400, 200], [1024, 516]
-        ]);
+        A.CallTo(() => thumbRepository.GetThumbnailSizes(AssetId))
+            .Returns(new ThumbnailSizes([[100, 50], [200, 100], [400, 200], [1024, 516]], null));
+
+        var expectedDeletedKeys = new List<string>
+            { "1/99/foo/open/2048.jpg", "1/99/foo/full/50,/0/default.jpg", "1/99/foo/full/50,100/0/default.jpg" };
 
         // Act
         var sut = GetSut();
@@ -371,11 +375,14 @@ public class AssetUpdatedHandlerTests
         
         // Assert
         response.Should().BeTrue();
+        
+        // Check that we delete the correct number, all expected keys and all same bucket
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
-                        o[0].Key == "1/99/foo/open/2048.jpg" &&
-                        o[0].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
+                        o.Length == 3 &&
+                        expectedDeletedKeys.Intersect(o.Select(k => k.Key)).Count() == 3 &&
+                        o.Select(k => k.Bucket).Distinct().Single() == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
@@ -653,8 +660,8 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
     
-        [Fact]
-    public async Task Handle_DeletesSomeThumbnailAssets_WhenThumbnailChannelModified()
+    [Fact]
+    public async Task Handle_DeletesSomeThumbnailDerivatives_WhenThumbnailChannelModified()
     {
         // Arrange
         var imageDeliveryChannelsAfter = new List<ImageDeliveryChannel>
@@ -686,7 +693,7 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
             .Returns([
                 "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/open/1024.jpg",
-                "1/99/foo/open/2048.jpg" , "1/99/full/100,200/0/default.jpg"
+                "1/99/foo/open/2048.jpg" , "1/99/foo/full/100,200/0/default.jpg"
             ]);
 
         // Act
@@ -698,19 +705,127 @@ public class AssetUpdatedHandlerTests
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
+                        o.Length == 2 &&
                         o[0].Key == "1/99/foo/open/2048.jpg" &&
                         o[0].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
                     A<ObjectInBucket[]>.That.Matches(o =>
-                        o[1].Key == "1/99/full/100,200/0/default.jpg" &&
+                        o.Length == 2 &&
+                        o[1].Key == "1/99/foo/full/100,200/0/default.jpg" &&
                         o[1].Bucket == handlerSettings.AWS.S3.ThumbsBucket)))
             .MustHaveHappened();
+        A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_DeletesSomeThumbnailDerivatives_WhenThumbnailChannelModified_ChangesInOpenAuth_DueToMaxWidth()
+    {
+        /*
+         * This tests a change to maxWidth.
+         * Initially we had all sizes 400+ as "auth". This changes to those 200+.
+         * This wasn't initiated by a change to the thumbnailPolicy, was only a change to maxWidth
+         */
+        var requestDetails = CreateMinimalRequestDetails(
+            [imageDeliveryChannelThumbnail], [imageDeliveryChannelThumbnail],
+            customiseAssetBefore: asset => asset.MaxWidth = 400,
+            customiseAssetAfter: asset => asset.MaxWidth = 200);
+        
+        // Current sizes reflect the new 200 size maxWidth
+        A.CallTo(() => thumbRepository.GetThumbnailSizes(AssetId))
+            .Returns(new ThumbnailSizes([[50, 100]], [[100, 200],[200, 400], [516, 1024], [1024, 2048]]));
+        
+        // Sizes in S3 reflect the "old" auth sizes and the new ones
+        A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
+            .Returns([
+                "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/auth/200.jpg", "1/99/foo/open/400.jpg",
+                "1/99/foo/auth/400.jpg", "1/99/foo/auth/1024.jpg", "1/99/foo/auth/2048.jpg",
+                "1/99/foo/full/100,200/0/default.jpg"
+            ]);
+        
+        // And we only delete those expected
+        var expectedDeletedKeys = new List<string>
+            { "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/full/100,200/0/default.jpg" };
+
+        A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(AssetId))
+            .Returns(requestDetails.assetAfter);
+        A.CallTo(() =>
+                assetMetadataRepository.DeleteAssetApplicationMetadata(AssetId, A<string>._,
+                    A<CancellationToken>._))
+            .Returns(true);
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(requestDetails.queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        
+        // Check that we delete the correct number, all expected keys and all same bucket
         A.CallTo(() =>
                 bucketWriter.DeleteFromBucket(
-                    A<ObjectInBucket[]>.That.Matches(o => o.Any(x => x.Key == "1/99/foo/open/200.jpg"))))
-            .MustNotHaveHappened();
+                    A<ObjectInBucket[]>.That.Matches(o =>
+                        o.Length == 3 &&
+                        expectedDeletedKeys.Intersect(o.Select(k => k.Key)).Count() == 3 &&
+                        o.Select(k => k.Bucket).Distinct().Single() == handlerSettings.AWS.S3.ThumbsBucket)))
+            .MustHaveHappened();
+        A.CallTo(() =>
+            bucketWriter.DeleteFolder(A<ObjectInBucket>.That.Matches(o => o.Key == "1/99/foo/info/"), A<bool>._))
+            .MustHaveHappened();
+    }
+    
+    [Fact]
+    public async Task Handle_DeletesSomeThumbnailDerivatives_WhenThumbnailChannelModified_ChangesInOpenAuth_DueToOpenFullMax()
+    {
+        /*
+         * This tests a change to openFullMax.
+         * Initially we had all sizes 400+ as "auth". This changes to those 200+.
+         * This wasn't initiated by a change to the thumbnailPolicy, was only a change to maxWidth
+         */
+        var requestDetails = CreateMinimalRequestDetails(
+            [imageDeliveryChannelThumbnail], [imageDeliveryChannelThumbnail],
+            customiseAssetBefore: asset => asset.OpenFullMax = 400,
+            customiseAssetAfter: asset => asset.OpenFullMax = 200);
+        
+        // Current sizes reflect the new 200 size maxWidth
+        A.CallTo(() => thumbRepository.GetThumbnailSizes(AssetId))
+            .Returns(new ThumbnailSizes([[50, 100]], [[100, 200],[200, 400], [516, 1024], [1024, 2048]]));
+        
+        // Sizes in S3 reflect the "old" auth sizes and the new ones
+        A.CallTo(() => bucketReader.GetMatchingKeys(A<ObjectInBucket>._))
+            .Returns([
+                "1/99/foo/open/100.jpg", "1/99/foo/open/200.jpg", "1/99/foo/auth/200.jpg", "1/99/foo/open/400.jpg",
+                "1/99/foo/auth/400.jpg", "1/99/foo/auth/1024.jpg", "1/99/foo/auth/2048.jpg",
+                "1/99/foo/full/100,200/0/default.jpg"
+            ]);
+        
+        // And we only delete those expected
+        var expectedDeletedKeys = new List<string>
+            { "1/99/foo/open/200.jpg", "1/99/foo/open/400.jpg", "1/99/foo/full/100,200/0/default.jpg" };
+
+        A.CallTo(() => cleanupHandlerAssetRepository.RetrieveAssetWithDeliveryChannels(AssetId))
+            .Returns(requestDetails.assetAfter);
+        A.CallTo(() =>
+                assetMetadataRepository.DeleteAssetApplicationMetadata(AssetId, A<string>._,
+                    A<CancellationToken>._))
+            .Returns(true);
+
+        // Act
+        var sut = GetSut();
+        var response = await sut.HandleMessage(requestDetails.queueMessage);
+        
+        // Assert
+        response.Should().BeTrue();
+        
+        // Check that we delete the correct number, all expected keys and all same bucket
+        A.CallTo(() =>
+                bucketWriter.DeleteFromBucket(
+                    A<ObjectInBucket[]>.That.Matches(o =>
+                        o.Length == 3 &&
+                        expectedDeletedKeys.Intersect(o.Select(k => k.Key)).Count() == 3 &&
+                        o.Select(k => k.Bucket).Distinct().Single() == handlerSettings.AWS.S3.ThumbsBucket)))
+            .MustHaveHappened();
         A.CallTo(() => bucketWriter.DeleteFolder(A<ObjectInBucket>._, A<bool>._)).MustNotHaveHappened();
     }
     
@@ -967,7 +1082,7 @@ public class AssetUpdatedHandlerTests
     }
     
     [Fact]
-    public async Task Handle_DeletesSomeThumbnailAssets_WhenThumbnailPolicyUpdated()
+    public async Task Handle_DeletesSomeThumbnailDerivatives_WhenThumbnailPolicyUpdated()
     {
         // Arrange
         var imageDeliveryChannelsAfter = new List<ImageDeliveryChannel>
