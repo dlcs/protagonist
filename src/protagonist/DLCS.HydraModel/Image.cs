@@ -177,8 +177,7 @@ public class Image : DlcsResource
     [JsonProperty(Order = 130, PropertyName = "family")]
     public AssetFamily? Family { get; set; } 
     
-    [RdfProperty(Description = "The delivery channels this asset is available on, each an object with a channel " +
-                               "and the policy in force for it. Determines what the platform produces for the asset.",
+    [RdfProperty(Description = "The delivery channels this asset is available on, determines what the platform produces for the asset.",
         Range = "vocab:DeliveryChannel", ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 140, PropertyName = "deliveryChannels")]
     [JsonConverter(typeof(ImageDeliveryChannelsConverter))]
