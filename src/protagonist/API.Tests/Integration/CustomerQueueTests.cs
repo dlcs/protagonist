@@ -29,6 +29,7 @@ using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using Batch = DLCS.Model.Assets.Batch;
 using CustomerQueue = DLCS.Model.Processing.CustomerQueue;
+using HydraCustomerQueue = DLCS.HydraModel.CustomerQueue;
 using Queue = DLCS.Model.Processing.Queue;
 
 namespace API.Tests.Integration;
@@ -130,12 +131,14 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var queue = await response.ReadAsHydraResponseAsync<CustomerQueue>();
+        var queue = await response.ReadAsHydraResponseAsync<HydraCustomerQueue>();
         queue.Size.Should().Be(10);
         queue.ImagesWaiting.Should().Be(0);
         queue.BatchesWaiting.Should().Be(0);
+        queue.Id.Should().EndWith($"/customers/{customer}/queue",
+            "the default queue keeps its identity");
     }
-    
+
     [Fact]
     public async Task Get_CustomerQueue_200_IfCustomerQueueFound_WithBatches()
     {
@@ -155,7 +158,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var queue = await response.ReadAsHydraResponseAsync<CustomerQueue>();
+        var queue = await response.ReadAsHydraResponseAsync<HydraCustomerQueue>();
         queue.Size.Should().Be(10);
         queue.ImagesWaiting.Should().Be(5);
         queue.BatchesWaiting.Should().Be(2);
@@ -378,14 +381,18 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Act
         var response = await httpClient.AsCustomer().GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
-        var queue = await response.ReadAsHydraResponseAsync<CustomerQueue>();
+
+        var queue = await response.ReadAsHydraResponseAsync<HydraCustomerQueue>();
         queue.Size.Should().Be(10);
         queue.ImagesWaiting.Should().Be(0);
         queue.BatchesWaiting.Should().Be(0);
+        queue.Id.Should().EndWith($"/customers/{customer}/queue/priority",
+            "the priority queue is its own resource");
+        queue.Batches.Should().EndWith($"/customers/{customer}/queue/batches",
+            "collection links deliberately point at the shared main-queue collections");
     }
     
     [Fact]
@@ -407,12 +414,13 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         
-        var queue = await response.ReadAsHydraResponseAsync<CustomerQueue>();
+        var queue = await response.ReadAsHydraResponseAsync<HydraCustomerQueue>();
         queue.Size.Should().Be(10);
         queue.ImagesWaiting.Should().Be(5);
         queue.BatchesWaiting.Should().Be(2);
+        queue.Id.Should().EndWith($"/customers/{customer}/queue/priority");
     }
-    
+
     [Fact]
     public async Task Get_Queue_200_DoesNotRequireAuth()
     {
