@@ -1,4 +1,5 @@
-﻿using HydraCustomerQueue = DLCS.HydraModel.CustomerQueue;
+﻿using DLCS.Model.Processing;
+using HydraCustomerQueue = DLCS.HydraModel.CustomerQueue;
 using EntityCustomerQueue = DLCS.Model.Processing.CustomerQueue;
 
 namespace API.Features.Queues.Converters;
@@ -14,11 +15,9 @@ public static class CustomerQueueConverter
     public static HydraCustomerQueue ToHydra(this EntityCustomerQueue customerQueue, string baseUrl)
     {
         var hydra = new HydraCustomerQueue(baseUrl, customerQueue.Customer);
-        if (customerQueue.Name != "default")
+        if (customerQueue.Name != QueueNames.Default)
         {
-            // A named queue (e.g. priority) is its own resource with its own counts. Its collection
-            // links deliberately remain those of the main queue: batches submitted to a named queue
-            // appear in the shared batches/active/recent collections, and no per-name sub-routes exist.
+            // Update "id" if this is a named queue (e.g. "priority"). Collection links are not queue-specific
             hydra.Id = $"{hydra.Id}/{customerQueue.Name}";
         }
         hydra.Size = customerQueue.Size;
