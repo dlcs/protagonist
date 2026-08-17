@@ -1,8 +1,10 @@
 using API.Features.Space.Converters;
 using API.Features.Space.Requests;
+using API.Features.Space.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.Web.Requests;
+using FluentValidation;
 using Hydra.Model;
 using Hydra.Collections;
 using MediatR;
@@ -81,27 +83,19 @@ public class SpaceController : HydraController
     public async Task<IActionResult> CreateSpace(
         [FromRoute] int customerId,
         [FromBody] DLCS.HydraModel.Space space,
+        [FromServices] HydraSpaceValidator validator,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(space.Name))
+        var validationResult = await validator.ValidateAsync(space,
+            s => s.IncludeRuleSets("default", HydraSpaceValidator.CreateRuleSet), cancellationToken);
+        if (!validationResult.IsValid)
         {
-            return this.HydraProblem("A space must have a name.", null, 400, "Invalid Space");
+            return this.ValidationFailed(validationResult);
         }
 
-        if (customerId <= 0)
-        {
-            return this.HydraProblem("Space must be created for an existing Customer.", null, 400, "Invalid Space");
-        }
-
-        if (space.ModelId.HasValue)
-        {
-            return this.HydraProblem("An id cannot be supplied when creating a space; the platform assigns it.",
-                null, 400, "Invalid Space");
-        }
-         
         logger.LogDebug("API will create space {SpaceName} for {CustomerId}", space.Name, customerId);
 
-        var command = new CreateSpace(customerId, space.Name)
+        var command = new CreateSpace(customerId, space.Name!)
         {
             Roles = space.DefaultRoles,
             Tags = space.DefaultTags ?? Array.Empty<string>()
@@ -168,15 +162,16 @@ public class SpaceController : HydraController
     [ProducesResponseType(StatusCodes.Status409Conflict, Type = typeof(Error))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(Error))]
     public async Task<IActionResult> PatchSpace(
-        [FromRoute] int customerId, 
-        [FromRoute] int spaceId, 
+        [FromRoute] int customerId,
+        [FromRoute] int spaceId,
         [FromBody] DLCS.HydraModel.Space space,
+        [FromServices] HydraSpaceValidator validator,
         CancellationToken cancellationToken)
     {
-        if (space.ModelId.HasValue && space.ModelId.Value != spaceId)
+        var validationResult = await validator.ValidateUpdateAsync(space, spaceId, cancellationToken);
+        if (!validationResult.IsValid)
         {
-            return this.HydraProblem("The id in the request body does not agree with the request URL.",
-                null, 400, "Invalid Space");
+            return this.ValidationFailed(validationResult);
         }
 
         var request = new PatchSpace
@@ -216,12 +211,13 @@ public class SpaceController : HydraController
         [FromRoute] int customerId,
         [FromRoute] int spaceId,
         [FromBody] DLCS.HydraModel.Space space,
+        [FromServices] HydraSpaceValidator validator,
         CancellationToken cancellationToken)
     {
-        if (space.ModelId.HasValue && space.ModelId.Value != spaceId)
+        var validationResult = await validator.ValidateUpdateAsync(space, spaceId, cancellationToken);
+        if (!validationResult.IsValid)
         {
-            return this.HydraProblem("The id in the request body does not agree with the request URL.",
-                null, 400, "Invalid Space");
+            return this.ValidationFailed(validationResult);
         }
 
         var request = new PutSpace

@@ -1,4 +1,3 @@
-using API.Exceptions;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Customers;
@@ -26,8 +25,12 @@ public class CreateSpaceHandler(
 {
     public async Task<ModifyEntityResult<DLCS.Model.Spaces.Space>> Handle(CreateSpace request, CancellationToken cancellationToken)
     {
-        await ValidateRequest(request);
-       
+        if (request.Customer <= 0 || await customerRepository.GetCustomer(request.Customer) == null)
+        {
+            return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure(
+                "Space must be created for an existing Customer.", WriteResult.FailedValidation);
+        }
+
         var existing = await spaceRepository.GetSpace(request.Customer, request.Name, cancellationToken);
         if (existing != null)
         {
@@ -39,14 +42,5 @@ public class CreateSpaceHandler(
             request.Tags, request.Roles, cancellationToken);
 
         return ModifyEntityResult<DLCS.Model.Spaces.Space>.Success(newSpace, WriteResult.Created);
-    }
-    
-    private async Task ValidateRequest(CreateSpace request)
-    {
-        var customer = await customerRepository.GetCustomer(request.Customer);
-        if (customer == null)
-        { 
-            throw new BadRequestException("Space must be created for an existing Customer.");
-        }
     }
 }
