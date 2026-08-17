@@ -276,11 +276,28 @@ public static class AssetConverter
             throw new BadRequestException("Space must be 0 or greater.");
         }
         
+        if (!modelId.IsNullOrEmpty() && hydraImage.ModelId.HasText())
+        {
+            // The route asserts an id and the body also carries one - they must agree.
+            // Tolerate the Deliverator-era full form "{customer}/{space}/{id}" in the body.
+            var bodyModelId = hydraImage.ModelId;
+            var bodyPrefix = $"{hydraImage.CustomerId}/{hydraImage.Space!.Value}/";
+            if (bodyModelId.StartsWith(bodyPrefix))
+            {
+                bodyModelId = bodyModelId.Substring(bodyPrefix.Length);
+            }
+
+            if (bodyModelId != modelId)
+            {
+                throw new BadRequestException("The id in the request body does not agree with the request URL.");
+            }
+        }
+
         if (modelId.IsNullOrEmpty())
         {
             modelId = hydraImage.ModelId;
         }
-        
+
         if (modelId.IsNullOrEmpty() && hydraImage.Id.HasText())
         {
             modelId = hydraImage.Id.GetLastPathElement();

@@ -1,4 +1,3 @@
-using API.Exceptions;
 using API.Infrastructure.Requests;
 using DLCS.Core;
 using DLCS.Model.Customers;
@@ -14,9 +13,8 @@ public class CreateSpace(int customer, string name) : IRequest<ModifyEntityResul
 {
     public string Name { get; } = name;
     public int Customer { get; } = customer;
-    public string? ImageBucket { get; set; }
-    public string[]? Tags { get; set; }
-    public string[]? Roles { get; set; }
+    public string[]? Tags { get; init; }
+    public string[]? Roles { get; init; }
 }
 
 public class CreateSpaceHandler(
@@ -26,8 +24,12 @@ public class CreateSpaceHandler(
 {
     public async Task<ModifyEntityResult<DLCS.Model.Spaces.Space>> Handle(CreateSpace request, CancellationToken cancellationToken)
     {
-        await ValidateRequest(request);
-       
+        if (request.Customer <= 0 || await customerRepository.GetCustomer(request.Customer) == null)
+        {
+            return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure(
+                "Space must be created for an existing Customer.", WriteResult.FailedValidation);
+        }
+
         var existing = await spaceRepository.GetSpace(request.Customer, request.Name, cancellationToken);
         if (existing != null)
         {
@@ -35,18 +37,9 @@ public class CreateSpaceHandler(
                 WriteResult.Conflict);
         }
 
-        var newSpace = await spaceRepository.CreateSpace(request.Customer, request.Name, request.ImageBucket,
-            request.Tags, request.Roles, cancellationToken);
+        var newSpace = await spaceRepository.CreateSpace(request.Customer, request.Name, request.Tags, request.Roles,
+            cancellationToken);
 
         return ModifyEntityResult<DLCS.Model.Spaces.Space>.Success(newSpace, WriteResult.Created);
-    }
-    
-    private async Task ValidateRequest(CreateSpace request)
-    {
-        var customer = await customerRepository.GetCustomer(request.Customer);
-        if (customer == null)
-        { 
-            throw new BadRequestException("Space must be created for an existing Customer.");
-        }
     }
 }

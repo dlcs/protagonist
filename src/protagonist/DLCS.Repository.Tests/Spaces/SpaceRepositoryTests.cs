@@ -139,14 +139,13 @@ public class SpaceRepositoryTests
             .Returns(2L);
 
         // Act
-        var space = await sut.CreateSpace(customer, "new-space", "my-bucket", ["tag1"], ["role1"],
-            CancellationToken.None);
+        var space = await sut.CreateSpace(customer, "new-space", ["tag1"], ["role1"], CancellationToken.None);
 
         // Assert
         space.Id.Should().Be(2);
         space.Customer.Should().Be(customer);
         space.Name.Should().Be("new-space");
-        space.ImageBucket.Should().Be("my-bucket");
+        space.ImageBucket.Should().BeEmpty();
         space.Tags.Should().BeEquivalentTo(["tag1"]);
         space.Roles.Should().BeEquivalentTo(["role1"]);
         space.MaxUnauthorised.Should().Be(-1);
@@ -161,7 +160,7 @@ public class SpaceRepositoryTests
             .Returns(2L);
 
         // Act
-        var space = await sut.CreateSpace(customer, "new-space", null, null, null, CancellationToken.None);
+        var space = await sut.CreateSpace(customer, "new-space", null, null, CancellationToken.None);
 
         // Assert
         space.ImageBucket.Should().BeEmpty();
@@ -179,7 +178,7 @@ public class SpaceRepositoryTests
             .Returns(2L);
 
         // Act
-        await sut.CreateSpace(customer, "new-space", null, null, null, CancellationToken.None);
+        await sut.CreateSpace(customer, "new-space", null, null, CancellationToken.None);
 
         // Assert
         A.CallTo(() => entityCounterRepository.TryCreate(customer, KnownEntityCounters.SpaceImages, "2", 1))
@@ -195,7 +194,7 @@ public class SpaceRepositoryTests
             .Returns(2L);
 
         // Act
-        await sut.CreateSpace(customer, "new-space", null, null, null, CancellationToken.None);
+        await sut.CreateSpace(customer, "new-space", null, null, CancellationToken.None);
 
         // Assert
         A.CallTo(() => storageRepository.TryCreateCustomerStorage(customer, 2, "default", CancellationToken.None))
@@ -214,7 +213,7 @@ public class SpaceRepositoryTests
             .Then.Returns(2L);
 
         // Act
-        var space = await sut.CreateSpace(customer, "new-space", null, null, null, CancellationToken.None);
+        var space = await sut.CreateSpace(customer, "new-space", null, null, CancellationToken.None);
 
         // Assert
         space.Id.Should().Be(2);

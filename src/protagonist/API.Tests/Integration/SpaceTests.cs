@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -57,7 +57,85 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         apiSpace.Should().NotBeNull();
         apiSpace.Name.Should().Be("Test Space");
     }
-    
+
+    [Fact]
+    public async Task Post_Space_400_IfIdSupplied()
+    {
+        const string newSpaceJson = @"{
+  ""@type"": ""Space"",
+  ""id"": 12345,
+  ""name"": ""Space Supplying Id""
+}";
+        // act
+        var content = new StringContent(newSpaceJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PostAsync("/customers/99/spaces", content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await dbContext.Spaces.AnyAsync(s => s.Customer == 99 && s.Name == "Space Supplying Id")).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Put_Space_400_IfBodyIdDisagreesWithUrl()
+    {
+        var customerId = await EnsureCustomerForSpaceTests();
+        await dbContext.Spaces.AddTestSpace(customerId, 1, "Put Id Mismatch Before");
+        await dbContext.SaveChangesAsync();
+
+        const string putJson = @"{
+  ""@type"": ""Space"",
+  ""id"": 456,
+  ""name"": ""Put Id Mismatch After""
+}";
+        var putContent = new StringContent(putJson, Encoding.UTF8, "application/json");
+        var putResponse = await httpClient.AsCustomer(customerId).PutAsync($"/customers/{customerId}/spaces/1", putContent);
+
+        putResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var dbSpace = await dbContext.Spaces.SingleAsync(s => s.Customer == customerId && s.Id == 1);
+        dbSpace.Name.Should().Be("Put Id Mismatch Before");
+        (await dbContext.Spaces.AnyAsync(s => s.Customer == customerId && s.Id == 456)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Put_Space_Succeeds_IfBodyIdMatchesUrl()
+    {
+        var customerId = await EnsureCustomerForSpaceTests();
+        await dbContext.Spaces.AddTestSpace(customerId, 1, "Put Id Match Before");
+        await dbContext.SaveChangesAsync();
+
+        const string putJson = @"{
+  ""@type"": ""Space"",
+  ""id"": 1,
+  ""name"": ""Put Id Match After""
+}";
+        var putContent = new StringContent(putJson, Encoding.UTF8, "application/json");
+        var putResponse = await httpClient.AsCustomer(customerId).PutAsync($"/customers/{customerId}/spaces/1", putContent);
+        var putSpace = await putResponse.ReadAsHydraResponseAsync<Space>();
+
+        putResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        putSpace.Name.Should().Be("Put Id Match After");
+    }
+
+    [Fact]
+    public async Task Patch_Space_400_IfBodyIdDisagreesWithUrl()
+    {
+        var customerId = await EnsureCustomerForSpaceTests();
+        await dbContext.Spaces.AddTestSpace(customerId, 1, "Patch Id Mismatch Before");
+        await dbContext.SaveChangesAsync();
+
+        const string patchJson = @"{
+  ""@type"": ""Space"",
+  ""id"": 456,
+  ""name"": ""Patch Id Mismatch After""
+}";
+        var patchContent = new StringContent(patchJson, Encoding.UTF8, "application/json");
+        var patchResponse = await httpClient.AsCustomer(customerId).PatchAsync($"/customers/{customerId}/spaces/1", patchContent);
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var dbSpace = await dbContext.Spaces.SingleAsync(s => s.Customer == customerId && s.Id == 1);
+        dbSpace.Name.Should().Be("Patch Id Mismatch Before");
+    }
+
     [Fact]
     public async Task Post_ComplexSpace_Creates_Space()
     {
@@ -702,3 +780,4 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
         space.TotalItems.Should().Be(0, "new customer has no user-created spaces, only stub-assets which is excluded");
     }
 }
+

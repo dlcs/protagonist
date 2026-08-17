@@ -129,7 +129,106 @@ public class ModifyAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         asset.ImageDeliveryChannels.Should().ContainSingle(x => x.Channel == "thumbs");
         asset.BatchAssets.Should().BeEmpty();
     }
-    
+
+    [Fact]
+    public async Task Put_Asset_400_IfBodyIdDisagreesWithUrl()
+    {
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, customerAndSpace.space);
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""id"": ""a-different-id"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""mediaType"": ""image/tiff""
+        }}";
+
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        dbContext.Images.Any(x => x.Id == assetId).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Put_Asset_Succeeds_IfBodyIdMatchesUrl()
+    {
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, customerAndSpace.space);
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""id"": ""{assetId.Asset}"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""mediaType"": ""image/tiff""
+        }}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task Put_Asset_Succeeds_IfBodyIdIsFullFormMatchingUrl()
+    {
+        // Deliverator-era clients send the id in "{customer}/{space}/{id}" form
+        var customerAndSpace = await CreateCustomerAndSpace();
+
+        var assetId = AssetIdGenerator.GetAssetId(customerAndSpace.customer, customerAndSpace.space);
+        var hydraImageBody = $@"{{
+            ""@type"": ""Image"",
+            ""id"": ""{assetId}"",
+            ""origin"": ""https://example.org/{assetId.Asset}.tiff"",
+            ""mediaType"": ""image/tiff""
+        }}";
+        A.CallTo(() =>
+                EngineClient.SynchronousIngest(
+                    A<Asset>.That.Matches(r => r.Id == assetId),
+                    A<CancellationToken>._))
+            .Returns(HttpStatusCode.OK);
+
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerAndSpace.customer).PutAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task Patch_Asset_400_IfBodyIdDisagreesWithUrl()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        var testAsset = await dbContext.Images.AddTestAsset(assetId,
+            ref1: "before", origin: "https://images.org/image2.tiff");
+        await dbContext.SaveChangesAsync();
+
+        var hydraImageBody = @"{
+  ""@type"": ""Image"",
+  ""id"": ""a-different-id"",
+  ""string1"": ""after""
+}";
+        // act
+        var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(99).PatchAsync(assetId.ToApiResourcePath(), content);
+
+        // assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await dbContext.Entry(testAsset.Entity).ReloadAsync();
+        testAsset.Entity.Reference1.Should().Be("before");
+    }
+
     [Fact]
     public async Task Put_NewImageAsset_CreatesAsset_WithManifestsAttached()
     {
