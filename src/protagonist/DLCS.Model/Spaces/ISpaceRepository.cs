@@ -21,7 +21,7 @@ public interface ISpaceRepository
     /// <returns>A space, or null if it can't be found</returns>
     Task<Space?> GetSpace(int customerId, string name, CancellationToken cancellationToken);
 
-    Task<Space> CreateSpace(int customer, string name, string? imageBucket, string[]? tags, string[]? roles,
+    Task<Space> CreateSpace(int customer, string name, string[]? tags, string[]? roles,
         CancellationToken cancellationToken);
 
     Task<PageOfSpaces> GetPageOfSpaces(int customerId, int page, int pageSize, string orderBy, bool descending,
@@ -30,7 +30,7 @@ public interface ISpaceRepository
     Task<Space> PatchSpace(int customerId, int spaceId, string? name, string[]? tags, string[]? roles,
         CancellationToken cancellationToken);
 
-    Task<Space> UpsertSpace(int customerId, int spaceId, string? name, string? imageBucket, string[]? tags,
+    Task<Space> UpsertSpace(int customerId, int spaceId, string? name, string[]? tags,
         string[]? roles, CancellationToken cancellationToken);
 
     Task<ResultMessage<DeleteResult>> DeleteSpace(int customerId, int spaceId, CancellationToken cancellationToken);

@@ -11,12 +11,11 @@ namespace API.Features.Space.Requests;
 /// </summary>
 public class PutSpace : IRequest<ModifyEntityResult<DLCS.Model.Spaces.Space>>
 {
-    public int CustomerId { get; set; }
-    public int SpaceId { get; set; }
-    public string? Name { get; set; }
-    public string? ImageBucket { get; set; }
-    public string[]? Tags { get; set; }
-    public string[]? Roles { get; set; }
+    public int CustomerId { get; init; }
+    public int SpaceId { get; init; }
+    public string? Name { get; init; }
+    public string[]? Tags { get; init; }
+    public string[]? Roles { get; init; }
 }
 
 public class PutSpaceHandler(ISpaceRepository spaceRepository)
@@ -48,7 +47,7 @@ public class PutSpaceHandler(ISpaceRepository spaceRepository)
         }
 
         var putSpaceResult = await spaceRepository.UpsertSpace(request.CustomerId, request.SpaceId, request.Name,
-            request.ImageBucket, request.Tags, request.Roles, cancellationToken);
+            request.Tags, request.Roles, cancellationToken);
         
         var result = sameIdSpace == null ? WriteResult.Created : WriteResult.Updated;
         

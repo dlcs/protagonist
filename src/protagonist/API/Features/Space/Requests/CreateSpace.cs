@@ -13,9 +13,8 @@ public class CreateSpace(int customer, string name) : IRequest<ModifyEntityResul
 {
     public string Name { get; } = name;
     public int Customer { get; } = customer;
-    public string? ImageBucket { get; set; }
-    public string[]? Tags { get; set; }
-    public string[]? Roles { get; set; }
+    public string[]? Tags { get; init; }
+    public string[]? Roles { get; init; }
 }
 
 public class CreateSpaceHandler(
@@ -38,8 +37,8 @@ public class CreateSpaceHandler(
                 WriteResult.Conflict);
         }
 
-        var newSpace = await spaceRepository.CreateSpace(request.Customer, request.Name, request.ImageBucket,
-            request.Tags, request.Roles, cancellationToken);
+        var newSpace = await spaceRepository.CreateSpace(request.Customer, request.Name, request.Tags, request.Roles,
+            cancellationToken);
 
         return ModifyEntityResult<DLCS.Model.Spaces.Space>.Success(newSpace, WriteResult.Created);
     }

@@ -11,11 +11,11 @@ namespace API.Features.Space.Requests;
 /// </summary>
 public class PatchSpace : IRequest<ModifyEntityResult<DLCS.Model.Spaces.Space>>
 {
-    public int CustomerId { get; set; }
-    public int SpaceId { get; set; }
-    public string? Name { get; set; }
-    public string[]? Tags { get; set; }
-    public string[]? Roles { get; set; }
+    public int CustomerId { get; init; }
+    public int SpaceId { get; init; }
+    public string? Name { get; init; }
+    public string[]? Tags { get; init; }
+    public string[]? Roles { get; init; }
 }
 
 public class PatchSpaceHandler(ISpaceRepository spaceRepository)

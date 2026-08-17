@@ -98,7 +98,7 @@ public class SpaceController : HydraController
         var command = new CreateSpace(customerId, space.Name!)
         {
             Roles = space.DefaultRoles,
-            Tags = space.DefaultTags ?? Array.Empty<string>()
+            Tags = space.DefaultTags ?? []
         };
         
         return await HandleUpsert(command,
