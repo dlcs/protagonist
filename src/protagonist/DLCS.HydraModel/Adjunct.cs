@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace DLCS.HydraModel;
 
-[HydraClass(typeof (AdjunctClass),
+[HydraClass(typeof(AdjunctClass),
     Description = "A file linked to an asset",
     UriTemplate = "/customers/{0}/spaces/{1}/images/{2}/adjuncts/{3}")]
 public class Adjunct : DlcsResource

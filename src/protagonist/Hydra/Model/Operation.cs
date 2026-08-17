@@ -16,10 +16,10 @@ public class Operation : JsonLdBaseWithHydraContext
     public string Label { get; set; }
 
     [JsonProperty(Order = 13, PropertyName = "description")]
-    public string Description { get; set; }
+    public string? Description { get; set; }
 
     [JsonProperty(Order = 14, PropertyName = "expects")]
-    public string Expects { get; set; }
+    public string? Expects { get; set; }
 
     [JsonProperty(Order = 15, PropertyName = "returns")]
     public string Returns { get; set; }
