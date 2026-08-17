@@ -29,7 +29,7 @@ public static class CommonOperations
                         Method = method,
                         Label = "Retrieve a " + displayNameOfType,
                         Returns = vocabNameofType,
-                        StatusCodes = GetStandardGetResourceStatusCodes(displayNameOfType)
+                        StatusCodes = GetStandardGetResourceStatusCodes()
                     });
                     break;
 
@@ -83,7 +83,7 @@ public static class CommonOperations
         string idPrefix, 
         string displayNameOfCollectionType,
         string vocabNameofCollectionType,
-        string description = null)
+        string? description = null)
     {
         return new[]
         {
@@ -93,7 +93,7 @@ public static class CommonOperations
         };
 
     }
-    public static Operation StandardCollectionGet(string id, string label, string description)
+    public static Operation StandardCollectionGet(string id, string label, string? description)
     {
         return new Operation
         {
@@ -107,7 +107,7 @@ public static class CommonOperations
     }
 
 
-    public static Operation StandardCollectionPost(string id, string label, string description, 
+    public static Operation StandardCollectionPost(string id, string label, string? description, 
         string expectsAndReturns, string displayNameOfCollectionType)
     {
         return new Operation
@@ -190,7 +190,7 @@ public static class CommonOperations
             }
         };
     }
-    private static Status[] GetStandardGetResourceStatusCodes(string displayNameOfCollectionType)
+    private static Status[] GetStandardGetResourceStatusCodes()
     {
         return new[]
         {
@@ -227,9 +227,4 @@ public static class CommonOperations
             }
         };
     }
-
-    public static Operation WithMethod(this Operation[] operations, string method)
-    {
-        return operations.FirstOrDefault(op => op.Method == method);
-    } 
 }

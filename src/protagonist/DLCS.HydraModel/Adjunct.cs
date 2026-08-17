@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using Hydra;
+using Hydra.Model;
 using Newtonsoft.Json;
 
 namespace DLCS.HydraModel;
 
-[HydraClass(typeof (Adjunct),
+[HydraClass(typeof(AdjunctClass),
     Description = "A file linked to an asset",
     UriTemplate = "/customers/{0}/spaces/{1}/images/{2}/adjuncts/{3}")]
 public class Adjunct : DlcsResource
@@ -115,4 +116,31 @@ public class Adjunct : DlcsResource
         Range = Names.Hydra.Resource, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 26, PropertyName = "batch")]
     public string? Batch { get; set; }
+}
+
+public class AdjunctClass : Class
+{
+    public AdjunctClass()
+    {
+        BootstrapViaReflection(typeof(Adjunct));
+    }
+
+    public override void DefineOperations()
+    {
+        string operationId = "_:customer_space_image_adjunct_";
+        SupportedOperations = CommonOperations.GetStandardResourceOperations(
+            operationId, "Adjunct", Id,
+            "GET", "PUT", "DELETE");
+
+        GetHydraLinkProperty("batch").SupportedOperations = new[]
+        {
+            new Operation
+            {
+                Id = operationId + "batch_retrieve",
+                Method = "GET",
+                Label = "Retrieves the AdjunctBatch this adjunct was most recently submitted in",
+                Returns = "vocab:AdjunctBatch"
+            }
+        };
+    }
 }
