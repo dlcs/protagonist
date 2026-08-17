@@ -60,7 +60,7 @@ public class AssetUpdatedHandler(
             var rolesChanged = !string.Equals(assetAfter.Roles ?? string.Empty, assetBefore.Roles ?? string.Empty,
                 StringComparison.OrdinalIgnoreCase);
             var maxWidthChanged = (assetAfter.MaxWidth ?? 0) != (assetBefore.MaxWidth ?? 0);
-            var openMaxWidthChanged = (assetBefore.OpenFullMax ?? 0) != (assetAfter.OpenFullMax ?? 0);
+            var openFullMaxChanged = (assetBefore.OpenFullMax ?? 0) != (assetAfter.OpenFullMax ?? 0);
 
             if (NoCleanupRequired(message, rolesChanged))
             {
@@ -105,7 +105,7 @@ public class AssetUpdatedHandler(
 
             if (assetAfter.HasDeliveryChannel(AssetDeliveryChannels.Thumbnails) &&
                 modifiedOrAddedChannels.All(c => c.Channel != AssetDeliveryChannels.Thumbnails) &&
-                (rolesChanged || maxWidthChanged || openMaxWidthChanged))
+                (rolesChanged || maxWidthChanged || openFullMaxChanged))
             {
                 logger.LogInformation("Thumbnail channel unchanged but MaxWidth or OpenFullMax has changed");
                 await CleanupChangedThumbnail(assetAfter, cleanupTargets);
