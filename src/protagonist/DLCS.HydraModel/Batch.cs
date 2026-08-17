@@ -62,11 +62,6 @@ public class Batch : DlcsResource
     [JsonProperty(Order = 14, PropertyName = "superseded")]
     public bool Superseded { get; set; }
 
-    [RdfProperty(Description = "Estimated Completion (best guess as to when this batch might be finished)",
-        Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 15, PropertyName = "estCompletion")]
-    public DateTime? EstCompletion { get; set; }
-
     [HydraLink(Description = "Collection of all the images in the batch",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 20, PropertyName = "images")]
