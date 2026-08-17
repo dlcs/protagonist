@@ -67,6 +67,14 @@ public class Batch : DlcsResource
     [JsonProperty(Order = 20, PropertyName = "images")]
     public string? Images { get; set; }
 
+    [HydraLink(Description = "Collection of all the assets specified by the batch at creation time, " +
+                             "whatever their current state. Many batches can include the same asset in this " +
+                             "collection, whereas only one batch can include an asset in its images collection. " +
+                             "Supports asset query parameters (q, orderBy, orderByDescending, page, pageSize).",
+        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 21, PropertyName = "assets")]
+    public string? Assets { get; set; }
+
     [HydraLink(Description = "POST to this to force an update of the batch's superseded property. " +
                              "Returns JSON object with single success property (boolean). ",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
@@ -96,6 +104,14 @@ public class BatchClass : Class
                 operationId + "image_collection_retrieve",
                 "Retrieves all images in batch regardless of state",
                 null)
+        };
+
+        GetHydraLinkProperty("assets").SupportedOperations = new[]
+        {
+            CommonOperations.StandardCollectionGet(
+                operationId + "asset_collection_retrieve",
+                "Retrieves all assets specified by the batch at creation time",
+                "Can take query parameters")
         };
 
     }
