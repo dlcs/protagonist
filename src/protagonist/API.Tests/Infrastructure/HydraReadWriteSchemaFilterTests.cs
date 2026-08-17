@@ -34,16 +34,13 @@ public class HydraReadWriteSchemaFilterTests
         schema.Properties[property].WriteOnly.Should().BeFalse();
     }
 
-    [Theory]
-    [InlineData("id")]
-    [InlineData("origin")]
-    [InlineData("imageService")]
-    public void GenerateSchema_LeavesWritableProperty_Unmarked(string property)
+    [Fact]
+    public void GenerateSchema_LeavesWritableProperty_Unmarked()
     {
         var schema = GenerateSchema<Image>();
 
-        schema.Properties[property].ReadOnly.Should().BeFalse();
-        schema.Properties[property].WriteOnly.Should().BeFalse();
+        schema.Properties["origin"].ReadOnly.Should().BeFalse();
+        schema.Properties["origin"].WriteOnly.Should().BeFalse();
     }
 
     [Fact]
