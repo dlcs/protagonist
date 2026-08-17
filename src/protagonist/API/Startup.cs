@@ -23,6 +23,7 @@ using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
 using DLCS.Web.Handlers;
 using DLCS.Web.Logging;
+using DLCS.Web.Middleware;
 using FluentValidation;
 using Hydra;
 using Microsoft.AspNetCore.Builder;
@@ -152,6 +153,7 @@ public class Startup
 
         app
             .HandlePathBase(pathBase, logger)
+            .UseCorrelationId()
             .UseSwaggerWithUI("DLCS API", pathBase, "v2")
             .UseRouting()
             .UseSerilogRequestLogging(opts =>

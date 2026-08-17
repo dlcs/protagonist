@@ -5,15 +5,9 @@ using Microsoft.Extensions.Http;
 
 namespace DLCS.Web.Configuration;
 
-internal class HeaderPropagationMessageHandlerBuilderFilter : IHttpMessageHandlerBuilderFilter
+internal class HeaderPropagationMessageHandlerBuilderFilter(IHttpContextAccessor contextAccessor)
+    : IHttpMessageHandlerBuilderFilter
 {
-    private readonly IHttpContextAccessor contextAccessor;
-
-    public HeaderPropagationMessageHandlerBuilderFilter(IHttpContextAccessor contextAccessor)
-    {
-        this.contextAccessor = contextAccessor;
-    }
-
     public Action<HttpMessageHandlerBuilder> Configure(Action<HttpMessageHandlerBuilder> next)
     {
         return builder =>
