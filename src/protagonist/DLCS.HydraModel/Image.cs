@@ -48,24 +48,12 @@ public class Image : DlcsResource
         Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 11, PropertyName = "imageService")]
     public string? ImageService  { get; set; }
-    
 
-    [RdfProperty(Description = "Degraded info.json URI - if a user does not have permission to view the full image, " +
-                               "but a degraded image is permitted, the DLCS will redirect them to this URI.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 12, PropertyName = "degradedInfoJson")]
-    public string? DegradedInfoJson { get; set; }
-    
     [RdfProperty(Description = "Thumbnail image service URI",
         Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 13, PropertyName = "thumbnailImageService")]
     public string? ThumbnailImageService { get; set; }
 
-    [RdfProperty(Description = "Direct URI of the 400 pixel thumbnail",
-        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 13, PropertyName = "thumbnail400")]
-    public string? Thumbnail400 { get; set; }
-    
     [RdfProperty(Description = "Date the image was added",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 14, PropertyName = "created")]
@@ -96,16 +84,6 @@ public class Image : DlcsResource
         Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 19, PropertyName = "openFullMax")]
     public int? OpenFullMax { get; set; }
-    
-    [RdfProperty(Description = "When the image was added to the queue",
-        Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 30, PropertyName = "queued")]
-    public DateTime? Queued { get; set; }
-
-    [RdfProperty(Description = "When the image was taken off the queue",
-        Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 31, PropertyName = "dequeued")]
-    public DateTime? Dequeued { get; set; }
     
     [RdfProperty(Description = "When the image processing finished (image ready)",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
@@ -203,19 +181,8 @@ public class Image : DlcsResource
     [JsonProperty(Order = 130, PropertyName = "family")]
     public AssetFamily? Family { get; set; } 
     
-    // TODO - Replace this with https://github.com/dlcs/protagonist/issues/148
-    [RdfProperty(Description = "URI of a text source for this asset (e.g., OCR data, captions etc",
-        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 120, PropertyName = "text")]
-    public string? Text { get; set; }
-    
-    [RdfProperty(Description = "Media type and/or profile to identify the format of the text",
-        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 130, PropertyName = "textType")]
-    public string? TextType { get; set; } // e.g., METS-ALTO, hOCR, TEI, text/plain etc
-    
-    [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+    [RdfProperty(Description = "The delivery channels this asset is available on, determines what the platform produces for the asset.",
+        Range = "vocab:DeliveryChannel", ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 140, PropertyName = "deliveryChannels")]
     [JsonConverter(typeof(ImageDeliveryChannelsConverter))]
     public DeliveryChannel[]? DeliveryChannels { get; set; }
@@ -232,12 +199,18 @@ public class Image : DlcsResource
     [JsonProperty(Order = 71, PropertyName = "batch")]
     public string? Batch { get; set; }
     
-    [HydraLink(Description = "The image optimisation policy used when this image was last processed (e.g., registered)",
+    [Obsolete("Use deliveryChannels instead. May still appear on assets processed before delivery channels existed.")]
+    [HydraLink(Description = "Deprecated - use deliveryChannels instead. The image optimisation policy used when " +
+                             "this image was last processed; may still appear on assets processed before delivery " +
+                             "channels existed. Cannot be set.",
         Range = "vocab:ImageOptimisationPolicy", ReadOnly = true, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 80, PropertyName = "imageOptimisationPolicy")]
     public string? ImageOptimisationPolicy { get; set; }
 
-    [HydraLink(Description = "The thumbnail settings used when this image was last processed (e.g., registered)",
+    [Obsolete("Use deliveryChannels instead. May still appear on assets processed before delivery channels existed.")]
+    [HydraLink(Description = "Deprecated - use deliveryChannels instead. The thumbnail settings used when this " +
+                             "image was last processed; may still appear on assets processed before delivery " +
+                             "channels existed. Cannot be set.",
         Range = "vocab:ThumbnailPolicy", ReadOnly = true, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 81, PropertyName = "thumbnailPolicy")]
     public string? ThumbnailPolicy { get; set; }

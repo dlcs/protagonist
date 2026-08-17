@@ -37,8 +37,6 @@ public class ImageWithFile : Image
         ImageOptimisationPolicy = ImageOptimisationPolicy,
         ThumbnailPolicy = ThumbnailPolicy,
         Family = Family,
-        MediaType = MediaType,
-        Text = Text,
-        TextType = TextType
+        MediaType = MediaType
     };
 }
