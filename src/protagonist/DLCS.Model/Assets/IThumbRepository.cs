@@ -12,7 +12,13 @@ public interface IThumbRepository
     Task<List<int[]>?> GetOpenSizes(AssetId assetId);
     
     /// <summary>
-    /// Get a list of all available thumbnails for specified image, regardless of whether open or auth
+    /// Get a list of all available thumbnails for specified image, regardless of whether open or auth.
+    /// Returned in size ordered, descending
     /// </summary>
     Task<List<int[]>?> GetAllSizes(AssetId assetId);
+
+    /// <summary>
+    /// Get a list of all available thumbnails for specified image, split by open + auth
+    /// </summary>
+    Task<ThumbnailSizes?> GetThumbnailSizes(AssetId assetId);
 }

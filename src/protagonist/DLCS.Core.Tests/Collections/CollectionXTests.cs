@@ -12,6 +12,7 @@ public class CollectionXTests
     {
         IEnumerable<int> coll = null;
 
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
         coll.IsNullOrEmpty().Should().BeTrue();
     }
     
@@ -36,6 +37,7 @@ public class CollectionXTests
     {
         List<int> coll = null;
 
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
         coll.IsNullOrEmpty().Should().BeTrue();
     }
     
@@ -60,6 +62,7 @@ public class CollectionXTests
     {
         List<int> coll = null;
 
+        // ReSharper disable once ExpressionIsAlwaysNull
         coll.IsEmpty().Should().BeFalse();
     }
     
@@ -133,6 +136,7 @@ public class CollectionXTests
     {
         int[] coll = null;
 
+        // ReSharper disable once ExpressionIsAlwaysNull
         coll.ContainsOnly(123).Should().BeFalse();
     }
     
@@ -176,5 +180,29 @@ public class CollectionXTests
         var list = item.AsArray();
 
         list.Should().ContainSingle(i => i == item);
+    }
+
+    [Fact]
+    public void AddRange_List()
+    {
+        var initial = new List<int> { 2 };
+        var toAdd = new List<int> { 2, 3 };
+        var expected = new List<int> { 2, 2, 3 };
+
+        initial.AddRange(toAdd);
+        initial.Should().BeEquivalentTo(expected);
+    }
+    
+    [Fact]
+    public void AddRange_Hashset()
+    {
+        var initial = new HashSet<int> { 2 };
+        var toAdd = new HashSet<int> { 2, 3 };
+        
+        // Will de-duplicate automatically
+        var expected = new HashSet<int> { 2, 3 };
+
+        initial.AddRange(toAdd);
+        initial.Should().BeEquivalentTo(expected);
     }
 }

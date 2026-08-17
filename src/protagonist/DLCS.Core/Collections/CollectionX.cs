@@ -95,5 +95,23 @@ public static class CollectionX
     /// <param name="item">Item to add to list</param>
     /// <typeparam name="T">Type of item</typeparam>
     /// <returns>List of one item</returns>
-    public static T[] AsArray<T>(this T item) => new T[] { item };
+    public static T[] AsArray<T>(this T item) => [item];
+    
+    /// <summary>
+    /// Helper for adding multiple items to <see cref="ICollection{T}"/>
+    /// </summary>
+    public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> items)
+    {
+        if (collection is List<T> objList)
+        {
+            objList.AddRange(items);
+        }
+        else
+        {
+            foreach (var obj in items)
+            {
+                collection.Add(obj);
+            }
+        }
+    }
 }
