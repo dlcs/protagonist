@@ -129,7 +129,7 @@ end
 
 Protagonist will indefinitely cache generated PDF files and doesn't track when a previously generated NQ would return different results if called again.
 
-If a consumer knows that a PDF is out of date and needs reprocessed invalid they can force this by deleting the control-file and PDF via the API, which requires valid credentials.
+If a consumer knows that a PDF is out of date and needs reprocessed they can force this by deleting the control-file and PDF via the API, which requires valid credentials.
 
 ```mermaid
 ---
@@ -161,7 +161,7 @@ Fireball can create PDFs on demand, this allows Orchestrator to synchronuously g
 
 For TS to build a PDF it first needs to build the text artefacts, the PDF can only be generated once this has been done, see [architecture](https://github.com/dlcs/text-services#architecture). The former is an asynchronous operation that accepts a payload in a similar format to Fireball.
 
-We will continue to use the control-file as a means to track what's been created/what should already exist. 
+We will continue to use the control-file as a means to track what's been created/what should already exist, and we will use the [`sourceData`](https://github.com/dlcs/text-services/blob/main/docs/builder-api.md#sourcedata-format) payload format, which Protagonist will manually build.
 
 TS will raise a 'job completed' notification that Protagonist can subscribe to. Once that's done we can, out of band, generate and fetch the PDF and upload it to S3 storage, updating the control-file. Subsequent GET requests will be served the generated PDF.
 
@@ -190,7 +190,11 @@ alt No matching images
 end
 orch->>S3: Put control-file
 note over orch: Everything prior to here unchanged
-orch-->>tb: Upsert text-builder job
+alt structureProvider present?
+  note over orch: Simplified - this is an external<br/>call, see below
+  orch->>orch: POST to structureProvider
+end
+orch-->>tb: Upsert text-builder job using "sourceData" payload
 activate tb
 orch-->>u: 202|Accepted, w/ Retry-After
 tb->>tb: Extract text
@@ -198,7 +202,6 @@ tb--)jc: Job complete
 deactivate tb
 activate jc
 jc->>ts: GET /pdf/v1/{job-id}
-
 
 alt PDF error
   jc->>S3: Mark control-file complete but failed
@@ -297,6 +300,33 @@ See [Appendix 1](#appendix-1---nq-example) for an example of how these could be 
 
 Introduce a new `index` NQ parameter. It would take a 0-based index of Canvases to include in projection, e.g. `&index=0-10,24,40-42`
 
+### Structure Provider
+
+> [!NOTE]
+> For PR reviewers - do we want to support this? If so, is it this AND `groupby` or `partitionby`, or just this?
+
+> [!WARNING]
+> This could also be applicable to, Manifest projections as they can include ranges. 
+> 
+> If we wanted to support this for Manifests we'd need to mitigate against a slow downstream service affecting Manifest generation.
+> The same risk exists with PDFs but those are expected to be slow on first request to generate.
+
+Introduce a new `structureProvider` NQ parameter. This can be parameterised if required, like the `coverpage` parameter. 
+e.g. `structureProvider=https://example.org/service/structureProvider` or `structureProvider=https://example.org/service/structureProvider/{s1}/{p1}`.
+
+The URL that is specified will have more knowledge about the AssetIds and how they should be rendered than we can encapsulate in Protagonist.
+The response would need to be of a known/agreed format (TBC), ideally with an advertised JSON schema for what is acceptable.
+
+During construction the NQ will call this URL and POST a payload to it, the payload will contain the `/raw-resource/` NQ projection equivalent for the current
+request. So `/pdf/v2/99/my-query/1/2/3` or `/iiif-resource/99/my-query/1/2/3` would result in `/raw-resource/99/my-query/1/2/3` being sent, when called it returns
+a JSON array of all assets that will be included in the result set. The service will respond with a JSON payload outlining what structure to use, any Assets 
+not included will still be in the final object but won't be represented in any structure.
+
+#### Post AssetIds?
+
+An alternative to POSTing the `/raw-resource` URL would be to POST the list of AssetIds. Suggestion is to POST a link where they can be fetched as this
+avoids any potential issues with very large body POSTs.
+
 ### Group By
 
 > [!NOTE]
@@ -317,6 +347,14 @@ How this is output would be determined by the projection; Manifest would add a `
 We would still issue the DB select statement like normal and apply the grouping in code. Unlike a SQL `GROUP BY` this is not a grouping to aggregrate output but instead a partition, we cannot rely on RDBMS semantics to group.
 
 When iterating all returned Assets, we would use the groupings to create an additional "bucket" of assets containing references to assets. These can be applied as ranges/ToC as applied.
+
+### `structureProvider` vs `groupby`
+
+> [!CAUTION]
+> This whole section is for PR review discussion, once a decision is made we can reject `groupby`
+
+Both `structureProvider` and `groupby` provide similar functionality - they allow a degree of control over structure. The former is much more flexible, at the expense of customers needing to
+write and maintain a separate service. Do we want to support both of these, the former for more advanced structures and the latter for simple 1-level ToC?
 
 ## Specific Requirement
 
@@ -351,7 +389,7 @@ As long as there are appropriately configured adjuncts containing OCR data it wi
 ### Include TOC if available from ranges
 
 > [!NOTE]
-> The decision on [Group By](#group-by) will determine the final response here
+> The decision on [Group By](#group-by) or [Structure Provider](#structure-provider) will determine the final response here
 
 ## Appendices
 
@@ -417,7 +455,7 @@ Simplified result being:
 #### With Grouping
 
 * NQ template: `assetOrder=n1;n2&s1=p1&groupby=s2`
-* Request URL: `/iiif-resource/v3/2/alpha/`
+* Request URL: `/iiif-resource/v3/2/alpha`
 * SQL Query: `select * from images where reference1 = 'alpha' order by number1, number2`
   * Same query is issued to DB, the grouping takes place when processing. 
   * One possible issue is if the ordering and groupby don't line up - this could lead to confusing results. OR do we enforce that the first ordering = groupby (either by validation or query generation).
@@ -470,7 +508,7 @@ Simplified result being:
 #### With Index and Grouping
 
 * NQ template: `assetOrder=n1;n2&s1=p1&groupby=s2&index=0,3-5`
-* Request URL: `/iiif-resource/v3/2/alpha/`
+* Request URL: `/iiif-resource/v3/2/alpha`
 * SQL Query: `select * from images where reference1 = 'alpha' order by number1, number2`
   * Same query is issued to DB, the grouping takes place when processing. 
   * One possible issue is if the ordering and groupby don't line up - this could lead to confusing results. OR do we enforce that the first ordering = groupby (either by validation or query generation).
@@ -498,6 +536,94 @@ Simplified result being:
                     "label": { "en": ["Glasgow" ]},
                     "items": [
                         { "id": "2/1/aaa", "type": "Canvas" },
+                    ]
+                },
+                {
+                    "id": "r2",
+                    "type": "Range",
+                    "label": { "en": ["London" ]},
+                    "items": [
+                        { "id": "2/1/ddd", "type": "Canvas" },
+                        { "id": "2/1/eee", "type": "Canvas" },
+                        { "id": "2/1/fff", "type": "Canvas" }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+```
+
+#### With structureProvider
+
+* NQ template: `assetOrder=n1;n2&s1=p1&structureProvider=https://example.com/structure`
+* Request URL: `/iiif-resource/v3/2/alpha`
+* SQL Query: `select * from images where reference1 = 'alpha' order by number1, number2`
+  * Basic select query issued, structure provided externally.
+
+During construction we POST the following payload to `https://example.com/structure`
+
+```json
+{ "assetUrl": "https://dlcs.example/raw-resource/2/alpha" }
+```
+
+and that service will respond with something like:
+
+```json
+{
+  "toc": [
+    {
+      "label": "Table of Contents",
+      "items": [
+        {
+          "label": "Glasgow",
+          "assets": [
+            "2/1/aaa",
+            "2/1/bbb",
+            "2/1/ccc"
+          ]
+        },
+        {
+          "label": "London",
+          "assets": [
+            "2/1/ddd",
+            "2/1/eee",
+            "2/1/fff"
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Simplified result being:
+```json
+{
+    "type": "Manifest",
+    "id": "https://dlcs.example/iiif-resource/v3/2/alpha",
+    "items": [
+        { "id": "2/1/aaa", "type": "Canvas" },
+        { "id": "2/1/bbb", "type": "Canvas" },
+        { "id": "2/1/ccc", "type": "Canvas" },
+        { "id": "2/1/ddd", "type": "Canvas" },
+        { "id": "2/1/eee", "type": "Canvas" },
+        { "id": "2/1/fff", "type": "Canvas" }
+    ],
+    "structures": [
+        {
+            "id": "r",
+            "type": "Range",
+            "label": { "en": ["Table of Contents" ]},
+            "items": [
+                {
+                    "id": "r1",
+                    "type": "Range",
+                    "label": { "en": ["Glasgow" ]},
+                    "items": [
+                        { "id": "2/1/aaa", "type": "Canvas" },
+                        { "id": "2/1/bbb", "type": "Canvas" },
+                        { "id": "2/1/ccc", "type": "Canvas" }
                     ]
                 },
                 {
