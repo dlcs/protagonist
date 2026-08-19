@@ -1,4 +1,7 @@
-﻿using System.Linq.Expressions;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using API.Exceptions;
 using API.Infrastructure.Requests;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
@@ -36,16 +39,36 @@ public static class AssetQueryX
             : Queryable.OrderBy(assetQuery, lambda);
     }
 
+    // Properties that an ORDER BY clause can be built for: scalar columns and primitive-collection
+    // columns (e.g. Manifests, DeliveryChannels), but not collections of related entities.
+    // Keyed case-insensitively as orderBy field matching has always ignored case.
+    private static readonly Dictionary<string, string> OrderableProperties = typeof(Asset)
+        .GetProperties()
+        .Where(p => IsOrderable(p.PropertyType))
+        .ToDictionary(p => p.Name, p => p.Name, StringComparer.OrdinalIgnoreCase);
+
+    private static bool IsOrderable(Type propertyType)
+    {
+        if (propertyType == typeof(string)) return true;
+
+        var elementType = propertyType.IsArray
+            ? propertyType.GetElementType()
+            : propertyType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(propertyType)
+                ? propertyType.GetGenericArguments()[0]
+                : null;
+        return elementType == null || elementType == typeof(string) || elementType.IsValueType;
+    }
+
     private static string GetPropertyName(string? orderBy)
     {
         // This needs to be moved because it knows about hydra name values.
-        if (string.IsNullOrWhiteSpace(orderBy) || orderBy.Length < 2)
+        if (string.IsNullOrWhiteSpace(orderBy))
         {
             return "Created";
         }
 
         string pascalCase = char.ToUpperInvariant(orderBy[0]) + orderBy.Substring(1);
-        return pascalCase switch
+        var mapped = pascalCase switch
         {
             "Number1" => "NumberReference1",
             "Number2" => "NumberReference2",
@@ -55,6 +78,13 @@ public static class AssetQueryX
             "String3" => "Reference3",
             _ => pascalCase
         };
+
+        if (!OrderableProperties.TryGetValue(mapped, out var propertyName))
+        {
+            throw new BadRequestException($"Cannot order by field '{orderBy}'");
+        }
+
+        return propertyName;
     }
     
     /// <summary>

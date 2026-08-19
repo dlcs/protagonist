@@ -8,6 +8,7 @@ using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Repository;
+using DLCS.Web.Response;
 using Hydra.Collections;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -199,6 +200,43 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         }
     };
     
+    [Theory]
+    [InlineData("nonexistent")]
+    [InlineData("imageService")] // a Hydra model property but not a database-backed one
+    [InlineData("x")] // previously silently ignored, falling back to created ordering
+    [InlineData("adjuncts")] // a collection of related entities cannot be ordered on
+    public async Task Get_Paged_Assets_Returns_400_For_Unknown_OrderBy_Field(string orderBy)
+    {
+        // Act - ordering is validated before anything is fetched so the space doesn't need to exist
+        var response = await httpClient.AsCustomer(99).GetAsync(
+            $"/customers/99/spaces/3061/images?pageSize=10&orderBy={orderBy}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var error = await response.ReadAsJsonAsync<Hydra.Model.Error>(ensureSuccess: false);
+        error.Detail.Should().Be($"Cannot order by field '{orderBy}'");
+    }
+
+    [Theory]
+    [InlineData("WIDTH", 3062)] // field matching ignores case
+    [InlineData("manifests", 3063)] // primitive-collection columns can be ordered on
+    [InlineData("finished", 3064)]
+    public async Task Get_Paged_Assets_Returns_200_For_Known_OrderBy_Field(string orderBy, int space)
+    {
+        // Arrange
+        await dbContext.Spaces.AddTestSpace(99, space, $"orderby-tests-{space}");
+        await dbContext.Images.AddTestAsset(AssetId.FromString($"99/{space}/asset-0001"),
+            customer: 99, space: space);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(99).GetAsync(
+            $"/customers/99/spaces/{space}/images?pageSize=10&orderBy={orderBy}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     [Theory]
     [InlineData("/customers/99/spaces/381/images?pageSize=50&q={\"string3\": \"16-20\"}", 5)]
     [InlineData("/customers/99/spaces/382/images?pageSize=50&q={\"string2\": \"1-10\"}", 10)]
