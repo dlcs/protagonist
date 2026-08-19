@@ -55,7 +55,7 @@ public class NamedQuery : DlcsResource
 
     [RdfProperty(Description = "URI template",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 11, PropertyName = "template")]
+    [JsonProperty(Order = 12, PropertyName = "template")]
     public string? Template { get; set; }
 
 }
