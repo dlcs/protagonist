@@ -12,8 +12,15 @@
         <PackageReference Include="LazyCache.AspNetCore"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug"/>
+        <PackageReference Include="NetVips"/>
         <PackageReference Include="Serilog.AspNetCore"/>
-        <PackageReference Include="SixLabors.ImageSharp"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- libvips binaries per-RID: linux-x64 for containers/CI, win-x64 for local dev.
+             Add e.g. NetVips.Native.osx-arm64 if developing on macOS. -->
+        <PackageReference Include="NetVips.Native.linux-x64" Condition="$([MSBuild]::IsOSPlatform('Linux'))"/>
+        <PackageReference Include="NetVips.Native.win-x64" Condition="$([MSBuild]::IsOSPlatform('Windows'))"/>
     </ItemGroup>
 
     <ItemGroup>

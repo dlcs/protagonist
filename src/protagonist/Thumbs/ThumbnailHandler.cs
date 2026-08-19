@@ -8,9 +8,7 @@ using DLCS.Repository.Assets;
 using IIIF.ImageApi;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Processing;
+using NetVips;
 using Thumbs.Settings;
 using Size = IIIF.Size;
 
@@ -111,12 +109,14 @@ public class ThumbnailHandler
             imageRequest.OriginalPath);
 
         var largestKey = storageKeyGenerator.GetThumbnailLocation(assetId, toResize.MaxDimension);
-        var thumbnail = (await bucketReader.GetObjectFromBucket(largestKey)).Stream;
-        var memStream = new MemoryStream();
-        using var image = await Image.LoadAsync(thumbnail);
-        image.Mutate(x => x.Resize(idealSize.Width, idealSize.Height, KnownResamplers.Lanczos3));
-        await image.SaveAsync(memStream, new JpegEncoder());
+        await using var thumbnail = (await bucketReader.GetObjectFromBucket(largestKey)).Stream;
 
-        return memStream;
+        // libvips requires random access to the source so buffer the S3 stream first
+        using var sourceStream = new MemoryStream();
+        await thumbnail.CopyToAsync(sourceStream);
+
+        using var image = Image.ThumbnailBuffer(sourceStream.ToArray(), idealSize.Width,
+            height: idealSize.Height, size: Enums.Size.Force);
+        return new MemoryStream(image.JpegsaveBuffer());
     }
 }
