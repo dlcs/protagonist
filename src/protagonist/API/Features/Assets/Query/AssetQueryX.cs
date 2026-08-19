@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq.Expressions;
 using API.Exceptions;
 using API.Infrastructure.Requests;
@@ -16,6 +17,28 @@ namespace API.Features.Assets.Query;
 /// </summary>
 public static class AssetQueryX
 {
+    // Properties that an ORDER BY clause can be built for: scalar columns and primitive-collection
+    // columns (e.g. Manifests, DeliveryChannels), but not collections of related entities
+    private static readonly HashSet<string> OrderableProperties = typeof(Asset)
+        .GetProperties()
+        .Where(p => p.CanWrite
+                    && !p.IsDefined(typeof(NotMappedAttribute), false)
+                    && IsOrderable(p.PropertyType))
+        .Select(p => p.Name)
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    private static bool IsOrderable(Type propertyType)
+    {
+        if (propertyType == typeof(string)) return true;
+
+        var elementType = propertyType.IsArray
+            ? propertyType.GetElementType()
+            : propertyType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(propertyType)
+                ? propertyType.GetGenericArguments()[0]
+                : null;
+        return elementType == null || elementType == typeof(string) || elementType.IsValueType;
+    }
+    
     /// <summary>
     /// Convert provided orderable to an .OrderBy or .OrderByDescending clause.
     /// The orderBy field can be the API version of property or the full property version.
@@ -39,44 +62,23 @@ public static class AssetQueryX
             : Queryable.OrderBy(assetQuery, lambda);
     }
 
-    // Properties that an ORDER BY clause can be built for: scalar columns and primitive-collection
-    // columns (e.g. Manifests, DeliveryChannels), but not collections of related entities.
-    // Keyed case-insensitively as orderBy field matching has always ignored case.
-    private static readonly Dictionary<string, string> OrderableProperties = typeof(Asset)
-        .GetProperties()
-        .Where(p => IsOrderable(p.PropertyType))
-        .ToDictionary(p => p.Name, p => p.Name, StringComparer.OrdinalIgnoreCase);
-
-    private static bool IsOrderable(Type propertyType)
-    {
-        if (propertyType == typeof(string)) return true;
-
-        var elementType = propertyType.IsArray
-            ? propertyType.GetElementType()
-            : propertyType.IsGenericType && typeof(IEnumerable).IsAssignableFrom(propertyType)
-                ? propertyType.GetGenericArguments()[0]
-                : null;
-        return elementType == null || elementType == typeof(string) || elementType.IsValueType;
-    }
-
     private static string GetPropertyName(string? orderBy)
     {
         // This needs to be moved because it knows about hydra name values.
         if (string.IsNullOrWhiteSpace(orderBy))
         {
-            return "Created";
+            return nameof(Asset.Created);
         }
 
-        string pascalCase = char.ToUpperInvariant(orderBy[0]) + orderBy.Substring(1);
-        var mapped = pascalCase switch
+        var mapped = orderBy.ToLowerInvariant() switch
         {
-            "Number1" => "NumberReference1",
-            "Number2" => "NumberReference2",
-            "Number3" => "NumberReference3",
-            "String1" => "Reference1",
-            "String2" => "Reference2",
-            "String3" => "Reference3",
-            _ => pascalCase
+            "number1" => nameof(Asset.NumberReference1),
+            "number2" => nameof(Asset.NumberReference2),
+            "number3" => nameof(Asset.NumberReference3),
+            "string1" => nameof(Asset.Reference1),
+            "string2" => nameof(Asset.Reference2),
+            "string3" => nameof(Asset.Reference3),
+            _ => orderBy
         };
 
         if (!OrderableProperties.TryGetValue(mapped, out var propertyName))
@@ -91,20 +93,12 @@ public static class AssetQueryX
     /// Create an Expression from the PropertyName.
     /// </summary>
     /// <remarks>
-    /// I think Split(".") handles nested properties maybe - seems unnecessary but from an SO post
     /// "x" means nothing when creating the Parameter, it's just used for debug messages
     /// </remarks>
     private static LambdaExpression CreateExpression(Type type, string propertyName)
     {
         var param = Expression.Parameter(type, "x");
-
-        Expression body = param;
-        foreach (var member in propertyName.Split('.'))
-        {
-            body = Expression.PropertyOrField(body, member);
-        }
-
-        return Expression.Lambda(body, param);
+        return Expression.Lambda(Expression.PropertyOrField(param, propertyName), param);
     }
 
     /// <summary>

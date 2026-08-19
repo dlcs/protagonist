@@ -53,7 +53,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // GET IMAGE
         // arrange
-        var getUrl = $"/customers/99/spaces/1/images/no-such-asset";
+        var getUrl = "/customers/99/spaces/1/images/no-such-asset";
         
         // act
         var response = await httpClient.AsCustomer(99).GetAsync(getUrl);
@@ -125,7 +125,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         coll.Members.Should().HaveCount(10);
         coll.PageSize.Should().Be(10);
         coll.View.Should().NotBeNull();
-        coll.View.Page.Should().Be(1);
+        coll.View!.Page.Should().Be(1);
         coll.View.Previous.Should().BeNull();
         coll.View.Next.Should().Contain("page=2");
         coll.View.TotalPages.Should().Be(4);
@@ -136,7 +136,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
             var nextResp = await httpClient.AsCustomer(99).GetAsync(view.Next);
             var nextColl = await nextResp.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
             view = nextColl.View;
-            view.Previous.Should().Contain("page=" + pageCounter);
+            view!.Previous.Should().Contain("page=" + pageCounter);
             pageCounter++;
             if (pageCounter < 4)
             {
@@ -162,7 +162,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         var coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        var actual = coll.Members.Select(m => m[field].Value<string>()).Take(expectedOrder.Length);
+        var actual = coll.Members!.Select(m => m[field].Value<string>()).Take(expectedOrder.Length);
         actual.Should().BeEquivalentTo(expectedOrder, opts => opts.WithStrictOrdering());
     }    
     
@@ -202,6 +202,10 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     
     [Theory]
     [InlineData("nonexistent")]
+    [InlineData("ItemId")] // readonly prop on Asset
+    [InlineData("HasRoles")] // readonly prop on Asset
+    [InlineData("RolesList")] // [NotMapped], can't be translated to EF query
+    [InlineData("TagsList")] // [NotMapped], can't be translated to EF query
     [InlineData("imageService")] // a Hydra model property but not a database-backed one
     [InlineData("x")] // previously silently ignored, falling back to created ordering
     [InlineData("adjuncts")] // a collection of related entities cannot be ordered on
@@ -221,6 +225,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("WIDTH", 3062)] // field matching ignores case
     [InlineData("manifests", 3063)] // primitive-collection columns can be ordered on
     [InlineData("finished", 3064)]
+    [InlineData("STRING3", 3065)] // converted to Reference3 internally
     public async Task Get_Paged_Assets_Returns_200_For_Known_OrderBy_Field(string orderBy, int space)
     {
         // Arrange
@@ -264,7 +269,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         // Assert
         var coll = await response.ReadAsHydraResponseAsync<HydraCollection<JObject>>();
-        coll.Members.Length.Should().Be(count);
+        coll.Members!.Length.Should().Be(count);
     }
     
     [Fact]
@@ -284,7 +289,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
-        var asset = collection.Members.Single();
+        var asset = collection.Members!.Single();
         asset.Adjuncts!.Type.Should().Be(JTokenType.String);
         asset.Adjuncts.ToString().Should().EndWith($"/images/{assetId.Asset}/adjuncts");
     }
@@ -306,7 +311,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
-        collection.Members.Single().Adjuncts!.Type.Should().Be(JTokenType.String);
+        collection.Members!.Single().Adjuncts!.Type.Should().Be(JTokenType.String);
     }
 
     [Fact]
@@ -325,7 +330,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
-        var asset = collection.Members.Single();
+        var asset = collection.Members!.Single();
         asset.Adjuncts!.Type.Should().Be(JTokenType.Array);
         ((JArray)asset.Adjuncts).Should().BeEmpty();
     }
@@ -348,7 +353,7 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var collection = await response.ReadAsHydraResponseAsync<HydraCollection<Image>>();
-        var asset = collection.Members.Single();
+        var asset = collection.Members!.Single();
         asset.Adjuncts!.Type.Should().Be(JTokenType.Array);
         ((JArray)asset.Adjuncts).Should().HaveCount(2);
     }
