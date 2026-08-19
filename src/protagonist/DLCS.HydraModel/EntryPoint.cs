@@ -27,13 +27,6 @@ public class EntryPoint : DlcsResource
     public string? OriginStrategies { get; set; }
 
 
-    [HydraLink(Description = "List of all the different roles available to portal users - i.e., the small number of people who log into the portal." +
-                             " These are not the same as the roles end users acquire for accessing protected image services.",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 13, PropertyName = "portalRoles")]
-
-    public string? PortalRoles { get; set; }
-
     [HydraLink(Description = "Available storage policies that can be associated with a Customer or a Space. They determine the " +
                              "number of images and storage capacity permitted to the Customer or Space.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
@@ -82,18 +75,6 @@ public class EntryPointClass : Class
                 Id = "_:originStrategy_collection_retrieve",
                 Method = "GET",
                 Label = "Retrieves all availabe origin strategies. You must use one of these @id URIs as the OriginStrategy property of any CustomerOriginStrategy resources you create.",
-                Returns = Names.Hydra.Collection
-            }
-        };
-
-        var portalRoles = GetHydraLinkProperty("portalRoles");
-        portalRoles.SupportedOperations = new[]
-        {
-            new Operation
-            {
-                Id = "_:portalRole_collection_retrieve",
-                Method = "GET",
-                Label = "Retrieves all available portal roles. You can add these to the 'roles' collection of any portal users you create.",
                 Returns = Names.Hydra.Collection
             }
         };
