@@ -20,12 +20,15 @@ public class EntryPoint : DlcsResource
     [JsonProperty(Order = 11, PropertyName = "customers")]
     public string? Customers { get; set; }
 
-
     [HydraLink(Description = "List of available origin strategies that the DLCS can use to fetch your images.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 12, PropertyName = "originStrategies")]
     public string? OriginStrategies { get; set; }
 
+    [HydraLink(Description = "Summary of queue counts across the whole platform, reporting its current workload.",
+        Range = "vocab:QueueSummary", ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 14, PropertyName = "queue")]
+    public string? Queue { get; set; }
 
     [HydraLink(Description = "Available storage policies that can be associated with a Customer or a Space. They determine the " +
                              "number of images and storage capacity permitted to the Customer or Space.",
@@ -76,6 +79,18 @@ public class EntryPointClass : Class
                 Method = "GET",
                 Label = "Retrieves all availabe origin strategies. You must use one of these @id URIs as the OriginStrategy property of any CustomerOriginStrategy resources you create.",
                 Returns = Names.Hydra.Collection
+            }
+        };
+
+        var queue = GetHydraLinkProperty("queue");
+        queue.SupportedOperations = new[]
+        {
+            new Operation
+            {
+                Id = "_:queue_summary_retrieve",
+                Method = "GET",
+                Label = "Retrieves a summary of queue counts across the whole platform.",
+                Returns = "vocab:QueueSummary"
             }
         };
 
