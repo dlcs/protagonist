@@ -1,7 +1,7 @@
 using API.Infrastructure.Swagger;
 using DLCS.HydraModel;
 using Hydra;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Newtonsoft;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -60,11 +60,11 @@ public class HydraReadWriteSchemaFilterTests
 
         var family = schema.Properties["family"];
         family.ReadOnly.Should().BeTrue();
-        family.Reference.Should().BeNull();
-        family.AllOf.Should().ContainSingle().Which.Reference.Should().NotBeNull();
+        family.Should().BeOfType<OpenApiSchema>("the wrapper is an inline schema, not a $ref");
+        family.AllOf.Should().ContainSingle().Which.Should().BeOfType<OpenApiSchemaReference>();
     }
 
-    private OpenApiSchema GenerateSchema<T>()
+    private IOpenApiSchema GenerateSchema<T>()
     {
         var repository = new SchemaRepository();
         schemaGenerator.GenerateSchema(typeof(T), repository);

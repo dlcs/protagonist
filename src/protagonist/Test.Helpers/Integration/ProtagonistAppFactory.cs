@@ -22,6 +22,16 @@ namespace Test.Helpers.Integration;
 public class ProtagonistAppFactory<TStartup> : WebApplicationFactory<TStartup>
     where TStartup: class
 {
+    static ProtagonistAppFactory()
+    {
+        // Test hosts run as "Testing", not "Development", so AWS:UseLocalStack is not honoured and the app registers
+        // real clients via AddAWSService<T>(). The AWS SDK v4 resolves credentials when the client is constructed
+        // (v3 deferred until first call), so hosts that don't replace those clients would otherwise fail against the
+        // real credential chain. Dummy credentials keep resolution off that chain - no test makes a real AWS call.
+        Environment.SetEnvironmentVariable("AWS_ACCESS_KEY_ID", "foo");
+        Environment.SetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", "bar");
+    }
+
     private readonly Dictionary<string, string> configuration = new();
     private readonly List<IDisposable> disposables = new();
     private LocalStackFixture localStack;

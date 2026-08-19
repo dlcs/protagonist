@@ -313,9 +313,10 @@ public class FileHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
 
-    // Regex for presignedURL, port will depend on what localStack is using. Expires + Signature will always differ
+    // Regex for presignedURL, port will depend on what localStack is using. Date + Signature will always differ.
+    // AWS SDK v4 signs presigned URLs with SigV4 (X-Amz-* query params) rather than the SigV2 params used by v3
     private static string GetExpectedPathRegex(string s3Key) =>
-        $"https://localhost:\\d+/{LocalStackFixture.OriginBucketName}/{s3Key}\\?AWSAccessKeyId=foo\\&Expires=\\d+\\&Signature=.*";
+        $"https://localhost:\\d+/{LocalStackFixture.OriginBucketName}/{s3Key}\\?X-Amz-Expires=\\d+\\&X-Amz-Algorithm=AWS4-HMAC-SHA256\\&X-Amz-Credential=foo.*\\&X-Amz-Signature=.*";
 
     private static void ConfigureStubbery(OrchestratorFixture orchestratorFixture)
     {

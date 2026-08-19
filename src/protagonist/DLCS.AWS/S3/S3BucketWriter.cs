@@ -103,7 +103,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
                     { MaxDegreeOfParallelism = s3Settings.CopyPartConcurrency, CancellationToken = token },
                 async (request, ct) =>
                 {
-                    copyResponses[request.PartNumber - 1] = await s3Client.CopyPartAsync(request, ct);
+                    copyResponses[request.PartNumber!.Value - 1] = await s3Client.CopyPartAsync(request, ct);
                 });
 
             var completeRequest = new CompleteMultipartUploadRequest
@@ -297,7 +297,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
             do
             {
                 listObjectsResponse = await s3Client.ListObjectsAsync(listObjectsRequest);
-                foreach (var item in listObjectsResponse.S3Objects.OrderBy(x => x.Key))
+                foreach (var item in (listObjectsResponse.S3Objects ?? []).OrderBy(x => x.Key))
                 {
                     deleteObjectsRequest.AddKey(item.Key);
                     if (deleteObjectsRequest.Objects.Count == 1000)
@@ -308,9 +308,9 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
 
                     listObjectsRequest.Marker = item.Key;
                 }
-            } while (listObjectsResponse.IsTruncated);
+            } while (listObjectsResponse.IsTruncated ?? false);
             
-            if (deleteObjectsRequest.Objects.Count > 0)
+            if (deleteObjectsRequest.Objects is { Count: > 0 })
             {
                 await s3Client.DeleteObjectsAsync(deleteObjectsRequest);
             }

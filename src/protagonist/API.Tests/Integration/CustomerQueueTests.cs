@@ -1333,7 +1333,7 @@ public class CustomerQueueTests : IClassFixture<ProtagonistAppFactory<Startup>>
 }";
         
         var content = new StringContent(hydraImageBody, Encoding.UTF8, "application/json");
-        var path = "/customers/99/queue";
+        var path = "/customers/99/queue/priority";
 
         // Act
         var response = await httpClient.AsCustomer(99).PostAsync(path, content);

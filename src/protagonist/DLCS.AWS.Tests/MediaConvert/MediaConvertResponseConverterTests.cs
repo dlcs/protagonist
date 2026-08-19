@@ -75,7 +75,7 @@ public class MediaConvertResponseConverterTests
         var expected = new TranscoderJob
         {
             Id = "fake-for-test",
-            CreatedAt = singleAudio.CreatedAt,
+            CreatedAt = singleAudio.CreatedAt.GetValueOrDefault(),
             Status = "COMPLETE",
             PipelineId = "the-queue",
             Timing = new TranscoderJob.TranscoderTiming
@@ -196,7 +196,7 @@ public class MediaConvertResponseConverterTests
         var expected = new TranscoderJob
         {
             Id = "fake-for-test",
-            CreatedAt = singleAudio.CreatedAt,
+            CreatedAt = singleAudio.CreatedAt.GetValueOrDefault(),
             Status = "COMPLETE",
             PipelineId = "the-queue",
             Timing = new TranscoderJob.TranscoderTiming
@@ -300,7 +300,7 @@ public class MediaConvertResponseConverterTests
         var expected = new TranscoderJob
         {
             Id = "fake-for-test",
-            CreatedAt = singleAudio.CreatedAt,
+            CreatedAt = singleAudio.CreatedAt.GetValueOrDefault(),
             Status = "ERROR",
             PipelineId = "the-queue",
             Timing = new TranscoderJob.TranscoderTiming
@@ -394,7 +394,7 @@ public class MediaConvertResponseConverterTests
         var expected = new TranscoderJob
         {
             Id = "fake-for-test",
-            CreatedAt = singleAudio.CreatedAt,
+            CreatedAt = singleAudio.CreatedAt.GetValueOrDefault(),
             Status = status,
             PipelineId = "the-queue",
             Timing = new TranscoderJob.TranscoderTiming
@@ -484,7 +484,7 @@ public class MediaConvertResponseConverterTests
         var expected = new TranscoderJob
         {
             Id = "fake-for-test",
-            CreatedAt = singleAudio.CreatedAt,
+            CreatedAt = singleAudio.CreatedAt.GetValueOrDefault(),
             Status = "ERROR",
             PipelineId = "the-queue",
             Timing = new TranscoderJob.TranscoderTiming

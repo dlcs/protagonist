@@ -121,6 +121,6 @@ public class CustomerResourcesTests : IClassFixture<ProtagonistAppFactory<Startu
 
         var keys = await amazonS3.ListObjectsAsync(LocalStackFixture.OutputBucketName,
             "99/pdf/cust-resource/foo/10/100");
-        keys.S3Objects.Count.Should().Be(0);
+        keys.S3Objects.Should().BeNullOrEmpty();
     }
 }
