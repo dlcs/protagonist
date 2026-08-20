@@ -89,7 +89,6 @@ public class Startup
             .AddIIIFBuilding()
             .AddIIIFAuth(orchestratorSettings);
         
-        
         services.ConfigureForwardedHeaders(configuration);
 
         services
