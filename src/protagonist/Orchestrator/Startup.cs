@@ -15,7 +15,6 @@ using DLCS.Web.Views;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,7 +60,7 @@ public class Startup
             .Configure<PathTemplateOptions>(configuration.GetSection("PathRules"))
             .Configure<CacheSettings>(cachingSection);
 
-        var orchestratorSettings = configuration.Get<OrchestratorSettings>();
+        var orchestratorSettings = configuration.GetRequired<OrchestratorSettings>();
         
         services
             .AddTransient<TimingHandler>()
@@ -74,7 +73,7 @@ public class Startup
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
             .AddSingleton<AssetRequestProcessor>()
             .AddSingleton<DownstreamDestinationSelector>()
-            .AddCaching(cachingSection.Get<CacheSettings>())
+            .AddCaching(cachingSection.GetRequired<CacheSettings>())
             .AddOriginStrategies()
             .AddDataAccess(configuration)
             .AddMediatR()
@@ -126,8 +125,7 @@ public class Startup
     {
         DlcsContextConfiguration.TryRunMigrations(configuration, logger);
         
-        var applicationOptions = configuration.Get<OrchestratorSettings>();
-        var pathBase = applicationOptions.PathBase;
+        var pathBase = configuration.GetRequired<OrchestratorSettings>().PathBase;
         
         if (env.IsDevelopment())
         {
