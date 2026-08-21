@@ -572,4 +572,48 @@ public class MediaConvertResponseConverterTests
         var result = MediaConvertResponseConverter.CreateTranscoderJob(singleAudio, assetId);
         result.HasTranscodedOutputs().Should().BeFalse();
     }
+
+    /// <summary>
+    /// AWSSDK v4 leaves response collections null, rather than empty, when the service returns no elements. An errored
+    /// job can come back with an OutputGroupDetails entry that carries no OutputDetails at all
+    /// </summary>
+    [Fact]
+    public void CreateTranscoderJob_ReturnsNoOutputs_WhenOutputDetailsNull()
+    {
+        var errored = new Job
+        {
+            Id = "fake-for-test",
+            CreatedAt = DateTime.UtcNow,
+            Status = JobStatus.ERROR,
+            Queue = "arn:aws:mediaconvert:eu-west-1:123456789012:queues/the-queue",
+            ErrorCode = 1404,
+            ErrorMessage = "it went wrong",
+            OutputGroupDetails = [new OutputGroupDetail { OutputDetails = null }],
+            Settings = new JobSettings
+            {
+                Inputs = [new Input { FileInput = "s3://input/file.wav" }],
+                OutputGroups =
+                [
+                    new OutputGroup
+                    {
+                        OutputGroupSettings = new OutputGroupSettings
+                        {
+                            FileGroupSettings = new FileGroupSettings
+                                { Destination = "s3://output/1/2/foo/transcode" }
+                        },
+                        Outputs = [new Output { Extension = "mp3", Preset = "p", NameModifier = "_1" }]
+                    }
+                ]
+            },
+            Timing = new Timing { SubmitTime = new DateTime(2025, 9, 9, 8, 0, 0, DateTimeKind.Utc) },
+            UserMetadata = new Dictionary<string, string> { ["mediaType"] = "audio/mp3" }
+        };
+
+        var result = MediaConvertResponseConverter.CreateTranscoderJob(errored, new AssetId(1, 2, "foo"));
+
+        result.Outputs.Should().BeEmpty();
+        result.HasTranscodedOutputs().Should().BeFalse();
+        result.ErrorCode.Should().Be(1404, "the error must still be recorded rather than throwing");
+        result.ErrorMessage.Should().Be("it went wrong");
+    }
 }
