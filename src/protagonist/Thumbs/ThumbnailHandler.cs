@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
+using DLCS.Core.Streams;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository.Assets;
@@ -14,27 +15,13 @@ using Size = IIIF.Size;
 
 namespace Thumbs;
 
-public class ThumbnailHandler
+public class ThumbnailHandler(
+    ILogger<ThumbnailHandler> logger,
+    IBucketReader bucketReader,
+    IOptions<ThumbsSettings> settings,
+    IStorageKeyGenerator storageKeyGenerator,
+    IThumbRepository thumbRepository)
 {
-    private readonly ILogger<ThumbnailHandler> logger;
-    private readonly IBucketReader bucketReader;
-    private readonly IOptionsMonitor<ThumbsSettings> settings;
-    private readonly IThumbRepository thumbRepository;
-    private readonly IStorageKeyGenerator storageKeyGenerator;
-
-    public ThumbnailHandler(
-        ILogger<ThumbnailHandler> logger,
-        IBucketReader bucketReader,
-        IOptionsMonitor<ThumbsSettings> settings, 
-        IStorageKeyGenerator storageKeyGenerator, IThumbRepository thumbRepository)
-    {
-        this.logger = logger;
-        this.bucketReader = bucketReader;
-        this.settings = settings;
-        this.storageKeyGenerator = storageKeyGenerator;
-        this.thumbRepository = thumbRepository;
-    }
-
     /// <summary>
     /// Get <see cref="ThumbnailResponse"/> object, containing actual thumbnail bytes
     /// </summary>
@@ -51,7 +38,7 @@ public class ThumbnailHandler
             return ThumbnailResponse.ExactSize(objectFromBucket.Stream);
         }
 
-        if (!settings.CurrentValue.Resize)
+        if (!settings.Value.Resize)
         {
             logger.LogDebug("Could not find thumbnail for '{Path}' and resizing disabled",
                 imageRequest.OriginalPath);
@@ -69,10 +56,10 @@ public class ThumbnailHandler
         }
 
         // Then try smaller size if allowed
-        if (resizableSize.SmallerSize != null && settings.CurrentValue.Upscale)
+        if (resizableSize.SmallerSize != null && settings.Value.Upscale)
         {
             var resizeThumbnail = await ResizeThumbnail(assetId, imageRequest, resizableSize.SmallerSize,
-                resizableSize.Ideal, settings.CurrentValue.UpscaleThreshold);
+                resizableSize.Ideal, settings.Value.UpscaleThreshold);
             return ThumbnailResponse.Resized(resizeThumbnail);
         }
 
@@ -86,7 +73,7 @@ public class ThumbnailHandler
         
         var sizes = openSizes.Select(Size.FromArray).ToList();
 
-        var sizeCandidate = ThumbnailCalculator.GetCandidate(sizes, imageRequest, settings.CurrentValue.Resize);
+        var sizeCandidate = ThumbnailCalculator.GetCandidate(sizes, imageRequest, settings.Value.Resize);
         return sizeCandidate;
     }
 
@@ -105,18 +92,20 @@ public class ThumbnailHandler
         }
 
         // we now have a candidate size - resize that and return
-        logger.LogDebug("Resize the {Size} thumbnail for {Path}", toResize.MaxDimension,
-            imageRequest.OriginalPath);
+        logger.LogDebug("Resize the {Size} thumbnail for {Path}", toResize.MaxDimension, imageRequest.OriginalPath);
 
         var largestKey = storageKeyGenerator.GetThumbnailLocation(assetId, toResize.MaxDimension);
         await using var thumbnail = (await bucketReader.GetObjectFromBucket(largestKey)).Stream;
 
-        // libvips requires random access to the source so buffer the S3 stream first
-        using var sourceStream = new MemoryStream();
-        await thumbnail.CopyToAsync(sourceStream);
+        if (thumbnail.IsNull())
+        {
+            logger.LogWarning("Thumbnail '{Key}' had no content for resizing", largestKey.Key!);
+            return null;
+        }
 
-        using var image = Image.ThumbnailBuffer(sourceStream.ToArray(), idealSize.Width,
-            height: idealSize.Height, size: Enums.Size.Force);
+        // libvips reads the source incrementally through a custom source, so the S3 stream is consumed as it resizes
+        using var image =
+            Image.ThumbnailStream(thumbnail, idealSize.Width, height: idealSize.Height, size: Enums.Size.Force);
         return new MemoryStream(image.JpegsaveBuffer());
     }
 }
