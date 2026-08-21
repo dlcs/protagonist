@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Web.Logging;
 using Microsoft.AspNetCore.Builder;
@@ -33,16 +32,10 @@ public class CorrelationIdMiddleware(RequestDelegate next)
         }
     }
 
-    private static string GetOrCreateCorrelationId(HttpContext context)
-    {
-        if (context.Request.Headers.TryGetValue(CorrelationIdContext.HeaderKey, out var values))
-        {
-            var fromRequest = values.FirstOrDefault();
-            if (!string.IsNullOrEmpty(fromRequest)) return fromRequest;
-        }
-
-        return Guid.NewGuid().ToString();
-    }
+    private static string GetOrCreateCorrelationId(HttpContext context) =>
+        context.Request.Headers.TryGetHeaderValue(CorrelationIdContext.HeaderKey, out var fromRequest)
+            ? fromRequest
+            : Guid.NewGuid().ToString();
 }
 
 public static class CorrelationIdMiddlewareX

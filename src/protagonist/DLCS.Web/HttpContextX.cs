@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Primitives;
 
@@ -10,20 +11,21 @@ internal static class HttpContextX
     {
         if (httpContext == null) return null;
         
-        if (TryGetCorrelationId(httpContext.Request.Headers, headerKey, out var fromRequest))
+        if (httpContext.Request.Headers.TryGetHeaderValue(headerKey, out var fromRequest))
         {
             return fromRequest;
         }
 
-        if (TryGetCorrelationId(httpContext.Response.Headers, headerKey, out var fromResponse))
+        if (httpContext.Response.Headers.TryGetHeaderValue(headerKey, out var fromResponse))
         {
             return fromResponse;
         }
 
         return null;
     }
-    
-    private static bool TryGetCorrelationId(IHeaderDictionary headers, string headerKey, out string? correlationId)
+
+    public static bool TryGetHeaderValue(this IHeaderDictionary headers, string headerKey,
+        [NotNullWhen(true)] out string? correlationId)
     {
         correlationId = null;
         if (headers.TryGetValue(headerKey, out var values))
