@@ -88,7 +88,7 @@ public class FireballPdfCreator(
         playbook.Pages.Add(FireballPage.Download(parsedNamedQuery.CoverPageUrl));
 
         int pageNumber = 0;
-        foreach (var i in NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery))
+        foreach (var i in assets)
         {
             Logger.LogTrace("Adding PDF page {PdfPage} to {PdfS3Key} for {Image}", pageNumber++, pdfKey, i.Id);
             if (i.HasRoles && !RolesAreOnWhitelist(i, overrides))
