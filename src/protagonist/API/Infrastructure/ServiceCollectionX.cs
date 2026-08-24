@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using API.Features.Adjuncts;
 using API.Features.Assets;
@@ -40,7 +41,7 @@ using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace API.Infrastructure;
 
@@ -138,22 +139,9 @@ public static class ServiceCollectionX
                     Description = "Basic Authorization header using the Bearer scheme.",
                 });
 
-            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
             {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "basic",
-                        },
-                        Scheme = "basic",
-                        Name = "Authorization",
-                        In = ParameterLocation.Header
-                    },
-                    new string[] { }
-                },
+                { new OpenApiSecuritySchemeReference("basic", document), new List<string>() },
             });
             
             // Honour the Hydra ReadOnly/WriteOnly flags on model properties

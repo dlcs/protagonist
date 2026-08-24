@@ -3,6 +3,7 @@ using Amazon.MediaConvert.Model;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Transcoding;
 using DLCS.AWS.Transcoding.Models.Job;
+using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
 
@@ -17,13 +18,13 @@ public static class MediaConvertResponseConverter
         new()
         {
             Id = job.Id,
-            CreatedAt = job.CreatedAt,
+            CreatedAt = job.CreatedAt.GetValueOrDefault(),
             Status = job.Status.ToString(),
             PipelineId = job.Queue.EverythingAfterLast('/'),
             Outputs = CreateOutputs(job, assetId),
             Input = CreateInput(job.Settings.Inputs.Single()),
             Timing = CreateTiming(job.Timing),
-            UserMetadata = job.UserMetadata,
+            UserMetadata = job.UserMetadata ?? new Dictionary<string, string>(),
             ErrorCode = job.ErrorCode == 0 ? null : job.ErrorCode,
             ErrorMessage = job.ErrorMessage,
         };
@@ -39,9 +40,9 @@ public static class MediaConvertResponseConverter
             SubmitTimeMillis = ToUnixTimeMilliseconds(timing.SubmitTime) ?? 0,
         };
 
-        // Timing has DateTime properties backed by DateTime?, the getters for these call .GetValueOrDefault()
-        long? ToUnixTimeMilliseconds(DateTime time) =>
-            time == DateTime.MinValue ? null : ((DateTimeOffset)time).ToUnixTimeMilliseconds();
+        // Timing exposes DateTime? properties, which are unset for stages the job hasn't reached
+        long? ToUnixTimeMilliseconds(DateTime? time) =>
+            time is null || time == DateTime.MinValue ? null : ((DateTimeOffset)time.Value).ToUnixTimeMilliseconds();
     }
 
     private static List<TranscoderJob.TranscoderOutput> CreateOutputs(Job job, AssetId assetId)
@@ -53,29 +54,42 @@ public static class MediaConvertResponseConverter
          Both OutputGroupDetails and Settings.OutputGroups are collections but there'll only ever be 1 of each */
         
         var jobIsComplete = job.Status == JobStatus.COMPLETE;
-        var outputGroupDetails = job.OutputGroupDetails.SingleOrDefault();
+        var outputGroupDetails = job.OutputGroupDetails?.SingleOrDefault();
         
         // If there are not OutputGroupDetails then nothing was transcoded so abort
         if (outputGroupDetails == null) return []; 
         
-        var mediaType = job.UserMetadata[TranscodeMetadataKeys.MediaType]!;
+        // AWSSDK v4 leaves response collections null, rather than empty, when the service returns no elements.
+        // An errored job can return an OutputGroupDetails entry that has no OutputDetails at all
+        var outputDetails = outputGroupDetails.OutputDetails;
+        if (outputDetails.IsNullOrEmpty()) return [];
+
+        // Read UserMetadata here rather than relying on the null-coalesce in CreateTranscoderJob - object initializer
+        // members are evaluated in source order, so Outputs (and therefore this method) runs before it
+        if (job.UserMetadata is not { } userMetadata ||
+            !userMetadata.TryGetValue(TranscodeMetadataKeys.MediaType, out var mediaType))
+        {
+            throw new InvalidOperationException(
+                $"MediaConvert job {job.Id} has no '{TranscodeMetadataKeys.MediaType}' user-metadata");
+        }
+
         var outputGroup = job.Settings.OutputGroups.Single();
         var destinationKey = GetDestinationKey(outputGroup.OutputGroupSettings.FileGroupSettings.Destination);
 
-        var transcodeOutputs = new List<TranscoderJob.TranscoderOutput>(outputGroupDetails.OutputDetails.Count);
+        var transcodeOutputs = new List<TranscoderJob.TranscoderOutput>(outputDetails.Count);
 
-        for (var x = 0; x < outputGroupDetails.OutputDetails.Count; x++)
+        for (var x = 0; x < outputDetails.Count; x++)
         {
             var output = outputGroup.Outputs[x]!;
-            var outputDetail = outputGroupDetails.OutputDetails[x]!;
+            var outputDetail = outputDetails[x]!;
 
             var storageKeys = GetFinalStorageKeys(destinationKey, output, jobIsComplete, assetId, mediaType);
 
             var transcodeOutput = new TranscoderJob.TranscoderOutput
             {
                 Id = x.ToString(),
-                Duration = outputDetail.DurationInMs > 0 ? outputDetail.DurationInMs / 1000 : 0,
-                DurationMillis = outputDetail.DurationInMs,
+                Duration = outputDetail.DurationInMs > 0 ? outputDetail.DurationInMs.Value / 1000 : 0,
+                DurationMillis = outputDetail.DurationInMs.GetValueOrDefault(),
                 Height = outputDetail.VideoDetails?.HeightInPx,
                 Width = outputDetail.VideoDetails?.WidthInPx,
                 TranscodeKey = storageKeys.TranscodeKey,

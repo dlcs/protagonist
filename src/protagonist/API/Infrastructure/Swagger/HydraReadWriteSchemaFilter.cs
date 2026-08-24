@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using DLCS.Core.Collections;
 using Hydra;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -22,7 +22,7 @@ public class HydraReadWriteSchemaFilter : ISchemaFilter
 {
     private readonly ConcurrentDictionary<Type, IReadOnlyDictionary<string, SupportedPropertyAttribute>> cache = new();
 
-    public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+    public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
     {
         if (schema.Properties.IsNullOrEmpty()) return;
 
@@ -49,11 +49,12 @@ public class HydraReadWriteSchemaFilter : ISchemaFilter
     /// Default: "family": {"$ref": "#/components/schemas/AssetFamily","readOnly": true }
     /// With this: "family": {"allOf": [ { "$ref": "#/components/schemas/AssetFamily" } ],"readOnly": true }
     /// </remarks>
-    private static OpenApiSchema EnsureNotReference(OpenApiSchema parent, string name, OpenApiSchema propertySchema)
+    private static OpenApiSchema EnsureNotReference(IOpenApiSchema parent, string name, IOpenApiSchema propertySchema)
     {
-        if (propertySchema.Reference == null) return propertySchema;
+        // an inline schema is an OpenApiSchema, a "$ref" is an OpenApiSchemaReference - only the former is mutable
+        if (propertySchema is OpenApiSchema inlineSchema) return inlineSchema;
 
-        var wrapper = new OpenApiSchema { AllOf = new List<OpenApiSchema> { propertySchema } };
+        var wrapper = new OpenApiSchema { AllOf = new List<IOpenApiSchema> { propertySchema } };
         parent.Properties[name] = wrapper;
         return wrapper;
     }

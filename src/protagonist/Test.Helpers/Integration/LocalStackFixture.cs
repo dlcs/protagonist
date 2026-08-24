@@ -56,7 +56,9 @@ public class LocalStackFixture : IAsyncLifetime
             .WithEnvironment("SERVICES", "s3,sqs,sns")
             .WithEnvironment("DOCKER_HOST", "unix:///var/run/docker.sock")
             .WithEnvironment("DEBUG", "1")
-            .WithPortBinding(0, LocalStackContainerPort);
+            .WithPortBinding(0, LocalStackContainerPort)
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilHttpRequestIsSucceeded(request => request.ForPath("/_localstack/health").ForPort(LocalStackContainerPort)));
 
         localStackContainer = localStackBuilder.Build();
     }

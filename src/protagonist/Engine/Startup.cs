@@ -1,10 +1,13 @@
 ﻿using DLCS.Core.Caching;
+using DLCS.Web;
 using DLCS.Web.Configuration;
 using DLCS.Web.Logging;
 using DLCS.Web.Middleware;
 using Engine.Infrastructure;
 using Engine.Settings;
 using Serilog;
+
+namespace Engine;
 
 public class Startup
 {
@@ -28,9 +31,9 @@ public class Startup
             .AddAws(configuration, webHostEnvironment)
             .AddHttpContextAccessor()
             .AddQueueMonitoring()
-            .AddAssetIngestion(configuration.Get<EngineSettings>())
+            .AddAssetIngestion(configuration.GetRequired<EngineSettings>())
             .AddDataAccess(configuration)
-            .AddCaching(cachingSection.Get<CacheSettings>())
+            .AddCaching(cachingSection.GetRequired<CacheSettings>())
             .AddTopicNotifiers()
             .AddCorrelationIdHeaderPropagation()
             .ConfigureHealthChecks();

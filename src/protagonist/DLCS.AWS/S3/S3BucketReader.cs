@@ -95,7 +95,7 @@ public class S3BucketReader : IBucketReader
         try
         {
             var response = await s3Client.ListObjectsAsync(listObjectsRequest, CancellationToken.None);
-            return response.S3Objects.Select(obj => obj.Key).OrderBy(s => s).ToArray();
+            return response.S3Objects?.Select(obj => obj.Key).OrderBy(s => s).ToArray() ?? [];
         }
         catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
         {

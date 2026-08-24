@@ -11,7 +11,6 @@ using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -76,8 +75,19 @@ public class Startup
         });
         app.UseRouting();
         app.UseResponseCaching();
-        var respondsTo = configuration.GetValue<string>("RespondsTo", "thumbs");
         var logger = loggerFactory.CreateLogger<Startup>();
+
+        if (configuration.GetSection("Thumbs").Get<ThumbsSettings>()?.Resize == true)
+        {
+            // libvips optimisations. Disable caching - hit rate would be low so avoids storing images in memory
+            // and set 1 worker per operation. 
+            NetVips.Cache.Max = 0;
+            NetVips.NetVips.Concurrency = 1;
+            logger.LogInformation("Thumb resizing enabled - initialised libvips {LibVipsVersion}",
+                $"{NetVips.NetVips.Version(0)}.{NetVips.NetVips.Version(1)}.{NetVips.NetVips.Version(2)}");
+        }
+
+        var respondsTo = configuration.GetValue<string>("RespondsTo", "thumbs");
         logger.LogInformation("ThumbsMiddleware mapped to '/{RespondsTo}/*'", respondsTo);
         app.UseEndpoints(endpoints =>
         {
