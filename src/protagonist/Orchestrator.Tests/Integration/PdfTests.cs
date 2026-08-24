@@ -415,7 +415,7 @@ public class PdfTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await httpClient.GetAsync(path);
 
         // Assert
-        savedAssets.Select(s => s.Id).Should().BeEquivalentTo(expectedOrder);
+        savedAssets.Select(s => s.Id).Should().Equal(expectedOrder);
     }
 
     [Fact]

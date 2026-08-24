@@ -175,6 +175,6 @@ public class RawNamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         var results = JsonConvert.DeserializeObject<List<string>>(await response.Content.ReadAsStringAsync());
 
-        results.Should().BeEquivalentTo(expectedOrder);
+        results.Should().Equal(expectedOrder);
     }
 }

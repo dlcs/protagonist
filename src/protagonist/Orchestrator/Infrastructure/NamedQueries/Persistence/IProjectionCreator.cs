@@ -13,7 +13,8 @@ namespace Orchestrator.Infrastructure.NamedQueries.Persistence;
 public interface IProjectionCreator<in T>
 {
     /// <summary>
-    /// Create projection and store in object store for later retrieval
+    /// Create projection and store in object store for later retrieval.
+    /// Images are ordered in accordance with NQ before being passed here. 
     /// </summary>
     Task<(bool success, ControlFile? controlFile)> PersistProjection(T parsedNamedQuery, List<Asset> images,
         CancellationToken cancellationToken = default);
