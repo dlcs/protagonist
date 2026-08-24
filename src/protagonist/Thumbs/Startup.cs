@@ -69,6 +69,7 @@ public class Startup
             app.UseDeveloperExceptionPage();
         }
 
+        app.UseCorrelationId();
         app.UseSerilogRequestLogging(opts =>
         {
             opts.GetLevel = LogHelper.ExcludeHealthChecks;

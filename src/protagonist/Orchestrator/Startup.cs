@@ -137,6 +137,7 @@ public class Startup
 
         app
             .HandlePathBase(pathBase, logger)
+            .UseCorrelationId()
             .UseForwardedHeaders()
             .UseRouting()
             .UseOptions()
