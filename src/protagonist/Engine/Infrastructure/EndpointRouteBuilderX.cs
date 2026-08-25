@@ -51,12 +51,12 @@ public static class EndpointRouteBuilderX
         var jsonObject = new JsonObject
         {
             ["status"] = result.Status.ToString(),
-            ["results"] = new JsonObject(result.Entries.Select(kvp => KeyValuePair.Create<string, JsonNode>(kvp.Key,
+            ["results"] = new JsonObject(result.Entries.Select(kvp => KeyValuePair.Create<string, JsonNode?>(kvp.Key,
                 new JsonObject
                 {
                     ["status"] = kvp.Value.Status.ToString(),
                     ["data"] = new JsonObject(kvp.Value.Data.Select(d =>
-                        KeyValuePair.Create<string, JsonNode>(d.Key, d.Value.ToString())))
+                        KeyValuePair.Create<string, JsonNode?>(d.Key, d.Value.ToString())))
                 })))
         };
 
