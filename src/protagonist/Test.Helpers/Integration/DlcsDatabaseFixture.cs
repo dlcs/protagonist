@@ -14,7 +14,7 @@ using Xunit;
 namespace Test.Helpers.Integration;
 
 /// <summary>
-/// Xunit fixture that manages lifecycle for Postgres 12 container with basic migration applied.
+/// Xunit fixture that manages lifecycle for Postgres 18 container with basic migration applied.
 /// Seeds Customer 99 with 1 space and default thumbnailPolicy
 /// </summary>
 public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
@@ -189,6 +189,7 @@ public class DlcsDefaultDatabaseFixture : IAsyncLifetime
     public DlcsDefaultDatabaseFixture()
     {
         var postgresBuilder = new PostgreSqlBuilder()
+            .WithImage("postgres:18-alpine")
             .WithDatabase("db")
             .WithPassword("postgres_pword")
             .WithUsername("postgres")

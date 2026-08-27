@@ -82,12 +82,12 @@ services:
       - dlcs_localstack_tmp:/tmp/localstack
 
   postgres:
-    image: postgres:14
+    image: postgres:18
     hostname: postgres
     ports:
       - "5452:5432"
     volumes:
-      - dlcs_postgres_data:/var/lib/postgresql/data
+      - dlcs_postgres_data:/var/lib/postgresql/docker
       - dlcs_postgres_data_backups:/backups
     env_file:
       - .env
