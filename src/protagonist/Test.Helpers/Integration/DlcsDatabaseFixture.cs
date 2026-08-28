@@ -181,6 +181,8 @@ public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
 
 public class DlcsDefaultDatabaseFixture : IAsyncLifetime
 {
+    private static readonly Version PostgresVersion = new(18, 0);
+
     private readonly PostgreSqlContainer postgresContainer;
 
     public DlcsContext DbContext { get; private set; }
@@ -189,7 +191,7 @@ public class DlcsDefaultDatabaseFixture : IAsyncLifetime
     public DlcsDefaultDatabaseFixture()
     {
         var postgresBuilder = new PostgreSqlBuilder()
-            .WithImage("postgres:18-alpine")
+            .WithImage($"postgres:{PostgresVersion.Major}-alpine")
             .WithDatabase("db")
             .WithPassword("postgres_pword")
             .WithUsername("postgres")
@@ -217,7 +219,7 @@ public class DlcsDefaultDatabaseFixture : IAsyncLifetime
 
         // Create new DlcsContext using connection string for Postgres container
         var dbContextOptions = new DbContextOptionsBuilder<DlcsContext>()
-            .SetupDlcsContextOptions(postgresContainer.GetConnectionString())
+            .SetupDlcsContextOptions(postgresContainer.GetConnectionString(), PostgresVersion)
             .EnableSensitiveDataLogging();
         DbContext = new DlcsContext(dbContextOptions.Options);
         DbContext.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;

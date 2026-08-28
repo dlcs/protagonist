@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,8 @@ public static class DlcsContextConfiguration
 {
     private static string ConnectionStringKey = "PostgreSQLConnection";
     private static string RunMigrationsKey = "RunMigrations";
+    private static string PostgresVersionKey = "PostgreSQLVersion";
+    private static readonly Version DefaultPostgresVersion = new(18, 0);
 
     /// <summary>
     /// Register and configure <see cref="DlcsContext"/> 
@@ -53,9 +56,11 @@ public static class DlcsContextConfiguration
     /// Setup <see cref="DbContextOptionsBuilder"/> specific to DLCS
     /// </summary>
     /// <remarks>This is a single place to setup options for both running app and testing</remarks>
-    public static T SetupDlcsContextOptions<T>(this T optionsBuilder, string connectionString)
+    public static T SetupDlcsContextOptions<T>(this T optionsBuilder, string connectionString,
+        Version? postgresVersion = null)
         where T : DbContextOptionsBuilder
-        => (T)optionsBuilder.UseNpgsql(connectionString, builder => builder.SetPostgresVersion(13, 0));
+        => (T)optionsBuilder.UseNpgsql(connectionString,
+            builder => builder.SetPostgresVersion(postgresVersion ?? DefaultPostgresVersion));
 
     private static DbContextOptionsBuilder<DlcsContext> GetOptionsBuilder(IConfiguration configuration)
     {
@@ -65,5 +70,10 @@ public static class DlcsContextConfiguration
     }
 
     private static void SetupOptions(IConfiguration configuration, DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.SetupDlcsContextOptions(configuration.GetConnectionString(ConnectionStringKey));
+    {
+        var connectionString = configuration.GetConnectionString(ConnectionStringKey);
+        var postgresVersion = Version.TryParse(configuration[PostgresVersionKey], out var version) ? version : null;
+
+        optionsBuilder.SetupDlcsContextOptions(connectionString, postgresVersion);
+    }
 }
