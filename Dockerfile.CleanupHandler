@@ -20,6 +20,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS base
 ARG APP_VERSION=dev
 ENV APP_VERSION=${APP_VERSION}
 
+ENV PGAPPNAME=CleanupHandler
+
 LABEL maintainer="Donald Gray <donald.gray@digirati.com>,Tom Crane <tom.crane@digirati.com>"
 LABEL org.opencontainers.image.source=https://github.com/dlcs/protagonist
 LABEL org.opencontainers.image.description="Background processor to handle assets deleted from DLCS"
