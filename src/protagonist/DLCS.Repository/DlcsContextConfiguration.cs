@@ -56,7 +56,7 @@ public static class DlcsContextConfiguration
     /// Setup <see cref="DbContextOptionsBuilder"/> specific to DLCS
     /// </summary>
     /// <remarks>This is a single place to setup options for both running app and testing</remarks>
-    public static T SetupDlcsContextOptions<T>(this T optionsBuilder, string connectionString,
+    public static T SetupDlcsContextOptions<T>(this T optionsBuilder, string? connectionString,
         Version? postgresVersion = null)
         where T : DbContextOptionsBuilder
         => (T)optionsBuilder.UseNpgsql(connectionString,
@@ -71,8 +71,7 @@ public static class DlcsContextConfiguration
 
     private static void SetupOptions(IConfiguration configuration, DbContextOptionsBuilder optionsBuilder)
     {
-        var connectionString = configuration.GetConnectionString(ConnectionStringKey)
-            ?? throw new InvalidOperationException($"Missing required connection string '{ConnectionStringKey}'");
+        var connectionString = configuration.GetConnectionString(ConnectionStringKey);
         var postgresVersion = Version.TryParse(configuration[PostgresVersionKey], out var version) ? version : null;
 
         optionsBuilder.SetupDlcsContextOptions(connectionString, postgresVersion);
