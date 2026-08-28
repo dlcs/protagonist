@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using DLCS.Core.Settings;
 using DLCS.Model.Auth.Entities;
 using DLCS.Model.Customers;
 using DLCS.Model.Policies;
@@ -181,7 +182,7 @@ public class DlcsDatabaseFixture : DlcsDefaultDatabaseFixture
 
 public class DlcsDefaultDatabaseFixture : IAsyncLifetime
 {
-    private static readonly Version PostgresVersion = new(18, 0);
+    private static readonly Version PostgresVersion = SystemDefaults.PostgresVersion;
 
     private readonly PostgreSqlContainer postgresContainer;
 
@@ -190,8 +191,7 @@ public class DlcsDefaultDatabaseFixture : IAsyncLifetime
 
     public DlcsDefaultDatabaseFixture()
     {
-        var postgresBuilder = new PostgreSqlBuilder()
-            .WithImage($"postgres:{PostgresVersion.Major}-alpine")
+        var postgresBuilder = new PostgreSqlBuilder($"postgres:{PostgresVersion.Major}-alpine")
             .WithDatabase("db")
             .WithPassword("postgres_pword")
             .WithUsername("postgres")

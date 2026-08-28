@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using DLCS.Core.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,7 +16,6 @@ public static class DlcsContextConfiguration
     private static string ConnectionStringKey = "PostgreSQLConnection";
     private static string RunMigrationsKey = "RunMigrations";
     private static string PostgresVersionKey = "PostgreSQLVersion";
-    private static readonly Version DefaultPostgresVersion = new(18, 0);
 
     /// <summary>
     /// Register and configure <see cref="DlcsContext"/> 
@@ -60,7 +60,7 @@ public static class DlcsContextConfiguration
         Version? postgresVersion = null)
         where T : DbContextOptionsBuilder
         => (T)optionsBuilder.UseNpgsql(connectionString,
-            builder => builder.SetPostgresVersion(postgresVersion ?? DefaultPostgresVersion));
+            builder => builder.SetPostgresVersion(postgresVersion ?? SystemDefaults.PostgresVersion));
 
     private static DbContextOptionsBuilder<DlcsContext> GetOptionsBuilder(IConfiguration configuration)
     {
@@ -71,7 +71,8 @@ public static class DlcsContextConfiguration
 
     private static void SetupOptions(IConfiguration configuration, DbContextOptionsBuilder optionsBuilder)
     {
-        var connectionString = configuration.GetConnectionString(ConnectionStringKey);
+        var connectionString = configuration.GetConnectionString(ConnectionStringKey)
+            ?? throw new InvalidOperationException($"Missing required connection string '{ConnectionStringKey}'");
         var postgresVersion = Version.TryParse(configuration[PostgresVersionKey], out var version) ? version : null;
 
         optionsBuilder.SetupDlcsContextOptions(connectionString, postgresVersion);
