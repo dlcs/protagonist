@@ -7,7 +7,7 @@ namespace Engine.Ingest.Persistence;
 /// <summary>
 /// An adjunct that has been copied from Origin.
 /// </summary>
-public class AdjunctFromOrigin(string adjunctId, AssetId assetId, long assetSize, string location, string contentType)
+public class AdjunctFromOrigin(string adjunctId, AssetId assetId, long assetSize, string location, string? contentType)
     : AssetFromOrigin(assetId, assetSize, location, contentType)
 {
     public string AdjunctId { get; } = adjunctId;
@@ -21,7 +21,7 @@ public class AssetFromOrigin
     /// <summary>
     /// The DLCS asset id.
     /// </summary>
-    public AssetId AssetId { get; }
+    public AssetId AssetId { get; } = null!;
 
     /// <summary>
     /// The size of the asset in bytes.
@@ -31,12 +31,12 @@ public class AssetFromOrigin
     /// <summary>
     /// The type of the asset.
     /// </summary>
-    public string ContentType { get; }
+    public string? ContentType { get; }
 
     /// <summary>
     /// The customer origin strategy used to process this asset.
     /// </summary>
-    public CustomerOriginStrategy CustomerOriginStrategy { get; set; }
+    public CustomerOriginStrategy CustomerOriginStrategy { get; set; } = null!;
 
     /// <summary>
     /// Whether the asset will exceed the storage policy allowance.
@@ -46,7 +46,7 @@ public class AssetFromOrigin
     /// <summary>
     /// The location where the asset has been copied to. This may be a local disk path or an S3 location
     /// </summary>
-    public string Location { get; set; }
+    public string Location { get; set; } = null!;
 
     /// <summary>
     /// Mark asset as being too large and exceeding storage allowance.
@@ -57,7 +57,7 @@ public class AssetFromOrigin
     {
     }
 
-    public AssetFromOrigin(AssetId assetId, long assetSize, string location, string contentType)
+    public AssetFromOrigin(AssetId assetId, long assetSize, string location, string? contentType)
     {
         AssetId = assetId;
         AssetSize = assetSize;

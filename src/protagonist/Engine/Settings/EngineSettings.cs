@@ -21,7 +21,7 @@ public class EngineSettings
     /// Template for location to download any temporary assets to disk. Supports standard replacements
     /// {customer}, {space}, {image}
     /// </summary>
-    public string DownloadTemplate { get; set; }
+    public string DownloadTemplate { get; set; } = null!;
 
     /// <summary>
     /// Get CustomerSpecificSettings, if found. 
@@ -43,17 +43,17 @@ public class ImageIngestSettings
     /// <summary>
     /// Path template for where file will be copied to
     /// </summary>
-    public string SourceTemplate { get; set; }
+    public string SourceTemplate { get; set; } = null!;
 
     /// <summary>
     /// Path template for where derivatives will be generated into
     /// </summary>
-    public string DestinationTemplate { get; set; }
+    public string DestinationTemplate { get; set; } = null!;
 
     /// <summary>
     /// Path template for where thumbnail derivatives will generated into
     /// </summary>
-    public string ThumbsTemplate { get; set; }
+    public string ThumbsTemplate { get; set; } = null!;
 
     /// <summary>
     /// Whether to use unofficial s3:// format (including region) - required for backwards compat with deliverator
@@ -63,7 +63,7 @@ public class ImageIngestSettings
     /// <summary>
     /// URI of downstream image processor
     /// </summary>
-    public Uri ImageProcessorUrl { get; set; }
+    public Uri ImageProcessorUrl { get; set; } = null!;
     
     /// <summary>
     /// How long, in ms, to delay calling Image-Processor after copying file to shared disk 
@@ -78,17 +78,17 @@ public class ImageIngestSettings
     /// <summary>
     /// Root folder for main container
     /// </summary>
-    public string ScratchRoot { get; set; }
+    public string ScratchRoot { get; set; } = null!;
 
     /// <summary>
     /// Root folder for use by Image-Processor sidecar
     /// </summary>
-    public string ImageProcessorRoot { get; set; }
+    public string ImageProcessorRoot { get; set; } = null!;
 
     /// <summary>
     /// Base url for calling orchestrator.
     /// </summary>
-    public Uri OrchestratorBaseUrl { get; set; }
+    public Uri OrchestratorBaseUrl { get; set; } = null!;
 
     /// <summary>
     /// Timeout, in ms, to wait for calls to orchestrator

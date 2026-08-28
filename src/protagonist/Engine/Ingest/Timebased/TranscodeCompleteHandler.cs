@@ -49,7 +49,7 @@ public class TranscodeCompleteHandler(
         try
         {
             var transcodedNotification = message.GetMessageContents<TranscodedNotification>();
-            return transcodedNotification.Detail;
+            return transcodedNotification?.Detail;
         }
         catch (Exception ex)
         {
