@@ -38,9 +38,9 @@ Origins are specified by the API consumer so can be any URL. For the http-based 
 it falls in a blocked range. The check happens per connection, so every hop of a redirect chain is verified, and the
 connection is made to the verified address rather than the host, so a second DNS lookup can't send us elsewhere.
 
-Loopback (`127.0.0.0/8`, `::1`), link-local (`169.254.0.0/16`, `fe80::/10`) and unspecified (`0.0.0.0/8`, `::`) are
-always blocked - link-local covers the cloud instance-metadata address, and connecting to an unspecified address
-reaches loopback. Further ranges can be blocked via `OriginStrategy:BlockedIpRanges`. If a host resolves to a mix of
+Loopback (`127.0.0.0/8`, `::1`), link-local (`169.254.0.0/16`, `fe80::/10`), unique-local (`fc00::/7`) and
+unspecified (`0.0.0.0/8`, `::`) are always blocked - link-local and unique-local cover the cloud instance-metadata
+addresses (`169.254.169.254`, `fd00:ec2::254`), and connecting to an unspecified address reaches loopback. Further ranges can be blocked via `OriginStrategy:BlockedIpRanges`. If a host resolves to a mix of
 allowed and blocked addresses then the connection is refused outright.
 
 Note that this client does not use a proxy, even if `HTTP_PROXY` / `HTTPS_PROXY` are set in the environment - a proxy
@@ -116,7 +116,7 @@ These are in strongly typed to `EngineSettings` object and are split by prefix b
 
 | Key               | Description                                                                                                                             | Default |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `BlockedIpRanges` | IP ranges, in CIDR notation, that an origin is forbidden from resolving to. Loopback, link-local + unspecified are always blocked, regardless of this | `[]`    |
+| `BlockedIpRanges` | IP ranges, in CIDR notation, that an origin is forbidden from resolving to. Loopback, link-local, unique-local + unspecified are always blocked, regardless of this | `[]`    |
 
 ### `AWS:Transcode`
 

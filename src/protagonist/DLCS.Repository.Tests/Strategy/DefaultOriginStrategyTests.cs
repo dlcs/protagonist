@@ -7,7 +7,7 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy;
-using DLCS.Repository.Strategy.Network;
+using DLCS.Repository.OriginStrategies;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Http;

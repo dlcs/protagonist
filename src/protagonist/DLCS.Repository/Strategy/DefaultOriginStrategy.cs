@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
-using DLCS.Repository.Strategy.Network;
+using DLCS.Repository.OriginStrategies;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Strategy;
@@ -31,8 +31,9 @@ public class DefaultOriginStrategy(IHttpClientFactory httpClientFactory, ILogger
         }
         catch (Exception ex) when (OriginAddressBlockedException.FindInChain(ex) is { } blocked)
         {
-            logger.LogWarning("Refused to fetch {ItemDesc} from blocked Origin: {Url}", originItem.Identifier(),
-                originItem.Origin);
+            logger.LogWarning(
+                "Refused to fetch {ItemDesc} from Origin {Url}: host {OriginHost} resolves to {OriginAddress}, which is in blocked range {BlockedRange}",
+                originItem.Identifier(), originItem.Origin, blocked.Host, blocked.Address, blocked.BlockedBy);
             throw blocked;
         }
         catch (Exception ex)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Text.RegularExpressions;
 using DLCS.Model.Customers;
 using Microsoft.Extensions.Configuration;
@@ -7,7 +8,7 @@ namespace DLCS.Repository.OriginStrategies;
 
 /// <summary>
 /// Controls how the customer-supplied regex on a <see cref="CustomerOriginStrategy"/> is evaluated, guarding
-/// against catastrophic backtracking (ReDoS).
+/// against catastrophic backtracking (ReDoS), and which addresses an origin may be fetched from.
 /// </summary>
 public class OriginStrategySettings
 {
@@ -40,6 +41,12 @@ public class OriginStrategySettings
     public TimeSpan MatchTimeout { get; set; } = TimeSpan.FromMilliseconds(500);
 
     /// <summary>
+    /// Additional IP ranges, in CIDR notation, that an origin is forbidden from resolving to.
+    /// Loopback, link-local, unique-local and unspecified ranges are always blocked, regardless of this value.
+    /// </summary>
+    public string[] BlockedIpRanges { get; set; } = [];
+
+    /// <summary>
     /// Bind settings from configuration, falling back to defaults if the section is absent.
     /// </summary>
     /// <exception cref="ArgumentException">Thrown if configured values are not usable</exception>
@@ -52,6 +59,16 @@ public class OriginStrategySettings
             throw new ArgumentException(
                 $"appsetting:{ConfigSection}:{nameof(MatchTimeout)} must be greater than zero",
                 nameof(configuration));
+        }
+
+        foreach (var range in settings.BlockedIpRanges)
+        {
+            if (!IPNetwork.TryParse(range, out _))
+            {
+                throw new ArgumentException(
+                    $"appsetting:{ConfigSection}:{nameof(BlockedIpRanges)} contains '{range}', which is not a valid CIDR IP range",
+                    nameof(configuration));
+            }
         }
 
         return settings;

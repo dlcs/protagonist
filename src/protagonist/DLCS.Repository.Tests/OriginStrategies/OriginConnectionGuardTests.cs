@@ -1,10 +1,9 @@
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
-using DLCS.Repository.Strategy.Network;
-using Microsoft.Extensions.Logging.Abstractions;
+using DLCS.Repository.OriginStrategies;
 
-namespace DLCS.Repository.Tests.Strategy.Network;
+namespace DLCS.Repository.Tests.OriginStrategies;
 
 public class OriginConnectionGuardTests
 {
@@ -15,6 +14,7 @@ public class OriginConnectionGuardTests
     [InlineData("http://[::1]/foo")]
     [InlineData("http://169.254.169.254/latest/meta-data")]
     [InlineData("http://[fe80::1]/foo")]
+    [InlineData("http://[fd00:ec2::254]/latest/meta-data")]
     [InlineData("http://localhost/foo")]
     public async Task ConnectAsync_Throws_IfHostIsAlwaysBlocked(string origin)
     {
@@ -39,8 +39,7 @@ public class OriginConnectionGuardTests
 
     private static HttpClient GetHttpClient(params string[] additionalBlockedRanges)
     {
-        var guard = new OriginConnectionGuard(new OriginAddressPolicy(additionalBlockedRanges),
-            new NullLogger<OriginConnectionGuard>());
+        var guard = new OriginConnectionGuard(new OriginAddressPolicy(additionalBlockedRanges));
 
         // Exercise the guard as it's wired up in DI, so that HttpClient behaviour is included
         // UseProxy:false as a proxy would connect us to the proxy address, rather than the origin

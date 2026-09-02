@@ -1,8 +1,8 @@
 using System;
 using System.Net;
-using DLCS.Repository.Strategy.Network;
+using DLCS.Repository.OriginStrategies;
 
-namespace DLCS.Repository.Tests.Strategy.Network;
+namespace DLCS.Repository.Tests.OriginStrategies;
 
 public class OriginAddressPolicyTests
 {
@@ -15,6 +15,9 @@ public class OriginAddressPolicyTests
     [InlineData("169.254.169.254")]
     [InlineData("fe80::1")]
     [InlineData("febf:ffff::1")]
+    [InlineData("fc00::1")]
+    [InlineData("fd00:ec2::254")]
+    [InlineData("fdff:ffff::1")]
     [InlineData("0.0.0.0")]
     [InlineData("0.1.2.3")]
     [InlineData("::")]
@@ -47,6 +50,7 @@ public class OriginAddressPolicyTests
     [InlineData("192.168.0.1")]
     [InlineData("2001:4860:4860::8888")]
     [InlineData("fec0::1")]
+    [InlineData("fb00::1")]
     public void GetBlockingRange_ReturnsNull_ForAllowedAddress(string address)
     {
         var sut = new OriginAddressPolicy();
@@ -57,10 +61,10 @@ public class OriginAddressPolicyTests
     [Fact]
     public void GetBlockingRange_ReturnsRange_ForConfiguredRange()
     {
-        var sut = new OriginAddressPolicy(["10.0.0.0/8", "fc00::/7"]);
+        var sut = new OriginAddressPolicy(["10.0.0.0/8", "2001:db8::/32"]);
 
         sut.GetBlockingRange(IPAddress.Parse("10.1.2.3")).Should().Be(IPNetwork.Parse("10.0.0.0/8"));
-        sut.GetBlockingRange(IPAddress.Parse("fd12::1")).Should().Be(IPNetwork.Parse("fc00::/7"));
+        sut.GetBlockingRange(IPAddress.Parse("2001:db8::1")).Should().Be(IPNetwork.Parse("2001:db8::/32"));
         sut.GetBlockingRange(IPAddress.Parse("::ffff:10.1.2.3")).Should().Be(IPNetwork.Parse("10.0.0.0/8"));
     }
 

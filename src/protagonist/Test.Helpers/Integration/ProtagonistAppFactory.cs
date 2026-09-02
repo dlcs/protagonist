@@ -4,7 +4,7 @@ using System.IO;
 using Amazon.S3;
 using Amazon.SimpleNotificationService;
 using Amazon.SQS;
-using DLCS.Repository.Strategy.Network;
+using DLCS.Repository.OriginStrategies;
 using LazyCache;
 using LazyCache.Mocks;
 using Microsoft.AspNetCore.Hosting;
@@ -106,7 +106,7 @@ public class ProtagonistAppFactory<TStartup> : WebApplicationFactory<TStartup>
             {
                 // Integration tests serve origins from a local stub, which OriginAddressPolicy always blocks.
                 // Registered before configureTestServices so a test can opt back in to the real policy
-                services.AddSingleton<OriginAddressPolicy>(new PermissiveOriginAddressPolicy());
+                services.AddSingleton<IOriginAddressPolicy>(new PermissiveOriginAddressPolicy());
 
                 if (configureTestServices != null)
                 {

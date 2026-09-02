@@ -1,7 +1,7 @@
 using System;
 using System.Net;
 
-namespace DLCS.Repository.Strategy.Network;
+namespace DLCS.Repository.OriginStrategies;
 
 /// <summary>
 /// Exception raised when an origin resolves to an IP address that we are not permitted to connect to.

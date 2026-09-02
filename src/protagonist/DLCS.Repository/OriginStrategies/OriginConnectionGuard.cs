@@ -4,18 +4,18 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 
-namespace DLCS.Repository.Strategy.Network;
+namespace DLCS.Repository.OriginStrategies;
 
 /// <summary>
-/// Opens outgoing connections for origin requests, refusing any that <see cref="OriginAddressPolicy"/> blocks.
+/// Opens outgoing connections for origin requests, refusing any that <see cref="IOriginAddressPolicy"/> blocks.
 /// </summary>
 /// <remarks>
 /// Used as <see cref="SocketsHttpHandler.ConnectCallback"/> - this is called once per connection so every hop of
-/// a redirect chain is verified, not just the origin the API consumer specified.
+/// a redirect chain is verified, not just the origin the API consumer specified. Refusals aren't logged here; the
+/// details are carried on <see cref="OriginAddressBlockedException"/> and can be logged by the caller
 /// </remarks>
-public class OriginConnectionGuard(OriginAddressPolicy addressPolicy, ILogger<OriginConnectionGuard> logger)
+public class OriginConnectionGuard(IOriginAddressPolicy addressPolicy)
 {
     public async ValueTask<Stream> ConnectAsync(SocketsHttpConnectionContext context,
         CancellationToken cancellationToken)
@@ -53,12 +53,7 @@ public class OriginConnectionGuard(OriginAddressPolicy addressPolicy, ILogger<Or
         foreach (var address in addresses)
         {
             var blockedBy = addressPolicy.GetBlockingRange(address);
-            if (blockedBy == null) continue;
-
-            logger.LogWarning(
-                "Refusing to connect to origin host {OriginHost}: {OriginAddress} is in blocked range {BlockedRange}",
-                host, address, blockedBy);
-            throw new OriginAddressBlockedException(host, address, blockedBy.Value);
+            if (blockedBy != null) throw new OriginAddressBlockedException(host, address, blockedBy.Value);
         }
     }
 }

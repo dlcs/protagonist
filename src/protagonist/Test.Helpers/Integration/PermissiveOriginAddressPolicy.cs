@@ -1,12 +1,12 @@
 using System.Net;
-using DLCS.Repository.Strategy.Network;
+using DLCS.Repository.OriginStrategies;
 
 namespace Test.Helpers.Integration;
 
 /// <summary>
-/// <see cref="OriginAddressPolicy"/> that permits every address, for tests that serve an origin from a local stub.
+/// <see cref="IOriginAddressPolicy"/> that permits every address, for tests that serve an origin from a local stub.
 /// </summary>
-public class PermissiveOriginAddressPolicy : OriginAddressPolicy
+public class PermissiveOriginAddressPolicy : IOriginAddressPolicy
 {
-    public override IPNetwork? GetBlockingRange(IPAddress address) => null;
+    public IPNetwork? GetBlockingRange(IPAddress address) => null;
 }

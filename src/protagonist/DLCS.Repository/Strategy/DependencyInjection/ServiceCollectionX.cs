@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Net.Http;
 using DLCS.Model.Customers;
+using DLCS.Repository.OriginStrategies;
 using DLCS.Repository.SFTP;
-using DLCS.Repository.Strategy.Network;
 using DLCS.Repository.Strategy.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,8 +29,7 @@ public static class ServiceCollectionX
     public static IServiceCollection AddOriginStrategies(this IServiceCollection services,
         IConfiguration configuration)
     {
-        var originStrategySettings = configuration.GetSection(OriginStrategySettings.SettingsSection)
-            .Get<OriginStrategySettings>() ?? new OriginStrategySettings();
+        var originStrategySettings = OriginStrategySettings.FromConfiguration(configuration);
 
         services
             .AddSingleton<S3AmbientOriginStrategy>()
@@ -42,7 +41,7 @@ public static class ServiceCollectionX
             .AddSingleton<ISftpReader, SftpReader>()
             .AddSingleton<ISftpWrapper, SftpWrapper>()
             // Constructed here, rather than by DI, so that an invalid range fails at startup
-            .AddSingleton(new OriginAddressPolicy(originStrategySettings.BlockedIpRanges))
+            .AddSingleton<IOriginAddressPolicy>(new OriginAddressPolicy(originStrategySettings.BlockedIpRanges))
             .AddSingleton<OriginConnectionGuard>()
             .AddSingleton<OriginStrategyResolver>(provider => strategy => strategy switch
             {

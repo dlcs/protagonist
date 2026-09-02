@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using DLCS.Repository.OriginStrategies;
 using DLCS.Repository.Strategy;
 using DLCS.Repository.Strategy.DependencyInjection;
-using DLCS.Repository.Strategy.Network;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -45,7 +45,8 @@ public class ServiceCollectionXTests
         Action action = () => new ServiceCollection().AddOriginStrategies(configuration);
 
         // Assert
-        action.Should().Throw<FormatException>();
+        action.Should().Throw<ArgumentException>()
+            .WithMessage("*BlockedIpRanges*not-a-range*");
     }
 
     private static HttpClient GetOriginStrategyHttpClient(Dictionary<string, string?> settings)
