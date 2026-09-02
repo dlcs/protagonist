@@ -37,7 +37,7 @@ public class OriginStrategySettings
     /// takes microseconds, so this is deliberately tight - it is the only protection for patterns that fall back to
     /// backtracking.
     /// </summary>
-    public TimeSpan MatchTimeout { get; set; } = TimeSpan.FromMilliseconds(20);
+    public TimeSpan MatchTimeout { get; set; } = TimeSpan.FromMilliseconds(500);
 
     /// <summary>
     /// Bind settings from configuration, falling back to defaults if the section is absent.

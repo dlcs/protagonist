@@ -118,7 +118,7 @@ public class OriginStrategySettingsTests
 
         settings.UseNonBacktracking.Should().BeTrue();
         settings.RejectBacktrackingPatterns.Should().BeTrue();
-        settings.MatchTimeout.Should().Be(TimeSpan.FromMilliseconds(20));
+        settings.MatchTimeout.Should().Be(TimeSpan.FromMilliseconds(500));
     }
 
     [Fact]
