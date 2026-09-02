@@ -210,4 +210,29 @@ public class CustomerOriginStrategyRepositoryTests
         (await action.Should().ThrowAsync<OriginStrategyRegexException>())
             .Which.StrategyId.Should().Be("catastrophic");
     }
+
+    [Fact]
+    public async Task GetCustomerOriginStrategy_StillMatches_ForPatternRequiringBacktracking()
+    {
+        // Arrange
+        // Excluding file extensions needs a negative lookbehind, which NonBacktracking can't evaluate. These
+        // strategies predate validation so must keep working, via the backtracking + timeout fallback
+        var expected = new CustomerOriginStrategy
+        {
+            Customer = 5, Id = "lookbehind", Regex = "https://example.com/bucket/.*(?<!\\.tif|\\.jpg)$",
+            Strategy = OriginStrategyType.S3Ambient, Order = 1
+        };
+        await dbContext.CustomerOriginStrategies.AddAsync(expected);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var matches = await sut.GetCustomerOriginStrategy(new AssetId(5, 1, "whatever"),
+            "https://example.com/bucket/b1234.jp2");
+        var excluded = await sut.GetCustomerOriginStrategy(new AssetId(5, 1, "whatever"),
+            "https://example.com/bucket/b1234.tif");
+
+        // Assert
+        matches.Should().BeEquivalentTo(expected);
+        excluded.Id.Should().Be("_default_");
+    }
 }

@@ -235,6 +235,47 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         dlcsContext.CustomerOriginStrategies.Any(s => s.Customer == customerId).Should().BeFalse();
     }
+    
+    [Fact]
+    public async Task Post_CustomerOriginStrategy_400_IfRegexInvalid()
+    {
+        // Arrange
+        const int customerId = 90;
+        const string newStrategyJson = @"{
+            ""strategy"": ""s3-ambient"",
+            ""regex"": ""http[s?://.*).example.com"",
+        }";
+        
+        var path = $"customers/{customerId}/originStrategies";
+
+        // Act
+        var content = new StringContent(newStrategyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+    
+    [Fact]
+    public async Task Post_CustomerOriginStrategy_400_IfRegexUsesBacktracking()
+    {
+        // Arrange
+        const int customerId = 90;
+        const string newStrategyJson = @"{
+            ""strategy"": ""s3-ambient"",
+            ""regex"": ""(?<=https)://(.*).example.com"",
+        }";
+        
+        var path = $"customers/{customerId}/originStrategies";
+
+        // Act
+        var content = new StringContent(newStrategyJson, Encoding.UTF8, "application/json");
+        var response = await httpClient.AsCustomer(customerId).PostAsync(path, content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("backreferences");
+    }
 
     [Fact]
     public async Task Post_CustomerOriginStrategy_409_IfRegexAlreadyExists()
@@ -269,7 +310,7 @@ public class CustomerOriginStrategyTests : IClassFixture<ProtagonistAppFactory<S
     }
 
     [Fact]
-    public async Task Post_CustomerOriginStrategy_201_IfCustomersUseSameRegex()
+    public async Task Post_CustomerOriginStrategy_201_IfDifferentCustomersUseSameRegex()
     {
         // Arrange
         const int customerId = 91;

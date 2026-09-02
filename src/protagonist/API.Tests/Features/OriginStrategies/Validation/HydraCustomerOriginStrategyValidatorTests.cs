@@ -16,10 +16,10 @@ public class HydraCustomerOriginStrategyValidatorTests
         sut = new HydraCustomerOriginStrategyValidator(GetConfiguration());
     }
 
-    private static IConfiguration GetConfiguration(bool useNonBacktracking = true)
+    private static IConfiguration GetConfiguration(bool rejectBacktrackingPatterns = true)
         => new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string>
-                { ["OriginStrategyRegex:UseNonBacktracking"] = useNonBacktracking.ToString() })
+                { ["OriginStrategyRegex:RejectBacktrackingPatterns"] = rejectBacktrackingPatterns.ToString() })
             .Build();
     
     [Fact]
@@ -161,15 +161,30 @@ public class HydraCustomerOriginStrategyValidatorTests
     }
 
     [Fact]
-    public void CustomerOriginStrategy_Regex_AllowsConstructsRequiringBacktracking_IfNonBacktrackingDisabled()
+    public void CustomerOriginStrategy_Regex_AllowsConstructsRequiringBacktracking_IfRejectionDisabled()
     {
-        var validator = new HydraCustomerOriginStrategyValidator(GetConfiguration(useNonBacktracking: false));
+        var validator = new HydraCustomerOriginStrategyValidator(
+            GetConfiguration(rejectBacktrackingPatterns: false));
         var strategy = new CustomerOriginStrategy
         {
-            Regex = "http[s]?://(?=secure).example.com"
+            // Excluding file extensions needs a negative lookbehind, which has no NonBacktracking-safe rewrite
+            Regex = "https://example.com/bucket/.*(?<!\\.tif|\\.jpg)$"
         };
         var result = validator.TestValidate(strategy, s => s.IncludeRuleSets("default"));
         result.ShouldNotHaveValidationErrorFor(s => s.Regex);
+    }
+
+    [Fact]
+    public void CustomerOriginStrategy_Regex_StillRejectsInvalidRegex_IfRejectionDisabled()
+    {
+        var validator = new HydraCustomerOriginStrategyValidator(
+            GetConfiguration(rejectBacktrackingPatterns: false));
+        var strategy = new CustomerOriginStrategy
+        {
+            Regex = "http[s?://"
+        };
+        var result = validator.TestValidate(strategy, s => s.IncludeRuleSets("default"));
+        result.ShouldHaveValidationErrorFor(s => s.Regex);
     }
 
     [Fact]

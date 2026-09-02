@@ -24,14 +24,12 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
 {
     private const string OriginRegexAppSettings = "S3OriginRegex";
 
-    // NOTE(DG): Patterns are customer supplied so this is capped to avoid unbounded growth. Beyond the cap regexes
-    // are built per-match, which is slower but still correct
+    // Cache a max number of regexes. Beyond limit regexes are built per-match, which is slower but still correct
     private const int MaxCachedRegex = 1000;
 
     private static readonly CustomerOriginStrategy DefaultStrategy = new()
         { Id = "_default_", Strategy = OriginStrategyType.Default };
 
-    // Compiling with NonBacktracking isn't free and the repository is scoped in some hosts, so share across instances
     private static readonly ConcurrentDictionary<RegexCacheKey, Regex> RegexCache = new();
 
     private readonly IAppCache appCache;

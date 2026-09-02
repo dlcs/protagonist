@@ -1,4 +1,4 @@
-using DLCS.Core.Enum;
+﻿using DLCS.Core.Enum;
 using DLCS.Core.Strings;
 using DLCS.Model.Customers;
 using DLCS.Repository.Customers;
@@ -29,7 +29,7 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
             .Empty()
             .WithMessage("Should not include customer id");
 
-        // NOTE(DG): Regex rules are in the default ruleset as the value can also be changed on update
+        // Regex rules are in the default ruleset as the value can also be changed on update
         RuleFor(s => s.Regex)
             .MaximumLength(MaxRegexLength)
             .WithMessage($"Regex must be {MaxRegexLength} characters or less");
@@ -61,8 +61,8 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
         });
     }
 
-    // Origins are matched against this regex during ingest and orchestration, so reject anything that can't be
-    // evaluated safely here rather than letting it fail later
+    // Origins are matched against this regex during ingest and (sometimes) orchestration, so reject anything that can't
+    // be evaluated safely here rather than letting it fail later
     private static void ValidateRegex(string regex, OriginStrategyRegexSettings regexSettings,
         ValidationContext<DLCS.HydraModel.CustomerOriginStrategy> context)
     {
@@ -72,7 +72,7 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
             return;
         }
 
-        if (regexSettings.UseNonBacktracking && !OriginStrategyRegex.SupportsNonBacktracking(regex))
+        if (regexSettings.RejectBacktrackingPatterns && !OriginStrategyRegex.SupportsNonBacktracking(regex))
         {
             context.AddFailure(
                 "Regex uses lookarounds, backreferences, atomic groups or conditionals. These can't be evaluated " +

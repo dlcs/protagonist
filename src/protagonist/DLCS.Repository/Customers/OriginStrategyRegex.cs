@@ -6,20 +6,19 @@ using DLCS.Model.Customers;
 namespace DLCS.Repository.Customers;
 
 /// <summary>
-/// Helpers for safely creating and validating the customer-supplied regex on a
-/// <see cref="CustomerOriginStrategy"/>.
+/// Helpers for safely creating and validating the customer-supplied regex on a <see cref="CustomerOriginStrategy"/>.
 /// </summary>
 public static class OriginStrategyRegex
 {
     /// <summary>
     /// Options always used when matching an origin against a CustomerOriginStrategy regex
     /// </summary>
-    public const RegexOptions MatchOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+    private const RegexOptions MatchOptions = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 
     /// <summary>
     /// Create a <see cref="Regex"/> for given pattern, with ReDoS protections applied
     /// </summary>
-    /// <param name="pattern">Customer supplied pattern</param>
+    /// <param name="pattern">Regex pattern</param>
     /// <param name="settings">Settings controlling which protections are applied</param>
     /// <param name="nonBacktracking">
     /// On return, true if the regex was created with <see cref="RegexOptions.NonBacktracking"/>. False if

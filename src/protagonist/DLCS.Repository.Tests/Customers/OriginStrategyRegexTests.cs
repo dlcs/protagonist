@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using DLCS.Repository.Customers;
@@ -32,6 +32,7 @@ public class OriginStrategyRegexTests
     [InlineData("http[s]?://(?=secure).example.com")]
     [InlineData("(https?)://(.*).\\1.com")]
     [InlineData("(?>http[s]?)://(.*).example.com")]
+    [InlineData("https://example.com/bucket/.*(?<!\\.tif|\\.jpg)$")]
     public void Create_FallsBackToBacktrackingWithTimeout_ForUnsupportedPattern(string pattern)
     {
         var regex = OriginStrategyRegex.Create(pattern, DefaultSettings, out var nonBacktracking);
@@ -115,7 +116,8 @@ public class OriginStrategyRegexSettingsTests
         var settings = OriginStrategyRegexSettings.FromConfiguration(GetConfiguration([]));
 
         settings.UseNonBacktracking.Should().BeTrue();
-        settings.MatchTimeout.Should().Be(TimeSpan.FromMilliseconds(100));
+        settings.RejectBacktrackingPatterns.Should().BeTrue();
+        settings.MatchTimeout.Should().Be(TimeSpan.FromMilliseconds(20));
     }
 
     [Fact]
@@ -124,10 +126,12 @@ public class OriginStrategyRegexSettingsTests
         var settings = OriginStrategyRegexSettings.FromConfiguration(GetConfiguration(new()
         {
             ["OriginStrategyRegex:UseNonBacktracking"] = "false",
+            ["OriginStrategyRegex:RejectBacktrackingPatterns"] = "false",
             ["OriginStrategyRegex:MatchTimeout"] = "00:00:00.250"
         }));
 
         settings.UseNonBacktracking.Should().BeFalse();
+        settings.RejectBacktrackingPatterns.Should().BeFalse();
         settings.MatchTimeout.Should().Be(TimeSpan.FromMilliseconds(250));
     }
 

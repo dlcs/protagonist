@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text.RegularExpressions;
 using DLCS.Model.Customers;
 using Microsoft.Extensions.Configuration;
@@ -22,9 +22,22 @@ public class OriginStrategyRegexSettings
     public bool UseNonBacktracking { get; set; } = true;
 
     /// <summary>
-    /// Maximum time a single origin/pattern match may take before being abandoned.
+    /// If true the API rejects patterns that can't be evaluated with <see cref="RegexOptions.NonBacktracking"/>,
+    /// so every stored pattern is guaranteed to match in linear time. Disable to allow lookarounds, backreferences
+    /// etc, which then rely on <see cref="MatchTimeout"/> alone.
     /// </summary>
-    public TimeSpan MatchTimeout { get; set; } = TimeSpan.FromMilliseconds(100);
+    /// <remarks>
+    /// Independent of <see cref="UseNonBacktracking"/> - this only governs what the API accepts, not how matching
+    /// is performed.
+    /// </remarks>
+    public bool RejectBacktrackingPatterns { get; set; } = true;
+
+    /// <summary>
+    /// Maximum time a single origin/pattern match may take before being abandoned. Matching an origin legitimately
+    /// takes microseconds, so this is deliberately tight - it is the only protection for patterns that fall back to
+    /// backtracking.
+    /// </summary>
+    public TimeSpan MatchTimeout { get; set; } = TimeSpan.FromMilliseconds(20);
 
     /// <summary>
     /// Bind settings from configuration, falling back to defaults if the section is absent.
