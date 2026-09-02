@@ -21,7 +21,7 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
 
     public HydraCustomerOriginStrategyValidator(IConfiguration configuration)
     {
-        var regexSettings = OriginStrategyRegexSettings.FromConfiguration(configuration);
+        var regexSettings = OriginStrategySettings.FromConfiguration(configuration);
 
         RuleFor(s => s.Id)
             .Empty()
@@ -64,7 +64,7 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
 
     // Origins are matched against this regex during ingest and (sometimes) orchestration, so reject anything that can't
     // be evaluated safely here rather than letting it fail later
-    private static void ValidateRegex(string regex, OriginStrategyRegexSettings regexSettings,
+    private static void ValidateRegex(string regex, OriginStrategySettings settings,
         ValidationContext<DLCS.HydraModel.CustomerOriginStrategy> context)
     {
         if (!OriginStrategyRegex.IsValidPattern(regex, out var error))
@@ -73,7 +73,7 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
             return;
         }
 
-        if (regexSettings.RejectBacktrackingPatterns && !OriginStrategyRegex.SupportsNonBacktracking(regex))
+        if (settings.RejectBacktrackingPatterns && !OriginStrategyRegex.SupportsNonBacktracking(regex))
         {
             context.AddFailure(
                 "Regex uses lookarounds, backreferences, atomic groups or conditionals. " +

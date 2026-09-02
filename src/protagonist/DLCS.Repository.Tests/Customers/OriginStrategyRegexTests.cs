@@ -9,7 +9,7 @@ namespace DLCS.Repository.Tests.Customers;
 
 public class OriginStrategyRegexTests
 {
-    private static readonly OriginStrategyRegexSettings DefaultSettings = new();
+    private static readonly OriginStrategySettings DefaultSettings = new();
 
     [Fact]
     public void Create_UsesNonBacktracking_ForSupportedPattern()
@@ -46,7 +46,7 @@ public class OriginStrategyRegexTests
     [Fact]
     public void Create_DoesNotUseNonBacktracking_IfDisabled()
     {
-        var settings = new OriginStrategyRegexSettings { UseNonBacktracking = false };
+        var settings = new OriginStrategySettings { UseNonBacktracking = false };
 
         var regex = OriginStrategyRegex.Create("http[s]?://(.*).example.com", settings, out var nonBacktracking);
 
@@ -109,12 +109,12 @@ public class OriginStrategyRegexTests
         => OriginStrategyRegex.SupportsNonBacktracking(pattern).Should().BeFalse();
 }
 
-public class OriginStrategyRegexSettingsTests
+public class OriginStrategySettingsTests
 {
     [Fact]
     public void FromConfiguration_ReturnsDefaults_IfSectionAbsent()
     {
-        var settings = OriginStrategyRegexSettings.FromConfiguration(GetConfiguration([]));
+        var settings = OriginStrategySettings.FromConfiguration(GetConfiguration([]));
 
         settings.UseNonBacktracking.Should().BeTrue();
         settings.RejectBacktrackingPatterns.Should().BeTrue();
@@ -124,11 +124,11 @@ public class OriginStrategyRegexSettingsTests
     [Fact]
     public void FromConfiguration_ReadsConfiguredValues()
     {
-        var settings = OriginStrategyRegexSettings.FromConfiguration(GetConfiguration(new()
+        var settings = OriginStrategySettings.FromConfiguration(GetConfiguration(new()
         {
-            ["OriginStrategyRegex:UseNonBacktracking"] = "false",
-            ["OriginStrategyRegex:RejectBacktrackingPatterns"] = "false",
-            ["OriginStrategyRegex:MatchTimeout"] = "00:00:00.250"
+            ["OriginStrategy:UseNonBacktracking"] = "false",
+            ["OriginStrategy:RejectBacktrackingPatterns"] = "false",
+            ["OriginStrategy:MatchTimeout"] = "00:00:00.250"
         }));
 
         settings.UseNonBacktracking.Should().BeFalse();
@@ -141,8 +141,8 @@ public class OriginStrategyRegexSettingsTests
     [InlineData("-00:00:01")]
     public void FromConfiguration_Throws_IfMatchTimeoutNotPositive(string matchTimeout)
     {
-        Action action = () => OriginStrategyRegexSettings.FromConfiguration(GetConfiguration(new()
-            { ["OriginStrategyRegex:MatchTimeout"] = matchTimeout }));
+        Action action = () => OriginStrategySettings.FromConfiguration(GetConfiguration(new()
+            { ["OriginStrategy:MatchTimeout"] = matchTimeout }));
 
         action.Should().Throw<ArgumentException>();
     }

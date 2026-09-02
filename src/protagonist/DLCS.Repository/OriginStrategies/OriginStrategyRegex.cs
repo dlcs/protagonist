@@ -26,7 +26,7 @@ public static class OriginStrategyRegex
     /// backtracking match constrained by a timeout.
     /// </param>
     /// <exception cref="ArgumentException">Thrown if <paramref name="pattern"/> is not a valid regex</exception>
-    public static Regex Create(string pattern, OriginStrategyRegexSettings settings, out bool nonBacktracking)
+    public static Regex Create(string pattern, OriginStrategySettings settings, out bool nonBacktracking)
     {
         if (settings.UseNonBacktracking)
         {

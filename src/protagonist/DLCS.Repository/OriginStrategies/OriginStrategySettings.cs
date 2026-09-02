@@ -9,9 +9,9 @@ namespace DLCS.Repository.OriginStrategies;
 /// Controls how the customer-supplied regex on a <see cref="CustomerOriginStrategy"/> is evaluated, guarding
 /// against catastrophic backtracking (ReDoS).
 /// </summary>
-public class OriginStrategyRegexSettings
+public class OriginStrategySettings
 {
-    public const string ConfigSection = "OriginStrategyRegex";
+    public const string ConfigSection = "OriginStrategy";
 
     /// <summary>
     /// If true, origins are matched using <see cref="RegexOptions.NonBacktracking"/>, which guarantees matching
@@ -43,9 +43,9 @@ public class OriginStrategyRegexSettings
     /// Bind settings from configuration, falling back to defaults if the section is absent.
     /// </summary>
     /// <exception cref="ArgumentException">Thrown if configured values are not usable</exception>
-    public static OriginStrategyRegexSettings FromConfiguration(IConfiguration configuration)
+    public static OriginStrategySettings FromConfiguration(IConfiguration configuration)
     {
-        var settings = configuration.GetSection(ConfigSection).Get<OriginStrategyRegexSettings>() ?? new();
+        var settings = configuration.GetSection(ConfigSection).Get<OriginStrategySettings>() ?? new();
 
         if (settings.MatchTimeout <= TimeSpan.Zero)
         {

@@ -199,8 +199,8 @@ public class CustomerOriginStrategyRepositoryTests
 
         var noNonBacktracking = GetSut(new Dictionary<string, string>
         {
-            ["OriginStrategyRegex:UseNonBacktracking"] = "false",
-            ["OriginStrategyRegex:MatchTimeout"] = "00:00:00.050"
+            ["OriginStrategy:UseNonBacktracking"] = "false",
+            ["OriginStrategy:MatchTimeout"] = "00:00:00.050"
         });
 
         // Act

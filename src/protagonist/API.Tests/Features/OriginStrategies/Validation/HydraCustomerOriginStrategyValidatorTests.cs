@@ -14,7 +14,7 @@ public class HydraCustomerOriginStrategyValidatorTests
     private static IConfiguration GetConfiguration(bool rejectBacktrackingPatterns = true)
         => new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string>
-                { ["OriginStrategyRegex:RejectBacktrackingPatterns"] = rejectBacktrackingPatterns.ToString() })
+                { ["OriginStrategy:RejectBacktrackingPatterns"] = rejectBacktrackingPatterns.ToString() })
             .Build();
     
     [Fact]

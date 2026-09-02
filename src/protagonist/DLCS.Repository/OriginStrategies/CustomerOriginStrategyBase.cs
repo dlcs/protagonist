@@ -35,7 +35,7 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
     private readonly IAppCache appCache;
     private readonly IOptionsMonitor<CacheSettings> cacheSettings;
     private readonly string s3OriginRegex;
-    private readonly OriginStrategyRegexSettings regexSettings;
+    private readonly OriginStrategySettings settings;
     private readonly ILogger logger;
 
     protected CustomerOriginStrategyBase(
@@ -51,7 +51,7 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
 
         s3OriginRegex = configuration[OriginRegexAppSettings]
             .ThrowIfNullOrWhiteSpace($"appsetting:{OriginRegexAppSettings}");
-        regexSettings = OriginStrategyRegexSettings.FromConfiguration(configuration);
+        settings = OriginStrategySettings.FromConfiguration(configuration);
     }
 
     public Task<IEnumerable<CustomerOriginStrategy>> GetCustomerOriginStrategies(int customer)
@@ -139,25 +139,25 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
         {
             logger.LogError(ex,
                 "Origin strategy '{StrategyId}' for customer {Customer} timed out after {Timeout} matching " +
-                "origin {Origin}", strategy.Id, strategy.Customer, regexSettings.MatchTimeout, origin);
-            throw new OriginStrategyRegexException(strategy, $"timed out after {regexSettings.MatchTimeout}", ex);
+                "origin {Origin}", strategy.Id, strategy.Customer, settings.MatchTimeout, origin);
+            throw new OriginStrategyRegexException(strategy, $"timed out after {settings.MatchTimeout}", ex);
         }
     }
 
     private Regex GetRegex(CustomerOriginStrategy strategy)
     {
-        var key = new RegexCacheKey(strategy.Regex, regexSettings.UseNonBacktracking, regexSettings.MatchTimeout);
+        var key = new RegexCacheKey(strategy.Regex, settings.UseNonBacktracking, settings.MatchTimeout);
         if (RegexCache.TryGetValue(key, out var cached)) return cached;
 
         logger.LogTrace("Creating regex '{Regex}'..", strategy.Regex);
-        var regex = OriginStrategyRegex.Create(strategy.Regex, regexSettings, out var nonBacktracking);
+        var regex = OriginStrategyRegex.Create(strategy.Regex, settings, out var nonBacktracking);
 
-        if (regexSettings.UseNonBacktracking && !nonBacktracking)
+        if (settings.UseNonBacktracking && !nonBacktracking)
         {
             logger.LogWarning(
                 "Origin strategy '{StrategyId}' for customer {Customer} uses a regex that can't be evaluated " +
                 "without backtracking, falling back to a {Timeout} match timeout",
-                strategy.Id, strategy.Customer, regexSettings.MatchTimeout);
+                strategy.Id, strategy.Customer, settings.MatchTimeout);
         }
 
         if (RegexCache.Count < MaxCachedRegex)
