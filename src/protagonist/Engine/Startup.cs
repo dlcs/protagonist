@@ -31,7 +31,7 @@ public class Startup
             .AddAws(configuration, webHostEnvironment)
             .AddHttpContextAccessor()
             .AddQueueMonitoring()
-            .AddAssetIngestion(configuration.GetRequired<EngineSettings>())
+            .AddAssetIngestion(configuration.GetRequired<EngineSettings>(), configuration)
             .AddDataAccess(configuration)
             .AddCaching(cachingSection.GetRequired<CacheSettings>())
             .AddTopicNotifiers()

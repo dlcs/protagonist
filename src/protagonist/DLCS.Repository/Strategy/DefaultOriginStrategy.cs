@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
+using DLCS.Repository.Strategy.Network;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Strategy;
@@ -27,6 +28,12 @@ public class DefaultOriginStrategy(IHttpClientFactory httpClientFactory, ILogger
                 await httpClient.GetAsync(originItem.Origin, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
             var originResponse = await response.CreateOriginResponse(cancellationToken);
             return originResponse;
+        }
+        catch (Exception ex) when (OriginAddressBlockedException.FindInChain(ex) is { } blocked)
+        {
+            logger.LogWarning("Refused to fetch {ItemDesc} from blocked Origin: {Url}", originItem.Identifier(),
+                originItem.Origin);
+            throw blocked;
         }
         catch (Exception ex)
         {

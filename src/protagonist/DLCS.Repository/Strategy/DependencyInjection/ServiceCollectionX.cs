@@ -2,7 +2,9 @@
 using System.Net.Http;
 using DLCS.Model.Customers;
 using DLCS.Repository.SFTP;
+using DLCS.Repository.Strategy.Network;
 using DLCS.Repository.Strategy.Utils;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DLCS.Repository.Strategy.DependencyInjection;
@@ -22,9 +24,14 @@ public static class ServiceCollectionX
     /// to get specific implementation by <see cref="OriginStrategyType"/>.
     /// </summary>
     /// <param name="services">Current <see cref="IServiceCollection"/> object</param>
+    /// <param name="configuration">Current <see cref="IConfiguration"/> object</param>
     /// <returns>Modified service collection</returns>
-    public static IServiceCollection AddOriginStrategies(this IServiceCollection services)
+    public static IServiceCollection AddOriginStrategies(this IServiceCollection services,
+        IConfiguration configuration)
     {
+        var originStrategySettings = configuration.GetSection(OriginStrategySettings.SettingsSection)
+            .Get<OriginStrategySettings>() ?? new OriginStrategySettings();
+
         services
             .AddSingleton<S3AmbientOriginStrategy>()
             .AddSingleton<DefaultOriginStrategy>()
@@ -34,6 +41,9 @@ public static class ServiceCollectionX
             .AddSingleton<IFileSaver, FileSaver>()
             .AddSingleton<ISftpReader, SftpReader>()
             .AddSingleton<ISftpWrapper, SftpWrapper>()
+            // Constructed here, rather than by DI, so that an invalid range fails at startup
+            .AddSingleton(new OriginAddressPolicy(originStrategySettings.BlockedIpRanges))
+            .AddSingleton<OriginConnectionGuard>()
             .AddSingleton<OriginStrategyResolver>(provider => strategy => strategy switch
             {
                 OriginStrategyType.Default => provider.GetRequiredService<DefaultOriginStrategy>(),
@@ -49,10 +59,15 @@ public static class ServiceCollectionX
                 client.DefaultRequestHeaders.Add("Accept", "*/*");
                 client.DefaultRequestHeaders.Add("User-Agent", "DLCS/2.0");
             })
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            .ConfigurePrimaryHttpMessageHandler(provider => new SocketsHttpHandler
             {
                 AllowAutoRedirect = true,
-                MaxAutomaticRedirections = 8
+                MaxAutomaticRedirections = 8,
+                ConnectCallback = provider.GetRequiredService<OriginConnectionGuard>().ConnectAsync,
+
+                // A proxy would resolve the origin host on our behalf, leaving OriginConnectionGuard to check the
+                // proxy address only. Disabled so that an ambient HTTP_PROXY can't defeat the address checks
+                UseProxy = false
             });
 
         return services;

@@ -33,6 +33,19 @@ A customer origin strategy specifies how an asset is to be fetched from origin. 
 * `s3-ambient` - The fetch request is done using the AWS SDK, as such the DLCS must have access to the bucket. An `s3-ambient` origin can also be "optimised"; meaning that the DLCS has permissino to access it via SDK.
 * `sftp` - Origin is fetched using a sftp _Not yet implemented_
 
+Origins are specified by the API consumer so can be any URL. For the http-based strategies (`default` and
+`basic-http`) the IP address that the origin resolves to is checked before connecting, and the connection refused if
+it falls in a blocked range. The check happens per connection, so every hop of a redirect chain is verified, and the
+connection is made to the verified address rather than the host, so a second DNS lookup can't send us elsewhere.
+
+Loopback (`127.0.0.0/8`, `::1`), link-local (`169.254.0.0/16`, `fe80::/10`) and unspecified (`0.0.0.0/8`, `::`) are
+always blocked - link-local covers the cloud instance-metadata address, and connecting to an unspecified address
+reaches loopback. Further ranges can be blocked via `OriginStrategy:BlockedIpRanges`. If a host resolves to a mix of
+allowed and blocked addresses then the connection is refused outright.
+
+Note that this client does not use a proxy, even if `HTTP_PROXY` / `HTTPS_PROXY` are set in the environment - a proxy
+would resolve the origin host on our behalf and the address checks would only ever see the proxy.
+
 ### Ingesting
 
 The process for each asset delivery-channel is outlined below, the same process is used regardless of whether the request was initiated via an http request or a message from a queue:
@@ -98,6 +111,12 @@ These are in strongly typed to `EngineSettings` object and are split by prefix b
 | `ScratchRoot`                       | Root folder for engine, replaces `{root}` in templates                                             |                                                      |
 | `SourceTemplate`                    | Path template for where assets downloaded to, for images should be accessible by image-processor   |                                                      |
 | `ThumbsTemplate`                    | Path template for where thumbnail derivatives will generated to                                    |                                                      |
+
+### `OriginStrategy:`
+
+| Key               | Description                                                                                                                             | Default |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `BlockedIpRanges` | IP ranges, in CIDR notation, that an origin is forbidden from resolving to. Loopback, link-local + unspecified are always blocked, regardless of this | `[]`    |
 
 ### `AWS:Transcode`
 

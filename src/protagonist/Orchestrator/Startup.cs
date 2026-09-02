@@ -74,7 +74,7 @@ public class Startup
             .AddSingleton<AssetRequestProcessor>()
             .AddSingleton<DownstreamDestinationSelector>()
             .AddCaching(cachingSection.GetRequired<CacheSettings>())
-            .AddOriginStrategies()
+            .AddOriginStrategies(configuration)
             .AddDataAccess(configuration)
             .AddMediatR()
             .AddHttpContextAccessor()
