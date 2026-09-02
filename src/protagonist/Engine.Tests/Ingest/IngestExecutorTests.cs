@@ -251,6 +251,33 @@ public class IngestExecutorTests
                 A<CancellationToken>._))
             .MustHaveHappened();
     }
+    
+    [Theory]
+    [InlineData("COS wrong", "COS wrong")]
+    [InlineData(null, "Unable to determine origin strategy")]
+    public async Task IngestAdjunct_HandlesNullOriginStrategy(string? incomingError, string savedError)
+    {
+        var adjunct = new Adjunct
+        {
+            Id = AdjunctIdGenerator.GetAdjunctId(),
+            AssetId = AssetIdGenerator.GetAssetId(),
+            MediaType = "application/json",
+            Error = incomingError,
+            IIIFLink = IIIFLinkType.SeeAlso,
+            Type = "DataSet",
+            Asset = new Asset { Id = AssetIdGenerator.GetAssetId(), }
+        };
+
+        // Act
+        var result = await sut.IngestAdjunct(adjunct, null);
+        
+        // Assert
+        result.Status.Should().Be(IngestResultStatus.Failed);
+        adjunct.Error.Should().Be(savedError);
+        A.CallTo(() =>
+                repo.UpdateIngestedDeliverable(adjunct, null, null, true, A<CancellationToken>._))
+            .MustHaveHappened();
+    }
 }
 
 public class FakeWorker : IAssetIngesterWorker

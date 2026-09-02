@@ -1,8 +1,6 @@
 ﻿using DLCS.Core.Types;
-using DLCS.Model.Assets;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
-using DLCS.Repository.OriginStrategies;
 using Engine.Data;
 
 namespace Engine.Ingest;
@@ -24,7 +22,7 @@ public class AssetIngester(
     ILogger<AssetIngester> logger,
     IngestExecutor executor,
     IEngineAssetRepository engineAssetRepository)
-    : IAssetIngester
+    : DeliverableIngester(customerOriginRepository), IAssetIngester
 {
     /// <summary>
     /// Run ingest based on <see cref="IngestAssetRequest"/>.
@@ -46,21 +44,6 @@ public class AssetIngester(
         // now ingest the asset
         var status = await executor.IngestAsset(asset, customerOriginStrategy, cancellationToken);
         return status;
-    }
-
-    private async Task<CustomerOriginStrategy?> GetCustomerOriginStrategy(Asset asset)
-    {
-        try
-        {
-            var customerOriginStrategy = await customerOriginRepository.GetCustomerOriginStrategy(asset, true);
-            return customerOriginStrategy;
-        }
-        catch (OriginStrategyRegexException originStrategyRegexException)
-        {
-            asset.Error =  originStrategyRegexException.Message;
-        }
-
-        return null;
     }
 }
 

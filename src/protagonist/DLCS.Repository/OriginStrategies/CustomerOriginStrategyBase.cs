@@ -74,6 +74,9 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
     public Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Adjunct adjunct)
         => GetCustomerOriginStrategy(adjunct.Asset.Customer, adjunct);
 
+    public Task<CustomerOriginStrategy> GetCustomerOriginStrategy(IDeliverable deliverable) 
+        => GetCustomerOriginStrategy(deliverable.GetAssetId().Customer, deliverable);
+
     private async Task<CustomerOriginStrategy> GetCustomerOriginStrategy(int customerId, IDeliverable deliverable)
     {
         // Ones without origin would not have been sent for ingestion, this is part of the API processing

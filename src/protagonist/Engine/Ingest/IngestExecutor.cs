@@ -20,7 +20,7 @@ public class IngestExecutor(
     private const int MinimumAssetSize = 100;
 
     public async Task<AdjunctIngestResult> IngestAdjunct(Adjunct adjunct,
-        CustomerOriginStrategy customerOriginStrategy,
+        CustomerOriginStrategy? customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
         var sw = Stopwatch.StartNew();
@@ -28,6 +28,15 @@ public class IngestExecutor(
 
         var customerId = adjunct.Asset.Customer;
         var assetId = adjunct.Asset.Id;
+        
+        // If COS null we can't process, record error and abort
+        if (customerOriginStrategy == null)
+        {
+            adjunct.Error ??= "Unable to determine origin strategy";
+            context.WithStorage();
+            await CompleteAdjunctInDatabase(context, true, cancellationToken);
+            return new AdjunctIngestResult(adjunct.Id, adjunct.AssetId, IngestResultStatus.Failed);
+        }
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(customerId))
         {
