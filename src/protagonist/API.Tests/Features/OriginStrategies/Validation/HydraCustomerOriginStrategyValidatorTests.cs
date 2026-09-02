@@ -9,12 +9,7 @@ namespace API.Tests.Features.OriginStrategies.Validation;
 
 public class HydraCustomerOriginStrategyValidatorTests
 {
-    private readonly HydraCustomerOriginStrategyValidator sut;
-    
-    public HydraCustomerOriginStrategyValidatorTests()
-    {
-        sut = new HydraCustomerOriginStrategyValidator(GetConfiguration());
-    }
+    private readonly HydraCustomerOriginStrategyValidator sut = new(GetConfiguration());
 
     private static IConfiguration GetConfiguration(bool rejectBacktrackingPatterns = true)
         => new ConfigurationBuilder()
@@ -155,9 +150,9 @@ public class HydraCustomerOriginStrategyValidatorTests
             Regex = regex
         };
         var result = sut.TestValidate(strategy, s => s.IncludeRuleSets("default"));
-        result.ShouldHaveValidationErrorFor(s => s.Regex).WithErrorMessage(
-            "Regex uses lookarounds, backreferences, atomic groups or conditionals. These can't be evaluated " +
-            "in guaranteed linear time so are not supported - rewrite the expression without them");
+        result.ShouldHaveValidationErrorFor(s => s.Regex)
+            .WithErrorMessage("Regex uses lookarounds, backreferences, atomic groups or conditionals. " +
+                              "These are not supported - rewrite the expression without them");
     }
 
     [Fact]

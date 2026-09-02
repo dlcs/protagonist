@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DLCS.Repository.Customers;
+namespace DLCS.Repository.OriginStrategies;
 
 /// <summary>
 /// Implementation of <see cref="ICustomerOriginStrategyRepository"/> using dapper for data access 
@@ -51,7 +51,7 @@ public class DapperCustomerOriginStrategyRepository : CustomerOriginStrategyBase
             Id = cos.Id,
             Customer = cos.Customer,
             Regex = cos.Regex,
-            Strategy = strategy.GetEnumFromString<OriginStrategyType>(true),
+            Strategy = strategy.GetEnumFromString<OriginStrategyType>(),
             Optimised = cos.Optimised,
             Order = cos.Order,
             Credentials = cos.Credentials

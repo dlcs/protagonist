@@ -15,7 +15,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DLCS.Repository.Customers;
+namespace DLCS.Repository.OriginStrategies;
 
 /// <summary>
 /// Base class that manages finding correct customer origin strategy for specified origin
@@ -149,6 +149,7 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
         var key = new RegexCacheKey(strategy.Regex, regexSettings.UseNonBacktracking, regexSettings.MatchTimeout);
         if (RegexCache.TryGetValue(key, out var cached)) return cached;
 
+        logger.LogTrace("Creating regex '{Regex}'..", strategy.Regex);
         var regex = OriginStrategyRegex.Create(strategy.Regex, regexSettings, out var nonBacktracking);
 
         if (regexSettings.UseNonBacktracking && !nonBacktracking)
@@ -161,6 +162,7 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
 
         if (RegexCache.Count < MaxCachedRegex)
         {
+            logger.LogTrace("Adding regex {Regex} to cache", strategy.Regex);
             RegexCache.TryAdd(key, regex);
         }
 

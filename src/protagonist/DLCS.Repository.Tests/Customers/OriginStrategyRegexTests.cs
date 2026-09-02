@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using DLCS.Repository.Customers;
+using DLCS.Repository.OriginStrategies;
 using Microsoft.Extensions.Configuration;
 
 namespace DLCS.Repository.Tests.Customers;

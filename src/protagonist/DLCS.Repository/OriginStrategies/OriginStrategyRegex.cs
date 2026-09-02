@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using DLCS.Model.Customers;
 
-namespace DLCS.Repository.Customers;
+namespace DLCS.Repository.OriginStrategies;
 
 /// <summary>
 /// Helpers for safely creating and validating the customer-supplied regex on a <see cref="CustomerOriginStrategy"/>.

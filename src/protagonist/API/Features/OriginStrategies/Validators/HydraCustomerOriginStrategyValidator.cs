@@ -2,6 +2,7 @@
 using DLCS.Core.Strings;
 using DLCS.Model.Customers;
 using DLCS.Repository.Customers;
+using DLCS.Repository.OriginStrategies;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 
@@ -75,8 +76,8 @@ public class HydraCustomerOriginStrategyValidator : AbstractValidator<DLCS.Hydra
         if (regexSettings.RejectBacktrackingPatterns && !OriginStrategyRegex.SupportsNonBacktracking(regex))
         {
             context.AddFailure(
-                "Regex uses lookarounds, backreferences, atomic groups or conditionals. These can't be evaluated " +
-                "in guaranteed linear time so are not supported - rewrite the expression without them");
+                "Regex uses lookarounds, backreferences, atomic groups or conditionals. " +
+                "These are not supported - rewrite the expression without them");
         }
     }
 }

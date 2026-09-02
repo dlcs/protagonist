@@ -15,6 +15,7 @@ using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
+using DLCS.Repository.OriginStrategies;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
 using DLCS.Repository.Storage;

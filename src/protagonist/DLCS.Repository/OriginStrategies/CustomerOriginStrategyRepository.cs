@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace DLCS.Repository.Customers;
+namespace DLCS.Repository.OriginStrategies;
 
 /// <summary>
 /// Implementation of <see cref="ICustomerOriginStrategyRepository"/> using EF for data access 

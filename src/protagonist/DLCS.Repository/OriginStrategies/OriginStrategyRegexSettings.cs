@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using DLCS.Model.Customers;
 using Microsoft.Extensions.Configuration;
 
-namespace DLCS.Repository.Customers;
+namespace DLCS.Repository.OriginStrategies;
 
 /// <summary>
 /// Controls how the customer-supplied regex on a <see cref="CustomerOriginStrategy"/> is evaluated, guarding

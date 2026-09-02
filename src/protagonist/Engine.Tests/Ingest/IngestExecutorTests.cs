@@ -48,6 +48,26 @@ public class IngestExecutorTests
                 repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, true, A<CancellationToken>._))
             .MustHaveHappened();
     }
+
+    [Theory]
+    [InlineData("COS wrong", "COS wrong")]
+    [InlineData(null, "Unable to determine origin strategy")]
+    public async Task IngestAsset_HandlesNullOriginStrategy(string? incomingError, string savedError)
+    {
+        var asset = new Asset { Id = AssetIdGenerator.GetAssetId(), Error = incomingError };
+        A.CallTo(() => workerBuilder.GetWorkers(asset))
+            .Returns(new[] { new FakeWorker(IngestResultStatus.Success) });
+        
+        // Act
+        var result = await sut.IngestAsset(asset, null);
+        
+        // Assert
+        result.Status.Should().Be(IngestResultStatus.Failed);
+        asset.Error.Should().Be(savedError);
+        A.CallTo(() =>
+                repo.UpdateIngestedDeliverable(asset, null, A<ImageStorage>._, true, A<CancellationToken>._))
+            .MustHaveHappened();
+    }
     
     [Theory]
     [InlineData(true)]

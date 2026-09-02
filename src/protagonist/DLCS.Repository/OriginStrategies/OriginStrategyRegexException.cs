@@ -1,7 +1,7 @@
 using System;
 using DLCS.Model.Customers;
 
-namespace DLCS.Repository.Customers;
+namespace DLCS.Repository.OriginStrategies;
 
 /// <summary>
 /// Exception raised when the regex on a <see cref="CustomerOriginStrategy"/> cannot be evaluated against an origin.

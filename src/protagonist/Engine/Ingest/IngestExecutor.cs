@@ -107,18 +107,26 @@ public class IngestExecutor(
             dbSuccess ? overallStatus : IngestResultStatus.Failed);
     }
 
-    public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy customerOriginStrategy,
+    public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy? customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
         var sw = Stopwatch.StartNew();
         var context = new IngestionContext(asset);
+
+        // If COS null we can't process, record error and abort
+        if (customerOriginStrategy == null)
+        {
+            asset.Error ??= "Unable to determine origin strategy";
+            context.WithStorage();
+            await CompleteAssetInDatabase(context, true, cancellationToken);
+            return new IngestResult(asset.Id, IngestResultStatus.Failed);
+        }
         
         // If the asset has the `none` delivery channel specified, skip processing and mark the ingest as being complete
         if (asset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
         {
             context.WithStorage();
-            await assetRepository.UpdateIngestedDeliverable(context.Asset, null, context.ImageStorage,
-                true, cancellationToken);
+            await CompleteAssetInDatabase(context, true, cancellationToken);
             return new IngestResult(asset.Id, IngestResultStatus.Success);
         }
 
