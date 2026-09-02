@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -22,12 +24,20 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
 {
     private const string OriginRegexAppSettings = "S3OriginRegex";
 
+    // NOTE(DG): Patterns are customer supplied so this is capped to avoid unbounded growth. Beyond the cap regexes
+    // are built per-match, which is slower but still correct
+    private const int MaxCachedRegex = 1000;
+
     private static readonly CustomerOriginStrategy DefaultStrategy = new()
         { Id = "_default_", Strategy = OriginStrategyType.Default };
-    
+
+    // Compiling with NonBacktracking isn't free and the repository is scoped in some hosts, so share across instances
+    private static readonly ConcurrentDictionary<RegexCacheKey, Regex> RegexCache = new();
+
     private readonly IAppCache appCache;
     private readonly IOptionsMonitor<CacheSettings> cacheSettings;
     private readonly string s3OriginRegex;
+    private readonly OriginStrategyRegexSettings regexSettings;
     private readonly ILogger logger;
 
     protected CustomerOriginStrategyBase(
@@ -43,6 +53,7 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
 
         s3OriginRegex = configuration[OriginRegexAppSettings]
             .ThrowIfNullOrWhiteSpace($"appsetting:{OriginRegexAppSettings}");
+        regexSettings = OriginStrategyRegexSettings.FromConfiguration(configuration);
     }
 
     public Task<IEnumerable<CustomerOriginStrategy>> GetCustomerOriginStrategies(int customer)
@@ -107,9 +118,56 @@ public abstract class CustomerOriginStrategyBase : ICustomerOriginStrategyReposi
             Optimised = true,
         };
 
-    private static CustomerOriginStrategy? FindMatchingStrategy(
+    private CustomerOriginStrategy? FindMatchingStrategy(
         string origin,
         IEnumerable<CustomerOriginStrategy> customerStrategies)
-        => customerStrategies.FirstOrDefault(cos =>
-            Regex.IsMatch(origin, cos.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant));
+        => customerStrategies.FirstOrDefault(cos => IsMatchingStrategy(origin, cos));
+
+    private bool IsMatchingStrategy(string origin, CustomerOriginStrategy strategy)
+    {
+        try
+        {
+            return GetRegex(strategy).IsMatch(origin);
+        }
+        catch (ArgumentException ex)
+        {
+            // Pattern isn't a valid regex. Predates validation, or was written directly to the database
+            logger.LogError(ex,
+                "Origin strategy '{StrategyId}' for customer {Customer} has an invalid regex, unable to match " +
+                "origin {Origin}", strategy.Id, strategy.Customer, origin);
+            throw new OriginStrategyRegexException(strategy, "is not a valid regular expression", ex);
+        }
+        catch (RegexMatchTimeoutException ex)
+        {
+            logger.LogError(ex,
+                "Origin strategy '{StrategyId}' for customer {Customer} timed out after {Timeout} matching " +
+                "origin {Origin}", strategy.Id, strategy.Customer, regexSettings.MatchTimeout, origin);
+            throw new OriginStrategyRegexException(strategy, $"timed out after {regexSettings.MatchTimeout}", ex);
+        }
+    }
+
+    private Regex GetRegex(CustomerOriginStrategy strategy)
+    {
+        var key = new RegexCacheKey(strategy.Regex, regexSettings.UseNonBacktracking, regexSettings.MatchTimeout);
+        if (RegexCache.TryGetValue(key, out var cached)) return cached;
+
+        var regex = OriginStrategyRegex.Create(strategy.Regex, regexSettings, out var nonBacktracking);
+
+        if (regexSettings.UseNonBacktracking && !nonBacktracking)
+        {
+            logger.LogWarning(
+                "Origin strategy '{StrategyId}' for customer {Customer} uses a regex that can't be evaluated " +
+                "without backtracking, falling back to a {Timeout} match timeout",
+                strategy.Id, strategy.Customer, regexSettings.MatchTimeout);
+        }
+
+        if (RegexCache.Count < MaxCachedRegex)
+        {
+            RegexCache.TryAdd(key, regex);
+        }
+
+        return regex;
+    }
+
+    private readonly record struct RegexCacheKey(string Pattern, bool NonBacktracking, TimeSpan MatchTimeout);
 }
