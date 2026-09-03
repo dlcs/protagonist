@@ -30,12 +30,15 @@ public class PathRewriteTransformer : HttpTransformer
 
         // Assign the custom uri. Be careful about extra slashes when concatenating here.
         proxyRequest.RequestUri = rewriteWholePath 
-            ? new Uri(proxyAction.Path) 
+            ? new Uri(proxyAction.Path!) 
             : GetNewDestination(destinationPrefix);
         
         // TODO - handle x-forwarded-* headers?
         proxyRequest.Headers.Host = proxyRequest.RequestUri.Authority;
         proxyRequest.Headers.WithRequestedBy();
+
+        // Always replace any client supplied gateway token
+        proxyRequest.Headers.WithGatewayToken(proxyAction.GatewayToken);
 
         // NOTE(DG) - this is a hardcoded list for now but we may want to make this config driven later
         if (proxyAction.Target == ProxyDestination.S3)
@@ -122,5 +125,5 @@ public class PathRewriteTransformer : HttpTransformer
     }
 
     private Uri GetNewDestination(string destinationPrefix)
-        => new(destinationPrefix.ToConcatenated('/', proxyAction.Path));
+        => new(destinationPrefix.ToConcatenated('/', proxyAction.Path!));
 }

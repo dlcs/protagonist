@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Features.Images.Orchestration;
+using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
 using Version = IIIF.ImageApi.Version;
@@ -25,19 +26,22 @@ public class YarpImageServerClient : IImageServerClient
     private readonly IOptions<OrchestratorSettings> orchestratorSettings;
     private readonly ILogger<YarpImageServerClient> logger;
     private readonly IImageOrchestrator orchestrator;
+    private readonly GatewayTokenGenerator gatewayTokenGenerator;
 
     public YarpImageServerClient(
         HttpClient httpClient,
         DownstreamDestinationSelector downstreamDestinationSelector,
         IOptions<OrchestratorSettings> orchestratorSettings,
         ILogger<YarpImageServerClient> logger,
-        IImageOrchestrator orchestrator)
+        IImageOrchestrator orchestrator,
+        GatewayTokenGenerator gatewayTokenGenerator)
     {
         this.httpClient = httpClient;
         this.downstreamDestinationSelector = downstreamDestinationSelector;
         this.orchestratorSettings = orchestratorSettings;
         this.logger = logger;
         this.orchestrator = orchestrator;
+        this.gatewayTokenGenerator = gatewayTokenGenerator;
     }
 
     public async Task<TImageService?> GetInfoJson<TImageService>(OrchestrationImage orchestrationImage,
@@ -45,8 +49,8 @@ public class YarpImageServerClient : IImageServerClient
         CancellationToken cancellationToken = default)
         where TImageService : JsonLdBase
     {
-        var imageServerPath = GetInfoJsonPath(orchestrationImage, version);
-        if (string.IsNullOrEmpty(imageServerPath)) return null;
+        var infoJsonRequest = GetInfoJsonRequest(orchestrationImage, version);
+        if (infoJsonRequest == null) return null;
         if (orchestrationImage.IsNotFound()) return null;
         
         // Orchestrate the image to verify that image-server will be able to generate an info.json 
@@ -59,10 +63,18 @@ public class YarpImageServerClient : IImageServerClient
             return null;
         }
             
+        var (imageServerPath, identifier) = infoJsonRequest.Value;
         try
         {
             logger.LogTrace("Getting info.json for {AssetId} from image-server", orchestrationImage.AssetId);
-            await using var infoJson = await httpClient.GetStreamAsync(imageServerPath, cancellationToken);
+            using var request = new HttpRequestMessage(HttpMethod.Get, imageServerPath);
+
+            // Sign the identifier so that the image-server can verify the request came from Orchestrator
+            request.Headers.WithGatewayToken(gatewayTokenGenerator.GetToken(identifier));
+
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            response.EnsureSuccessStatusCode();
+            await using var infoJson = await response.Content.ReadAsStreamAsync(cancellationToken);
             return infoJson.FromJsonStream<TImageService>();
         }
         catch (Exception ex)
@@ -72,7 +84,7 @@ public class YarpImageServerClient : IImageServerClient
         }
     }
 
-    private string? GetInfoJsonPath(OrchestrationImage orchestrationImage, Version version)
+    private (string Url, string Identifier)? GetInfoJsonRequest(OrchestrationImage orchestrationImage, Version version)
     {
         var settings = orchestratorSettings.Value;
         var imageServerAddress =
@@ -84,7 +96,7 @@ public class YarpImageServerClient : IImageServerClient
         }
             
         var targetPath = settings.GetImageServerPath(orchestrationImage.AssetId, version);
-        if (string.IsNullOrEmpty(targetPath))
+        if (targetPath == null)
         {
             logger.LogInformation("No target image-server found for {ImageServer}, {Version}", settings.ImageServer,
                 version);
@@ -92,7 +104,7 @@ public class YarpImageServerClient : IImageServerClient
         }
             
         // Get full info.json path for downstream image server
-        var imageServerPath = imageServerAddress.ToConcatenated('/', targetPath, "info.json");
-        return imageServerPath;
+        var imageServerPath = imageServerAddress.ToConcatenated('/', targetPath.FullPath, "info.json");
+        return (imageServerPath, targetPath.Identifier);
     }
 }

@@ -52,7 +52,7 @@ public class OrchestratorSettingsTests
         var actual = imageServerSettings.GetImageServerPath(asset);
 
         // Assert
-        actual.Should().Be(expected);
+        actual.FullPath.Should().Be(expected);
     }
     
     [Theory]
@@ -69,7 +69,7 @@ public class OrchestratorSettingsTests
         var actual = imageServerSettings.GetImageServerPath(asset, version);
 
         // Assert
-        actual.Should().Be(expected);
+        actual!.FullPath.Should().Be(expected);
     }
 
     [Fact]
@@ -95,6 +95,6 @@ public class OrchestratorSettingsTests
         var actual = imageServerSettings.GetSpecialServerPath("s3://bucket/item/key", version);
 
         // Assert
-        actual.Should().Be(expected);
+        actual!.FullPath.Should().Be(expected);
     }
 }

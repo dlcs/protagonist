@@ -21,7 +21,7 @@ public static class OrchestratorSettingsX
     /// access Asset file.
     /// This will return the endpoint for highest supported ImageApiVersion 
     /// </summary>
-    public static string GetImageServerPath(this OrchestratorSettings settings, AssetId assetId)
+    public static ImageServerPath GetImageServerPath(this OrchestratorSettings settings, AssetId assetId)
         => GetImageServerFilePathInternal(assetId, settings.ImageServerConfig,
             settings.ImageServerConfig.DefaultVersionPathTemplate);
 
@@ -30,7 +30,7 @@ public static class OrchestratorSettingsX
     /// location where image-server can access Asset file.
     /// </summary>
     /// <returns>Path for image-server if image-server can handle requested version, else null</returns>
-    public static string? GetImageServerPath(this OrchestratorSettings settings, AssetId assetId,
+    public static ImageServerPath? GetImageServerPath(this OrchestratorSettings settings, AssetId assetId,
         IIIF.ImageApi.Version targetVersion)
         => settings.ImageServerConfig.VersionPathTemplates.TryGetValue(targetVersion, out var pathTemplate)
             ? GetImageServerFilePathInternal(assetId, settings.ImageServerConfig, pathTemplate)
@@ -41,7 +41,7 @@ public static class OrchestratorSettingsX
     /// image-server can access asset file
     /// </summary>
     /// <returns>Path for image-server if image-server can handle requested version, else null</returns>
-    public static string? GetSpecialServerPath(this OrchestratorSettings settings, string s3Location,
+    public static ImageServerPath? GetSpecialServerPath(this OrchestratorSettings settings, string s3Location,
         IIIF.ImageApi.Version targetVersion)
     {
         if (!settings.ImageServerPathConfig.TryGetValue(ImageServer.Cantaloupe, out var imageServerConfig))
@@ -54,15 +54,15 @@ public static class OrchestratorSettingsX
             return null;
         }
 
-        return $"{pathTemplate}{s3Location.Replace("/", imageServerConfig.Separator)}";
+        return new ImageServerPath(pathTemplate, s3Location.Replace("/", imageServerConfig.Separator));
     }
 
-    private static string GetImageServerFilePathInternal(AssetId assetId, ImageServerConfig imageServerConfig,
-        string versionTemplate)
+    private static ImageServerPath GetImageServerFilePathInternal(AssetId assetId,
+        ImageServerConfig imageServerConfig, string versionTemplate)
     {
         var imageServerFilePath = TemplatedFolders.GenerateTemplate(imageServerConfig.PathTemplate, assetId,
             imageServerConfig.Separator);
 
-        return $"{versionTemplate}{imageServerFilePath}";
+        return new ImageServerPath(versionTemplate, imageServerFilePath);
     }
 }
