@@ -22,7 +22,7 @@ public class AssetIngester(
     ILogger<AssetIngester> logger,
     IngestExecutor executor,
     IEngineAssetRepository engineAssetRepository)
-    : IAssetIngester
+    : DeliverableIngester(customerOriginRepository), IAssetIngester
 {
     /// <summary>
     /// Run ingest based on <see cref="IngestAssetRequest"/>.
@@ -39,7 +39,7 @@ public class AssetIngester(
         }
         
         // get any matching CustomerOriginStrategy 
-        var customerOriginStrategy = await customerOriginRepository.GetCustomerOriginStrategy(asset, true);
+        var customerOriginStrategy = await GetCustomerOriginStrategy(asset);
 
         // now ingest the asset
         var status = await executor.IngestAsset(asset, customerOriginStrategy, cancellationToken);

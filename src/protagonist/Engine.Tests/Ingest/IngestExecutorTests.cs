@@ -48,6 +48,26 @@ public class IngestExecutorTests
                 repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, true, A<CancellationToken>._))
             .MustHaveHappened();
     }
+
+    [Theory]
+    [InlineData("COS wrong", "COS wrong")]
+    [InlineData(null, "Unable to determine origin strategy")]
+    public async Task IngestAsset_HandlesNullOriginStrategy(string? incomingError, string savedError)
+    {
+        var asset = new Asset { Id = AssetIdGenerator.GetAssetId(), Error = incomingError };
+        A.CallTo(() => workerBuilder.GetWorkers(asset))
+            .Returns(new[] { new FakeWorker(IngestResultStatus.Success) });
+        
+        // Act
+        var result = await sut.IngestAsset(asset, null);
+        
+        // Assert
+        result.Status.Should().Be(IngestResultStatus.Failed);
+        asset.Error.Should().Be(savedError);
+        A.CallTo(() =>
+                repo.UpdateIngestedDeliverable(asset, null, A<ImageStorage>._, true, A<CancellationToken>._))
+            .MustHaveHappened();
+    }
     
     [Theory]
     [InlineData(true)]
@@ -229,6 +249,33 @@ public class IngestExecutorTests
         A.CallTo(() => repo.UpdateIngestedDeliverable(asset, null,
                 A<ImageStorage?>.That.Matches(s => s!.ThumbnailSize == 0L && s.Size == 0L), true,
                 A<CancellationToken>._))
+            .MustHaveHappened();
+    }
+    
+    [Theory]
+    [InlineData("COS wrong", "COS wrong")]
+    [InlineData(null, "Unable to determine origin strategy")]
+    public async Task IngestAdjunct_HandlesNullOriginStrategy(string? incomingError, string savedError)
+    {
+        var adjunct = new Adjunct
+        {
+            Id = AdjunctIdGenerator.GetAdjunctId(),
+            AssetId = AssetIdGenerator.GetAssetId(),
+            MediaType = "application/json",
+            Error = incomingError,
+            IIIFLink = IIIFLinkType.SeeAlso,
+            Type = "DataSet",
+            Asset = new Asset { Id = AssetIdGenerator.GetAssetId(), }
+        };
+
+        // Act
+        var result = await sut.IngestAdjunct(adjunct, null);
+        
+        // Assert
+        result.Status.Should().Be(IngestResultStatus.Failed);
+        adjunct.Error.Should().Be(savedError);
+        A.CallTo(() =>
+                repo.UpdateIngestedDeliverable(adjunct, null, null, true, A<CancellationToken>._))
             .MustHaveHappened();
     }
 }

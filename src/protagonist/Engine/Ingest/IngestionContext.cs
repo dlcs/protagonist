@@ -4,7 +4,6 @@ using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Repository.Strategy;
 using Engine.Ingest.Persistence;
 
 namespace Engine.Ingest;

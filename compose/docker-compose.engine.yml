@@ -1,6 +1,6 @@
 services:
   appetiser:
-    image: ghcr.io/dlcs/appetiser:pr-25 # TODO - temp use PR until release cut
+    image: ghcr.io/dlcs/appetiser:pr-32 # TODO - temp use PR until release cut
     ports:
       - "5031:8000"
     volumes:

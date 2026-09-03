@@ -2,6 +2,7 @@
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using Engine.Data;
+using Microsoft.AspNetCore.Components;
 
 namespace Engine.Ingest;
 
@@ -34,7 +35,7 @@ public class AdjunctIngester(
     ICustomerOriginStrategyRepository customerOriginRepository,
     IngestExecutor executor,
     IEngineAssetRepository engineAssetRepository,
-    ILogger<AdjunctIngester> logger) : IAdjunctIngester
+    ILogger<AdjunctIngester> logger) : DeliverableIngester(customerOriginRepository), IAdjunctIngester
 {
     public async Task<IngestResult> Ingest(IngestAdjunctRequest request, CancellationToken cancellationToken = default)
     {
@@ -48,7 +49,7 @@ public class AdjunctIngester(
         }
         
         // get any matching CustomerOriginStrategy
-        var customerOriginStrategy = await customerOriginRepository.GetCustomerOriginStrategy(adjunct);
+        var customerOriginStrategy = await GetCustomerOriginStrategy(adjunct);
 
         // now ingest the adjunct
         var status = await executor.IngestAdjunct(adjunct, customerOriginStrategy, cancellationToken);
