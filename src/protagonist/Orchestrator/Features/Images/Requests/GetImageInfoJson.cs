@@ -125,7 +125,7 @@ public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, Descrip
     private bool IsRequestedVersionSupportedByImageServer(AssetId assetId, Version version)
     {
         var targetPath = orchestratorSettings.GetImageServerPath(assetId, version);
-        return !string.IsNullOrEmpty(targetPath);
+        return targetPath != null;
     }
 
     private ValueTask DoOrchestrationIfRequired(OrchestrationImage orchestrationImage, bool noOrchestrationOverride,
