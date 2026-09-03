@@ -39,7 +39,8 @@ public class OriginConnectionGuardTests
 
     private static HttpClient GetHttpClient(params string[] additionalBlockedRanges)
     {
-        var guard = new OriginConnectionGuard(new OriginAddressPolicy(additionalBlockedRanges));
+        var guard = new OriginConnectionGuard(
+            new OriginAddressPolicy(new OriginStrategySettings { BlockedIpRanges = additionalBlockedRanges }));
 
         // Exercise the guard as it's wired up in DI, so that HttpClient behaviour is included
         // UseProxy:false as a proxy would connect us to the proxy address, rather than the origin

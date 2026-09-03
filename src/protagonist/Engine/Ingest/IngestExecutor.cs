@@ -194,7 +194,7 @@ public class IngestExecutor(
         }
 
         sw.Stop();
-        logger.LogDebug("Processed {AssetId} in {Elapsed}ms", asset.Id, sw.ElapsedMilliseconds);
+        logger.LogInformation("Processed {AssetId} in {Elapsed}ms", asset.Id, sw.ElapsedMilliseconds);
         return new IngestResult(asset.Id, dbSuccess ? overallStatus : IngestResultStatus.Failed);
     }
 

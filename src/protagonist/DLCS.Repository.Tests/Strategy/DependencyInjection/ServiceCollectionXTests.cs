@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using DLCS.Repository.OriginStrategies;
 using DLCS.Repository.Strategy;
@@ -33,12 +34,48 @@ public class ServiceCollectionXTests
     }
 
     [Fact]
-    public void AddOriginStrategies_Throws_IfBlockedIpRangeInvalid()
+    public async Task AddOriginStrategies_ConfiguresHttpClient_ToAllowOrigin_IfInAllowedRange()
+    {
+        // Arrange
+        var httpClient = GetOriginStrategyHttpClient(new Dictionary<string, string?>
+        {
+            ["OriginStrategy:AllowedIpRanges:0"] = "127.0.0.0/8"
+        });
+
+        // Act - port 1 has nothing listening, so we get as far as a refused connection
+        Func<Task> action = () => httpClient.GetAsync("http://127.0.0.1:1/foo");
+
+        // Assert
+        var exception = (await action.Should().ThrowAsync<HttpRequestException>()).Which;
+        exception.InnerException.Should().BeOfType<SocketException>("the guard should not have blocked the address");
+    }
+
+    [Fact]
+    public async Task AddOriginStrategies_ConfiguresHttpClient_ToBlockInstanceMetadata_EvenIfAllowed()
+    {
+        // Arrange
+        var httpClient = GetOriginStrategyHttpClient(new Dictionary<string, string?>
+        {
+            ["OriginStrategy:AllowedIpRanges:0"] = "0.0.0.0/0"
+        });
+
+        // Act
+        Func<Task> action = () => httpClient.GetAsync("http://169.254.169.254/latest/meta-data");
+
+        // Assert
+        var exception = (await action.Should().ThrowAsync<HttpRequestException>()).Which;
+        exception.InnerException.Should().BeOfType<OriginAddressBlockedException>();
+    }
+
+    [Theory]
+    [InlineData("BlockedIpRanges")]
+    [InlineData("AllowedIpRanges")]
+    public void AddOriginStrategies_Throws_IfIpRangeInvalid(string setting)
     {
         // Arrange
         var configuration = GetConfiguration(new Dictionary<string, string?>
         {
-            ["OriginStrategy:BlockedIpRanges:0"] = "not-a-range"
+            [$"OriginStrategy:{setting}:0"] = "not-a-range"
         });
 
         // Act
@@ -46,7 +83,7 @@ public class ServiceCollectionXTests
 
         // Assert
         action.Should().Throw<ArgumentException>()
-            .WithMessage("*BlockedIpRanges*not-a-range*");
+            .WithMessage($"*{setting}*not-a-range*");
     }
 
     private static HttpClient GetOriginStrategyHttpClient(Dictionary<string, string?> settings)

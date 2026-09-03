@@ -33,18 +33,20 @@ A customer origin strategy specifies how an asset is to be fetched from origin. 
 * `s3-ambient` - The fetch request is done using the AWS SDK, as such the DLCS must have access to the bucket. An `s3-ambient` origin can also be "optimised"; meaning that the DLCS has permissino to access it via SDK.
 * `sftp` - Origin is fetched using a sftp _Not yet implemented_
 
-Origins are specified by the API consumer so can be any URL. For the http-based strategies (`default` and
-`basic-http`) the IP address that the origin resolves to is checked before connecting, and the connection refused if
-it falls in a blocked range. The check happens per connection, so every hop of a redirect chain is verified, and the
-connection is made to the verified address rather than the host, so a second DNS lookup can't send us elsewhere.
+For `default` and `basic-http` the IP address that the origin resolves to is checked before connecting, and the connection refused if it falls in a blocked range. The check happens per connection, so every hop of a redirect chain is verified.
 
-Loopback (`127.0.0.0/8`, `::1`), link-local (`169.254.0.0/16`, `fe80::/10`), unique-local (`fc00::/7`) and
-unspecified (`0.0.0.0/8`, `::`) are always blocked - link-local and unique-local cover the cloud instance-metadata
-addresses (`169.254.169.254`, `fd00:ec2::254`), and connecting to an unspecified address reaches loopback. Further ranges can be blocked via `OriginStrategy:BlockedIpRanges`. If a host resolves to a mix of
-allowed and blocked addresses then the connection is refused outright.
+Loopback (`127.0.0.0/8`, `::1`), link-local (`169.254.0.0/16`, `fe80::/10`), unique-local (`fc00::/7`) and unspecified (`0.0.0.0/8`, `::`) are blocked by default - link-local and unique-local cover the cloud instance-metadata addresses (`169.254.169.254`, `fd00:ec2::254`), and connecting to an unspecified address reaches loopback. Further ranges can be blocked via `OriginStrategy:BlockedIpRanges`. If a host resolves to a mix of allowed and blocked addresses then the connection is refused outright.
 
-Note that this client does not use a proxy, even if `HTTP_PROXY` / `HTTPS_PROXY` are set in the environment - a proxy
-would resolve the origin host on our behalf and the address checks would only ever see the proxy.
+`OriginStrategy:AllowedIpRanges` permits addresses that would otherwise be blocked, for local development and for deployments whose origins legitimately sit on internal addresses. An allowed range wins. The instance-metadata addresses are the one exception and can never be allowed. For running Engine outside Docker against an origin served from the host:
+
+```json
+"OriginStrategy": {
+  "AllowedIpRanges": [ "127.0.0.0/8", "::1/128" ]
+}
+```
+
+> [!Note]
+> The HTTP client for `default` and `basic-http` does not use a proxy, even if `HTTP_PROXY` / `HTTPS_PROXY` are set in the environment as a proxy would resolve the origin host on our behalf and the address checks would only ever see the proxy.
 
 ### Ingesting
 
@@ -94,29 +96,30 @@ These are in strongly typed to `EngineSettings` object and are split by prefix b
 
 ### `ImageIngest:`
 
-| Key                                 | Description                                                                                        | Default                                              |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `CloseBracketReplacement`           | The character to use when replacing an closing bracket character when saving to disk               | `_`                                                  |
-| `DefaultThumbs`                     | A list of thumbnails that will be added to every asset regardless of the thumbnail policy          | `["!100,100", "!200,200", "!400,400", "!1024,1024"]` |
-| `DestinationTemplate`               | Path template for where derivatives will be written to                                             |                                                      |
-| `ImageProcessorDelayMs`             | How long, in ms to delay calling image-processor after copying to shared disk.                     | `0`                                                  |
-| `ImageProcessorTimeoutMs`           | Timeout, in ms, for requests to image-processor                                                    | `300000`                                             |
-| `ImageProcessorRoot`                | Root folder for use by Image-Processor sidecar                                                     |                                                      |
-| `ImageProcessorUrl`                 | URI of downstream image/derivative processor (e.g. appetiser)                                      |                                                      |
-| `IncludeRegionInS3Uri`              | Whether to add region to s3:// URIs. Unofficial but required for backwards compat with deliverator | `false`                                              |
-| `OpenBracketReplacement`            | The character to use when replacing an open bracket character when saving to disk                  | `_`                                                  |
-| `OrchestratorBaseUrl`               | Base url for calling orchestrator                                                                  |                                                      |
-| `OrchestrateImageAfterIngest`       | If true a request is made to Orchestrator to orchestrate image immediately after ingestion         | `true`                                               |
-| `OrchestratorTimeoutMs`             | Timeout, in ms, to wait for calls to orchestrator                                                  | `5000`                                               |
-| `ScratchRoot`                       | Root folder for engine, replaces `{root}` in templates                                             |                                                      |
-| `SourceTemplate`                    | Path template for where assets downloaded to, for images should be accessible by image-processor   |                                                      |
-| `ThumbsTemplate`                    | Path template for where thumbnail derivatives will generated to                                    |                                                      |
+| Key                           | Description                                                                                        | Default                                              |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `CloseBracketReplacement`     | The character to use when replacing an closing bracket character when saving to disk               | `_`                                                  |
+| `DefaultThumbs`               | A list of thumbnails that will be added to every asset regardless of the thumbnail policy          | `["!100,100", "!200,200", "!400,400", "!1024,1024"]` |
+| `DestinationTemplate`         | Path template for where derivatives will be written to                                             |                                                      |
+| `ImageProcessorDelayMs`       | How long, in ms to delay calling image-processor after copying to shared disk.                     | `0`                                                  |
+| `ImageProcessorTimeoutMs`     | Timeout, in ms, for requests to image-processor                                                    | `300000`                                             |
+| `ImageProcessorRoot`          | Root folder for use by Image-Processor sidecar                                                     |                                                      |
+| `ImageProcessorUrl`           | URI of downstream image/derivative processor (e.g. appetiser)                                      |                                                      |
+| `IncludeRegionInS3Uri`        | Whether to add region to s3:// URIs. Unofficial but required for backwards compat with deliverator | `false`                                              |
+| `OpenBracketReplacement`      | The character to use when replacing an open bracket character when saving to disk                  | `_`                                                  |
+| `OrchestratorBaseUrl`         | Base url for calling orchestrator                                                                  |                                                      |
+| `OrchestrateImageAfterIngest` | If true a request is made to Orchestrator to orchestrate image immediately after ingestion         | `true`                                               |
+| `OrchestratorTimeoutMs`       | Timeout, in ms, to wait for calls to orchestrator                                                  | `5000`                                               |
+| `ScratchRoot`                 | Root folder for engine, replaces `{root}` in templates                                             |                                                      |
+| `SourceTemplate`              | Path template for where assets downloaded to, for images should be accessible by image-processor   |                                                      |
+| `ThumbsTemplate`              | Path template for where thumbnail derivatives will generated to                                    |                                                      |
 
 ### `OriginStrategy:`
 
-| Key               | Description                                                                                                                             | Default |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `BlockedIpRanges` | IP ranges, in CIDR notation, that an origin is forbidden from resolving to. Loopback, link-local, unique-local + unspecified are always blocked, regardless of this | `[]`    |
+| Key               | Description                                                                                                                                                                  | Default |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `BlockedIpRanges` | IP ranges, in CIDR notation, that an origin is forbidden from resolving to. Loopback, link-local, unique-local + unspecified are blocked by default.                         | `[]`    |
+| `AllowedIpRanges` | IP ranges, in CIDR notation, that an origin may resolve to despite the above. Overrides both default and configured blocks; instance-metadata addresses are never be allowed | `[]`    |
 
 ### `AWS:Transcode`
 

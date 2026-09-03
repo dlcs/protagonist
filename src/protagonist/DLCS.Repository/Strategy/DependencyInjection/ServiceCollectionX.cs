@@ -6,6 +6,7 @@ using DLCS.Repository.SFTP;
 using DLCS.Repository.Strategy.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Strategy.DependencyInjection;
 
@@ -30,6 +31,7 @@ public static class ServiceCollectionX
         IConfiguration configuration)
     {
         var originStrategySettings = OriginStrategySettings.FromConfiguration(configuration);
+        var addressPolicy = new OriginAddressPolicy(originStrategySettings);
 
         services
             .AddSingleton<S3AmbientOriginStrategy>()
@@ -40,8 +42,9 @@ public static class ServiceCollectionX
             .AddSingleton<IFileSaver, FileSaver>()
             .AddSingleton<ISftpReader, SftpReader>()
             .AddSingleton<ISftpWrapper, SftpWrapper>()
-            // Constructed here, rather than by DI, so that an invalid range fails at startup
-            .AddSingleton<IOriginAddressPolicy>(new OriginAddressPolicy(originStrategySettings.BlockedIpRanges))
+            // Policy is constructed above, rather than by DI, so that an invalid range fails at startup; the
+            // factory is only here to get hold of a logger
+            .AddSingleton<IOriginAddressPolicy>(provider => LogAllowedRanges(addressPolicy, provider))
             .AddSingleton<OriginConnectionGuard>()
             .AddSingleton<OriginStrategyResolver>(provider => strategy => strategy switch
             {
@@ -70,5 +73,22 @@ public static class ServiceCollectionX
             });
 
         return services;
+    }
+
+    /// <summary>
+    /// Warn about any configured <see cref="OriginStrategySettings.AllowedIpRanges"/> - these weaken the origin
+    /// address checks, so a setting that has escaped local development shouldn't be able to do so quietly.
+    /// This is output on first resolution, not startup.
+    /// </summary>
+    private static OriginAddressPolicy LogAllowedRanges(OriginAddressPolicy addressPolicy, IServiceProvider provider)
+    {
+        if (addressPolicy.AllowedRanges.Count > 0)
+        {
+            provider.GetRequiredService<ILogger<OriginAddressPolicy>>().LogWarning(
+                "Origins are permitted to resolve to {AllowedOriginRanges}, which would otherwise be blocked",
+                addressPolicy.AllowedRanges);
+        }
+
+        return addressPolicy;
     }
 }
