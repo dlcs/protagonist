@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Amazon.MediaConvert;
 using Amazon.MediaConvert.Model;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.MediaConvert;
 using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.S3;
@@ -41,7 +42,8 @@ public class MediaConvertWrapperTests
             }
         };
 
-        sut = new MediaConvertWrapper(mediaConvert, new MockCachingService(), bucketWriter, bucketReader,
+        sut = new MediaConvertWrapper(new AmbientAwsClientProvider<IAmazonMediaConvert>(mediaConvert),
+            new MockCachingService(), bucketWriter, bucketReader,
             storageKeyGenerator, OptionsHelpers.GetOptionsMonitor(new CacheSettings()),
             OptionsHelpers.GetOptionsMonitor(awsSettings),
             NullLogger<MediaConvertWrapper>.Instance);

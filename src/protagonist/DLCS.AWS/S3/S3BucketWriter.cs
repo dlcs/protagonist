@@ -3,6 +3,7 @@ using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
 using Microsoft.Extensions.Logging;
@@ -10,10 +11,15 @@ using Microsoft.Extensions.Options;
 
 namespace DLCS.AWS.S3;
 
-public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions, ILogger<S3BucketWriter> logger)
+public class S3BucketWriter(
+    IAwsClientProvider<IAmazonS3> s3ClientProvider,
+    IOptions<AWSSettings> awsOptions,
+    ILogger<S3BucketWriter> logger)
     : IBucketWriter
 {
     private readonly S3Settings s3Settings = awsOptions.Value.S3;
+
+    private IAmazonS3 S3Client => s3ClientProvider.GetClient();
 
     public async Task CopyObject(ObjectInBucket source, ObjectInBucket destination)
     {
@@ -27,7 +33,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
                 DestinationBucket = destination.Bucket,
                 DestinationKey = destination.Key
             };
-            var response = await s3Client.CopyObjectAsync(request);
+            var response = await S3Client.CopyObjectAsync(request);
         }
         catch (AmazonS3Exception e)
         {
@@ -103,7 +109,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
                     { MaxDegreeOfParallelism = s3Settings.CopyPartConcurrency, CancellationToken = token },
                 async (request, ct) =>
                 {
-                    copyResponses[request.PartNumber!.Value - 1] = await s3Client.CopyPartAsync(request, ct);
+                    copyResponses[request.PartNumber!.Value - 1] = await S3Client.CopyPartAsync(request, ct);
                 });
 
             var completeRequest = new CompleteMultipartUploadRequest
@@ -113,7 +119,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
                 UploadId = uploadId,
             };
             completeRequest.AddPartETags(copyResponses);
-            await s3Client.CompleteMultipartUploadAsync(completeRequest, token);
+            await S3Client.CompleteMultipartUploadAsync(completeRequest, token);
             success = true;
             return new LargeObjectCopyResult(LargeObjectStatus.Success, objectSize);
         }
@@ -122,7 +128,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
             logger.LogInformation("Cancellation requested, aborting multipart upload for {Target}", destination);
             if (uploadId != null)
             {
-                await s3Client.AbortMultipartUploadAsync(destination.Bucket, destination.Key, uploadId,
+                await S3Client.AbortMultipartUploadAsync(destination.Bucket, destination.Key, uploadId,
                     CancellationToken.None);
             }
             return new LargeObjectCopyResult(LargeObjectStatus.Cancelled, objectSize);
@@ -235,7 +241,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
 
             if (!string.IsNullOrEmpty(contentType)) uploadRequest.ContentType = contentType;
                 
-            using var transferUtil = new TransferUtility(s3Client);
+            using var transferUtil = new TransferUtility(S3Client);
             await transferUtil.UploadAsync(uploadRequest, token);
             return true;
         }
@@ -261,7 +267,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
                 Objects = toDelete.Select(oib => new KeyVersion { Key = oib.Key }).ToList(),
             };
 
-            await s3Client.DeleteObjectsAsync(deleteObjectsRequest);
+            await S3Client.DeleteObjectsAsync(deleteObjectsRequest);
         }
         catch (AmazonS3Exception e)
         {
@@ -296,13 +302,13 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
             ListObjectsResponse listObjectsResponse;
             do
             {
-                listObjectsResponse = await s3Client.ListObjectsAsync(listObjectsRequest);
+                listObjectsResponse = await S3Client.ListObjectsAsync(listObjectsRequest);
                 foreach (var item in (listObjectsResponse.S3Objects ?? []).OrderBy(x => x.Key))
                 {
                     deleteObjectsRequest.AddKey(item.Key);
                     if (deleteObjectsRequest.Objects.Count == 1000)
                     {
-                        await s3Client.DeleteObjectsAsync(deleteObjectsRequest);
+                        await S3Client.DeleteObjectsAsync(deleteObjectsRequest);
                         deleteObjectsRequest.Objects.Clear();
                     }
 
@@ -312,7 +318,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
             
             if (deleteObjectsRequest.Objects is { Count: > 0 })
             {
-                await s3Client.DeleteObjectsAsync(deleteObjectsRequest);
+                await S3Client.DeleteObjectsAsync(deleteObjectsRequest);
             }
         }
         catch (AmazonS3Exception e)
@@ -333,7 +339,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
     {
         try
         {
-            PutObjectResponse response = await s3Client.PutObjectAsync(putRequest, cancellationToken);
+            PutObjectResponse response = await S3Client.PutObjectAsync(putRequest, cancellationToken);
             return response;
         }
         catch (AmazonS3Exception e)
@@ -354,7 +360,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
         var request = new InitiateMultipartUploadRequest
             { BucketName = destination.Bucket, Key = destination.Key, ContentType = contentType };
 
-        var response = await s3Client.InitiateMultipartUploadAsync(request);
+        var response = await S3Client.InitiateMultipartUploadAsync(request);
         return response.UploadId;
     }
 
@@ -364,7 +370,7 @@ public class S3BucketWriter(IAmazonS3 s3Client, IOptions<AWSSettings> awsOptions
         try
         {
             var request = resource.AsObjectMetadataRequest();
-            return await s3Client.GetObjectMetadataAsync(request, cancellationToken);
+            return await S3Client.GetObjectMetadataAsync(request, cancellationToken);
         }
         catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
         {
