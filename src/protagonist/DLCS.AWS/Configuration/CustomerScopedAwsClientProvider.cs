@@ -47,7 +47,7 @@ public class CustomerScopedAwsClientProvider<T> : IAwsClientProvider<T>, IDispos
     /// <exception cref="InvalidOperationException">Thrown if no customer has been set for the current operation</exception>
     public T GetClient()
     {
-        // Fail closed - falling back to ambient credentials here would give access to every customers assets
+        // If we want customer scoped then fail if we can't find CurrentCustomer (ie don't fallback to ambient)
         var customer = customerContext.CurrentCustomer ?? throw new InvalidOperationException(
             $"Unable to provide a customer-scoped {typeof(T).Name}, no customer set for current operation. " +
             $"{nameof(ICustomerAwsContext)}.{nameof(ICustomerAwsContext.SetCustomer)}() must be called before making AWS requests");

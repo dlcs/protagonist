@@ -1,4 +1,5 @@
-﻿using DLCS.Core.Types;
+﻿using DLCS.AWS.Configuration;
+using DLCS.Core.Types;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using Engine.Data;
@@ -19,10 +20,11 @@ public interface IAssetIngester
 /// </summary>
 public class AssetIngester(
     ICustomerOriginStrategyRepository customerOriginRepository,
+    ICustomerAwsContext customerAwsContext,
     ILogger<AssetIngester> logger,
     IngestExecutor executor,
     IEngineAssetRepository engineAssetRepository)
-    : DeliverableIngester(customerOriginRepository), IAssetIngester
+    : DeliverableIngester(customerOriginRepository, customerAwsContext), IAssetIngester
 {
     /// <summary>
     /// Run ingest based on <see cref="IngestAssetRequest"/>.
@@ -30,6 +32,9 @@ public class AssetIngester(
     /// <returns>Result of ingest operations</returns>
     public async Task<IngestResult> Ingest(IngestAssetRequest request, CancellationToken cancellationToken = default)
     {
+        // Scope any AWS requests made during this ingest to the customer that owns the asset
+        using var customerAwsScope = SetCustomerAwsContext(request.Id);
+
         var asset = await engineAssetRepository.GetAsset(request.Id, request.BatchId, cancellationToken);
 
         if (asset == null)

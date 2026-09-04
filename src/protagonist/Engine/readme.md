@@ -121,6 +121,33 @@ These are in strongly typed to `EngineSettings` object and are split by prefix b
 | `BlockedIpRanges` | IP ranges, in CIDR notation, that an origin is forbidden from resolving to. Loopback, link-local, unique-local + unspecified are blocked by default.                         | `[]`    |
 | `AllowedIpRanges` | IP ranges, in CIDR notation, that an origin may resolve to despite the above. Overrides both default and configured blocks; instance-metadata addresses are never be allowed | `[]`    |
 
+### `AWS:AssumeRole`
+
+Controls whether AWS clients are scoped to the customer currently being ingested. When enabled, Engine assumes a role
+per customer, tagging the STS session with that customer. IAM policies can then restrict access by customer via
+`aws:PrincipalTag/Customer` - without this, ambient task-role credentials are used and any customer can reach any
+asset the task has access to.
+
+This applies to S3, SNS and MediaConvert clients. SQS is unaffected, the queue listener polls before any customer is
+known. If enabled, any AWS request made outside of an ingest will fail - customer-scoped clients deliberately fail
+closed rather than falling back to the ambient role.
+
+This is ignored, and treated as disabled, if LocalStack is in use.
+
+| Key                 | Description                                                                                | Default      |
+| ------------------- | ------------------------------------------------------------------------------------------ | ------------ |
+| `Enabled`           | Whether AWS clients are scoped to the current customer                                     | `false`      |
+| `RoleArn`           | Arn of role to assume, typically the Engine task-role itself. Required if `Enabled`        |              |
+| `DurationSeconds`   | How long an assumed session is valid for. 3600 is the maximum for a chained role           | `3600`       |
+| `TagKey`            | Key of the session tag that carries the customer id                                        | `Customer`   |
+| `SessionNamePrefix` | Prefix for the role session name, customer id is appended                                  | `customer-`  |
+| `MaxCachedClients`  | Maximum number of entries held in each of the credential and client caches                 | `100`        |
+| `CacheIdleMinutes`  | How long an unused cached credential/client is kept for                                    | `60`         |
+
+The role being assumed must trust itself and allow session tagging. See
+[the DLCS adjunct access-control RFC](https://github.com/dlcs/protagonist) for sample trust policies and the
+corresponding bucket policies.
+
 ### `AWS:Transcode`
 
 

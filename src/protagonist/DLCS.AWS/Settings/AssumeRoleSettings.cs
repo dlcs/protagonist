@@ -6,7 +6,7 @@ namespace DLCS.AWS.Settings;
 /// </summary>
 /// <remarks>
 /// The session tag allows IAM policies to restrict access by customer, via "aws:PrincipalTag". Without this all
-/// requests are made using the ambient credentials for the current task, which has access to every customers assets.
+/// requests are made using the ambient credentials for the current task.
 /// </remarks>
 public class AssumeRoleSettings
 {
@@ -15,12 +15,12 @@ public class AssumeRoleSettings
     /// If false, clients use the ambient credentials for the current task.
     /// </summary>
     /// <remarks>This is ignored, and treated as false, if LocalStack is in use</remarks>
-    public bool Enabled { get; set; } = false;
+    public bool Enabled { get; set; }
 
     /// <summary>
-    /// Arn of role to assume. This is typically the role the current task is running as - it must have a trust policy
-    /// that allows it to assume itself, and to tag the session.
+    /// Arn of role to assume. 
     /// </summary>
+    /// <remarks>Role must have a trust policy that allows it be assumed, and perms to tag the session.</remarks>
     public string? RoleArn { get; set; }
 
     /// <summary>
@@ -31,7 +31,7 @@ public class AssumeRoleSettings
     public int DurationSeconds { get; set; } = 3600;
 
     /// <summary>
-    /// Key of session tag that stores the current customer. IAM policies check this via "aws:PrincipalTag/{TagKey}"
+    /// Key of session tag that stores the current customer.
     /// </summary>
     public string TagKey { get; set; } = "Customer";
 

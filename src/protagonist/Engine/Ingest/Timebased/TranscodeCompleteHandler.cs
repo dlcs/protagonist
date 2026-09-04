@@ -1,4 +1,5 @@
-﻿using DLCS.AWS.MediaConvert.Models;
+﻿using DLCS.AWS.Configuration;
+using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.SQS;
 using DLCS.AWS.Transcoding;
 using DLCS.Web.Logging;
@@ -11,6 +12,7 @@ namespace Engine.Ingest.Timebased;
 /// </summary>
 public class TranscodeCompleteHandler(
     ITimebasedIngestorCompletion timebasedIngestorCompletion,
+    ICustomerAwsContext customerAwsContext,
     ILogger<TranscodeCompleteHandler> logger)
     : IMessageHandler
 {
@@ -30,6 +32,9 @@ public class TranscodeCompleteHandler(
                 logger.LogWarning("Unable to find DlcsId in message for MC job {JobId}", jobId);
                 return false;
             }
+
+            // Scope any AWS requests made while completing this ingest to the customer that owns the asset
+            using var customerAwsScope = customerAwsContext.SetCustomer(assetId.Customer);
 
             var batchId = mediaConvertNotification.GetBatchId();
 
