@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+// ReSharper disable InconsistentNaming "AWS" is fine
 
 namespace DLCS.AWS.Configuration;
 
@@ -28,9 +29,9 @@ public static class AWSConfiguration
     public static AwsBuilder SetupAWS(this IServiceCollection services, IConfiguration configuration,
         IHostEnvironment environment)
     {
-        IConfigurationSection? configurationSection = configuration.GetSection("AWS");
+        var configurationSection = configuration.GetSection("AWS");
         services.Configure<AWSSettings>(configurationSection);
-        var awsSettings = configurationSection.Get<AWSSettings>();
+        var awsSettings = configurationSection.Get<AWSSettings>().ThrowIfNull(nameof(configurationSection));
 
         var useLocalStack = environment.IsDevelopment() && awsSettings.UseLocalStack;
 
@@ -45,13 +46,13 @@ public static class AWSConfiguration
     }
 
     /// <summary>
-    /// Register the default, ambient, <see cref="IAwsClientProvider{T}"/> implementation - this provides clients that
-    /// use the ambient credentials for the current process, for every customer. Services that require customer-scoped
-    /// clients opt in via the WithCustomerScoped* methods on <see cref="AwsBuilder"/>.
+    /// Register the default, ambient, <see cref="IAwsClientProvider{T}"/> implementation - this is a wrapper around
+    /// the basic AWS credentials chain.
     /// </summary>
     /// <remarks>
     /// This is called by <see cref="SetupAWS"/>. Services that register AWS clients without using it must call this
     /// directly, else consumers of <see cref="IAwsClientProvider{T}"/> will fail to resolve.
+    /// This open generic implementation can be overridden by WithCustomerScoped* calls.
     /// </remarks>
     public static IServiceCollection AddAmbientAwsClientProviders(this IServiceCollection services)
     {
@@ -66,22 +67,11 @@ public static class AWSConfiguration
 /// Switches between 'real' AWS and LocalStack depending on configuration settings.
 /// If "AWS:UseLocalStack" = true, and environment = Develop then localstack used. Else AWS
 /// </summary>
-public class AwsBuilder
+public class AwsBuilder(
+    AWSSettings awsSettings,
+    IServiceCollection services,
+    bool useLocalStack)
 {
-    private readonly AWSSettings awsSettings;
-    private readonly IServiceCollection services;
-    private readonly bool useLocalStack;
-
-    public AwsBuilder(
-        AWSSettings awsSettings,
-        IServiceCollection services,
-        bool useLocalStack)
-    {
-        this.awsSettings = awsSettings;
-        this.services = services;
-        this.useLocalStack = useLocalStack;
-    }
-
     /// <summary>
     /// Add <see cref="IAmazonS3"/> to service collection with specified lifetime.
     /// </summary>
@@ -98,7 +88,7 @@ public class AwsBuilder
                     UseHttp = true,
                     RegionEndpoint = RegionEndpoint.USEast1,
                     ServiceURL =
-                        awsSettings.S3?.ServiceUrl.ThrowIfNullOrWhiteSpace(nameof(awsSettings.S3.ServiceUrl)),
+                        awsSettings.S3.ServiceUrl.ThrowIfNullOrWhiteSpace(nameof(awsSettings.S3.ServiceUrl)),
                     ForcePathStyle = true
                 };
                 return new AmazonS3Client(new BasicAWSCredentials("foo", "bar"), amazonS3Config);
@@ -226,15 +216,11 @@ public class AwsBuilder
         assumeRoleSettings.RoleArn.ThrowIfNullOrWhiteSpace(
             $"{nameof(AWSSettings.AssumeRole)}:{nameof(AssumeRoleSettings.RoleArn)}");
 
+        // WithCustomerScopedClient is called multiple times so TryAdd to avoid multiple registrations
         services.TryAddSingleton<ICustomerAwsCredentials, AssumedRoleCustomerAwsCredentials>();
 
         // NOTE: this closed generic registration takes precedence over the open generic ambient provider
-        services.AddSingleton<IAwsClientProvider<T>>(provider => new CustomerScopedAwsClientProvider<T>(
-            provider.GetRequiredService<ICustomerAwsContext>(),
-            provider.GetRequiredService<ICustomerAwsCredentials>(),
-            provider.GetRequiredService<IOptions<AWSSettings>>(),
-            provider.GetRequiredService<ILogger<CustomerScopedAwsClientProvider<T>>>(),
-            provider.GetService<AWSOptions>()));
+        services.AddSingleton<IAwsClientProvider<T>, CustomerScopedAwsClientProvider<T>>();
 
         return this;
     }

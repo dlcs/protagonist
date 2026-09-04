@@ -20,7 +20,6 @@ public interface ICustomerAwsCredentials
 
 /// <summary>
 /// <see cref="ICustomerAwsCredentials"/> implementation that assumes a role, tagging the session with the customer.
-/// IAM policies can then restrict access by customer via "aws:PrincipalTag/{TagKey}".
 /// </summary>
 /// <remarks>
 /// Credentials are cached per-customer and shared by every client type, so each customer results in a single STS

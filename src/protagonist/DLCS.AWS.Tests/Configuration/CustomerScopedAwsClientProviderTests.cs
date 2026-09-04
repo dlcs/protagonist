@@ -63,6 +63,28 @@ public class CustomerScopedAwsClientProviderTests
     }
 
     [Fact]
+    public void GetClient_CreatesSingleClient_IfCalledConcurrentlyForSameCustomer()
+    {
+        // A duplicate would mean an additional STS session, which are rate limited per account
+        // Arrange
+        A.CallTo(() => customerAwsCredentials.GetCredentials(A<int>._)).ReturnsLazily(() =>
+        {
+            Thread.Sleep(20);
+            return new AnonymousAWSCredentials();
+        });
+
+        using var customerScope = customerAwsContext.SetCustomer(99);
+        var clients = new IAmazonS3[16];
+
+        // Act
+        Parallel.For(0, clients.Length, i => clients[i] = sut.GetClient());
+
+        // Assert
+        clients.Should().AllBeEquivalentTo(clients[0]).And.OnlyContain(c => ReferenceEquals(c, clients[0]));
+        A.CallTo(() => customerAwsCredentials.GetCredentials(99)).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
     public void GetClient_ReturnsDifferentClient_PerCustomer()
     {
         // Arrange
