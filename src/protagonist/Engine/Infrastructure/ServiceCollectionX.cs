@@ -82,7 +82,8 @@ public static class ServiceCollectionX
     /// <summary>
     /// Adds all asset ingestion classes and related dependencies. 
     /// </summary>
-    public static IServiceCollection AddAssetIngestion(this IServiceCollection services, EngineSettings engineSettings)
+    public static IServiceCollection AddAssetIngestion(this IServiceCollection services,
+        EngineSettings engineSettings, IConfiguration configuration)
     {
         services
             .AddSingleton<IAssetIngestorSizeCheck, AppSettingsAssetIngestorSizeCheck>()
@@ -100,7 +101,7 @@ public static class ServiceCollectionX
             .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<IAssetToS3, AssetToS3>()
-            .AddOriginStrategies();
+            .AddOriginStrategies(configuration);
 
         if (engineSettings.ImageIngest != null)
         {

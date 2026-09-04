@@ -43,6 +43,19 @@ public class OriginStrategySettingsTests
         action.Should().Throw<ArgumentException>();
     }
 
+    [Theory]
+    [InlineData("not-a-range")]
+    [InlineData("10.0.0.0")]
+    [InlineData("10.0.0.0/33")]
+    [InlineData("2001:4860:4860::8888/1025")]
+    public void FromConfiguration_Throws_IfBlockedIpRangeInvalid(string range)
+    {
+        Action action = () => OriginStrategySettings.FromConfiguration(GetConfiguration(new()
+            { ["OriginStrategy:BlockedIpRanges:0"] = range }));
+
+        action.Should().Throw<ArgumentException>().WithMessage($"*{range}*");
+    }
+
     private static IConfiguration GetConfiguration(Dictionary<string, string> values)
         => new ConfigurationBuilder().AddInMemoryCollection(values).Build();
 }
