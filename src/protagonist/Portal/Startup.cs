@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Amazon.S3;
 using API.Client;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.Settings;
 using DLCS.Core.Encryption;
@@ -86,6 +87,7 @@ public class Startup
             .AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>))
             .AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditBehaviour<,>))
             .AddAWSService<IAmazonS3>()
+            .AddAmbientAwsClientProviders()
             .AddSingleton<IBucketReader, S3BucketReader>()
             .AddSingleton<IBucketWriter, S3BucketWriter>()
             .AddSingleton<IStorageKeyGenerator, S3StorageKeyGenerator>();

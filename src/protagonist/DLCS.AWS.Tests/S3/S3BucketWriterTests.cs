@@ -1,5 +1,6 @@
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.AWS.Settings;
@@ -18,7 +19,8 @@ public class S3BucketWriterTests
     {
         s3Client = A.Fake<IAmazonS3>();
         var awsOptions = Options.Create(new AWSSettings { S3 = new S3Settings { CopyPartConcurrency = 4 } });
-        sut = new S3BucketWriter(s3Client, awsOptions, new NullLogger<S3BucketWriter>());
+        sut = new S3BucketWriter(new AmbientAwsClientProvider<IAmazonS3>(s3Client), awsOptions,
+            new NullLogger<S3BucketWriter>());
     }
 
     [Theory]
