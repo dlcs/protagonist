@@ -53,10 +53,12 @@ public static class ServiceCollectionX
             .AddSingleton<ITranscoderPresetLookup, SettingsBasedPresetLookup>()
             .AddScoped<ITopicPublisher, TopicPublisher>()
             .SetupAWS(configuration, webHostEnvironment)
-            .WithAmazonS3()
+            // S3, SNS + MediaConvert clients are scoped to the customer being ingested (see "AWS:AssumeRole").
+            // SQS is not - the queue listener polls before any customer is known
+            .WithCustomerScopedAmazonS3()
             .WithAmazonSQS()
-            .WithAmazonSNS()
-            .WithMediaConvert();
+            .WithCustomerScopedAmazonSNS()
+            .WithCustomerScopedMediaConvert();
 
         return services;
     }
