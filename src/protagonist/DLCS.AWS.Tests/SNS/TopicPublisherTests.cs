@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.Settings;
 using DLCS.AWS.SNS;
 using DLCS.Model.Assets;
@@ -15,11 +16,13 @@ namespace DLCS.AWS.Tests.SNS;
 public class TopicPublisherTests
 {
     private readonly IAmazonSimpleNotificationService snsClient;
+    private readonly IAwsClientProvider<IAmazonSimpleNotificationService> snsClientProvider;
     private readonly TopicPublisher sut;
 
     public TopicPublisherTests()
     {
         snsClient = A.Fake<IAmazonSimpleNotificationService>();
+        snsClientProvider = new AmbientAwsClientProvider<IAmazonSimpleNotificationService>(snsClient);
 
         var settings = Options.Create(new AWSSettings
         {
@@ -31,7 +34,7 @@ public class TopicPublisherTests
             }
         });
 
-        sut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        sut = new TopicPublisher(snsClientProvider, settings, new NullLogger<TopicPublisher>());
     }
     
     [Fact]
@@ -234,7 +237,7 @@ public class TopicPublisherTests
         // Arrange
         var notification = new CustomerCreatedNotification(new Customer());
         var settings = Options.Create(new AWSSettings { SNS = new SNSSettings() });
-        var noArnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        var noArnSut = new TopicPublisher(snsClientProvider, settings, new NullLogger<TopicPublisher>());
         
         // Act
         var result = await noArnSut.PublishToCustomerCreatedTopic(notification, CancellationToken.None);
@@ -283,7 +286,7 @@ public class TopicPublisherTests
         // Arrange
         var notification = new BatchCompletedNotification(new Batch { Id = 1, Customer = 99 });
         var settings = Options.Create(new AWSSettings { SNS = new SNSSettings() });
-        var noArnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        var noArnSut = new TopicPublisher(snsClientProvider, settings, new NullLogger<TopicPublisher>());
 
         // Act
         var result = await noArnSut.PublishToBatchCompletedTopic(notification, CancellationToken.None);
@@ -304,7 +307,7 @@ public class TopicPublisherTests
         {
             SNS = new SNSSettings { BatchCompletedTopicArn = arn }
         });
-        var arnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        var arnSut = new TopicPublisher(snsClientProvider, settings, new NullLogger<TopicPublisher>());
 
         // Act
         await arnSut.PublishToBatchCompletedTopic(notification, CancellationToken.None);
@@ -332,7 +335,7 @@ public class TopicPublisherTests
         {
             SNS = new SNSSettings { BatchCompletedTopicArn = arn }
         });
-        var arnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        var arnSut = new TopicPublisher(snsClientProvider, settings, new NullLogger<TopicPublisher>());
 
         // Act
         await arnSut.PublishToBatchCompletedTopic(notification, CancellationToken.None);
@@ -360,7 +363,7 @@ public class TopicPublisherTests
         {
             SNS = new SNSSettings { BatchCompletedTopicArn = "arn:aws:sns:us-east-1:000000000000:batchCompleted" }
         });
-        var arnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        var arnSut = new TopicPublisher(snsClientProvider, settings, new NullLogger<TopicPublisher>());
         A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._))
             .Returns(new PublishResponse { HttpStatusCode = statusCode });
 
@@ -377,7 +380,7 @@ public class TopicPublisherTests
         // Arrange
         var notification = new AdjunctBatchCompletedNotification(new AdjunctBatch { Id = 1, Customer = 99 });
         var settings = Options.Create(new AWSSettings { SNS = new SNSSettings() });
-        var noArnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        var noArnSut = new TopicPublisher(snsClientProvider, settings, new NullLogger<TopicPublisher>());
 
         // Act
         var result = await noArnSut.PublishToAdjunctBatchCompletedTopic(notification, CancellationToken.None);
@@ -398,7 +401,7 @@ public class TopicPublisherTests
         {
             SNS = new SNSSettings { AdjunctBatchCompletedTopicArn = arn }
         });
-        var arnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        var arnSut = new TopicPublisher(snsClientProvider, settings, new NullLogger<TopicPublisher>());
 
         // Act
         await arnSut.PublishToAdjunctBatchCompletedTopic(notification, CancellationToken.None);
@@ -425,7 +428,7 @@ public class TopicPublisherTests
         {
             SNS = new SNSSettings { AdjunctBatchCompletedTopicArn = "arn:aws:sns:us-east-1:000000000000:adjunctBatchCompleted" }
         });
-        var arnSut = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        var arnSut = new TopicPublisher(snsClientProvider, settings, new NullLogger<TopicPublisher>());
         A.CallTo(() => snsClient.PublishAsync(A<PublishRequest>._, A<CancellationToken>._))
             .Returns(new PublishResponse { HttpStatusCode = statusCode });
 
@@ -451,7 +454,7 @@ public class TopicPublisherTests
             }
         });
 
-        var topicPublisher = new TopicPublisher(snsClient, settings, new NullLogger<TopicPublisher>());
+        var topicPublisher = new TopicPublisher(snsClientProvider, settings, new NullLogger<TopicPublisher>());
 
         // Act
         var output = await topicPublisher.PublishToDeliverableModifiedTopic(new[] { notification, notification2 }, DeliverableTopicType.Asset);

@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Amazon.MediaConvert;
 using Amazon.MediaConvert.Model;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.MediaConvert.Models;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
@@ -25,7 +26,7 @@ using TimeSpan = System.TimeSpan;
 namespace DLCS.AWS.MediaConvert;
 
 public class MediaConvertWrapper(
-    IAmazonMediaConvert mediaConvert,
+    IAwsClientProvider<IAmazonMediaConvert> mediaConvertProvider,
     IAppCache cache,
     IBucketWriter bucketWriter,
     IBucketReader bucketReader,
@@ -39,6 +40,8 @@ public class MediaConvertWrapper(
     {
         ContractResolver = new CamelCasePropertyNamesContractResolver()
     };
+
+    private IAmazonMediaConvert MediaConvertClient => mediaConvertProvider.GetClient();
     
     public async Task<string?> GetPipelineId(string pipelineName, CancellationToken token = default)
     {
@@ -50,7 +53,7 @@ public class MediaConvertWrapper(
         var pipelineId = await cache.GetOrAddAsync(queueKey, async entry =>
         {
             var request = new GetQueueRequest { Name = pipelineName };
-            var response = await mediaConvert.GetQueueAsync(request, token);
+            var response = await MediaConvertClient.GetQueueAsync(request, token);
 
             if (response.HttpStatusCode == HttpStatusCode.OK)
             {
@@ -114,7 +117,7 @@ public class MediaConvertWrapper(
             }
         };
         
-        var response = await mediaConvert.CreateJobAsync(createJobRequest, token);
+        var response = await MediaConvertClient.CreateJobAsync(createJobRequest, token);
         logger.LogDebug("Created job {JobId} with {OutputCount} outputs. Status:{StatusCode}", response.Job.Id,
             response.HttpStatusCode, outputGroup.Outputs.Count);
         return new CreateJobResponse(response.Job.Id, response.HttpStatusCode);
@@ -165,7 +168,7 @@ public class MediaConvertWrapper(
 
     private async Task<TranscoderJob?> GetTranscoderJobInternal(AssetId assetId, string jobId, CancellationToken cancellationToken)
     {
-        var jobInfo = await mediaConvert.GetJobAsync(new GetJobRequest { Id = jobId }, cancellationToken);
+        var jobInfo = await MediaConvertClient.GetJobAsync(new GetJobRequest { Id = jobId }, cancellationToken);
         if (jobInfo == null) return null;
         var transcoderJob = MediaConvertResponseConverter.CreateTranscoderJob(jobInfo.Job, assetId);
         return transcoderJob;

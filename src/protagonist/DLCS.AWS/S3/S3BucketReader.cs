@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -9,14 +10,16 @@ namespace DLCS.AWS.S3;
 
 public class S3BucketReader : IBucketReader
 {
-    private readonly IAmazonS3 s3Client;
+    private readonly IAwsClientProvider<IAmazonS3> s3ClientProvider;
     private readonly ILogger<S3BucketReader> logger;
 
-    public S3BucketReader(IAmazonS3 s3Client, ILogger<S3BucketReader> logger)
+    public S3BucketReader(IAwsClientProvider<IAmazonS3> s3ClientProvider, ILogger<S3BucketReader> logger)
     {
-        this.s3Client = s3Client;
+        this.s3ClientProvider = s3ClientProvider;
         this.logger = logger;
     }
+
+    private IAmazonS3 S3Client => s3ClientProvider.GetClient();
     
     public async Task<Stream?> GetObjectContentFromBucket(ObjectInBucket objectInBucket,
         CancellationToken cancellationToken = default)
@@ -24,7 +27,7 @@ public class S3BucketReader : IBucketReader
         var getObjectRequest = objectInBucket.AsGetObjectRequest();
         try
         {
-            GetObjectResponse getResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
+            GetObjectResponse getResponse = await S3Client.GetObjectAsync(getObjectRequest, cancellationToken);
             return getResponse.ResponseStream;
         }
         catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
@@ -46,7 +49,7 @@ public class S3BucketReader : IBucketReader
         var getObjectRequest = objectInBucket.AsGetObjectRequest();
         try
         {
-            GetObjectResponse getResponse = await s3Client.GetObjectAsync(getObjectRequest, cancellationToken);
+            GetObjectResponse getResponse = await S3Client.GetObjectAsync(getObjectRequest, cancellationToken);
             return getResponse.AsObjectInBucket(objectInBucket);
         }
         catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
@@ -68,7 +71,7 @@ public class S3BucketReader : IBucketReader
         var metadataRequest = objectInBucket.AsObjectMetadataRequest();
         try
         {
-            var response = await s3Client.GetObjectMetadataAsync(metadataRequest, cancellationToken);
+            var response = await S3Client.GetObjectMetadataAsync(metadataRequest, cancellationToken);
             return response.AsObjectInBucketHeaders();
         }
         catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
@@ -94,7 +97,7 @@ public class S3BucketReader : IBucketReader
         var listObjectsRequest = rootKey.AsListObjectsRequest();
         try
         {
-            var response = await s3Client.ListObjectsAsync(listObjectsRequest, CancellationToken.None);
+            var response = await S3Client.ListObjectsAsync(listObjectsRequest, CancellationToken.None);
             return response.S3Objects?.Select(obj => obj.Key).OrderBy(s => s).ToArray() ?? [];
         }
         catch (AmazonS3Exception e) when (e.StatusCode == HttpStatusCode.NotFound)
