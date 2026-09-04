@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
 using DLCS.Repository;
@@ -70,6 +70,7 @@ public class Startup
             .AddSingleton<FileRequestHandler>()
             .AddSingleton<AdjunctRequestHandler>()
             .AddSingleton<S3ProxyPathGenerator>()
+            .AddSingleton<GatewayTokenGenerator>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
             .AddSingleton<AssetRequestProcessor>()
             .AddSingleton<DownstreamDestinationSelector>()
