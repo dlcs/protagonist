@@ -15,7 +15,7 @@ namespace DLCS.AWS.Configuration;
 /// The underlying HttpClient is cached and shared process-wide by the AWS SDK, keyed on client configuration only, so
 /// a client per customer does not result in a connection pool per customer.
 /// </remarks>
-public class CustomerScopedAwsClientProvider<T> : IAwsClientProvider<T>, IDisposable
+public sealed class CustomerScopedAwsClientProvider<T> : IAwsClientProvider<T>, IDisposable
     where T : class, IAmazonService
 {
     private readonly ICustomerAwsContext customerContext;
