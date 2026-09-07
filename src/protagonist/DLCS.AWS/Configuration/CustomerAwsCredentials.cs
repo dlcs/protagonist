@@ -1,4 +1,6 @@
+using Amazon.Extensions.NETCore.Setup;
 using Amazon.Runtime;
+using Amazon.Runtime.CredentialManagement;
 using Amazon.Runtime.Credentials;
 using DLCS.AWS.Settings;
 using DLCS.Core.Guard;
@@ -29,20 +31,50 @@ public interface ICustomerAwsCredentials
 public sealed class AssumedRoleCustomerAwsCredentials : ICustomerAwsCredentials, IDisposable
 {
     private readonly AssumeRoleSettings assumeRoleSettings;
+    private readonly AWSOptions? awsOptions;
     private readonly ILogger<AssumedRoleCustomerAwsCredentials> logger;
     private readonly CustomerKeyedCache<AWSCredentials> credentialsCache;
 
-    // Credentials for the current task, used to assume the customer-scoped role
-    private readonly Lazy<AWSCredentials> ambientCredentials =
-        new(() => DefaultAWSCredentialsIdentityResolver.GetCredentials());
+    // Credentials for the current process, used to assume the customer-scoped role
+    private readonly Lazy<AWSCredentials> ambientCredentials;
 
     public AssumedRoleCustomerAwsCredentials(IOptions<AWSSettings> awsSettings,
-        ILogger<AssumedRoleCustomerAwsCredentials> logger)
+        ILogger<AssumedRoleCustomerAwsCredentials> logger, AWSOptions? awsOptions = null)
     {
         assumeRoleSettings = awsSettings.Value.AssumeRole;
+        this.awsOptions = awsOptions;
         this.logger = logger;
         credentialsCache = new CustomerKeyedCache<AWSCredentials>(assumeRoleSettings.MaxCachedClients,
             TimeSpan.FromMinutes(assumeRoleSettings.CacheIdleMinutes));
+        ambientCredentials = new Lazy<AWSCredentials>(GetAmbientCredentials);
+    }
+
+    /// <summary>
+    /// Get the credentials for the current process, which are used to assume the customer-scoped role
+    /// </summary>
+    /// <remarks>This partly duplicates what the AWS SDK does as we need to do some manual credential chain resolution.
+    /// The method that does this in SDK isn't public handling here. This is only for "profile" handling locally.
+    /// </remarks>
+    private AWSCredentials GetAmbientCredentials()
+    {
+        if (awsOptions?.Credentials != null) return awsOptions.Credentials;
+
+        var profile = awsOptions?.Profile;
+        if (!string.IsNullOrWhiteSpace(profile))
+        {
+            var credentialProfileStore = new CredentialProfileStoreChain(awsOptions!.ProfilesLocation);
+            if (credentialProfileStore.TryGetAWSCredentials(profile, out var profileCredentials))
+            {
+                logger.LogDebug("Using AWS profile {Profile} to assume customer-scoped roles", profile);
+                return profileCredentials;
+            }
+
+            logger.LogWarning(
+                "AWS profile {Profile} not found, falling back to default credential chain to assume customer-scoped roles",
+                profile);
+        }
+
+        return DefaultAWSCredentialsIdentityResolver.GetCredentials();
     }
 
     public AWSCredentials GetCredentials(int customer) => credentialsCache.GetOrCreate(customer, CreateCredentials);

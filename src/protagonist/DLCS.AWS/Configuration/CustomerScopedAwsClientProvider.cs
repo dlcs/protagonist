@@ -57,7 +57,7 @@ public sealed class CustomerScopedAwsClientProvider<T> : IAwsClientProvider<T>, 
 
     private T CreateClient(int customer)
     {
-        logger.LogDebug("Creating customer-scoped {ClientType} for customer {Customer}", typeof(T).Name, customer);
+        logger.LogTrace("Creating customer-scoped {ClientType} for customer {Customer}", typeof(T).Name, customer);
 
         // Note: client configuration is left at defaults so that all customers share the SDK's cached HttpClient
         var customerOptions = new AWSOptions

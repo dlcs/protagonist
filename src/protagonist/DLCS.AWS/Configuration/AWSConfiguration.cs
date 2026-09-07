@@ -219,7 +219,7 @@ public class AwsBuilder(
         // WithCustomerScopedClient is called multiple times so TryAdd to avoid multiple registrations
         services.TryAddSingleton<ICustomerAwsCredentials, AssumedRoleCustomerAwsCredentials>();
 
-        // NOTE: this closed generic registration takes precedence over the open generic ambient provider
+        // closed generic registration takes precedence over the open generic ambient provider
         services.AddSingleton<IAwsClientProvider<T>, CustomerScopedAwsClientProvider<T>>();
 
         return this;
