@@ -26,7 +26,7 @@ public interface ICustomerAwsCredentials
 /// session rather than one per client. <see cref="AssumeRoleAWSCredentials"/> handles fetching and refreshing the
 /// session automatically, so cached credentials remain valid indefinitely.
 /// </remarks>
-public class AssumedRoleCustomerAwsCredentials : ICustomerAwsCredentials, IDisposable
+public sealed class AssumedRoleCustomerAwsCredentials : ICustomerAwsCredentials, IDisposable
 {
     private readonly AssumeRoleSettings assumeRoleSettings;
     private readonly ILogger<AssumedRoleCustomerAwsCredentials> logger;
