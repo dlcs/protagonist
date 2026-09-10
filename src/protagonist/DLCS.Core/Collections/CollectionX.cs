@@ -98,6 +98,18 @@ public static class CollectionX
     public static T[] AsArray<T>(this T item) => [item];
     
     /// <summary>
+    /// Join collection of strings into a single string, separated by specified separator.
+    /// </summary>
+    /// <param name="collection">Collection of strings to join</param>
+    /// <param name="separator">Separator to place between elements</param>
+    /// <returns>Separator-delimited string, or <see cref="string.Empty"/> if collection is null or empty.</returns>
+    public static string ToSeparatedString(this IEnumerable<string>? collection, char separator = ',')
+    {
+        var values = collection?.ToArray();
+        return values.IsNullOrEmpty() ? string.Empty : string.Join(separator, values);
+    }
+
+    /// <summary>
     /// Helper for adding multiple items to <see cref="ICollection{T}"/>
     /// </summary>
     public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> items)

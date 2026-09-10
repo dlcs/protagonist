@@ -204,8 +204,8 @@ public class GetAssetTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("nonexistent")]
     [InlineData("ItemId")] // readonly prop on Asset
     [InlineData("HasRoles")] // readonly prop on Asset
-    [InlineData("RolesList")] // [NotMapped], can't be translated to EF query
-    [InlineData("TagsList")] // [NotMapped], can't be translated to EF query
+    [InlineData("RolesList")] // Removed field - kept for posterity
+    [InlineData("TagsList")] // Removed field - kept for posterity
     [InlineData("imageService")] // a Hydra model property but not a database-backed one
     [InlineData("x")] // previously silently ignored, falling back to created ordering
     [InlineData("adjuncts")] // a collection of related entities cannot be ordered on

@@ -52,7 +52,7 @@ public static class AssetConverter
             Finished = dbAsset.Finished,
             Ingesting = dbAsset.Ingesting,
             Error = dbAsset.Error,
-            Tags = dbAsset.TagsList.ToArray(),
+            Tags = dbAsset.Tags.SplitSeparatedString(",").ToArray(),
             String1 = dbAsset.Reference1,
             String2 = dbAsset.Reference2,
             String3 = dbAsset.Reference3,
@@ -64,7 +64,7 @@ public static class AssetConverter
             Height = dbAsset.Height,
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
-            Roles = dbAsset.RolesList.ToArray(),
+            Roles = dbAsset.Roles.SplitSeparatedString(",").ToArray(),
             Manifests = dbAsset.Manifests?.ToArray() ?? [],
             Manifest = $"{urlRoots.ResourceRoot}iiif-manifest/{dbAsset.Id}",
         };
@@ -209,7 +209,7 @@ public static class AssetConverter
         
         if (hydraImage.Tags != null)
         {
-            asset.TagsList = hydraImage.Tags;
+            asset.Tags = hydraImage.Tags.ToSeparatedString();
         }
 
         SetSizeRestriction(hydraImage, asset);
@@ -370,14 +370,14 @@ public static class AssetConverter
             if (!hydraImage.Roles.IsNullOrEmpty())
             {
                 // If roles have been provided, use them
-                targetAsset.RolesList = hydraImage.Roles!;
+                targetAsset.Roles = hydraImage.Roles!.ToSeparatedString();
             }
             else
             {
                 // No roles provided but we may need to assign an unobtainable role to simulate behaviour
                 if (maxUnauth >= 0)
                 {
-                    targetAsset.RolesList = [Asset.UnobtainableRole];
+                    targetAsset.Roles = Asset.UnobtainableRole;
                 }
             }
             
@@ -387,7 +387,7 @@ public static class AssetConverter
         
         if (hydraImage.Roles != null)
         {
-            targetAsset.RolesList = hydraImage.Roles;
+            targetAsset.Roles = hydraImage.Roles.ToSeparatedString();
         }
         
         if (hydraImage.MaxWidth != null)

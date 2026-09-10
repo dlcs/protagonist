@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
 using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.NamedQueries;
 using DLCS.Repository.NamedQueries.Models;
@@ -101,7 +102,7 @@ public abstract class BaseProjectionCreator<T>(
                 ? overrides.PdfRolesWhitelist
                 : Enumerable.Empty<string>();
 
-        var distinctRoles = assets.SelectMany(a => a.RolesList).Distinct().ToList();
+        var distinctRoles = assets.SelectMany(a => a.Roles.SplitSeparatedString(",")).Distinct().ToList();
         var relevantRoles = distinctRoles.Intersect(whitelistRoles).ToList();
         return relevantRoles;
     }

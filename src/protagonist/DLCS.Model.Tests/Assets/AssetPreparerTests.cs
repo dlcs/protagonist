@@ -236,6 +236,62 @@ public class AssetPreparerTests
     }
     
     [Fact]
+    public void PrepareAssetForUpsert_PreservesRoles_IfNotInUpdateRequest()
+    {
+        // Arrange - simulates a PATCH that doesn't mention roles (see #1261)
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = "clickthrough" };
+        var updateAsset = new Asset { Origin = "https://whatever", Reference1 = "metadata edit" };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Roles.Should().Be("clickthrough");
+    }
+
+    [Fact]
+    public void PrepareAssetForUpsert_PreservesTags_IfNotInUpdateRequest()
+    {
+        // Arrange - simulates a PATCH that doesn't mention tags (see #1261)
+        var existingAsset = new Asset { Origin = "https://whatever", Tags = "existing-tag" };
+        var updateAsset = new Asset { Origin = "https://whatever", Reference1 = "metadata edit" };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Tags.Should().Be("existing-tag");
+    }
+
+    [Fact]
+    public void PrepareAssetForUpsert_UpdatesRoles_IfInUpdateRequest()
+    {
+        // Arrange
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = "clickthrough" };
+        var updateAsset = new Asset { Origin = "https://whatever", Roles = "logout" };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Roles.Should().Be("logout");
+    }
+
+    [Fact]
+    public void PrepareAssetForUpsert_UpdatesTags_IfInUpdateRequest()
+    {
+        // Arrange
+        var existingAsset = new Asset { Origin = "https://whatever", Tags = "existing-tag" };
+        var updateAsset = new Asset { Origin = "https://whatever", Tags = "new-tag" };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Tags.Should().Be("new-tag");
+    }
+
+    [Fact]
     public void PrepareAssetForUpsert_RequiresReingest_IfOriginUpdated()
     {
         // Arrange

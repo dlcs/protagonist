@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using API.Converters;
 using API.Exceptions;
+using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.HydraModel;
 using DLCS.Model.Assets;
@@ -112,7 +113,7 @@ public class AssetConverterTests
         var asset = hydraImage.ToDlcsModel(1, 1, nameof(ToDlcsModel_MapsMaxUnauthorised_ToOpenFullMax));
         asset.MaxWidth.Should().BeNull("MaxWidth is never set from MaxUnauthorised");
         asset.OpenFullMax.Should().Be(openFullMax, reason);
-        asset.RolesList.Should().BeEquivalentTo(expectedRoles, reason);
+        asset.Roles.SplitSeparatedString(",").Should().BeEquivalentTo(expectedRoles, reason);
     }
 
     [Theory]

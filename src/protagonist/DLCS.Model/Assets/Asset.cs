@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
-using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.Metadata;
 
@@ -87,41 +85,6 @@ public class Asset : IDeliverable
     /// </summary>
     public string[] DeliveryChannels { get; set; } = Array.Empty<string>();
 
-    private IEnumerable<string>? rolesList;
-    
-    // TODO - map this via Dapper on way out of DB?
-    [NotMapped]
-    public IEnumerable<string> RolesList
-    {
-        get
-        {
-            if (rolesList == null && !string.IsNullOrEmpty(Roles))
-            {
-                rolesList = Roles.Split(",", StringSplitOptions.RemoveEmptyEntries); 
-            }
-
-            return rolesList ??= Enumerable.Empty<string>();
-        }
-        set => Roles = value.IsNullOrEmpty() ? String.Empty : String.Join(',', value);
-    }
-    
-    private IEnumerable<string>? tagsList;
-    
-    [NotMapped]
-    public IEnumerable<string> TagsList
-    {
-        get
-        {
-            if (tagsList == null && !string.IsNullOrEmpty(Tags))
-            {
-                tagsList = Tags.Split(",", StringSplitOptions.RemoveEmptyEntries); 
-            }
-
-            return tagsList ??= Enumerable.Empty<string>();
-        }
-        set => Tags = value.IsNullOrEmpty() ? String.Empty : String.Join(',', value);
-    }
-    
     /// <summary>
     /// Indicates whether this asset has any roles assigned to it.
     /// </summary>
