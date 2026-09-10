@@ -22,4 +22,5 @@
 20. [Non-image content-resources](020-non-image-iiif.md)
 21. [AWS MediaConvert](021-mediaconvert.md)
 22. [Stub Assets](022-stub-assets.md)
-23. [Hosed annotation adjunt id](023-hosted-adjunct-id.md)
+23. [Hosted annotation adjunct id](023-hosted-adjunct-id.md)
+24. [PDF via TextServices](024-pdf-generation-text-services.md)
