@@ -246,7 +246,7 @@ public class ThumbCreatorTests
         var asset = new Asset(assetId)
         {
             Width = 3030, Height = 5000, MaxWidth = maxWidth, OpenFullMax = openFullMax,
-            ImageDeliveryChannels = thumbsDeliveryChannel, Roles = "https://test"
+            ImageDeliveryChannels = thumbsDeliveryChannel, Roles = ["https://test"]
         };
 
         var imagesOnDisk = new List<ImageOnDisk>
@@ -292,7 +292,7 @@ public class ThumbCreatorTests
         var asset = new Asset(assetId)
         {
             Width = 3030, Height = 5000, MaxWidth = maxWidth, OpenFullMax = openFullMax,
-            ImageDeliveryChannels = thumbsDeliveryChannel, Roles = "https://test"
+            ImageDeliveryChannels = thumbsDeliveryChannel, Roles = ["https://test"]
         };
 
         var imagesOnDisk = new List<ImageOnDisk>
@@ -333,7 +333,7 @@ public class ThumbCreatorTests
         var assetId = new AssetId(10, 20, "foo");
         var asset = new Asset(assetId)
         {
-            Width = 3030, Height = 5000, OpenFullMax = 500, Roles = "https://test",
+            Width = 3030, Height = 5000, OpenFullMax = 500, Roles = ["https://test"],
             ImageDeliveryChannels = thumbsDeliveryChannel
         };
 
@@ -463,7 +463,7 @@ public class ThumbCreatorTests
         var assetId = new AssetId(10, 20, "foo");
         var asset = new Asset(assetId)
         {
-            Width = 3030, Height = 5000, OpenFullMax = 0, Roles = "https://test",
+            Width = 3030, Height = 5000, OpenFullMax = 0, Roles = ["https://test"],
             ImageDeliveryChannels = thumbsDeliveryChannel, MaxWidth = 0
         };
 
@@ -506,7 +506,7 @@ public class ThumbCreatorTests
         var assetId = new AssetId(10, 20, "foo");
         var asset = new Asset(assetId)
         {
-            Width = 3030, Height = 5000, OpenFullMax = 0, Roles = "https://test",
+            Width = 3030, Height = 5000, OpenFullMax = 0, Roles = ["https://test"],
             ImageDeliveryChannels = thumbsDeliveryChannel, MaxWidth = 90
         };
 

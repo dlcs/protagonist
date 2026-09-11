@@ -102,7 +102,7 @@ public abstract class BaseProjectionCreator<T>(
                 ? overrides.PdfRolesWhitelist
                 : Enumerable.Empty<string>();
 
-        var distinctRoles = assets.SelectMany(a => a.Roles.SplitSeparatedString(",")).Distinct().ToList();
+        var distinctRoles = assets.SelectMany(a => a.Roles ?? []).Distinct().ToList();
         var relevantRoles = distinctRoles.Intersect(whitelistRoles).ToList();
         return relevantRoles;
     }

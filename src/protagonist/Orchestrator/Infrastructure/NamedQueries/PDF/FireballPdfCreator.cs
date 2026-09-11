@@ -133,7 +133,7 @@ public class FireballPdfCreator(
             : new CustomerOverride();
     
     private static bool RolesAreOnWhitelist(Asset i, CustomerOverride overrides)
-        => i.Roles.SplitSeparatedString(",").All(r => overrides.PdfRolesWhitelist.Contains(r));
+        => i.Roles?.All(r => overrides.PdfRolesWhitelist.Contains(r)) ?? true;
 
     private async Task<CreateProjectionResult> CallFireball(FireballPlaybook playbook, string pdfKey,
         CancellationToken cancellationToken)

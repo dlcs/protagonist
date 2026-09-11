@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using DLCS.Core;
+using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.Metadata;
 
@@ -23,8 +25,8 @@ public class Asset : IDeliverable
     public DateTime? Created { get; set; }
     /// <inheritdoc/>
     public string? Origin { get; set; }
-    public string? Tags { get; set; }
-    public string? Roles { get; set; }
+    public string[]? Tags { get; set; }
+    public string[]? Roles { get; set; }
     public string? PreservedUri { get; set; }
     public string? Reference1 { get; set; }
     public string? Reference2 { get; set; }
@@ -88,7 +90,7 @@ public class Asset : IDeliverable
     /// <summary>
     /// Indicates whether this asset has any roles assigned to it.
     /// </summary>
-    public bool HasRoles => !string.IsNullOrWhiteSpace(Roles);
+    public bool HasRoles => Roles?.Any(r => r.HasText()) ?? false;
 
     /// <summary>
     /// A list of image delivery channels attached to this asset
