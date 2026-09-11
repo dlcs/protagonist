@@ -393,11 +393,19 @@ public partial class DlcsContext : DbContext
 
             entity.Property(e => e.Roles)
                 .IsRequired()
-                .HasMaxLength(1000);
+                .HasMaxLength(1000)
+                .HasConversion(
+                    r => string.Join(",", r),
+                    r => r.Split(",", StringSplitOptions.RemoveEmptyEntries),
+                    stringArrayComparer);
 
             entity.Property(e => e.Tags)
                 .IsRequired()
-                .HasMaxLength(1000);
+                .HasMaxLength(1000)
+                .HasConversion(
+                    t => string.Join(",", t),
+                    t => t.Split(",", StringSplitOptions.RemoveEmptyEntries),
+                    stringArrayComparer);
 
             entity.Property(e => e.ThumbnailPolicy)
                 .IsRequired()

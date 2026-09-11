@@ -183,6 +183,59 @@ public class CollectionXTests
     }
 
     [Fact]
+    public void ToSeparatedString_ReturnsEmptyString_IfNull()
+    {
+        IEnumerable<string> coll = null;
+
+        // ReSharper disable once ExpressionIsAlwaysNull
+        coll.ToSeparatedString().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ToSeparatedString_ReturnsEmptyString_IfEmpty()
+    {
+        var coll = Enumerable.Empty<string>();
+
+        coll.ToSeparatedString().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ToSeparatedString_JoinsWithDefaultSeparator()
+    {
+        var coll = new[] { "a", "b", "c" };
+
+        coll.ToSeparatedString().Should().Be("a,b,c");
+    }
+
+    [Fact]
+    public void ToSeparatedString_JoinsWithSpecifiedSeparator()
+    {
+        var coll = new[] { "a", "b", "c" };
+
+        coll.ToSeparatedString('|').Should().Be("a|b|c");
+    }
+
+    [Fact]
+    public void ToSeparatedString_OnlyEnumeratesSourceOnce()
+    {
+        // Arrange - a lazy source that records each time it's enumerated from the start
+        var enumerationCount = 0;
+        IEnumerable<string> Source()
+        {
+            enumerationCount++;
+            yield return "a";
+            yield return "b";
+        }
+
+        // Act
+        var result = Source().ToSeparatedString();
+
+        // Assert
+        result.Should().Be("a,b");
+        enumerationCount.Should().Be(1);
+    }
+
+    [Fact]
     public void AddRange_List()
     {
         var initial = new List<int> { 2 };

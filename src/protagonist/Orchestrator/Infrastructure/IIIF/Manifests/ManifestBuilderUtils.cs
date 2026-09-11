@@ -159,8 +159,8 @@ public class ManifestBuilderUtils(
             { "Number 1", (asset.NumberReference1 ?? 0).ToString() },
             { "Number 2", (asset.NumberReference2 ?? 0).ToString() },
             { "Number 3", (asset.NumberReference3 ?? 0).ToString() },
-            { "Tags", asset.Tags ?? string.Empty },
-            { "Roles", asset.Roles ?? string.Empty }
+            { "Tags", asset.Tags.ToSeparatedString() },
+            { "Roles", asset.Roles.ToSeparatedString() }
         };
     
     public static Dictionary<string, string> GetManifestMetadata() =>

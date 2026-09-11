@@ -463,7 +463,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         var taskList = new List<Task>(assetsRequiringAuthCount);
         foreach (var asset in assetsRequiringAuth)
         {
-            taskList.Add(authBuilder.GetAuthServicesForAsset(asset.Id, asset.RolesList.ToList(), cancellationToken)
+            taskList.Add(authBuilder.GetAuthServicesForAsset(asset.Id, asset.Roles?.ToList() ?? [], cancellationToken)
                 .ContinueWith(antecedent =>
                     {
                         if (antecedent.Result is AuthProbeService2 probeService2)
