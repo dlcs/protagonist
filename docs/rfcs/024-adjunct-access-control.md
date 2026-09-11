@@ -36,14 +36,14 @@ Orchestrator is responsible for interrogating the incoming request, discovering 
 
 https://iiif.io/api/auth/2.0/#probe-service
 
-Access controlled assets have a probe service, available on path: `/v2/probe/{customer}/{space}/{image}` (e.g. `/v2/probe/2/10/foo`).
+Access controlled assets have a probe service, available on path: `/auth/v2/probe/{customer}/{space}/{image}` (e.g. `/auth/v2/probe/2/10/foo`).
 
 Serving probe service requests involves both Orchestrator and IIIF-Auth-V2.
-* `{orchestrator}/v2/probe/{customer}/{space}/{image}` (e.g. `{orchestrator}/v2/probe/2/10/foo`) is the public URL that viewers will call. The implementation is `ProbeService`, which contains logic for shortcutting requests if they are known to fail auth, else it will make a downstream call to...
-* `{iiif-auth-v2}/probe_internal/{customer}/{space}/{image}?roles={csv-roles}` (e.g. `{iiif-auth-v2}/probe_internal/2/10/foo?roles=https://dlcs.io/customers/2/roles/clickthrough`) internal endpoint. IIIF-Auth-V2 contains the logic to work out the [probe-service-response](https://iiif.io/api/auth/2.0/#probe-service-response), which the public `/v2/probe/` endpoint forwards to viewers.
+* `{orchestrator}/auth/v2/probe/{customer}/{space}/{image}` (e.g. `{orchestrator}/auth/v2/probe/2/10/foo`) is the public URL that viewers will call. The implementation is `ProbeService`, which contains logic for shortcutting requests if they are known to fail auth, else it will make a downstream call to...
+* `{iiif-auth-v2}/probe_internal/{customer}/{space}/{image}?roles={csv-roles}` (e.g. `{iiif-auth-v2}/probe_internal/2/10/foo?roles=https://dlcs.io/customers/2/roles/clickthrough`) internal endpoint. IIIF-Auth-V2 contains the logic to work out the [probe-service-response](https://iiif.io/api/auth/2.0/#probe-service-response), which the public `/auth/v2/probe/` endpoint forwards to viewers.
 
 Access controlled adjuncts will also need a probe service, both internal and external. The paths being:
-* `{orchestrator}/v2/probe/{customer}/{space}/{image}/{adjunct}` (e.g. `{orchestrator}/v2/probe/2/10/foo/mets.xml`)
+* `{orchestrator}/auth/v2/probe/{customer}/{space}/{image}/{adjunct}` (e.g. `{orchestrator}/auth/v2/probe/2/10/foo/mets.xml`)
 * `{iiif-auth-v2}/probe_internal/{customer}/{space}/{image}/{adjunct}?roles={csv-roles}` (e.g. `{iiif-auth-v2}/probe_internal/2/10/foo/mets.xml?roles=https://dlcs.io/customers/2/roles/clickthrough`)
 
 > [!TIP]
