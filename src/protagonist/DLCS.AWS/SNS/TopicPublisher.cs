@@ -2,6 +2,7 @@
 using Amazon;
 using Amazon.SimpleNotificationService;
 using Amazon.SimpleNotificationService.Model;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.Settings;
 using DLCS.Core;
 using DLCS.Model.Assets;
@@ -11,13 +12,15 @@ using Microsoft.Extensions.Options;
 namespace DLCS.AWS.SNS;
 
 public class TopicPublisher(
-    IAmazonSimpleNotificationService snsClient,
+    IAwsClientProvider<IAmazonSimpleNotificationService> snsClientProvider,
     IOptions<AWSSettings> settings,
     ILogger<TopicPublisher> logger)
     : ITopicPublisher
 {
     private readonly SNSSettings snsSettings = settings.Value.SNS;
     private readonly JsonSerializerOptions settings = new(JsonSerializerDefaults.Web);
+
+    private IAmazonSimpleNotificationService SnsClient => snsClientProvider.GetClient();
     
     /// <inheritdoc />
     public async Task<bool> PublishToCustomerCreatedTopic(CustomerCreatedNotification message, CancellationToken cancellationToken)
@@ -102,7 +105,7 @@ public class TopicPublisher(
     {
         try
         {
-            var response = await snsClient.PublishAsync(request, cancellationToken);
+            var response = await SnsClient.PublishAsync(request, cancellationToken);
             return response.HttpStatusCode.IsSuccess();
         }
         catch (Exception ex)
@@ -129,7 +132,7 @@ public class TopicPublisher(
                 }).ToList()
             };
 
-            var response = await snsClient.PublishBatchAsync(bulkRequest, cancellationToken);
+            var response = await SnsClient.PublishBatchAsync(bulkRequest, cancellationToken);
             return response.HttpStatusCode.IsSuccess();
         }
         catch (Exception ex)

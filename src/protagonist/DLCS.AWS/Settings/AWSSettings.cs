@@ -22,6 +22,11 @@ public class AWSSettings
     public bool UseLocalStack { get; set; } = false;
 
     /// <summary>
+    /// Settings for creating customer-scoped clients via an assumed role
+    /// </summary>
+    public AssumeRoleSettings AssumeRole { get; set; } = new();
+
+    /// <summary>
     /// S3 Settings
     /// </summary>
     public S3Settings S3 { get; set; } = new();

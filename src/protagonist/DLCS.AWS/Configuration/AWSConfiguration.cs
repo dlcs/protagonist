@@ -1,5 +1,6 @@
 using Amazon;
 using Amazon.CloudFront;
+using Amazon.Extensions.NETCore.Setup;
 using Amazon.MediaConvert;
 using Amazon.Runtime;
 using Amazon.S3;
@@ -9,7 +10,11 @@ using DLCS.AWS.Settings;
 using DLCS.Core.Guard;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+// ReSharper disable InconsistentNaming "AWS" is fine
 
 namespace DLCS.AWS.Configuration;
 
@@ -24,9 +29,9 @@ public static class AWSConfiguration
     public static AwsBuilder SetupAWS(this IServiceCollection services, IConfiguration configuration,
         IHostEnvironment environment)
     {
-        IConfigurationSection? configurationSection = configuration.GetSection("AWS");
+        var configurationSection = configuration.GetSection("AWS");
         services.Configure<AWSSettings>(configurationSection);
-        var awsSettings = configurationSection.Get<AWSSettings>();
+        var awsSettings = configurationSection.Get<AWSSettings>().ThrowIfNull(nameof(configurationSection));
 
         var useLocalStack = environment.IsDevelopment() && awsSettings.UseLocalStack;
 
@@ -35,7 +40,25 @@ public static class AWSConfiguration
             services.AddDefaultAWSOptions(configuration.GetAWSOptions());
         }
 
+        services.AddAmbientAwsClientProviders();
+
         return new AwsBuilder(awsSettings, services, useLocalStack);
+    }
+
+    /// <summary>
+    /// Register the default, ambient, <see cref="IAwsClientProvider{T}"/> implementation - this is a wrapper around
+    /// the basic AWS credentials chain.
+    /// </summary>
+    /// <remarks>
+    /// This is called by <see cref="SetupAWS"/>. Services that register AWS clients without using it must call this
+    /// directly, else consumers of <see cref="IAwsClientProvider{T}"/> will fail to resolve.
+    /// This open generic implementation can be overridden by WithCustomerScoped* calls.
+    /// </remarks>
+    public static IServiceCollection AddAmbientAwsClientProviders(this IServiceCollection services)
+    {
+        services.TryAdd(ServiceDescriptor.Singleton(typeof(IAwsClientProvider<>), typeof(AmbientAwsClientProvider<>)));
+        services.TryAddSingleton<ICustomerAwsContext, AsyncLocalCustomerAwsContext>();
+        return services;
     }
 }
 
@@ -44,22 +67,11 @@ public static class AWSConfiguration
 /// Switches between 'real' AWS and LocalStack depending on configuration settings.
 /// If "AWS:UseLocalStack" = true, and environment = Develop then localstack used. Else AWS
 /// </summary>
-public class AwsBuilder
+public class AwsBuilder(
+    AWSSettings awsSettings,
+    IServiceCollection services,
+    bool useLocalStack)
 {
-    private readonly AWSSettings awsSettings;
-    private readonly IServiceCollection services;
-    private readonly bool useLocalStack;
-
-    public AwsBuilder(
-        AWSSettings awsSettings,
-        IServiceCollection services,
-        bool useLocalStack)
-    {
-        this.awsSettings = awsSettings;
-        this.services = services;
-        this.useLocalStack = useLocalStack;
-    }
-
     /// <summary>
     /// Add <see cref="IAmazonS3"/> to service collection with specified lifetime.
     /// </summary>
@@ -76,7 +88,7 @@ public class AwsBuilder
                     UseHttp = true,
                     RegionEndpoint = RegionEndpoint.USEast1,
                     ServiceURL =
-                        awsSettings.S3?.ServiceUrl.ThrowIfNullOrWhiteSpace(nameof(awsSettings.S3.ServiceUrl)),
+                        awsSettings.S3.ServiceUrl.ThrowIfNullOrWhiteSpace(nameof(awsSettings.S3.ServiceUrl)),
                     ForcePathStyle = true
                 };
                 return new AmazonS3Client(new BasicAWSCredentials("foo", "bar"), amazonS3Config);
@@ -148,6 +160,68 @@ public class AwsBuilder
             services.AddAWSService<IAmazonSimpleNotificationService>(lifetime);
         }
         
+        return this;
+    }
+
+    /// <summary>
+    /// Add <see cref="IAmazonS3"/> to service collection, using a customer-scoped client if "AWS:AssumeRole" is
+    /// enabled. See <see cref="WithCustomerScopedClient{T}"/>
+    /// </summary>
+    /// <param name="lifetime">ServiceLifetime for dependency</param>
+    /// <returns>Current <see cref="AwsBuilder"/> instance</returns>
+    public AwsBuilder WithCustomerScopedAmazonS3(ServiceLifetime lifetime = ServiceLifetime.Singleton)
+    {
+        WithAmazonS3(lifetime);
+        return WithCustomerScopedClient<IAmazonS3>();
+    }
+
+    /// <summary>
+    /// Add <see cref="IAmazonSimpleNotificationService"/> to service collection, using a customer-scoped client if
+    /// "AWS:AssumeRole" is enabled. See <see cref="WithCustomerScopedClient{T}"/>
+    /// </summary>
+    /// <param name="lifetime">ServiceLifetime for dependency</param>
+    /// <returns>Current <see cref="AwsBuilder"/> instance</returns>
+    public AwsBuilder WithCustomerScopedAmazonSNS(ServiceLifetime lifetime = ServiceLifetime.Singleton)
+    {
+        WithAmazonSNS(lifetime);
+        return WithCustomerScopedClient<IAmazonSimpleNotificationService>();
+    }
+
+    /// <summary>
+    /// Add <see cref="IAmazonMediaConvert"/> to service collection, using a customer-scoped client if
+    /// "AWS:AssumeRole" is enabled. See <see cref="WithCustomerScopedClient{T}"/>
+    /// </summary>
+    /// <param name="lifetime">ServiceLifetime for dependency</param>
+    /// <returns>Current <see cref="AwsBuilder"/> instance</returns>
+    public AwsBuilder WithCustomerScopedMediaConvert(ServiceLifetime lifetime = ServiceLifetime.Singleton)
+    {
+        WithMediaConvert(lifetime);
+        return WithCustomerScopedClient<IAmazonMediaConvert>();
+    }
+
+    /// <summary>
+    /// Register <see cref="IAwsClientProvider{T}"/> that provides clients scoped to the customer currently being
+    /// processed. Consumers take a dependency on <see cref="IAwsClientProvider{T}"/> rather than the client itself,
+    /// so are unaware of which is in use.
+    /// </summary>
+    /// <remarks>
+    /// This is a no-op unless "AWS:AssumeRole:Enabled" is true, LocalStack does not support the required STS
+    /// operations so this is also skipped if LocalStack is in use.
+    /// </remarks>
+    private AwsBuilder WithCustomerScopedClient<T>() where T : class, IAmazonService
+    {
+        var assumeRoleSettings = awsSettings.AssumeRole;
+        if (!assumeRoleSettings.Enabled || useLocalStack) return this;
+
+        assumeRoleSettings.RoleArn.ThrowIfNullOrWhiteSpace(
+            $"{nameof(AWSSettings.AssumeRole)}:{nameof(AssumeRoleSettings.RoleArn)}");
+
+        // WithCustomerScopedClient is called multiple times so TryAdd to avoid multiple registrations
+        services.TryAddSingleton<ICustomerAwsCredentials, AssumedRoleCustomerAwsCredentials>();
+
+        // closed generic registration takes precedence over the open generic ambient provider
+        services.AddSingleton<IAwsClientProvider<T>, CustomerScopedAwsClientProvider<T>>();
+
         return this;
     }
 
