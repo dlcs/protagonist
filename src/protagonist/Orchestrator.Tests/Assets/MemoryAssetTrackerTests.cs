@@ -228,11 +228,11 @@ public class MemoryAssetTrackerTests
     }
     
     [Theory]
-    [InlineData("", 0, null)]
-    [InlineData("", 100, null)]
-    [InlineData("role", 0, 0)]
-    [InlineData("role", 100, 100)]
-    public async Task GetOrchestrationAsset_SetsOpenFullMax_IfHasRole(string roles, int openFullMax, int? expected)
+    [InlineData(new string[0], 0, null)]
+    [InlineData(new string[0], 100, null)]
+    [InlineData(new[] { "role" }, 0, 0)]
+    [InlineData(new[] { "role" }, 100, 100)]
+    public async Task GetOrchestrationAsset_SetsOpenFullMax_IfHasRole(string[] roles, int openFullMax, int? expected)
     {
         // Arrange
         var imageDeliveryChannels = "iiif-img".GenerateDeliveryChannels();
@@ -360,9 +360,9 @@ public class MemoryAssetTrackerTests
     }
 
     [Theory]
-    [InlineData("", false)]
-    [InlineData("role", true)]
-    public async Task GetOrchestrationAsset_SetsRequiresAuth_BaseOnRoles(string roles, bool requiresAuth)
+    [InlineData(new string[0], false)]
+    [InlineData(new[] { "role" }, true)]
+    public async Task GetOrchestrationAsset_SetsRequiresAuth_BaseOnRoles(string[] roles, bool requiresAuth)
     {
         // Arrange
         var imageDeliveryChannels = "iiif-img".GenerateDeliveryChannels();

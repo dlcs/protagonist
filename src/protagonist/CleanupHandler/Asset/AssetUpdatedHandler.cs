@@ -57,8 +57,8 @@ public class AssetUpdatedHandler(
             logger.LogDebug("Processing update Asset notification for {AssetId}", assetBefore.Id);
 
             // These are used in other checks - precompute for ease
-            var rolesChanged = !string.Equals(assetAfter.Roles ?? string.Empty, assetBefore.Roles ?? string.Empty,
-                StringComparison.OrdinalIgnoreCase);
+            var rolesChanged = !(assetAfter.Roles ?? [])
+                .SequenceEqual(assetBefore.Roles ?? [], StringComparer.OrdinalIgnoreCase);
             var maxWidthChanged = (assetAfter.MaxWidth ?? 0) != (assetBefore.MaxWidth ?? 0);
             var openFullMaxChanged = (assetBefore.OpenFullMax ?? 0) != (assetAfter.OpenFullMax ?? 0);
 

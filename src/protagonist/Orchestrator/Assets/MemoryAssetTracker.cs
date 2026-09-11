@@ -229,7 +229,7 @@ public class MemoryAssetTracker(
                 orchestrationAsset.Channels |= AvailableDeliveryChannel.Timebased;
             
             orchestrationAsset.AssetId = assetId;
-            orchestrationAsset.Roles = asset.Roles.SplitSeparatedString(",").ToList();
+            orchestrationAsset.Roles = asset.Roles?.ToList() ?? [];
             orchestrationAsset.RequiresAuth = asset.HasRoles;
             return orchestrationAsset;
         }

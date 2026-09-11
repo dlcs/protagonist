@@ -239,56 +239,84 @@ public class AssetPreparerTests
     public void PrepareAssetForUpsert_PreservesRoles_IfNotInUpdateRequest()
     {
         // Arrange - simulates a PATCH that doesn't mention roles (see #1261)
-        var existingAsset = new Asset { Origin = "https://whatever", Roles = "clickthrough" };
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = ["clickthrough"] };
         var updateAsset = new Asset { Origin = "https://whatever", Reference1 = "metadata edit" };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
 
         // Assert
-        result.UpdatedAsset!.Roles.Should().Be("clickthrough");
+        result.UpdatedAsset!.Roles.Should().BeEquivalentTo(["clickthrough"]);
     }
 
     [Fact]
     public void PrepareAssetForUpsert_PreservesTags_IfNotInUpdateRequest()
     {
         // Arrange - simulates a PATCH that doesn't mention tags (see #1261)
-        var existingAsset = new Asset { Origin = "https://whatever", Tags = "existing-tag" };
+        var existingAsset = new Asset { Origin = "https://whatever", Tags = ["existing-tag"] };
         var updateAsset = new Asset { Origin = "https://whatever", Reference1 = "metadata edit" };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
 
         // Assert
-        result.UpdatedAsset!.Tags.Should().Be("existing-tag");
+        result.UpdatedAsset!.Tags.Should().BeEquivalentTo(["existing-tag"]);
     }
 
     [Fact]
     public void PrepareAssetForUpsert_UpdatesRoles_IfInUpdateRequest()
     {
         // Arrange
-        var existingAsset = new Asset { Origin = "https://whatever", Roles = "clickthrough" };
-        var updateAsset = new Asset { Origin = "https://whatever", Roles = "logout" };
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = ["clickthrough"] };
+        var updateAsset = new Asset { Origin = "https://whatever", Roles = ["logout"] };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
 
         // Assert
-        result.UpdatedAsset!.Roles.Should().Be("logout");
+        result.UpdatedAsset!.Roles.Should().BeEquivalentTo(["logout"]);
     }
 
     [Fact]
     public void PrepareAssetForUpsert_UpdatesTags_IfInUpdateRequest()
     {
         // Arrange
-        var existingAsset = new Asset { Origin = "https://whatever", Tags = "existing-tag" };
-        var updateAsset = new Asset { Origin = "https://whatever", Tags = "new-tag" };
+        var existingAsset = new Asset { Origin = "https://whatever", Tags = ["existing-tag"] };
+        var updateAsset = new Asset { Origin = "https://whatever", Tags = ["new-tag"] };
 
         // Act
         var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
 
         // Assert
-        result.UpdatedAsset!.Tags.Should().Be("new-tag");
+        result.UpdatedAsset!.Tags.Should().BeEquivalentTo(["new-tag"]);
+    }
+
+    [Fact]
+    public void PrepareAssetForUpsert_ClearsRoles_IfEmptyCollectionInUpdateRequest()
+    {
+        // Arrange - an empty collection is an explicit "remove all roles", unlike null which is "not specified"
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = ["clickthrough"] };
+        var updateAsset = new Asset { Origin = "https://whatever", Roles = [] };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Roles.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void PrepareAssetForUpsert_ClearsTags_IfEmptyCollectionInUpdateRequest()
+    {
+        // Arrange - an empty collection is an explicit "remove all tags", unlike null which is "not specified"
+        var existingAsset = new Asset { Origin = "https://whatever", Tags = ["existing-tag"] };
+        var updateAsset = new Asset { Origin = "https://whatever", Tags = [] };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Tags.Should().BeEmpty();
     }
 
     [Fact]

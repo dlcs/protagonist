@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using API.Infrastructure.Messaging.General;
 using DLCS.Core.Collections;
+using DLCS.Core.Strings;
 using DLCS.Model.Assets;
 
 namespace API.Infrastructure;
@@ -55,6 +56,27 @@ public class DeliverableNotificationSender(
                 nameof(Adjunct.AdjunctBatchAdjuncts)
             }
         };
+
+        // Properties that are comma-delimited strings in the DB but arrays on the model + on the wire
+        var stringArrayProperties = new Dictionary<Type, HashSet<string>>
+        {
+            [typeof(Asset)] = new(StringComparer.OrdinalIgnoreCase)
+            {
+                nameof(Asset.Roles),
+                nameof(Asset.Tags)
+            }
+        };
+
+        if (stringArrayProperties.TryGetValue(typeInfo.Type, out var stringArrays))
+        {
+            foreach (var prop in typeInfo.Properties)
+            {
+                if (stringArrays.Contains(prop.Name))
+                {
+                    prop.CustomConverter = new StringArrayConverter();
+                }
+            }
+        }
 
         if (!exclusionsByType.TryGetValue(typeInfo.Type, out var exclusions)) return;
 

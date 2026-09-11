@@ -113,7 +113,9 @@ public class AssetConverterTests
         var asset = hydraImage.ToDlcsModel(1, 1, nameof(ToDlcsModel_MapsMaxUnauthorised_ToOpenFullMax));
         asset.MaxWidth.Should().BeNull("MaxWidth is never set from MaxUnauthorised");
         asset.OpenFullMax.Should().Be(openFullMax, reason);
-        asset.Roles.SplitSeparatedString(",").Should().BeEquivalentTo(expectedRoles, reason);
+        // null Roles means "not specified" so is equivalent to no roles here - it's left null rather than set to an
+        // empty collection so that a PATCH that omits roles doesn't wipe them
+        (asset.Roles ?? []).Should().BeEquivalentTo(expectedRoles, reason);
     }
 
     [Theory]
@@ -195,8 +197,8 @@ public class AssetConverterTests
         asset.Reference1.Should().Be("1");
         asset.Reference2.Should().Be("2");
         asset.Reference3.Should().Be("3");
-        asset.Roles.Split(',').Should().BeEquivalentTo(roles);
-        asset.Tags.Split(',').Should().BeEquivalentTo(tags);
+        asset.Roles.Should().BeEquivalentTo(roles);
+        asset.Tags.Should().BeEquivalentTo(tags);
         asset.DeliveryChannels.Should().BeEmpty();
         asset.MaxWidth.Should().Be(512);
         asset.OpenFullMax.Should().Be(1000);
@@ -211,8 +213,8 @@ public class AssetConverterTests
         var created = DateTime.UtcNow.AddDays(-1).Date;
         var finished = DateTime.UtcNow;
         var origin = "https://example.org/origin";
-        var roles = "role1,role2";
-        var tags = "tag1tag2";
+        var roles = new[] { "role1", "role2" };
+        var tags = new[] { "tag1", "tag2" };
         var mediaType = "image/jpeg";
         var thumbnailPolicy = "thumb100";
         var manifests = new List<string> { "firstManifest" };
@@ -268,8 +270,8 @@ public class AssetConverterTests
         hydraImage.String1.Should().Be("1");
         hydraImage.String2.Should().Be("2");
         hydraImage.String3.Should().Be("3");
-        hydraImage.Roles.Should().BeEquivalentTo(roles.Split(','));
-        hydraImage.Tags.Should().BeEquivalentTo(tags.Split(','));
+        hydraImage.Roles.Should().BeEquivalentTo(roles);
+        hydraImage.Tags.Should().BeEquivalentTo(tags);
         hydraImage.DeliveryChannels.Should().BeEmpty();
         hydraImage.MaxUnauthorised.Should().Be(400);
         hydraImage.MediaType.Should().Be(mediaType);

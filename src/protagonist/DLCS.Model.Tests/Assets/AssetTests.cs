@@ -11,11 +11,11 @@ public class AssetTests
 {
     [Theory]
     [InlineData(null, false)]
-    [InlineData("", false)]
-    [InlineData(" ", false)]
-    [InlineData("role", true)]
-    [InlineData("more,roles", true)]
-    public void HasRoles_True_IfHaveRoles(string roles, bool expected)
+    [InlineData(new string[0], false)]
+    [InlineData(new[] { " " }, false)]
+    [InlineData(new[] { "role" }, true)]
+    [InlineData(new[] { "more", "roles" }, true)]
+    public void HasRoles_True_IfHaveRoles(string[] roles, bool expected)
     {
         // Arrange
         var asset = new Asset { Roles = roles };

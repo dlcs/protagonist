@@ -35,7 +35,7 @@ public class AssetXTests
     public void GetAvailableThumbSizes_Correct_IfRolesNoOpenFullMax(int? openFullMax)
     {
         // No thumb sizes are open
-        var asset = new Asset { Width = 5000, Height = 2500, Roles = "GoodGuys", OpenFullMax = openFullMax };
+        var asset = new Asset { Width = 5000, Height = 2500, Roles = ["GoodGuys"], OpenFullMax = openFullMax };
         
         // Act
         var sizes = asset.GetAvailableThumbSizes(sizeParameters, 5000);
@@ -49,7 +49,7 @@ public class AssetXTests
     public void GetAvailableThumbSizes_Correct_IfRolesOpenFullMax()
     {
         // Only thumbs 399px and below are available
-        var asset = new Asset { Width = 2500, Height = 5000, Roles = "GoodGuys", OpenFullMax = 399 };
+        var asset = new Asset { Width = 2500, Height = 5000, Roles = ["GoodGuys"], OpenFullMax = 399 };
         
         // Act
         var sizes = asset.GetAvailableThumbSizes(sizeParameters, 5000);
@@ -174,7 +174,7 @@ public class AssetXTests
     [InlineData(0)]
     public void GetLargestOpenFullSize_Returns0_IfOpenFullMaxUnset_AndHasRoles(int? openFullMax)
     {
-        var asset = new Asset { OpenFullMax = openFullMax, Roles = "https://test.role" };
+        var asset = new Asset { OpenFullMax = openFullMax, Roles = ["https://test.role"] };
         asset.GetLargestOpenFullSize(1000).Should().Be(0);
     }
     
@@ -186,7 +186,7 @@ public class AssetXTests
     public void GetLargestOpenFullSize_ReturnsSmallestOfAvailableValues_IfHasRoles(int? openFullMax, int? maxWidth, int systemMaxWidth, int expected,
         string because)
     {
-        var asset = new Asset { MaxWidth = maxWidth, OpenFullMax = openFullMax, Roles = "https://test.role" };
+        var asset = new Asset { MaxWidth = maxWidth, OpenFullMax = openFullMax, Roles = ["https://test.role"] };
         asset.GetLargestOpenFullSize(systemMaxWidth).Should().Be(expected, because);
     }
 
