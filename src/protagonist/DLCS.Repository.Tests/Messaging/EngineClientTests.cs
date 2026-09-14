@@ -54,8 +54,8 @@ public class EngineClientTests
         var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
         {
             Family = AssetFamily.Image,
-            Tags = "whatever",
-            Roles = "secure",
+            Tags = ["whatever"],
+            Roles = ["secure"],
             NumberReference1 = 1234,
             Batch = batchId
         };
@@ -93,8 +93,8 @@ public class EngineClientTests
         var asset = new Asset(AssetId.FromString("99/1/ingest-asset"))
         {
             Family = AssetFamily.Image,
-            Tags = "whatever",
-            Roles = "secure",
+            Tags = ["whatever"],
+            Roles = ["secure"],
             NumberReference1 = 1234,
             Batch = batchId
         };

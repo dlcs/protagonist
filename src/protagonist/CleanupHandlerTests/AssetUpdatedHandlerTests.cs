@@ -1274,12 +1274,13 @@ public class AssetUpdatedHandlerTests
     // roles
     
     [Theory]
-    [InlineData("", "new role")]
-    [InlineData(null, "new role")]
-    [InlineData("old role", null)]
-    [InlineData("old role", "")]
-    [InlineData("old role", "new role")]
-    public async Task Handle_DeletesInfoJson_WhenRolesChanged(string? rolesBefore, string? rolesAfter)
+    [InlineData(new string[0], new[] { "new role" })]
+    [InlineData(null, new[] { "new role" })]
+    [InlineData(new[] { "old role" }, null)]
+    [InlineData(new[] { "old role" }, new string[0])]
+    [InlineData(new[] { "old role" }, new[] { "new role" })]
+    [InlineData(new[] { "old role" }, new[] { "old role", "new role" })]
+    public async Task Handle_DeletesInfoJson_WhenRolesChanged(string[]? rolesBefore, string[]? rolesAfter)
     {
         // Arrange
         var requestDetails = CreateMinimalRequestDetails(
@@ -1303,12 +1304,13 @@ public class AssetUpdatedHandlerTests
     }
     
     [Theory]
-    [InlineData("", null)]
-    [InlineData(null, "")]
+    [InlineData(new string[0], null)]
+    [InlineData(null, new string[0])]
     [InlineData(null, null)]
-    [InlineData("", "")]
-    [InlineData("ADMIN", "admin")]
-    public async Task Handle_DoesNotDeleteInfoJson_WhenRolesChangedBothNullOrEmptyorCaseOnly(string? rolesBefore, string? rolesAfter)
+    [InlineData(new string[0], new string[0])]
+    [InlineData(new[] { "ADMIN" }, new[] { "admin" })]
+    public async Task Handle_DoesNotDeleteInfoJson_WhenRolesChangedBothNullOrEmptyorCaseOnly(string[]? rolesBefore,
+        string[]? rolesAfter)
     {
         // Arrange
         var requestDetails = CreateMinimalRequestDetails(

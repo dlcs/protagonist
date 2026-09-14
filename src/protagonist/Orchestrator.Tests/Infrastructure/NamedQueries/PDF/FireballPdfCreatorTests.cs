@@ -199,31 +199,31 @@ public class FireballPdfCreatorTests
         {
             new()
             {
-                Roles = "whitelist",
+                Roles = ["whitelist"],
                 Id = AssetId.FromString("/99/1/image1.jpg"),
                 OpenFullMax = 0
             },
             new()
             {
-                Roles = "whitelist,notwhitelist",
+                Roles = ["whitelist", "notwhitelist"],
                 Id = AssetId.FromString("/99/1/image1.jpg"),
                 OpenFullMax = 0
             },
             new()
             {
-                Roles = "notwhitelist",
+                Roles = ["notwhitelist"],
                 Id = AssetId.FromString("/99/1/image1.jpg"),
                 OpenFullMax = 0
             },
             new()
             {
-                Roles = string.Empty,
+                Roles = [],
                 Id = AssetId.FromString("/99/1/image1.jpg"),
                 OpenFullMax = 0
             },
             new()
             {
-                Roles = string.Empty,
+                Roles = [],
                 Id = AssetId.FromString("/99/1/image1.jpg"),
                 OpenFullMax = 0
             }

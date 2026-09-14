@@ -109,7 +109,7 @@ public class MetadataWithFallbackThumbSizeProviderTests
             Width = w,
             Height = h,
             OpenFullMax = openFullMax,
-            Roles = "https://role.example",
+            Roles = ["https://role.example"],
             ImageDeliveryChannels = new List<ImageDeliveryChannel>
             {
                 new()

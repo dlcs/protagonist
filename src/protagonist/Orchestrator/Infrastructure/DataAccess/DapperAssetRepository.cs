@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Repository;
@@ -66,9 +67,9 @@ public class DapperAssetRepository(
             Reference1 = firstAsset.Reference1,
             Reference2 = firstAsset.Reference2,
             Reference3 = firstAsset.Reference3,
-            Roles = firstAsset.Roles,
+            Roles = SplitDelimited(firstAsset.Roles),
             Space = firstAsset.Space,
-            Tags = firstAsset.Tags,
+            Tags = SplitDelimited(firstAsset.Tags),
             Width = firstAsset.Width,
             MaxUnauthorised = firstAsset.MaxUnauthorised,
             MaxWidth = firstAsset.MaxWidth,
@@ -86,6 +87,10 @@ public class DapperAssetRepository(
             Manifests = (firstAsset.Manifests as string[])?.ToList()
         };
     }
+
+    // Roles + Tags are stored as comma-delimited strings; EF handles this via a value-converter but Dapper doesn't
+    private static string[] SplitDelimited(string? value)
+        => value.SplitSeparatedString(",").ToArray();
 
     private List<ImageDeliveryChannel> GenerateImageDeliveryChannels(List<dynamic> rawAsset)
     {

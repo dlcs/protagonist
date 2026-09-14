@@ -11,11 +11,11 @@ public class AssetTests
 {
     [Theory]
     [InlineData(null, false)]
-    [InlineData("", false)]
-    [InlineData(" ", false)]
-    [InlineData("role", true)]
-    [InlineData("more,roles", true)]
-    public void HasRoles_True_IfHaveRoles(string roles, bool expected)
+    [InlineData(new string[0], false)]
+    [InlineData(new[] { " " }, false)]
+    [InlineData(new[] { "role" }, true)]
+    [InlineData(new[] { "more", "roles" }, true)]
+    public void HasRoles_True_IfHaveRoles(string[] roles, bool expected)
     {
         // Arrange
         var asset = new Asset { Roles = roles };
@@ -42,38 +42,6 @@ public class AssetTests
         constructed.Space.Should().Be(assetId.Space);
     }
 
-    [Fact]
-    public void Roles_Convert_To_List()
-    {
-        var asset = new Asset { Roles = "a,b,c" };
-        var expected = new[] { "a", "b", "c" };
-        asset.RolesList.Should().BeEquivalentTo(expected);
-    }
-    
-    [Fact]
-    public void Roles_Convert_From_List()
-    {
-        var asset = new Asset { RolesList = ["a", "b", "c"] };
-        var expected = "a,b,c";
-        asset.Roles.Should().Be(expected);
-    }
-    
-    [Fact]
-    public void Tags_Convert_To_List()
-    {
-        var asset = new Asset { Tags = "a,b,c" };
-        var expected = new[] { "a", "b", "c" };
-        asset.TagsList.Should().BeEquivalentTo(expected);
-    }
-
-    [Fact]
-    public void Tags_Convert_From_List()
-    {
-        var asset = new Asset { TagsList = ["a", "b", "c"] };
-        var expected = "a,b,c";
-        asset.Tags.Should().Be(expected);
-    }
-    
     [Fact]
     public void Clone_ClonesObject_From_List()
     {

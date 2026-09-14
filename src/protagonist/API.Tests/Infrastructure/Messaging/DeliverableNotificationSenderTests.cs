@@ -170,6 +170,31 @@ public class DeliverableNotificationSenderTests
     }
     
     [Fact]
+    public async Task SendDeliverableModifiedMessage_Asset_SerialisesRolesAndTags_AsJsonArrays()
+    {
+        // Arrange - Roles/Tags are string[] on the model; confirm they hit the wire as JSON arrays, not
+        // comma-delimited strings (there used to be a custom converter responsible for this)
+        var assetId = AssetIdGenerator.GetAssetId();
+        var before = new Asset(assetId) { Roles = ["clickthrough"], Tags = ["tag1", "tag2"] };
+        var after = new Asset(assetId) { Roles = ["clickthrough", "logout"], Tags = [] };
+        var assetModifiedRecord = NotificationRecord<Asset>.Update(before, after, true);
+        var payload = CapturePayload(DeliverableTopicType.Asset);
+
+        // Act
+        await sut.SendDeliverableModifiedMessage(assetModifiedRecord, CancellationToken.None);
+
+        // Assert - message is serialised with camelCase property names (JsonSerializerDefaults.Web)
+        var messageJson = JsonNode.Parse(payload.Single().MessageContents)!;
+        var afterJson = messageJson["deliverableAfterUpdate"]!;
+        afterJson["roles"]!.GetValueKind().Should().Be(JsonValueKind.Array);
+        afterJson["tags"]!.GetValueKind().Should().Be(JsonValueKind.Array);
+
+        var updated = messageJson.Deserialize<DeliverableUpdatedNotification<Asset>>(JsonSerializerOptions.Web);
+        updated!.DeliverableAfterUpdate!.Roles.Should().BeEquivalentTo(after.Roles);
+        updated.DeliverableAfterUpdate!.Tags.Should().BeEquivalentTo(after.Tags);
+    }
+
+    [Fact]
     public async Task SendDeliverableModifiedMessage_Adjunct_OmitsExpectedProperties()
     {
         var assetId = new AssetId(1, 2, "foo");

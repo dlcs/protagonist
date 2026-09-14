@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core;
+using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
@@ -54,12 +55,13 @@ public static class DatabaseTestDataPopulation
         return assets.AddAsync(new Asset
         {
             Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
-            Width = width, Height = height, Roles = roles, Family = family, MediaType = mediaType,
+            Width = width, Height = height, Roles = roles.SplitSeparatedString(",").ToArray(), Family = family,
+            MediaType = mediaType,
             ThumbnailPolicy = thumbnailPolicy, MaxUnauthorised = -1,
             MaxWidth = maxWidth, OpenFullMax = openFullMax,
             Reference1 = ref1, Reference2 = ref2, Reference3 = ref3,
             NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
-            NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = error,
+            NotForDelivery = notForDelivery, Tags = [], PreservedUri = "", Error = error,
             ImageOptimisationPolicy = imageOptimisationPolicy, Batch = batch, Ingesting = ingesting,
             Duration = duration, Finished = finished, Manifests = manifests,
             ImageDeliveryChannels = imageDeliveryChannels ?? new List<ImageDeliveryChannel>()
