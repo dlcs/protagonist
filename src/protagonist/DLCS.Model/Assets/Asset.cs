@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using DLCS.Core;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets.Metadata;
