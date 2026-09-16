@@ -12,8 +12,7 @@ public static class AssetQueryableX
     /// <see cref="Adjunct"/> that are relevant to Orchestrator processing manifests and named query projections
     /// </summary>
     /// <remarks>
-    /// Only returns adjuncts that are either external (have an ExternalId) or hosted by DLCS (have an Origin) -
-    /// adjuncts with neither are not yet ready to be linked to from a Manifest.
+    /// Returns adjuncts that are either external (have an ExternalId) or hosted by DLCS (have an Origin).
     /// </remarks>
     public static IQueryable<Asset> IncludeRelationsForProjections(this IQueryable<Asset> assets) =>
         assets.Include(a =>
