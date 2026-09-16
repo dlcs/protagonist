@@ -408,7 +408,40 @@ public class NamedQueryTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         checkedSeeAlso.Should().BeTrue("No seeAlso checked in test, verify test data");
     }
-    
+
+    [Fact]
+    public async Task Get_ReturnsV3ManifestWithCorrectHostedAdjuncts()
+    {
+        // Arrange - hosted adjuncts (Origin set, no ExternalId) should be included the same as external adjuncts
+        dbFixture.DbContext.NamedQueries.Add(new NamedQuery
+        {
+            Customer = 99, Global = false, Id = Guid.NewGuid().ToString(), Name = "hosted-adjunct-nq",
+            Template = "s1=p1&space=p2"
+        });
+
+        var assetId = AssetId.FromString("99/1/hosted-adjunct-asset");
+        await dbFixture.DbContext.Images.AddTestAsset(assetId, ref1: "hosted-adjunct-ref")
+            .WithTestThumbnailMetadata()
+            .WithTestDeliveryChannel(AssetDeliveryChannels.Image)
+            .WithTestAdjunct("hosted-adjunct", origin: "https://example.com/hosted-adjunct-1");
+
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        const string path = "iiif-resource/v3/99/hosted-adjunct-nq/hosted-adjunct-ref/1";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        var canvas = manifest.Items.Should().ContainSingle().Subject;
+
+        canvas.SeeAlso.Should()
+            .ContainSingle(sa => sa.Id == $"http://localhost/adjuncts/{assetId}/hosted-adjunct");
+    }
+
     [Fact]
     public async Task Get_AssetsRequireAuth_ReturnsV2ManifestWithoutAuthServices()
     {
