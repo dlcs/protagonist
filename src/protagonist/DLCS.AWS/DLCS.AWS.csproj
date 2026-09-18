@@ -18,6 +18,7 @@
         <PackageReference Include="AWSSDK.Extensions.NETCore.Setup"/>
         <PackageReference Include="AWSSDK.MediaConvert" />
         <PackageReference Include="AWSSDK.S3"/>
+        <PackageReference Include="AWSSDK.SecurityToken"/>
         <PackageReference Include="AWSSDK.SimpleNotificationService"/>
         <PackageReference Include="AWSSDK.SQS"/>
         <PackageReference Include="LazyCache"/>
