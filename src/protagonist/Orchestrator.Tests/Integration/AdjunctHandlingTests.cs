@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using DLCS.Model.Policies;
 using DLCS.Repository;
@@ -365,6 +366,92 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Get_RequiresAuth_Returns401_IfNoCookie()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_RequiresAuth_Returns401_IfNoCookie);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: "basic", imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"adjuncts/{id}/{adjunctId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+    }
+
+    [Fact]
+    public async Task Get_RequiresAuth_Returns401_IfInvalidCookie()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_RequiresAuth_Returns401_IfInvalidCookie);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: "basic", imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("Cookie", "dlcs-token-99=blabla;");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+    }
+
+    [Fact]
+    public async Task Get_RequiresAuth_ReturnsAdjunct_IfCookieProvided()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_RequiresAuth_ReturnsAdjunct_IfCookieProvided);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: "clickthrough",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        var userSession =
+            await dbContext.SessionUsers.AddTestSession(DlcsDatabaseFixture.ClickThroughAuthService.AsList());
+        var authToken = await dbContext.AuthTokens.AddTestToken(expires: DateTime.UtcNow.AddMinutes(15),
+            sessionUserId: userSession.Entity.Id);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("Cookie", $"dlcs-token-99=id={authToken.Entity.CookieId};");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl!.Private.Should().BeTrue("authorised adjuncts must not be cached publicly");
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+    }
+
+    [Fact]
+    public async Task Get_NoRoles_ReturnsAdjunct_WithoutAuthCheck()
+    {
+        // Arrange — ACs: requests continue to work as-is when the parent Asset has no roles
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_NoRoles_ReturnsAdjunct_WithoutAuthCheck);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"adjuncts/{id}/{adjunctId}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl.Should().BeNull();
     }
 
     [Fact]
