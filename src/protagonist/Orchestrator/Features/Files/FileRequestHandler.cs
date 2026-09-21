@@ -4,23 +4,20 @@ using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Web.Requests.AssetDelivery;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
-using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.ReverseProxy;
 
 namespace Orchestrator.Features.Files;
 
 /// <summary>
-/// Handling logic for /file/ requests 
+/// Handling logic for /file/ requests
 /// </summary>
 public class FileRequestHandler(
     ILogger<TimeBasedRequestHandler> logger,
     AssetRequestProcessor assetRequestProcessor,
-    IServiceScopeFactory scopeFactory,
     IStorageKeyGenerator storageKeyGenerator,
     S3ProxyPathGenerator proxyPathGenerator)
 {
@@ -59,14 +56,15 @@ public class FileRequestHandler(
         
         if (orchestrationAsset.RequiresAuth)
         {
-            if (!await IsAuthenticated(assetRequest, orchestrationAsset, httpContext.Request))
+            if (!await assetRequestProcessor.IsAuthenticated(assetRequest.GetAssetId(), orchestrationAsset.Roles,
+                    httpContext.Request))
             {
                 logger.LogDebug("User not authenticated for {Method} {Path}", httpContext.Request.Method,
                     httpContext.Request.Path);
                 return new StatusCodeResult(HttpStatusCode.Unauthorized);
             }
         }
-        
+
         // By here it's either open, or user is authenticated
         if (httpContext.Request.Method == "HEAD")
         {
@@ -79,24 +77,7 @@ public class FileRequestHandler(
         proxyActionResult.Headers.Add("Content-Type", orchestrationAsset.MediaType!.Value);
         return proxyActionResult;
     }
-    
-    private async Task<bool> IsAuthenticated(FileAssetDeliveryRequest assetRequest, OrchestrationAsset asset,
-        HttpRequest httpRequest)
-    {
-        // IAssetAccessValidator is in container with a Lifetime.Scope
-        using var scope = scopeFactory.CreateScope();
-        var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
 
-        // We can get HEAD or GET requests here, for GET requests we only check Cookies, bearer tokens are ignored
-        var authMechanism = httpRequest.Method == "GET" ? AuthMechanism.Cookie : AuthMechanism.All;
-        logger.LogDebug("Authenticating request for {Method} {Path} via {Mechanism}", httpRequest.Method,
-            httpRequest.Path, authMechanism);
-        var authResult =
-            await assetAccessValidator.TryValidate(assetRequest.GetAssetId(), asset.Roles, authMechanism);
-
-        return authResult is AssetAccessResult.Open or AssetAccessResult.Authorized;
-    }
-    
     private ObjectInBucket? GetRequestedAssetLocation(FileAssetDeliveryRequest assetRequest, OrchestrationAsset orchestrationAsset)
     {
         ObjectInBucket fileLocation;
