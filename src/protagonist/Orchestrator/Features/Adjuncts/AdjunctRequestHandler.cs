@@ -23,6 +23,8 @@ public class AdjunctRequestHandler(
     IAssetPathGenerator assetPathGenerator,
     IOptions<OrchestratorSettings> orchestratorOptions)
 {
+    private const string PrivateCacheControl = "private, max-age=600";
+
     /// <summary>
     /// Handle /adjuncts/ request, returning object detailing operation that should be carried out.
     /// </summary>
@@ -56,8 +58,18 @@ public class AdjunctRequestHandler(
             return new StatusCodeResult(HttpStatusCode.NotFound);
         }
         
-        // TBD - AUTH
+        if (orchestrationAdjunct.RequiresAuth)
+        {
+            if (!await assetRequestProcessor.IsAuthenticated(adjunctRequest.GetAssetId(), orchestrationAdjunct.Roles,
+                    httpContext.Request))
+            {
+                logger.LogDebug("User not authenticated for {Method} {Path}", httpContext.Request.Method,
+                    httpContext.Request.Path);
+                return new StatusCodeResult(HttpStatusCode.Unauthorized);
+            }
+        }
 
+        // By here it's either open, or user is authenticated
         if (httpContext.Request.Method == "HEAD")
         {
             // quit with success as we've done all we need to
@@ -72,9 +84,14 @@ public class AdjunctRequestHandler(
         var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget, !orchestrationAdjunct.OptimisedOrigin ?? true);
         var proxyActionResult = new ProxyActionResult(ProxyDestination.S3, orchestrationAdjunct.RequiresAuth, proxyPath);
         proxyActionResult.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
+        if (orchestrationAdjunct.RequiresAuth)
+        {
+            // Ensure authorised adjuncts aren't cached in any interim (e.g. CDN) cache layers
+            proxyActionResult.Headers.Add("Cache-Control", PrivateCacheControl);
+        }
         return proxyActionResult;
     }
-    
+
     private IdRewriteProxyActionResult GetIdRewriteResult(AdjunctDeliveryRequest adjunctRequest,
         ObjectInBucket proxyTarget, OrchestrationAdjunct orchestrationAdjunct)
     {
@@ -92,6 +109,11 @@ public class AdjunctRequestHandler(
             MaxSizeBytes = orchestratorOptions.Value.MaxAdjunctSizeBytes
         };
         result.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
+        if (orchestrationAdjunct.RequiresAuth)
+        {
+            // Ensure authorised adjuncts aren't cached in any interim (e.g. CDN) cache layers
+            result.Headers.Add("Cache-Control", PrivateCacheControl);
+        }
         return result;
     }
 

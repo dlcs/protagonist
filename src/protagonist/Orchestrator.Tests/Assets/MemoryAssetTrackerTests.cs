@@ -504,6 +504,40 @@ public class MemoryAssetTrackerTests
         result.Origin.Should().Be(origin, "as per repo setting");
         result.MediaType.ToString().Should().Be("application/json", "as per repo setting");
         result.OptimisedOrigin.Should().Be(true, "as per cos repo setting");
+        result.Roles.Should().BeEmpty("adjunct has no roles set on repo response");
+        result.RequiresAuth.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetOrchestrationAdjunct_ReturnsOrchestrationAdjunct_WithRolesInheritedFromParentAsset()
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, nameof(GetOrchestrationAdjunct_ReturnsOrchestrationAdjunct_WithRolesInheritedFromParentAsset));
+        const string adjunctId = "yup";
+        const string origin = "http://example.com/some-origin";
+        A.CallTo(() => adjunctRepository.GetAdjunct(adjunctId, assetId, false)).Returns(
+            new Adjunct
+            {
+                Id = adjunctId,
+                AssetId = assetId,
+                Origin = origin,
+                MediaType = "application/json",
+                IIIFLink = IIIFLinkType.SeeAlso,
+                Type = "a_type",
+                Asset = new Asset { Roles = ["clickthrough"] }
+            });
+
+        A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, origin))
+            .Returns(new CustomerOriginStrategy { Id = "_default_",
+                Optimised = true, Strategy = OriginStrategyType.Default });
+
+        // Act
+        var result = await sut.GetOrchestrationAdjunct(adjunctId, assetId);
+
+        // Assert
+        result.Should().NotBeNull("mock repo set to return a valid obj");
+        result!.Roles.Should().BeEquivalentTo(["clickthrough"], "adjunct inherits roles from parent Asset");
+        result.RequiresAuth.Should().BeTrue("adjunct has roles");
     }
 
     [Fact]
