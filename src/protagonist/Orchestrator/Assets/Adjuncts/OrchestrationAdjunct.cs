@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using DLCS.Core.Types;
+﻿using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using Microsoft.Extensions.Primitives;
 
@@ -40,14 +39,9 @@ public class OrchestrationAdjunct : IOriginItem
     public string ItemId => Id;
 
     /// <summary>
-    /// Gets list of roles associated with this adjunct, inherited from the parent Asset
+    /// Currently adjuncts are not auth-covered, this always returns <c>false</c>
     /// </summary>
-    public List<string> Roles { get; set; } = new();
-
-    /// <summary>
-    /// Get boolean indicating whether this adjunct is restricted, based on parent Asset roles
-    /// </summary>
-    public bool RequiresAuth => Roles.Count > 0;
+    public bool RequiresAuth => false;
 
     /// <inheritdoc/>
     public string Identifier() => $"adjunct '{Id}' for asset '{AssetId}'";

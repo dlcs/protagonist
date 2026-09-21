@@ -174,8 +174,7 @@ public class MemoryAssetTracker(
             Origin = origin,
             IIIFLink = adjunct.IIIFLink,
             MediaType = new StringValues(adjunct.MediaType),
-            OptimisedOrigin = cos.Optimised,
-            Roles = adjunct.Asset.Roles?.ToList() ?? []
+            OptimisedOrigin = cos.Optimised
         };
         
         return  orchestrationAdjunct;

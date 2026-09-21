@@ -958,7 +958,7 @@ public class ImageRequestHandlerTests
     {
         // mockPathParser = true will return A.Fake, else return actual impl with fake repo 
         var requestProcessor = new AssetRequestProcessor(new NullLogger<AssetRequestProcessor>(), assetTracker, adjunctTracker,
-            mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl, scopeFactory);
+            mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl);
         var settings = Options.Create(orchestratorSettings ?? CreateOrchestratorSettings());
         return new(new NullLogger<ImageRequestHandler>(), requestProcessor, scopeFactory, customHeaderRepository,
             settings,
