@@ -486,7 +486,123 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
         probeResult2.Should().BeEquivalentTo(downstreamProbeResult);
     }
-    
+
+    [Fact]
+    public async Task AdjunctProbeService_ReturnsProbeResultWith401Status_IfNoAccessToken()
+    {
+        // Arrange
+        var path = "auth/v2/probe/99/1/asset/adjuncts/adjunct-1";
+
+        // Act
+        var result = await httpClient.GetAsync(path);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Headers.CacheControl!.Private.Should().BeTrue();
+
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Status.Should().Be(401);
+    }
+
+    [Fact]
+    public async Task AdjunctProbeService_404_IfAdjunctNotFound()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id);
+        await dbFixture.DbContext.SaveChangesAsync();
+        var path = $"auth/v2/probe/{id}/adjuncts/not-found-adjunct";
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("bearer", "12345");
+        var result = await httpClient.SendAsync(request);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        result.Headers.CacheControl!.Should().BeNull();
+        result.Content.Headers.ContentType!.MediaType
+            .Should().Be("application/problem+json", "this isn't an AuthProbeResult2");
+    }
+
+    [Fact]
+    public async Task AdjunctProbeService_ReturnsProbeResultWith200Status_IfParentAssetHasNoRoles()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(AdjunctProbeService_ReturnsProbeResultWith200Status_IfParentAssetHasNoRoles);
+        await dbFixture.DbContext.Images.AddTestAsset(id).WithTestAdjunct(adjunctId, origin: "http://test/adjunct");
+        await dbFixture.DbContext.SaveChangesAsync();
+        var path = $"auth/v2/probe/{id}/adjuncts/{adjunctId}";
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("bearer", "12345");
+        var result = await httpClient.SendAsync(request);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Headers.CacheControl!.Private.Should().BeTrue("adjunct is open but all auth responses should be private");
+
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Status.Should().Be(200);
+    }
+
+    [Fact]
+    public async Task AdjunctProbeService_ReturnsProbeResultWith401Status_IfParentAssetHasUnobtainableRoleOnly()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId =
+            nameof(AdjunctProbeService_ReturnsProbeResultWith401Status_IfParentAssetHasUnobtainableRoleOnly);
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: Asset.UnobtainableRole)
+            .WithTestAdjunct(adjunctId, origin: "http://test/adjunct");
+        await dbFixture.DbContext.SaveChangesAsync();
+        var path = $"auth/v2/probe/{id}/adjuncts/{adjunctId}";
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("bearer", "12345");
+        var result = await httpClient.SendAsync(request);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Headers.CacheControl!.Private.Should().BeTrue("adjunct is open but all auth responses should be private");
+
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Status.Should().Be(401);
+    }
+
+    [Fact]
+    public async Task AdjunctProbeService_ReturnsProbeResult_FromDownstreamAuthService()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(AdjunctProbeService_ReturnsProbeResult_FromDownstreamAuthService);
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "test-role")
+            .WithTestAdjunct(adjunctId, origin: "http://test/adjunct");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        var downstreamProbeResult = new AuthProbeResult2 { Status = 999 };
+        apiStub
+            .Get($"probe_internal/{id}/adjuncts/{adjunctId}?roles=test-role", (_, _) => downstreamProbeResult.AsJson())
+            .IfHeader("Authorization", "Bearer 12345");
+
+        var path = $"auth/v2/probe/{id}/adjuncts/{adjunctId}";
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("bearer", "12345");
+        var result = await httpClient.SendAsync(request);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Headers.CacheControl!.Private.Should().BeTrue();
+
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Should().BeEquivalentTo(downstreamProbeResult);
+    }
+
     private static async Task<JObject> ParseHtmlTokenResponse(HttpResponseMessage response)
     {
         var htmlParser = new HtmlParser();
