@@ -175,7 +175,7 @@ public class MemoryAssetTracker(
             IIIFLink = adjunct.IIIFLink,
             MediaType = new StringValues(adjunct.MediaType),
             OptimisedOrigin = cos.Optimised,
-            Roles = adjunct.Asset.Roles?.ToList() ?? []
+            Roles = adjunct.Asset?.Roles?.ToList() ?? []
         };
         
         return  orchestrationAdjunct;
