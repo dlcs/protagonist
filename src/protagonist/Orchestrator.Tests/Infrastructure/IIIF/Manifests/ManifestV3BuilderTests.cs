@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using DLCS.Core.Collections;
+using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.Metadata;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using IIIF;
+using IIIF.Auth.V2;
 using IIIF.ImageApi.V3;
 using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
@@ -26,6 +28,7 @@ public class ManifestV3BuilderTests
     private readonly IManifestBuilderUtils builderUtils;
     private readonly CustomerPathElement pathElement = new(99, "test");
     private readonly IAssetPathGenerator assetPathGenerator;
+    private readonly IIIIFAuthBuilder authBuilder;
 
     private readonly ManifestV3Builder sut;
     
@@ -33,7 +36,7 @@ public class ManifestV3BuilderTests
     {
         builderUtils = A.Fake<IManifestBuilderUtils>();
         assetPathGenerator = A.Fake<IAssetPathGenerator>();
-        var authBuilder = A.Fake<IIIIFAuthBuilder>();
+        authBuilder = A.Fake<IIIIFAuthBuilder>();
 
         A.CallTo(() => builderUtils.RetrieveThumbnails(A<Asset>._, A<CancellationToken>._))
             .Returns(new ImageSizeDetails(
@@ -646,6 +649,105 @@ public class ManifestV3BuilderTests
             ManifestType.NamedQuery, CancellationToken.None);
 
         manifest.Items.Should().BeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task BuildManifest_Adjuncts_IncludeProbeService_IfAssetRequiresAuth()
+    {
+        var asset = GetImageAsset("iiif-img");
+        asset.Roles = ["clickthrough"];
+        asset.Adjuncts =
+        [
+            new Adjunct
+            {
+                Id = "mets.xml",
+                IIIFLink = IIIFLinkType.SeeAlso,
+                MediaType = "application/xml",
+                AssetId = asset.Id,
+                Type = "Dataset",
+                Origin = "s3://origin/mets.xml"
+            },
+            new Adjunct
+            {
+                Id = "annos",
+                IIIFLink = IIIFLinkType.Annotations,
+                MediaType = "application/json",
+                AssetId = asset.Id,
+                Type = "AnnotationPage",
+                Origin = "s3://origin/annos"
+            },
+            new Adjunct
+            {
+                Id = "external",
+                IIIFLink = IIIFLinkType.Rendering,
+                MediaType = "application/pdf",
+                AssetId = asset.Id,
+                Type = "Text",
+                ExternalId = new Uri("http://some.id/external")
+            }
+        ];
+
+        var probeId = $"https://dlcs.test/auth/v2/probe/{asset.Id}";
+        const string accessId = "https://dlcs.test/auth/v2/access/99/clickthrough";
+        A.CallTo(() => authBuilder.GetAuthServicesForAsset(asset.Id, A<IReadOnlyList<string>>._,
+                A<CancellationToken>._))
+            .Returns(new AuthProbeService2
+            {
+                Id = probeId,
+                Service = [new AuthAccessService2 { Id = accessId, Profile = "active" }]
+            });
+
+        var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
+        A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
+            .Returns("https://dlcs.test/image-url/");
+        A.CallTo(() => builderUtils.GetCanvasId(asset, pathElement, A<int>._))
+            .Returns("https://dlcs.test/canvas/0");
+
+        var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
+            ManifestType.NamedQuery, CancellationToken.None);
+
+        var canvas = manifest.Items!.Single();
+
+        var seeAlsoProbe = canvas.SeeAlso!.Single().Service!.Single().As<AuthProbeService2>();
+        seeAlsoProbe.Id.Should().Be($"{probeId}/adjuncts/mets.xml");
+        seeAlsoProbe.Service!.Single().As<AuthAccessService2>().Id.Should().Be(accessId);
+
+        var annotationsProbe = canvas.Annotations!.Single().Service!.Single().As<AuthProbeService2>();
+        annotationsProbe.Id.Should().Be($"{probeId}/adjuncts/annos");
+        annotationsProbe.Service!.Single().As<AuthAccessService2>().Id.Should().Be(accessId);
+
+        canvas.Rendering!.Single().Service.Should().BeNull("External adjuncts are not access controlled");
+    }
+
+    [Fact]
+    public async Task BuildManifest_Adjuncts_NoProbeService_IfAssetDoesNotRequireAuth()
+    {
+        var asset = GetImageAsset("iiif-img");
+        asset.Adjuncts =
+        [
+            new Adjunct
+            {
+                Id = "mets.xml",
+                IIIFLink = IIIFLinkType.SeeAlso,
+                MediaType = "application/xml",
+                AssetId = asset.Id,
+                Type = "Dataset",
+                Origin = "s3://origin/mets.xml"
+            }
+        ];
+
+        var manifestId = $"https://dlcs.test/iiif-manifest/{asset}";
+        A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
+            .Returns("https://dlcs.test/image-url/");
+        A.CallTo(() => builderUtils.GetCanvasId(asset, pathElement, A<int>._))
+            .Returns("https://dlcs.test/canvas/0");
+
+        var manifest = await sut.BuildManifest(manifestId, "testLabel", asset.AsList(), pathElement,
+            ManifestType.NamedQuery, CancellationToken.None);
+
+        manifest.Items!.Single().SeeAlso!.Single().Service.Should().BeNull();
+        A.CallTo(() => authBuilder.GetAuthServicesForAsset(A<AssetId>._, A<IReadOnlyList<string>>._,
+            A<CancellationToken>._)).MustNotHaveHappened();
     }
 
     private static Asset GetImageAsset(string deliveryChannels) =>
