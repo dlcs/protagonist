@@ -798,6 +798,36 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
     }
 
     [Fact]
+    public async Task Get_V3ManifestForRestrictedImage_WithAdjuncts_ReturnsHostedAdjuncts_WithAuthServices()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images
+            .AddTestAsset(id, roles: "clickthrough", openFullMax: 400, imageDeliveryChannels: imageDeliveryChannels)
+            .WithTestAdjunct("mets.xml", type: "Dataset", mediaType: "text/xml", iiifLinkType: IIIFLinkType.SeeAlso,
+                origin: "https://mets.example/1")
+            .WithTestAdjunct("external", type: "Text", mediaType: "application/pdf",
+                iiifLinkType: IIIFLinkType.Rendering, externalId: "https://pdf.example/1");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        var path = $"iiif-manifest/v3/{id}";
+
+        // Act
+        var response = await httpClient.GetAsync(path);
+
+        // Assert
+        var manifest = (await response.Content.ReadAsStreamAsync()).FromJsonStream<IIIF3.Manifest>();
+        var accessServiceId = manifest.Services!.OfType<AuthAccessService2>().Single().Id;
+        var canvas = manifest.Items!.Single();
+
+        var probeService = canvas.SeeAlso!.Single().Service!.OfType<AuthProbeService2>().Single();
+        probeService.Id.Should().Be($"http://localhost/auth/v2/probe/{id}/adjuncts/mets.xml");
+        probeService.Service.Should().ContainSingle(s => s is AuthAccessService2 && s.Id == accessServiceId);
+
+        canvas.Rendering!.Single().Service.Should().BeNull("externally hosted adjuncts are not access controlled");
+    }
+
+    [Fact]
     public async Task Get_V3ManifestWithAdjuncts_OutputsAdjunctsInCorrectLocation()
     {
         // Arrange
