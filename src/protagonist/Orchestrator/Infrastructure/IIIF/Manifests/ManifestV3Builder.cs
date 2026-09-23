@@ -153,7 +153,8 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     private async Task<AssetCanvas> GetCanvasForAsset(Asset asset, CustomerPathElement customerPathElement, Canvas canvas,
         Dictionary<AssetId, AuthProbeService2> authProbeServices, CancellationToken cancellationToken)
     {
-        var authServices = GetAuthServices(asset, authProbeServices);
+        var assetProbeService = authProbeServices.GetValueOrDefault(asset.Id);
+        var authServices = GetAuthServices(assetProbeService);
         
         logger.LogTrace("Adding canvas {CanvasId} to manifest", canvas.Id);
         
@@ -205,7 +206,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             if (asset.HasSingleDeliveryChannel(AssetDeliveryChannels.None) && !asset.Adjuncts.IsNullOrEmpty())
             {
                 logger.LogDebug("{AssetId} has 'none' channel and adjuncts - adding Canvas", asset.Id);
-                AddAdjunctsToCanvas(canvas, asset);
+                AddAdjunctsToCanvas(canvas, asset, assetProbeService);
                 return new AssetCanvas(canvas, additionalContexts);
             }
             return new AssetCanvas(null, null);
@@ -218,7 +219,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             canvas.Thumbnail = thumbnail.AsListOf<ExternalResource>();
         }
 
-        AddAdjunctsToCanvas(canvas, asset);
+        AddAdjunctsToCanvas(canvas, asset, assetProbeService);
         
         return new AssetCanvas(canvas, additionalContexts);
     }
@@ -389,13 +390,16 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
 
     private record AssetCanvas(Canvas? Canvas, IList<string>? AdditionalContexts);
     
-    private static List<IService>? GetAuthServices(Asset asset, Dictionary<AssetId, AuthProbeService2> authProbeServices)
-    {
-        if (authProbeServices.IsNullOrEmpty()) return null;
-        if (!authProbeServices.TryGetValue(asset.Id, out var probeService2)) return null;
+    private static List<IService>? GetAuthServices(AuthProbeService2? assetProbeService)
+        => assetProbeService?.ToEmbeddedService().AsListOf<IService>();
 
-        var authServiceToAdd = probeService2.ToEmbeddedService();
-        return authServiceToAdd.AsListOf<IService>();
+    private static List<IService>? GetAdjunctAuthServices(Adjunct adjunct, AuthProbeService2? assetProbeService)
+    {
+        if (assetProbeService == null || adjunct is not { Origin: not null, ExternalId: null }) return null;
+
+        var adjunctProbeService = assetProbeService.ToEmbeddedService();
+        adjunctProbeService.Id = $"{assetProbeService.Id}/adjuncts/{adjunct.Id}";
+        return adjunctProbeService.AsListOf<IService>();
     }
 
     private IPaintable GetPaintableForTranscode(Asset asset, CustomerPathElement customerPathElement,
@@ -492,7 +496,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         return accessServices;
     }
     
-    private void AddAdjunctsToCanvas(Canvas canvas, Asset asset)
+    private void AddAdjunctsToCanvas(Canvas canvas, Asset asset, AuthProbeService2? assetProbeService)
     {
         var adjuncts = asset.Adjuncts ?? Enumerable.Empty<Adjunct>();
         
@@ -511,6 +515,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                     {
                         Id = GetAdjunctId(adjunct),
                         Label = adjunct.Label,
+                        Service = GetAdjunctAuthServices(adjunct, assetProbeService),
                     });
                     break;
                 case IIIFLinkType.Rendering:
@@ -563,6 +568,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                 Profile = adjunct.Profile,
                 Label = adjunct.Label,
                 Language = adjunct.Language?.ToList(),
+                Service = GetAdjunctAuthServices(adjunct, assetProbeService),
             };
 
         string? GetAdjunctId(Adjunct adjunct)
