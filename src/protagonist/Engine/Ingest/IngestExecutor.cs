@@ -40,7 +40,7 @@ public class IngestExecutor(
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(customerId))
         {
-            var counts = await storageRepository.GetStorageMetrics(customerId, cancellationToken);
+            var counts = await storageRepository.GetStorageMetrics(customerId, CancellationToken.None);
 
             if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
             {
@@ -140,7 +140,7 @@ public class IngestExecutor(
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
         {
-            var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
+            var counts = await storageRepository.GetStorageMetrics(asset.Customer, CancellationToken.None);
 
             if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
             {
@@ -152,7 +152,7 @@ public class IngestExecutor(
                     dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
             }
 
-            var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
+            var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, CancellationToken.None);
             context.WithPreIngestionAssetSize(preIngestionAssetSize);
         }
 
@@ -196,9 +196,10 @@ public class IngestExecutor(
         return new IngestResult(asset.Id, dbSuccess ? overallStatus : IngestResultStatus.Failed);
     }
 
-    // NOTE: finalising in the DB deliberately doesn't use the ingest's cancellation token. If the caller cancels (e.g.
-    // a synchronous ingest request is aborted) the outcome of the ingest still needs to be recorded, otherwise the
-    // item is left in an 'ingesting' state with no error.
+    // NOTE: finalising in the DB (and the storage pre-checks that run before workers) deliberately don't use the
+    // ingest's cancellation token. If the caller cancels (e.g. a synchronous ingest request is aborted) the outcome of
+    // the ingest still needs to be recorded, otherwise the item is left in an 'ingesting' state with no error. Only
+    // workers are cancellable, as they handle their own failures.
     private async Task<bool> CompleteAdjunctInDatabase(AdjunctIngestionContext context, bool ingestFinished)
         // ImageStorage is null: adjunct stored-size accounting is handled separately via a signed atomic delta
         // (AdjustAdjunctStoredSize) rather than the cumulative ImageStorage-record path used for assets.

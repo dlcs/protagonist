@@ -307,6 +307,56 @@ public class IngestExecutorTests
     }
 
     [Fact]
+    public async Task IngestAsset_SavesToDb_WithoutCancellationToken_IfCancelledBeforeWorkers()
+    {
+        // Arrange
+        var asset = new Asset { Id = AssetIdGenerator.GetAssetId() };
+        A.CallTo(() => workerBuilder.GetWorkers(asset))
+            .Returns(new[] { new FakeWorker(IngestResultStatus.Failed) });
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        // Act
+        await sut.IngestAsset(asset, customerOriginStrategy, cts.Token);
+
+        // Assert
+        A.CallTo(() => storageRepository.GetStorageMetrics(asset.Customer, CancellationToken.None))
+            .MustHaveHappened();
+        A.CallTo(() => repo.GetImageSize(asset.Id, CancellationToken.None)).MustHaveHappened();
+        A.CallTo(() =>
+                repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, true,
+                    CancellationToken.None))
+            .MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_SavesToDb_WithoutCancellationToken_IfCancelledBeforeWorkers()
+    {
+        // Arrange
+        var adjunct = new Adjunct
+        {
+            Id = AdjunctIdGenerator.GetAdjunctId(),
+            AssetId = AssetIdGenerator.GetAssetId(),
+            MediaType = "application/json",
+            IIIFLink = IIIFLinkType.SeeAlso,
+            Type = "DataSet",
+            Asset = new Asset { Id = AssetIdGenerator.GetAssetId(), }
+        };
+        A.CallTo(() => workerBuilder.GetWorkers(adjunct)).Returns(Array.Empty<IAdjunctIngesterWorker>());
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        // Act
+        await sut.IngestAdjunct(adjunct, customerOriginStrategy, cts.Token);
+
+        // Assert
+        A.CallTo(() => storageRepository.GetStorageMetrics(adjunct.Asset.Customer, CancellationToken.None))
+            .MustHaveHappened();
+        A.CallTo(() => repo.UpdateIngestedDeliverable(adjunct, null, null, true, CancellationToken.None))
+            .MustHaveHappened();
+    }
+
+    [Fact]
     public async Task IngestAdjunct_SavesToDbAndAdjustsSize_WithoutCancellationToken_IfIngestCancelled()
     {
         // Arrange
