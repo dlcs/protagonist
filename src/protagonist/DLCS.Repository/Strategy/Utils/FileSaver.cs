@@ -86,7 +86,20 @@ public class FileSaver : IFileSaver
         catch (Exception ex)
         {
             logger.LogError(ex, "Error writing file to disk. destination: {Destination}", destination);
+            TryDeletePartialFile(destination);
             throw;
+        }
+    }
+
+    private void TryDeletePartialFile(string destination)
+    {
+        try
+        {
+            File.Delete(destination);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Unable to delete partially written file {Destination}", destination);
         }
     }
 

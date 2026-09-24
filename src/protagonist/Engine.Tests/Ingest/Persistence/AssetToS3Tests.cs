@@ -238,6 +238,39 @@ public class AssetToS3Tests
         A.CallTo(() => bucketWriter.WriteFileToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, ct))
             .MustNotHaveHappened();
         response.FileExceedsAllowance.Should().BeTrue();
+        ((FakeFileSystem)fileSystem).DeletedFiles.Should().ContainSingle(f => f == "1");
+    }
+
+    [Fact]
+    public async Task CopyAsset_DeletesFileOnDisk_IfWriteToBucketThrows_IfNotS3Ambient()
+    {
+        // Arrange
+        var asset = new Asset
+        {
+            Customer = 1, Space = 1, Id = AssetId.FromString("1/1/balrog"),
+            Origin = "s3://eu-west-1/origin/large_file.pdf"
+        };
+        var originStrategy = new CustomerOriginStrategy
+        {
+            Strategy = OriginStrategyType.Default
+        };
+        var context = new IngestionContext(asset);
+        var ct = new CancellationToken();
+
+        var assetOnDisk = new AssetFromOrigin(asset.Id, 1234, "1", "application/pdf");
+        A.CallTo(() =>
+                assetToDisk.CopyItemToLocalDisk(context, A<string>._, true, originStrategy, A<CancellationToken>._))
+            .Returns(assetOnDisk);
+        A.CallTo(() => bucketWriter.WriteFileToBucket(A<ObjectInBucket>._, A<string>._, A<string>._, ct))
+            .ThrowsAsync(new OperationCanceledException());
+
+        // Act
+        Func<Task> action = () =>
+            sut.CopyOriginToStorage(destination, context, true, originStrategy, cancellationToken: ct);
+
+        // Assert
+        await action.Should().ThrowAsync<OperationCanceledException>();
+        ((FakeFileSystem)fileSystem).DeletedFiles.Should().ContainSingle(f => f == "1");
     }
 
     [Fact]

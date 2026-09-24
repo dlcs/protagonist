@@ -16,13 +16,14 @@ public class IngestExecutorTests
     private readonly IngestExecutor sut;
     private readonly CustomerOriginStrategy customerOriginStrategy = new();
     private readonly IAssetIngestorSizeCheck assetSizeCheck;
+    private readonly IStorageRepository storageRepository;
 
     public IngestExecutorTests()
     {
         workerBuilder = A.Fake<IWorkerBuilder>();
         repo = A.Fake<IEngineAssetRepository>();
         assetSizeCheck = A.Fake<IAssetIngestorSizeCheck>();
-        var storageRepository = A.Fake<IStorageRepository>();
+        storageRepository = A.Fake<IStorageRepository>();
         
         A.CallTo(() => storageRepository.GetStorageMetrics(A<int>._, A<CancellationToken>._))
             .Returns(new AssetStorageMetric
@@ -276,6 +277,67 @@ public class IngestExecutorTests
         adjunct.Error.Should().Be(savedError);
         A.CallTo(() =>
                 repo.UpdateIngestedDeliverable(adjunct, null, null, true, A<CancellationToken>._))
+            .MustHaveHappened();
+    }
+
+    [Theory]
+    [InlineData(IngestResultStatus.Failed)]
+    [InlineData(IngestResultStatus.Success)]
+    public async Task IngestAsset_SavesToDb_WithoutCancellationToken_IfIngestCancelled(IngestResultStatus status)
+    {
+        // Arrange
+        var asset = new Asset { Id = AssetIdGenerator.GetAssetId() };
+        using var cts = new CancellationTokenSource();
+
+        // cancel during ingest, as would happen if synchronous ingest request is aborted
+        var worker = A.Fake<IAssetIngesterWorker>();
+        A.CallTo(() => worker.Ingest(A<IngestionContext>._, A<CustomerOriginStrategy>._, A<CancellationToken>._))
+            .Invokes(() => cts.Cancel())
+            .Returns(status);
+        A.CallTo(() => workerBuilder.GetWorkers(asset)).Returns(new[] { worker });
+
+        // Act
+        await sut.IngestAsset(asset, customerOriginStrategy, cts.Token);
+
+        // Assert
+        A.CallTo(() =>
+                repo.UpdateIngestedDeliverable(asset, A<ImageLocation?>._, A<ImageStorage?>._, true,
+                    CancellationToken.None))
+            .MustHaveHappened();
+    }
+
+    [Fact]
+    public async Task IngestAdjunct_SavesToDbAndAdjustsSize_WithoutCancellationToken_IfIngestCancelled()
+    {
+        // Arrange
+        var adjunct = new Adjunct
+        {
+            Id = AdjunctIdGenerator.GetAdjunctId(),
+            AssetId = AssetIdGenerator.GetAssetId(),
+            MediaType = "application/json",
+            IIIFLink = IIIFLinkType.SeeAlso,
+            Type = "DataSet",
+            Asset = new Asset { Id = AssetIdGenerator.GetAssetId(), }
+        };
+        using var cts = new CancellationTokenSource();
+
+        // cancel during ingest, as would happen if synchronous ingest request is aborted
+        var worker = A.Fake<IAdjunctIngesterWorker>();
+        A.CallTo(() => worker.Ingest(A<AdjunctIngestionContext>._, A<CustomerOriginStrategy>._,
+                A<CancellationToken>._))
+            .Invokes(() => cts.Cancel())
+            .Returns(IngestResultStatus.Success);
+        A.CallTo(() => workerBuilder.GetWorkers(adjunct)).Returns(new[] { worker });
+        A.CallTo(() => repo.UpdateIngestedDeliverable(adjunct, null, null, true, A<CancellationToken>._))
+            .Returns(true);
+
+        // Act
+        await sut.IngestAdjunct(adjunct, customerOriginStrategy, cts.Token);
+
+        // Assert
+        A.CallTo(() => repo.UpdateIngestedDeliverable(adjunct, null, null, true, CancellationToken.None))
+            .MustHaveHappened();
+        A.CallTo(() => storageRepository.AdjustAdjunctStoredSize(adjunct.Asset.Id, A<long>._, CancellationToken.None))
             .MustHaveHappened();
     }
 }
