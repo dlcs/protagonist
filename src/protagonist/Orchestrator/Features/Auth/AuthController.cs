@@ -158,6 +158,27 @@ public class AuthController : IIIFAssetControllerBase
         => GenerateIIIFDescriptionResource(
             () => new ProbeService(customer, space, image), cacheTtl: 0, cancellationToken: cancellationToken);
 
+    /// <summary>
+    /// IIIF Authorization Flow 2.0 ProbeService for an adjunct. Adjuncts inherit the roles of their parent Asset,
+    /// so access is validated using the same customer/space/image roles as the parent Asset.
+    /// </summary>
+    /// <param name="customer">Customer Id</param>
+    /// <param name="space">Space Id</param>
+    /// <param name="image">Id of the parent Asset the adjunct belongs to</param>
+    /// <param name="adjunctId">Id of the adjunct</param>
+    /// <remarks>https://iiif.io/api/auth/2.0/#probe-service</remarks>
+    [Route("v2/probe/{customer}/{space}/{image}/adjuncts/{adjunctId}")]
+    [HttpGet]
+    public Task<IActionResult> AdjunctProbeService(
+        [FromRoute] int customer,
+        [FromRoute] int space,
+        [FromRoute] string image,
+        [FromRoute] string adjunctId,
+        CancellationToken cancellationToken = default)
+        => GenerateIIIFDescriptionResource(
+            () => new AdjunctProbeService(customer, space, image, adjunctId), cacheTtl: 0,
+            cancellationToken: cancellationToken);
+
     private HttpStatusCode GetStatusCodeForAccessTokenError(AccessTokenErrorConditions conditions)
         => conditions switch
         {
