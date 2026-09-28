@@ -215,11 +215,15 @@ public class ImageProxyPathHandlerTests
     
     [Theory]
     [InlineData("0,0,200,200", false)]
+    [InlineData("0,0,300,250", false)]
     [InlineData("pct:0,0,100,100", false)]
+    [InlineData("pct:0,0,101,120", false)]
     [InlineData("full", false)]
     [InlineData("square", false)]
     [InlineData("0,0,200,200", true)]
+    [InlineData("0,0,300,250", true)]
     [InlineData("pct:0,0,100,100", true)]
+    [InlineData("pct:0,0,101,120", true)]
     [InlineData("full", true)]
     [InlineData("square", true)]
     public void GetProxyImageRequest_V2_RepresentsFullRegion(string region, bool strict)
@@ -227,6 +231,18 @@ public class ImageProxyPathHandlerTests
         var parsed = ImageRequest.Parse($"asset/{region}/!10,10/0/default.tif", "");
         var result = parsed.GetProxyImageRequest(Version.V2, Size.Square(200), 500, strict);
         result.RepresentsFullRegion.Should().BeTrue();
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.RegionExtendsBeyondBounds), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V2_ConfinesRegionToImageBounds(string region, string expectedRegion,
+        Size expectedSize, bool strict)
+    {
+        var parsed = ImageRequest.Parse($"asset/{region}/pct:100/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, new Size(200, 400), 500, strict);
+        result.IsValid.Should().BeTrue();
+        result.ProxyRegionParameter!.ToString().Should().Be(expectedRegion);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize);
     }
     
     [Theory]
@@ -499,11 +515,15 @@ public class ImageProxyPathHandlerTests
     
     [Theory]
     [InlineData("0,0,200,200", false)]
+    [InlineData("0,0,300,250", false)]
     [InlineData("pct:0,0,100,100", false)]
+    [InlineData("pct:0,0,101,120", false)]
     [InlineData("full", false)]
     [InlineData("square", false)]
     [InlineData("0,0,200,200", true)]
+    [InlineData("0,0,300,250", true)]
     [InlineData("pct:0,0,100,100", true)]
+    [InlineData("pct:0,0,101,120", true)]
     [InlineData("full", true)]
     [InlineData("square", true)]
     public void GetProxyImageRequest_V3_RepresentsFullRegion(string region, bool strict)
@@ -511,6 +531,18 @@ public class ImageProxyPathHandlerTests
         var parsed = ImageRequest.Parse($"asset/{region}/!10,10/0/default.tif", "");
         var result = parsed.GetProxyImageRequest(Version.V3, Size.Square(200), 500, strict);
         result.RepresentsFullRegion.Should().BeTrue();
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeData.RegionExtendsBeyondBounds), MemberType = typeof(SizeData))]
+    public void GetProxyImageRequest_V3_ConfinesRegionToImageBounds(string region, string expectedRegion,
+        Size expectedSize, bool strict)
+    {
+        var parsed = ImageRequest.Parse($"asset/{region}/pct:100/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, new Size(200, 400), 500, strict);
+        result.IsValid.Should().BeTrue();
+        result.ProxyRegionParameter!.ToString().Should().Be(expectedRegion);
+        result.RequestedSize.Should().BeEquivalentTo(expectedSize);
     }
 
     [Theory]
@@ -562,6 +594,22 @@ public class ImageProxyPathHandlerTests
         /// <summary>
         /// A series of valid image requests where region is out of bounds for 100,100 image
         /// </summary>
+        /// <summary>
+        /// A series of regions that extend beyond the bounds of a 200,400 image, with expected cropped region + size
+        /// </summary>
+        public static TheoryData<string, string, Size, bool> RegionExtendsBeyondBounds => new()
+        {
+            { "pct:0,0,101,101", "pct:0,0,100,100", new Size(200, 400), true },
+            { "pct:0,0,101,101", "pct:0,0,100,100", new Size(200, 400), false },
+            { "pct:50,75,100,100", "pct:50,75,50,25", new Size(100, 100), true },
+            { "pct:50,75,100,100", "pct:50,75,50,25", new Size(100, 100), false },
+            { "pct:10,10,50,100", "pct:10,10,50,90", new Size(100, 360), true },
+            { "100,300,200,200", "100,300,100,100", new Size(100, 100), true },
+            { "100,300,200,200", "100,300,100,100", new Size(100, 100), false },
+            { "0,0,201,401", "0,0,200,400", new Size(200, 400), true },
+            { "10,10,50,50", "10,10,50,50", new Size(50, 50), true },
+        };
+        
         public static TheoryData<string> RegionOutOfBounds =>
         [
             "101,0,10,10/max",

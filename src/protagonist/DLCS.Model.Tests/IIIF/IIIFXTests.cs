@@ -213,6 +213,47 @@ public class IIIFXTests
         region.IsFullOrEquivalent(new Size(100, 100)).Should().BeFalse();
     }
 
+    [Fact]
+    public void ConfineToImageBounds_ReturnsFull_IfFull()
+    {
+        var region = new RegionParameter { Full = true };
+        region.ConfineToImageBounds(new Size(100, 200)).Should().BeEquivalentTo(region);
+    }
+    
+    [Fact]
+    public void ConfineToImageBounds_ReturnsSquare_IfSquare()
+    {
+        var region = new RegionParameter { Square = true };
+        region.ConfineToImageBounds(new Size(100, 200)).Should().BeEquivalentTo(region);
+    }
+    
+    [Theory]
+    [InlineData(0, 0, 100, 200, 100, 200)]
+    [InlineData(0, 0, 101, 201, 100, 200)]
+    [InlineData(10, 20, 100, 200, 90, 180)]
+    [InlineData(10, 20, 50, 50, 50, 50)]
+    [InlineData(99, 199, 50, 50, 1, 1)]
+    public void ConfineToImageBounds_CropsToImageEdge(int x, int y, int w, int h, int expectedW, int expectedH)
+    {
+        var region = new RegionParameter { X = x, Y = y, W = w, H = h };
+        var expected = new RegionParameter { X = x, Y = y, W = expectedW, H = expectedH };
+        region.ConfineToImageBounds(new Size(100, 200)).Should().BeEquivalentTo(expected);
+    }
+    
+    [Theory]
+    [InlineData(0, 0, 100, 100, 100, 100)]
+    [InlineData(0, 0, 101, 150, 100, 100)]
+    [InlineData(10, 20, 100, 100, 90, 80)]
+    [InlineData(10, 20, 50, 50, 50, 50)]
+    [InlineData(99.5f, 0, 1, 1, 0.5f, 1)]
+    public void ConfineToImageBounds_CropsToImageEdge_Percent(float x, float y, float w, float h, float expectedW,
+        float expectedH)
+    {
+        var region = new RegionParameter { X = x, Y = y, W = w, H = h, Percent = true };
+        var expected = new RegionParameter { X = x, Y = y, W = expectedW, H = expectedH, Percent = true };
+        region.ConfineToImageBounds(new Size(300, 700)).Should().BeEquivalentTo(expected);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("info.json")]

@@ -1686,7 +1686,36 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKey("x-test-key").WhoseValue.Should().BeEquivalentTo("foo bar");
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
-    
+
+    [Theory]
+    [InlineData("500,600,1000,1000", "500,600,500,400", "abs_region_beyond_bounds")]
+    [InlineData("pct:50,60,101,101", "pct:50,60,50,40", "pct_region_beyond_bounds")]
+    public async Task Get_RedirectsImageServer_WithRegionCroppedToImageEdge_IfRegionExtendsBeyondBounds(
+        string region, string expectedRegion, string imageName)
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId(asset: imageName);
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": []}",
+        });
+
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
+            imageDeliveryChannels: deliveryChannelsForImage);
+        await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/{id}/{region}/200,/0/default.jpg");
+        var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+
+        // Assert
+        proxyResponse.Uri.ToString().Should().StartWith("http://image-server/iiif")
+            .And.EndWith($"/{expectedRegion}/200,/0/default.jpg");
+    }
+
     [Fact]
     public async Task Get_RedirectsSpecialServer_ForTileRequests_IfRegionEquivalentToFull_WithNoMatchingThumbs()
     {

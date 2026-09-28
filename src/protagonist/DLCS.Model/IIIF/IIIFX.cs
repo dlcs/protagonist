@@ -105,6 +105,33 @@ public static class IIIFX
                size.Height == (int)requestedRegion.H;
     }
 
+    /// <summary>
+    /// Get a copy of <see cref="RegionParameter"/> with width and height cropped so that the region doesn't extend
+    /// beyond the image's edge, as per https://iiif.io/api/image/3.0/#41-region. /full/ and /square/ are returned
+    /// unaltered.
+    ///  - if image is 200w 300h then /150,250,100,100/ is confined to /150,250,50,50/
+    ///  - regardless of size /pct:10,20,100,100/ is confined to /pct:10,20,90,80/
+    /// </summary>
+    /// <remarks>
+    /// This assumes region x,y is within bounds of the image - see <see cref="RegionParameter.GetExtractedRegionSize"/>
+    /// </remarks>
+    public static RegionParameter ConfineToImageBounds(this RegionParameter requestedRegion, Size size)
+    {
+        if (requestedRegion.Full || requestedRegion.Square) return requestedRegion;
+
+        var maxX = requestedRegion.Percent ? 100 : size.Width;
+        var maxY = requestedRegion.Percent ? 100 : size.Height;
+
+        return new RegionParameter
+        {
+            X = requestedRegion.X,
+            Y = requestedRegion.Y,
+            W = Math.Min(requestedRegion.W, maxX - requestedRegion.X),
+            H = Math.Min(requestedRegion.H, maxY - requestedRegion.Y),
+            Percent = requestedRegion.Percent,
+        };
+    }
+
     private const string FullToken = "full";
     private const string UpscaleFullToken = "^full";
 
