@@ -590,11 +590,7 @@ public class ImageProxyPathHandlerTests
     {
         private static readonly Size PortraitSize = new(1000, 2000);
         private static readonly Size LandscapeSize = new(2000, 1000);
-
-        /// <summary>
-        /// A series of valid image requests where region is out of bounds for 100,100 image
-        /// </summary>
-        /// <summary>
+        
         /// A series of regions that extend beyond the bounds of a 200,400 image, with expected cropped region + size
         /// </summary>
         public static TheoryData<string, string, Size, bool> RegionExtendsBeyondBounds => new()

@@ -1695,12 +1695,6 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var id = AssetIdGenerator.GetAssetId(asset: imageName);
-        await amazonS3.PutObjectAsync(new PutObjectRequest
-        {
-            Key = $"{id}/s.json",
-            BucketName = LocalStackFixture.ThumbsBucketName,
-            ContentBody = "{\"o\": []}",
-        });
 
         await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
             imageDeliveryChannels: deliveryChannelsForImage);
