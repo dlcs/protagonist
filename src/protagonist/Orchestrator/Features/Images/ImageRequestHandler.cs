@@ -152,7 +152,8 @@ public class ImageRequestHandler
             }
         }
         
-        // Update the SizeParameter as it may have altered during parsing
+        // Update the RegionParameter and SizeParameter as they may have altered during parsing
+        assetRequest.IIIFImageRequest.Region = proxyRequest.ProxyRegionParameter;
         assetRequest.IIIFImageRequest.Size = proxyRequest.ProxySizeParameter;
         
         if (proxyRequest.RepresentsFullRegion)

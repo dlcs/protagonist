@@ -313,7 +313,7 @@ public class ImageRequestHandlerTests
     [InlineData("/full/901,901/", "Size too large")]
     [InlineData("/full/max/", "Max size")]
     [InlineData("/0,0,900,900/900,/", "Tiled region")]
-    [InlineData("/pct:0,0,512,512/!10,10/", "Percent region")]
+    [InlineData("/pct:0,0,50,50/!10,10/", "Percent region")]
     [InlineData("/square/!901,901/", "Square region too large")]
     public async Task HandleRequest_Returns401_IfAssetRequiresAuth_AndUserNotAuthorised_AndRequestNotForOpenFullMax(
         string iiifRequest, string reason)
@@ -597,7 +597,7 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/v2/2/2/test-image/0,0,512,512/max/0/default.jpg", true, "0,0,512,512/5000,5000/0/default.jpg", true)] // v2 /max
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/max/0/default.jpg", true, "0,0,512,512/512,512/0/default.jpg", false)] // v3 /max
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/^max/0/default.jpg", true, "0,0,512,512/^5000,5000/0/default.jpg", false)] // v3 /^max
-    [InlineData("/iiif-img/v2/2/2/test-image/pct:0,0,512,512/full/0/default.jpg", true, "pct:0,0,512,512/1000,1000/0/default.jpg", true)] // pct: full v2
+    [InlineData("/iiif-img/v2/2/2/test-image/pct:0,0,50,50/full/0/default.jpg", true, "pct:0,0,50,50/500,500/0/default.jpg", true)] // pct: full v2
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.png", false, "0,0,512,512/100,100/0/default.png", false)] // png
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.tif", false, "0,0,512,512/100,100/0/default.tif", false)] // tif
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/90/default.jpg", false, "0,0,512,512/100,100/90/default.jpg", false)] // rotation
