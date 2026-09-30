@@ -137,6 +137,13 @@ public static class AssetPreparer
             {
                 requiresReingest = true;
             }
+
+            // Thumbnails are split into open/auth at ingest based on whether the asset has roles, so moving between
+            // having roles and not requires reingest to regenerate them
+            if (updateAsset.Roles != null && updateAsset.HasRoles != existingAsset.HasRoles)
+            {
+                requiresReingest = true;
+            }
         }
 
         var workingAsset = existingAsset ?? updateAsset;

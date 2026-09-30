@@ -375,6 +375,51 @@ public class AssetPreparerTests
         result.RequiresReingest.Should().BeTrue();
     }
 
+    public static IEnumerable<object[]> RolesChanged => new List<object[]>
+    {
+        new object[] { new[] { "role" }, Array.Empty<string>() },
+        new object[] { Array.Empty<string>(), new[] { "role" } },
+        new object[] { null, new[] { "role" } },
+    };
+
+    [Theory]
+    [MemberData(nameof(RolesChanged))]
+    public void PrepareAssetForUpsert_RequiresReingest_IfHasRolesChanged(string[] existing, string[] update)
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "https://whatever", Roles = update };
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = existing };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.RequiresReingest.Should().BeTrue();
+    }
+
+    public static IEnumerable<object[]> RolesNotMeaningfullyChanged => new List<object[]>
+    {
+        new object[] { new[] { "role" }, null },
+        new object[] { new[] { "role" }, new[] { "other-role" } },
+        new object[] { Array.Empty<string>(), Array.Empty<string>() },
+        new object[] { null, Array.Empty<string>() },
+    };
+
+    [Theory]
+    [MemberData(nameof(RolesNotMeaningfullyChanged))]
+    public void PrepareAssetForUpsert_DoesNotRequireReingest_IfHasRolesUnchanged(string[] existing, string[] update)
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "https://whatever", Roles = update };
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = existing };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.RequiresReingest.Should().BeFalse();
+    }
+
     [Theory]
     [MemberData(nameof(DeliveryChannels))]
     public void PrepareAssetForUpsert_RequiresReingest_IfDeliveryChannelChanged(string[] existing, string[] update,
