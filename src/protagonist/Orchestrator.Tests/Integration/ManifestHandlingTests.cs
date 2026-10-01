@@ -821,7 +821,7 @@ public class ManifestHandlingTests : IClassFixture<ProtagonistAppFactory<Startup
         var canvas = manifest.Items!.Single();
 
         var probeService = canvas.SeeAlso!.Single().Service!.OfType<AuthProbeService2>().Single();
-        probeService.Id.Should().Be($"http://localhost/auth/v2/probe/{id}/adjuncts/mets.xml");
+        probeService.Id.Should().Be($"http://localhost/auth/v2/probe/{id}/mets.xml");
         probeService.Service.Should().ContainSingle(s => s is AuthAccessService2 && s.Id == accessServiceId);
 
         canvas.Rendering!.Single().Service.Should().BeNull("externally hosted adjuncts are not access controlled");
