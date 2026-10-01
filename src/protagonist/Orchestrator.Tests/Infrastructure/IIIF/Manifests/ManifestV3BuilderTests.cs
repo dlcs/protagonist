@@ -709,11 +709,11 @@ public class ManifestV3BuilderTests
         var canvas = manifest.Items!.Single();
 
         var seeAlsoProbe = canvas.SeeAlso!.Single().Service!.Single().As<AuthProbeService2>();
-        seeAlsoProbe.Id.Should().Be($"{probeId}/adjuncts/mets.xml");
+        seeAlsoProbe.Id.Should().Be($"{probeId}/mets.xml");
         seeAlsoProbe.Service!.Single().As<AuthAccessService2>().Id.Should().Be(accessId);
 
         var annotationsProbe = canvas.Annotations!.Single().Service!.Single().As<AuthProbeService2>();
-        annotationsProbe.Id.Should().Be($"{probeId}/adjuncts/annos");
+        annotationsProbe.Id.Should().Be($"{probeId}/annos");
         annotationsProbe.Service!.Single().As<AuthAccessService2>().Id.Should().Be(accessId);
 
         canvas.Rendering!.Single().Service.Should().BeNull("External adjuncts are not access controlled");

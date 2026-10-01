@@ -398,7 +398,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         if (assetProbeService == null || adjunct is not { Origin: not null, ExternalId: null }) return null;
 
         var adjunctProbeService = assetProbeService.ToEmbeddedService();
-        adjunctProbeService.Id = $"{assetProbeService.Id}/adjuncts/{adjunct.Id}";
+        adjunctProbeService.Id = $"{assetProbeService.Id}/{adjunct.Id}";
         return adjunctProbeService.AsListOf<IService>();
     }
 
