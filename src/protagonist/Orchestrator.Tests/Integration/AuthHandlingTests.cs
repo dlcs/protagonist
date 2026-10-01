@@ -491,7 +491,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
     public async Task AdjunctProbeService_ReturnsProbeResultWith401Status_IfNoAccessToken()
     {
         // Arrange
-        var path = "auth/v2/probe/99/1/asset/adjuncts/adjunct-1";
+        var path = "auth/v2/probe/99/1/asset/adjunct-1";
 
         // Act
         var result = await httpClient.GetAsync(path);
@@ -511,7 +511,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         var id = AssetIdGenerator.GetAssetId();
         await dbFixture.DbContext.Images.AddTestAsset(id);
         await dbFixture.DbContext.SaveChangesAsync();
-        var path = $"auth/v2/probe/{id}/adjuncts/not-found-adjunct";
+        var path = $"auth/v2/probe/{id}/not-found-adjunct";
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, path);
@@ -533,7 +533,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         const string adjunctId = nameof(AdjunctProbeService_ReturnsProbeResultWith200Status_IfParentAssetHasNoRoles);
         await dbFixture.DbContext.Images.AddTestAsset(id).WithTestAdjunct(adjunctId, origin: "http://test/adjunct");
         await dbFixture.DbContext.SaveChangesAsync();
-        var path = $"auth/v2/probe/{id}/adjuncts/{adjunctId}";
+        var path = $"auth/v2/probe/{id}/{adjunctId}";
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, path);
@@ -558,7 +558,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         await dbFixture.DbContext.Images.AddTestAsset(id, roles: Asset.UnobtainableRole)
             .WithTestAdjunct(adjunctId, origin: "http://test/adjunct");
         await dbFixture.DbContext.SaveChangesAsync();
-        var path = $"auth/v2/probe/{id}/adjuncts/{adjunctId}";
+        var path = $"auth/v2/probe/{id}/{adjunctId}";
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, path);
@@ -585,10 +585,10 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
 
         var downstreamProbeResult = new AuthProbeResult2 { Status = 999 };
         apiStub
-            .Get($"probe_internal/{id}/adjuncts/{adjunctId}?roles=test-role", (_, _) => downstreamProbeResult.AsJson())
+            .Get($"probe_internal/{id}/{adjunctId}?roles=test-role", (_, _) => downstreamProbeResult.AsJson())
             .IfHeader("Authorization", "Bearer 12345");
 
-        var path = $"auth/v2/probe/{id}/adjuncts/{adjunctId}";
+        var path = $"auth/v2/probe/{id}/{adjunctId}";
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, path);

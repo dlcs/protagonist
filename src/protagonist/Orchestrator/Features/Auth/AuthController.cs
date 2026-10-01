@@ -167,7 +167,7 @@ public class AuthController : IIIFAssetControllerBase
     /// <param name="image">Id of the parent Asset the adjunct belongs to</param>
     /// <param name="adjunctId">Id of the adjunct</param>
     /// <remarks>https://iiif.io/api/auth/2.0/#probe-service</remarks>
-    [Route("v2/probe/{customer}/{space}/{image}/adjuncts/{adjunctId}")]
+    [Route("v2/probe/{customer}/{space}/{image}/{adjunctId}")]
     [HttpGet]
     public Task<IActionResult> AdjunctProbeService(
         [FromRoute] int customer,

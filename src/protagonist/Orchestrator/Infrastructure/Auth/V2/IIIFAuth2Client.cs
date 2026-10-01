@@ -48,7 +48,7 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
 
     public Task<AuthProbeResult2> GetProbeServiceResultForAdjunct(AssetId assetId, string adjunctId,
         IReadOnlyList<string> roles, string accessToken, CancellationToken cancellationToken)
-        => GetProbeServiceResult($"probe_internal/{assetId}/adjuncts/{adjunctId}?roles={GetRolesString(roles)}",
+        => GetProbeServiceResult($"probe_internal/{assetId}/{adjunctId}?roles={GetRolesString(roles)}",
             assetId, cancellationToken, accessToken);
 
     private async Task<AuthProbeResult2> GetProbeServiceResult(string path, AssetId assetId,
