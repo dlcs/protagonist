@@ -233,10 +233,10 @@ public class CustomHeaderTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Act
         var content = new StringContent(updatedCustomHeaderJson, Encoding.UTF8, "application/json");
         var response = await httpClient.AsCustomer(customerId).PutAsync(path, content);
-        
+
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
         var updatedCustomHeader = dlcsContext.CustomHeaders.Single(ch => ch.Key == "test-key-2");
         updatedCustomHeader.Should().NotBeNull();
         updatedCustomHeader.Value.Should().Be("test-value-2");

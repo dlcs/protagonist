@@ -2,6 +2,7 @@
 
 <!-- A PR should have enough detail to be understandable far in the future. 
 e.g what is the problem/why is the change needed, how does it solve it and any questions or points of discussion.
+Have performance/security/scaling considerations been taken into account?
 Link to any related issues -->
 
 ## Database Migration
@@ -37,4 +38,19 @@ Link to any related issues -->
 > |Service | AppSetting | Required? | Description | Default |
 > |---|---|---|---|---|
 > | Engine | `Service:Hostname` | Y | Service hostname | `null` |
+-->
+
+## Breaking Changes
+
+<!-- Does this PR introduce any breaking changes to any HTTP contracts? If not, delete this section.
+
+This includes changes to status codes, request/response payloads etc
+
+> [!CAUTION]
+> This PR introduces breaking changes.
+>
+> |Service | Description | Notes |
+> |---|---|---|
+> | API | GET `/foo/bar` no longer returns `"name"` property | Optional additional note |
+
 -->

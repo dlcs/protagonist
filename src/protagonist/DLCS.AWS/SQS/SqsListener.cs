@@ -154,13 +154,13 @@ public class SqsListener<TMessageType> : IQueueListener
                 logger.LogTrace("Handling message {Message} from {Queue}", message.MessageId, QueueName);
             }
 
-            var messageAttributes = message.MessageAttributes
-                .ToDictionary(pair => pair.Key, pair => pair.Value.StringValue);
+            var messageAttributes = message.MessageAttributes?
+                .ToDictionary(pair => pair.Key, pair => pair.Value.StringValue) ?? [];
 
             var queueMessage = new QueueMessage
             {
                 MessageAttributes = messageAttributes,
-                Attributes = message.Attributes,
+                Attributes = message.Attributes ?? [],
                 Body = JsonNode.Parse(message.Body)!.AsObject(),
                 MessageId = message.MessageId,
                 QueueName = QueueName

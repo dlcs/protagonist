@@ -11,30 +11,21 @@ namespace API.Features.Space.Requests;
 /// </summary>
 public class PutSpace : IRequest<ModifyEntityResult<DLCS.Model.Spaces.Space>>
 {
-    public int CustomerId { get; set; }
-    public int SpaceId { get; set; }
-    public string? Name { get; set; }
-    public string? ImageBucket { get; set; }
-    public string[]? Tags { get; set; }
-    public string[]? Roles { get; set; }
-    public int? MaxUnauthorised { get; set; }
+    public int CustomerId { get; init; }
+    public int SpaceId { get; init; }
+    public string? Name { get; init; }
+    public string[]? Tags { get; init; }
+    public string[]? Roles { get; init; }
 }
 
-public class PutSpaceHandler : IRequestHandler<PutSpace, ModifyEntityResult<DLCS.Model.Spaces.Space>>
+public class PutSpaceHandler(ISpaceRepository spaceRepository)
+    : IRequestHandler<PutSpace, ModifyEntityResult<DLCS.Model.Spaces.Space>>
 {
-    private readonly ISpaceRepository spaceRepository;
-
-    public PutSpaceHandler(ISpaceRepository spaceRepository)
-    {
-        this.spaceRepository = spaceRepository;
-    }
-    
     public async Task<ModifyEntityResult<DLCS.Model.Spaces.Space>> Handle(PutSpace request, CancellationToken cancellationToken)
     {
         if (request.SpaceId <= 0)
         {
-            return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure(
-                "Space id must be a positive integer",
+            return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure("Space id must be a positive integer",
                 WriteResult.FailedValidation);
         }
 
@@ -49,14 +40,14 @@ public class PutSpaceHandler : IRequestHandler<PutSpace, ModifyEntityResult<DLCS
         {
             var sameNameSpace = await spaceRepository.GetSpace(request.CustomerId, request.Name, cancellationToken);
             if (sameNameSpace != null && sameNameSpace.Id != request.SpaceId)
-                return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure($"The space name '{request.Name}' is already taken.",
-                    WriteResult.Conflict);
+            {
+                return ModifyEntityResult<DLCS.Model.Spaces.Space>.Failure(
+                    $"The space name '{request.Name}' is already taken.", WriteResult.Conflict);
+            }
         }
-        
-        var putSpaceResult = await spaceRepository.UpsertSpace(
-            request.CustomerId, request.SpaceId, request.Name, request.ImageBucket,
-            request.MaxUnauthorised, request.Tags, request.Roles,
-            cancellationToken);
+
+        var putSpaceResult = await spaceRepository.UpsertSpace(request.CustomerId, request.SpaceId, request.Name,
+            request.Tags, request.Roles, cancellationToken);
         
         var result = sameIdSpace == null ? WriteResult.Created : WriteResult.Updated;
         

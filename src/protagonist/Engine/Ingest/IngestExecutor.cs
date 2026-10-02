@@ -20,7 +20,7 @@ public class IngestExecutor(
     private const int MinimumAssetSize = 100;
 
     public async Task<AdjunctIngestResult> IngestAdjunct(Adjunct adjunct,
-        CustomerOriginStrategy customerOriginStrategy,
+        CustomerOriginStrategy? customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
         var sw = Stopwatch.StartNew();
@@ -28,10 +28,19 @@ public class IngestExecutor(
 
         var customerId = adjunct.Asset.Customer;
         var assetId = adjunct.Asset.Id;
+        
+        // If COS null we can't process, record error and abort
+        if (customerOriginStrategy == null)
+        {
+            adjunct.Error ??= "Unable to determine origin strategy";
+            context.WithStorage();
+            await CompleteAdjunctInDatabase(context, true);
+            return new AdjunctIngestResult(adjunct.Id, adjunct.AssetId, IngestResultStatus.Failed);
+        }
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(customerId))
         {
-            var counts = await storageRepository.GetStorageMetrics(customerId, cancellationToken);
+            var counts = await storageRepository.GetStorageMetrics(customerId, CancellationToken.None);
 
             if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
             {
@@ -40,7 +49,7 @@ public class IngestExecutor(
                     customerId, assetId, adjunct.Id);
 
                 adjunct.Error = IngestErrors.StoragePolicyExceeded;
-                var dbResponse = await CompleteAdjunctInDatabase(context, true, cancellationToken);
+                var dbResponse = await CompleteAdjunctInDatabase(context, true);
                 return new AdjunctIngestResult(adjunct.Id, adjunct.AssetId,
                     dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
             }
@@ -82,14 +91,13 @@ public class IngestExecutor(
         }
 
         var dbSuccess = await CompleteAdjunctInDatabase(context,
-            overallStatus != IngestResultStatus.QueuedForProcessing,
-            cancellationToken);
+            overallStatus != IngestResultStatus.QueuedForProcessing);
 
         // Apply the (signed) stored-adjunct size delta atomically once the adjunct is finalised. Kept separate from
         // the ImageStorage-record path used by assets so it applies a true delta (not the cumulative tally).
         if (dbSuccess && overallStatus is IngestResultStatus.Success or IngestResultStatus.QueuedForProcessing)
         {
-            await storageRepository.AdjustAdjunctStoredSize(assetId, context.StoredSizeDelta, cancellationToken);
+            await storageRepository.AdjustAdjunctStoredSize(assetId, context.StoredSizeDelta, CancellationToken.None);
         }
 
         foreach (var postProcessor in postProcessors)
@@ -107,36 +115,44 @@ public class IngestExecutor(
             dbSuccess ? overallStatus : IngestResultStatus.Failed);
     }
 
-    public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy customerOriginStrategy,
+    public async Task<IngestResult> IngestAsset(Asset asset, CustomerOriginStrategy? customerOriginStrategy,
         CancellationToken cancellationToken = default)
     {
         var sw = Stopwatch.StartNew();
         var context = new IngestionContext(asset);
+
+        // If COS null we can't process, record error and abort
+        if (customerOriginStrategy == null)
+        {
+            asset.Error ??= "Unable to determine origin strategy";
+            context.WithStorage();
+            await CompleteAssetInDatabase(context, true);
+            return new IngestResult(asset.Id, IngestResultStatus.Failed);
+        }
         
         // If the asset has the `none` delivery channel specified, skip processing and mark the ingest as being complete
         if (asset.HasSingleDeliveryChannel(AssetDeliveryChannels.None))
         {
             context.WithStorage();
-            await assetRepository.UpdateIngestedDeliverable(context.Asset, null, context.ImageStorage,
-                true, cancellationToken);
+            await CompleteAssetInDatabase(context, true);
             return new IngestResult(asset.Id, IngestResultStatus.Success);
         }
 
         if (!assetIngestorSizeCheck.CustomerHasNoStorageCheck(asset.Customer))
         {
-            var counts = await storageRepository.GetStorageMetrics(asset.Customer, cancellationToken);
+            var counts = await storageRepository.GetStorageMetrics(asset.Customer, CancellationToken.None);
 
             if (!counts.CanStoreAssetSize(MinimumAssetSize, 0))
             {
                 logger.LogDebug("Storage policy exceeded for customer {CustomerId} with id {Id}", asset.Customer,
                     asset.Id);
                 asset.Error = IngestErrors.StoragePolicyExceeded;
-                var dbResponse = await CompleteAssetInDatabase(context, true, cancellationToken);
+                var dbResponse = await CompleteAssetInDatabase(context, true);
                 return new IngestResult(asset.Id,
                     dbResponse ? IngestResultStatus.StorageLimitExceeded : IngestResultStatus.Failed);
             }
 
-            var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, cancellationToken);
+            var preIngestionAssetSize = await assetRepository.GetImageSize(asset.Id, CancellationToken.None);
             context.WithPreIngestionAssetSize(preIngestionAssetSize);
         }
 
@@ -166,8 +182,7 @@ public class IngestExecutor(
             }
         }
 
-        var dbSuccess = await CompleteAssetInDatabase(context, overallStatus != IngestResultStatus.QueuedForProcessing,
-            cancellationToken);
+        var dbSuccess = await CompleteAssetInDatabase(context, overallStatus != IngestResultStatus.QueuedForProcessing);
 
         foreach (var postProcessor in postProcessors)
         {
@@ -177,19 +192,21 @@ public class IngestExecutor(
         }
 
         sw.Stop();
-        logger.LogDebug("Processed {AssetId} in {Elapsed}ms", asset.Id, sw.ElapsedMilliseconds);
+        logger.LogInformation("Processed {AssetId} in {Elapsed}ms", asset.Id, sw.ElapsedMilliseconds);
         return new IngestResult(asset.Id, dbSuccess ? overallStatus : IngestResultStatus.Failed);
     }
 
-    private async Task<bool> CompleteAdjunctInDatabase(AdjunctIngestionContext context, bool ingestFinished,
-        CancellationToken cancellationToken)
+    // NOTE: finalising in the DB (and the storage pre-checks that run before workers) deliberately don't use the
+    // ingest's cancellation token. If the caller cancels (e.g. a synchronous ingest request is aborted) the outcome of
+    // the ingest still needs to be recorded, otherwise the item is left in an 'ingesting' state with no error. Only
+    // workers are cancellable, as they handle their own failures.
+    private async Task<bool> CompleteAdjunctInDatabase(AdjunctIngestionContext context, bool ingestFinished)
         // ImageStorage is null: adjunct stored-size accounting is handled separately via a signed atomic delta
         // (AdjustAdjunctStoredSize) rather than the cumulative ImageStorage-record path used for assets.
         => await assetRepository.UpdateIngestedDeliverable(context.Adjunct, null, null,
-            ingestFinished, cancellationToken);
+            ingestFinished, CancellationToken.None);
 
-    private async Task<bool> CompleteAssetInDatabase(IngestionContext context, bool ingestFinished,
-        CancellationToken cancellationToken)
+    private async Task<bool> CompleteAssetInDatabase(IngestionContext context, bool ingestFinished)
         => await assetRepository.UpdateIngestedDeliverable(context.Asset, context.ImageLocation,
-            context.ImageStorage, ingestFinished, cancellationToken);
+            context.ImageStorage, ingestFinished, CancellationToken.None);
 }

@@ -85,11 +85,13 @@ public class CustomerOriginStrategiesController : HydraController
         {
             return this.ValidationFailed(validationResult);
         }
-     
+
         if (GetAllowedStrategy(newStrategy.OriginStrategy!) == null)
+        {
             return this.HydraProblem($"'{newStrategy.OriginStrategy}' is not allowed as an origin strategy type", null,
                 400, "Invalid origin strategy");
-        
+        }
+
         newStrategy.CustomerId = customerId;
         var request = new CreateCustomerOriginStrategy(customerId, newStrategy.ToDlcsModel());
         
@@ -122,7 +124,7 @@ public class CustomerOriginStrategiesController : HydraController
     }
     
     /// <summary>
-    /// Update an origin strategy owned by the user
+    /// Update an origin strategy owned by the customer
     /// </summary>
     /// <remarks>
     /// Sample request:
@@ -160,9 +162,12 @@ public class CustomerOriginStrategiesController : HydraController
         if (strategyChanges.OriginStrategy.HasText())
         {
             strategyType = GetAllowedStrategy(strategyChanges.OriginStrategy);
-            if(strategyType == null)
-                return this.HydraProblem($"'{strategyChanges.OriginStrategy}' is not allowed as an origin strategy type", null, 
+            if (strategyType == null)
+            {
+                return this.HydraProblem(
+                    $"'{strategyChanges.OriginStrategy}' is not allowed as an origin strategy type", null,
                     400, "Invalid origin strategy");
+            }
         } 
 
         var request = new UpdateCustomerOriginStrategy(customerId, strategyId)

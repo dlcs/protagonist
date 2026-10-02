@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using DLCS.AWS.S3.Models;
 using Microsoft.Extensions.Primitives;
@@ -54,6 +55,7 @@ public class ProxyActionResult : IProxyActionResult
     /// <summary>
     /// Get value indicating whether result has Path
     /// </summary>
+    [MemberNotNullWhen(true, nameof(Path))]
     public bool HasPath => !string.IsNullOrWhiteSpace(Path);
     
     /// <summary>
@@ -62,11 +64,16 @@ public class ProxyActionResult : IProxyActionResult
     public bool RequiresAuth { get; }
 
     /// <summary>
+    /// Optional signature, sent to downstream service in <c>x-gateway-token</c> request header, proving that the
+    /// request originated from Orchestrator. See <see cref="Orchestrator.Infrastructure.GatewayTokenGenerator"/>
+    /// </summary>
+    public string? GatewayToken { get; init; }
+
+    /// <summary>
     /// A collection of any Headers to set on response object. 
     /// </summary>
     public Dictionary<string, StringValues> Headers { get; } = new();
     
-    // TODO - differentiate between full + part path?
     public ProxyActionResult(ProxyDestination target, bool requiresAuth, string? path = null)
     {
         Target = target;

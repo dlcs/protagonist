@@ -15,6 +15,7 @@ using DLCS.Model.Storage;
 using DLCS.Repository;
 using DLCS.Repository.Auth;
 using DLCS.Repository.Customers;
+using DLCS.Repository.OriginStrategies;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Processing;
 using DLCS.Repository.Storage;
@@ -52,10 +53,12 @@ public static class ServiceCollectionX
             .AddSingleton<ITranscoderPresetLookup, SettingsBasedPresetLookup>()
             .AddScoped<ITopicPublisher, TopicPublisher>()
             .SetupAWS(configuration, webHostEnvironment)
-            .WithAmazonS3()
+            // S3, SNS + MediaConvert clients are scoped to the customer being ingested (see "AWS:AssumeRole").
+            // SQS is not - the queue listener polls before any customer is known
+            .WithCustomerScopedAmazonS3()
             .WithAmazonSQS()
-            .WithAmazonSNS()
-            .WithMediaConvert();
+            .WithCustomerScopedAmazonSNS()
+            .WithCustomerScopedMediaConvert();
 
         return services;
     }
@@ -81,7 +84,8 @@ public static class ServiceCollectionX
     /// <summary>
     /// Adds all asset ingestion classes and related dependencies. 
     /// </summary>
-    public static IServiceCollection AddAssetIngestion(this IServiceCollection services, EngineSettings engineSettings)
+    public static IServiceCollection AddAssetIngestion(this IServiceCollection services,
+        EngineSettings engineSettings, IConfiguration configuration)
     {
         services
             .AddSingleton<IAssetIngestorSizeCheck, AppSettingsAssetIngestorSizeCheck>()
@@ -99,7 +103,7 @@ public static class ServiceCollectionX
             .AddScoped<IAssetToDisk, AssetToDisk>()
             .AddScoped<ITimebasedIngestorCompletion, TimebasedIngestorCompletion>()
             .AddScoped<IAssetToS3, AssetToS3>()
-            .AddOriginStrategies();
+            .AddOriginStrategies(configuration);
 
         if (engineSettings.ImageIngest != null)
         {

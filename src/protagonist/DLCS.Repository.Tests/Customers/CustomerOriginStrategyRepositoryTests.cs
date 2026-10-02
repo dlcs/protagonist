@@ -4,6 +4,7 @@ using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Customers;
 using DLCS.Repository.Customers;
+using DLCS.Repository.OriginStrategies;
 using LazyCache.Mocks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -16,20 +17,31 @@ namespace DLCS.Repository.Tests.Customers;
 [Collection(DatabaseCollection.CollectionName)]
 public class CustomerOriginStrategyRepositoryTests
 {
+    private readonly DlcsDatabaseFixture dbFixture;
     private readonly DlcsContext dbContext;
     private readonly CustomerOriginStrategyRepository sut;
     
     public CustomerOriginStrategyRepositoryTests(DlcsDatabaseFixture dbFixture)
     {
+        this.dbFixture = dbFixture;
         dbContext = dbFixture.DbContext;
-        var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new KeyValuePair<string, string>[] { new("S3OriginRegex", "http\\:\\/\\/s3-/.*") })
-            .Build();
+        sut = GetSut();
 
-        sut = new CustomerOriginStrategyRepository(new MockCachingService(), dbFixture.DbContext, configuration,
-            OptionsHelpers.GetOptionsMonitor(new CacheSettings()), new NullLogger<CustomerOriginStrategyRepository>());
-        
         dbFixture.CleanUp();
+    }
+
+    private CustomerOriginStrategyRepository GetSut(Dictionary<string, string>? additionalSettings = null)
+    {
+        var settings = new Dictionary<string, string> { ["S3OriginRegex"] = "http\\:\\/\\/s3-/.*" };
+        foreach (var (key, value) in additionalSettings ?? new Dictionary<string, string>())
+        {
+            settings[key] = value;
+        }
+
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+
+        return new CustomerOriginStrategyRepository(new MockCachingService(), dbFixture.DbContext, configuration,
+            OptionsHelpers.GetOptionsMonitor(new CacheSettings()), new NullLogger<CustomerOriginStrategyRepository>());
     }
 
     [Theory]
@@ -128,5 +140,100 @@ public class CustomerOriginStrategyRepositoryTests
         
         // Assert
         result.Should().BeEquivalentTo(expected);
+    }
+
+    [Fact]
+    public async Task GetCustomerOriginStrategy_DoesNotBacktrack_ForCatastrophicRegex()
+    {
+        // Arrange
+        // "^(a+)+$" takes exponential time to reject non-matching input on a backtracking engine
+        await dbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
+        {
+            Customer = 5, Id = "catastrophic", Regex = "^(a+)+$", Strategy = OriginStrategyType.S3Ambient, Order = 1
+        });
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var result = await sut.GetCustomerOriginStrategy(new AssetId(5, 1, "whatever"), new string('a', 60) + "!");
+
+        // Assert
+        result.Id.Should().Be("_default_");
+    }
+
+    [Fact]
+    public async Task GetCustomerOriginStrategy_Throws_IfRegexInvalid()
+    {
+        // Arrange
+        // Validation prevents this via the API but rows can predate it, or be written directly to the database
+        await dbContext.CustomerOriginStrategies.AddAsync(new CustomerOriginStrategy
+        {
+            Customer = 5, Id = "invalid", Regex = "http[s?://", Strategy = OriginStrategyType.S3Ambient, Order = 1
+        });
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        Func<Task> action = () => sut.GetCustomerOriginStrategy(new AssetId(5, 1, "whatever"), "https://matching.io/x");
+
+        // Assert
+        (await action.Should().ThrowAsync<OriginStrategyRegexException>())
+            .Which.StrategyId.Should().Be("invalid");
+    }
+
+    [Fact]
+    public async Task GetCustomerOriginStrategy_Throws_IfMatchTimesOut()
+    {
+        // Arrange
+        // NOTE(DG): With NonBacktracking disabled the timeout is the only protection against a catastrophic regex.
+        // Timing out must not fall through to a lower priority strategy, which could fetch with the wrong credentials
+        await dbContext.CustomerOriginStrategies.AddRangeAsync(
+            new CustomerOriginStrategy
+            {
+                Customer = 5, Id = "catastrophic", Regex = "^(a+)+$", Strategy = OriginStrategyType.S3Ambient,
+                Order = 1
+            },
+            new CustomerOriginStrategy
+            {
+                Customer = 5, Id = "lower_priority", Regex = "(.*)", Strategy = OriginStrategyType.BasicHttp, Order = 2
+            });
+        await dbContext.SaveChangesAsync();
+
+        var noNonBacktracking = GetSut(new Dictionary<string, string>
+        {
+            ["OriginStrategy:UseNonBacktracking"] = "false",
+            ["OriginStrategy:MatchTimeout"] = "00:00:00.050"
+        });
+
+        // Act
+        Func<Task> action = () =>
+            noNonBacktracking.GetCustomerOriginStrategy(new AssetId(5, 1, "whatever"), new string('a', 60) + "!");
+
+        // Assert
+        (await action.Should().ThrowAsync<OriginStrategyRegexException>())
+            .Which.StrategyId.Should().Be("catastrophic");
+    }
+
+    [Fact]
+    public async Task GetCustomerOriginStrategy_StillMatches_ForPatternRequiringBacktracking()
+    {
+        // Arrange
+        // Excluding file extensions needs a negative lookbehind, which NonBacktracking can't evaluate. These
+        // strategies predate validation so must keep working, via the backtracking + timeout fallback
+        var expected = new CustomerOriginStrategy
+        {
+            Customer = 5, Id = "lookbehind", Regex = "https://example.com/bucket/.*(?<!\\.tif|\\.jpg)$",
+            Strategy = OriginStrategyType.S3Ambient, Order = 1
+        };
+        await dbContext.CustomerOriginStrategies.AddAsync(expected);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var matches = await sut.GetCustomerOriginStrategy(new AssetId(5, 1, "whatever"),
+            "https://example.com/bucket/b1234.jp2");
+        var excluded = await sut.GetCustomerOriginStrategy(new AssetId(5, 1, "whatever"),
+            "https://example.com/bucket/b1234.tif");
+
+        // Assert
+        matches.Should().BeEquivalentTo(expected);
+        excluded.Id.Should().Be("_default_");
     }
 }

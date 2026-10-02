@@ -125,7 +125,7 @@ public class MediaConvertTests
             })
             .Returns(new CreateJobResponse(JobId, HttpStatusCode.Accepted));
         A.CallTo(() => storageKeyGenerator.GetTranscodeDestinationRoot(asset.Id, A<string>._))
-            .Returns(new ObjectInBucket("storage-bucket", "/random/20/10/asset-id/"));
+            .Returns(new ObjectInBucket("storage-bucket", "20/10/asset-id/random"));
 
         // Act
         await sut.InitiateTranscodeOperation(context, new Dictionary<string, string> { ["test"] = "anything" });
@@ -133,7 +133,7 @@ public class MediaConvertTests
         // Assert
         pipeLineId.Should().Be(JobId);
         inputKey.Should().Be("s3://loc/ation");
-        output.Destination.Key.Should().EndWith("20/10/asset-id/", "Output destination is prefix");
+        output.Destination.Key.Should().StartWith("20/10/asset-id/", "Output destination is prefix");
         output.Outputs.First().Should()
             .Match<MediaConvertOutput>(o => o.Extension == "webm" && o.Preset == "Standard WebM");
         output.Outputs.Last().Should()

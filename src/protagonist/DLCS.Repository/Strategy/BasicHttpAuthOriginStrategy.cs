@@ -9,6 +9,7 @@ using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
+using DLCS.Repository.OriginStrategies;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Strategy;
@@ -33,6 +34,13 @@ public class BasicHttpAuthOriginStrategy(
             var response = await GetHttpResponse(customerOriginStrategy, originItem.Origin!, cancellationToken);
             var originResponse = await response.CreateOriginResponse(cancellationToken);
             return originResponse;
+        }
+        catch (Exception ex) when (OriginAddressBlockedException.FindInChain(ex) is { } blocked)
+        {
+            logger.LogWarning(
+                "Refused to fetch {ItemDesc} from Origin {Url}: host {OriginHost} resolves to {OriginAddress}, which is in blocked range {BlockedRange}",
+                originItem.Identifier(), originItem.Origin, blocked.Host, blocked.Address, blocked.BlockedBy);
+            throw blocked;
         }
         catch (Exception ex)
         {

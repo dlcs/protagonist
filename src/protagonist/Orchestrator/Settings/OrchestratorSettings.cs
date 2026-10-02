@@ -121,11 +121,32 @@ public class OrchestratorSettings
 
     public ImageIngestSettings ImageIngest { get; set; } = new();
 
+    public GatewayTokenSettings GatewayToken { get; set; } = new();
+
     /// <summary>
     /// Maximum permitted size in bytes for annotation adjuncts that are loaded into memory for id-rewriting.
     /// Defaults to 5 MB.
     /// </summary>
     public long MaxAdjunctSizeBytes { get; set; } = 5 * 1024 * 1024;
+}
+
+/// <summary>
+/// Settings controlling the HMAC signature that is sent to the downstream image-server to prove that a request
+/// originated from Orchestrator.
+/// </summary>
+public class GatewayTokenSettings
+{
+    /// <summary>
+    /// Secret shared with the image-server, used to sign outgoing image-server requests.
+    /// If not set no signature is generated and no header is sent.
+    /// </summary>
+    public string? Secret { get; set; }
+
+    /// <summary>
+    /// Size, in seconds, of the sliding time-bucket that a signature is generated for. This must match the value used
+    /// by the image-server. Defaults to 30 minutes.
+    /// </summary>
+    public int WindowSecs { get; set; } = 1800;
 }
 
 public class ProxySettings

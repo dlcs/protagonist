@@ -37,7 +37,7 @@ public class OriginStrategy : DlcsResource
 
 
     [RdfProperty(Description = "Whether the DLCS needs stored credentials to fetch images with this strategy",
-        Range = Names.XmlSchema.Boolean, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 12, PropertyName = "requiresCredentials")]
     public bool RequiresCredentials { get; set; }
 }

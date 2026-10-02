@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core;
+using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Assets.CustomHeaders;
@@ -54,12 +55,13 @@ public static class DatabaseTestDataPopulation
         return assets.AddAsync(new Asset
         {
             Created = DateTime.UtcNow, Customer = customer, Space = space, Id = id, Origin = origin,
-            Width = width, Height = height, Roles = roles, Family = family, MediaType = mediaType,
+            Width = width, Height = height, Roles = roles.SplitSeparatedString(",").ToArray(), Family = family,
+            MediaType = mediaType,
             ThumbnailPolicy = thumbnailPolicy, MaxUnauthorised = -1,
             MaxWidth = maxWidth, OpenFullMax = openFullMax,
             Reference1 = ref1, Reference2 = ref2, Reference3 = ref3,
             NumberReference1 = num1, NumberReference2 = num2, NumberReference3 = num3,
-            NotForDelivery = notForDelivery, Tags = "", PreservedUri = "", Error = error,
+            NotForDelivery = notForDelivery, Tags = [], PreservedUri = "", Error = error,
             ImageOptimisationPolicy = imageOptimisationPolicy, Batch = batch, Ingesting = ingesting,
             Duration = duration, Finished = finished, Manifests = manifests,
             ImageDeliveryChannels = imageDeliveryChannels ?? new List<ImageDeliveryChannel>()
@@ -73,7 +75,7 @@ public static class DatabaseTestDataPopulation
         string profile = null, LanguageMap label = null,
         string[] language = null, string? externalId = null, DateTime? created = null,
         long? size = null, string? motivation = null, string? origin = null, string? provides = null,
-        bool optimised = false)
+        bool optimised = false, int? batch = null)
     {
         asset.Result.Entity.Adjuncts ??= [];
         externalId ??= origin == null ? "https://someHost.com/someUri" : null;
@@ -93,7 +95,8 @@ public static class DatabaseTestDataPopulation
             Size = size,
             Motivation = motivation,
             Provides = provides,
-            Optimised = optimised
+            Optimised = optimised,
+            Batch = batch
         });
 
         return asset;
@@ -306,11 +309,16 @@ public static class DatabaseTestDataPopulation
         AssetId assetId) => batchAssets.AddAsync(new BatchAsset { AssetId = assetId, BatchId = batchId });
 
     public static ValueTask<EntityEntry<AdjunctBatch>> AddTestAdjunctBatch(this DbSet<AdjunctBatch> adjunctBatches,
-        int id, int customer = 99, int count = 1, int completed = 0, int errors = 0,
+        int? id = null, int customer = 99, int count = 1, int completed = 0, int errors = 0,
         DateTime? submitted = null, DateTime? finished = null)
-        => adjunctBatches.AddAsync(new AdjunctBatch
+    {
+        var batch = new AdjunctBatch
         {
-            Id = id, Customer = customer, Submitted = submitted ?? DateTime.UtcNow,
+            Customer = customer, Submitted = submitted ?? DateTime.UtcNow,
             Count = count, Completed = completed, Errors = errors, Finished = finished
-        });
+        };
+        if (id.HasValue) batch.Id = id.Value;
+
+        return adjunctBatches.AddAsync(batch);
+    }
 }

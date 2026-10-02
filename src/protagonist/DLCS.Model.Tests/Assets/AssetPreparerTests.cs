@@ -236,6 +236,90 @@ public class AssetPreparerTests
     }
     
     [Fact]
+    public void PrepareAssetForUpsert_PreservesRoles_IfNotInUpdateRequest()
+    {
+        // Arrange - simulates a PATCH that doesn't mention roles (see #1261)
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = ["clickthrough"] };
+        var updateAsset = new Asset { Origin = "https://whatever", Reference1 = "metadata edit" };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Roles.Should().BeEquivalentTo(["clickthrough"]);
+    }
+
+    [Fact]
+    public void PrepareAssetForUpsert_PreservesTags_IfNotInUpdateRequest()
+    {
+        // Arrange - simulates a PATCH that doesn't mention tags (see #1261)
+        var existingAsset = new Asset { Origin = "https://whatever", Tags = ["existing-tag"] };
+        var updateAsset = new Asset { Origin = "https://whatever", Reference1 = "metadata edit" };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Tags.Should().BeEquivalentTo(["existing-tag"]);
+    }
+
+    [Fact]
+    public void PrepareAssetForUpsert_UpdatesRoles_IfInUpdateRequest()
+    {
+        // Arrange
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = ["clickthrough"] };
+        var updateAsset = new Asset { Origin = "https://whatever", Roles = ["logout"] };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Roles.Should().BeEquivalentTo(["logout"]);
+    }
+
+    [Fact]
+    public void PrepareAssetForUpsert_UpdatesTags_IfInUpdateRequest()
+    {
+        // Arrange
+        var existingAsset = new Asset { Origin = "https://whatever", Tags = ["existing-tag"] };
+        var updateAsset = new Asset { Origin = "https://whatever", Tags = ["new-tag"] };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Tags.Should().BeEquivalentTo(["new-tag"]);
+    }
+
+    [Fact]
+    public void PrepareAssetForUpsert_ClearsRoles_IfEmptyCollectionInUpdateRequest()
+    {
+        // Arrange - an empty collection is an explicit "remove all roles", unlike null which is "not specified"
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = ["clickthrough"] };
+        var updateAsset = new Asset { Origin = "https://whatever", Roles = [] };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Roles.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void PrepareAssetForUpsert_ClearsTags_IfEmptyCollectionInUpdateRequest()
+    {
+        // Arrange - an empty collection is an explicit "remove all tags", unlike null which is "not specified"
+        var existingAsset = new Asset { Origin = "https://whatever", Tags = ["existing-tag"] };
+        var updateAsset = new Asset { Origin = "https://whatever", Tags = [] };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.UpdatedAsset!.Tags.Should().BeEmpty();
+    }
+
+    [Fact]
     public void PrepareAssetForUpsert_RequiresReingest_IfOriginUpdated()
     {
         // Arrange
@@ -289,6 +373,51 @@ public class AssetPreparerTests
 
         // Assert
         result.RequiresReingest.Should().BeTrue();
+    }
+
+    public static IEnumerable<object[]> RolesChanged => new List<object[]>
+    {
+        new object[] { new[] { "role" }, Array.Empty<string>() },
+        new object[] { Array.Empty<string>(), new[] { "role" } },
+        new object[] { null, new[] { "role" } },
+    };
+
+    [Theory]
+    [MemberData(nameof(RolesChanged))]
+    public void PrepareAssetForUpsert_RequiresReingest_IfHasRolesChanged(string[] existing, string[] update)
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "https://whatever", Roles = update };
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = existing };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.RequiresReingest.Should().BeTrue();
+    }
+
+    public static IEnumerable<object[]> RolesNotMeaningfullyChanged => new List<object[]>
+    {
+        new object[] { new[] { "role" }, null },
+        new object[] { new[] { "role" }, new[] { "other-role" } },
+        new object[] { Array.Empty<string>(), Array.Empty<string>() },
+        new object[] { null, Array.Empty<string>() },
+    };
+
+    [Theory]
+    [MemberData(nameof(RolesNotMeaningfullyChanged))]
+    public void PrepareAssetForUpsert_DoesNotRequireReingest_IfHasRolesUnchanged(string[] existing, string[] update)
+    {
+        // Arrange
+        var updateAsset = new Asset { Origin = "https://whatever", Roles = update };
+        var existingAsset = new Asset { Origin = "https://whatever", Roles = existing };
+
+        // Act
+        var result = AssetPreparer.PrepareAssetForUpsert(existingAsset, updateAsset, false, false, restrictedCharacters);
+
+        // Assert
+        result.RequiresReingest.Should().BeFalse();
     }
 
     [Theory]

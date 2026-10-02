@@ -23,12 +23,12 @@ using DLCS.Web.Auth;
 using DLCS.Web.Configuration;
 using DLCS.Web.Handlers;
 using DLCS.Web.Logging;
+using DLCS.Web.Middleware;
 using FluentValidation;
 using Hydra;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -63,8 +63,8 @@ public class Startup
             .Configure<DlcsSettings>(configuration.GetSection("DLCS"))
             .Configure<CacheSettings>(cachingSection);
 
-        var apiSettings = configuration.Get<ApiSettings>();
-        var cacheSettings = cachingSection.Get<CacheSettings>();
+        var apiSettings = configuration.GetRequired<ApiSettings>();
+        var cacheSettings = cachingSection.GetRequired<CacheSettings>();
 
         services
             .AddHttpContextAccessor()
@@ -73,7 +73,7 @@ public class Startup
             .AddSingleton<IEncryption, SHA256>()
             .AddSingleton<JwtAuthHelper>()
             .AddSingleton<DlcsApiAuth>()
-            .AddTransient<ClaimsPrincipal>(s => s.GetRequiredService<IHttpContextAccessor>().HttpContext.User)
+            .AddTransient<ClaimsPrincipal>(s => s.GetRequiredService<IHttpContextAccessor>().HttpContext!.User)
             .AddCaching(cacheSettings)
             .AddDataAccess(configuration)
             .AddScoped<IIngestNotificationSender, IngestNotificationSender>()
@@ -147,11 +147,11 @@ public class Startup
             app.UseDeveloperExceptionPage();
         }
 
-        var applicationOptions = configuration.Get<ApiSettings>();
-        var pathBase = applicationOptions.PathBase;
+        var pathBase = configuration.GetRequired<ApiSettings>().PathBase;
 
         app
             .HandlePathBase(pathBase, logger)
+            .UseCorrelationId()
             .UseSwaggerWithUI("DLCS API", pathBase, "v2")
             .UseRouting()
             .UseSerilogRequestLogging(opts =>

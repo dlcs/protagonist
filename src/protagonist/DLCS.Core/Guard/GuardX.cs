@@ -53,7 +53,7 @@ public static class GuardX
     /// <param name="argName">Name of argument.</param>
     /// <returns>Passed string, if not null.</returns>
     /// <exception cref="ArgumentNullException">Thrown if provided argument is null.</exception>
-    public static string ThrowIfNullOrWhiteSpace(this string argument, string argName)
+    public static string ThrowIfNullOrWhiteSpace(this string? argument, string argName)
     {
         if (string.IsNullOrWhiteSpace(argument))
         {

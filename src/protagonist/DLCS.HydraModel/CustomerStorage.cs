@@ -78,9 +78,9 @@ public class CustomerStorage : DlcsResource
     [JsonProperty(Order = 31, PropertyName = "lastCalculated")]
     public DateTime? LastCalculated { get; set; }
 
-    [HydraLink(Description = "When the customer storage resource is for a Customer rather than a space, it" +
+    [HydraLink(Description = "When the customer storage resource is for a Customer rather than a space, it " +
                              "will include this property which configures the total storage permitted across all " +
-                             "a Customer's spaces. ",
+                             "a Customer's spaces.",
         Range = "vocab:StoragePolicy", ReadOnly = true, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 81, PropertyName = "storagePolicy")]
     public string? StoragePolicy { get; set; }

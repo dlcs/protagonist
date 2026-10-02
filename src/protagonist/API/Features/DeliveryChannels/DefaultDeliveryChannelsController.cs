@@ -4,6 +4,7 @@ using API.Features.DeliveryChannels.Validation;
 using API.Infrastructure;
 using API.Settings;
 using DLCS.HydraModel;
+using Hydra.Model;
 using Hydra.Collections;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -56,7 +57,7 @@ public class DefaultDeliveryChannelsController : HydraController
     /// <returns>A Hydra JSON-LD default delivery channel object</returns>
     [HttpGet("{defaultDeliveryChannelId}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DefaultDeliveryChannel))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> GetCustomerDefaultDeliveryChannel(
         [FromRoute] int customerId,
         Guid defaultDeliveryChannelId,
@@ -82,7 +83,7 @@ public class DefaultDeliveryChannelsController : HydraController
     /// <returns>A Hydra JSON-LD default delivery channel object</returns>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
     public async Task<IActionResult> CreateCustomerDefaultDeliveryChannel(
         [FromRoute] int customerId,
         [FromBody] DefaultDeliveryChannel defaultDeliveryChannel,
@@ -111,7 +112,8 @@ public class DefaultDeliveryChannelsController : HydraController
         }
         catch (Exception)
         {
-            return BadRequest();
+            return this.HydraProblem("Failed to create Default Delivery Channel", null, 400,
+                "Failed to create Default Delivery Channel");
         }
     }
 
@@ -154,8 +156,8 @@ public class DefaultDeliveryChannelsController : HydraController
     /// <returns>A 204 status code on success, or problem detail response on failure</returns>
     [HttpDelete("{defaultDeliveryChannelId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(Error))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(Error))]
     public async Task<IActionResult> DeleteCustomerDefaultDeliveryChannel(
         [FromRoute] int customerId,
         Guid defaultDeliveryChannelId,

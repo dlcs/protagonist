@@ -94,6 +94,55 @@ public class PathRewriteTransformerTests
     }
 
     [Fact]
+    public async Task TransformRequestAsync_SetsGatewayTokenHeader_IfProxyActionHasToken()
+    {
+        // Arrange
+        var request = new HttpRequestMessage();
+        var actionResult = new ProxyActionResult(ProxyDestination.SpecialServer, false, "new/path")
+            { GatewayToken = "im-from-orchestrator" };
+        var sut = new PathRewriteTransformer(actionResult);
+
+        // Act
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com", CancellationToken.None);
+        
+        // Assert
+        request.Headers.GetValues("x-gateway-token").Should().ContainSingle("im-from-orchestrator");
+    }
+    
+    [Fact]
+    public async Task TransformRequestAsync_OverwritesClientSuppliedGatewayTokenHeader()
+    {
+        // Arrange
+        var request = new HttpRequestMessage();
+        request.Headers.Add("x-gateway-token", "spoofed");
+        var actionResult = new ProxyActionResult(ProxyDestination.SpecialServer, false, "new/path")
+            { GatewayToken = "im-from-orchestrator" };
+        var sut = new PathRewriteTransformer(actionResult);
+
+        // Act
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com", CancellationToken.None);
+        
+        // Assert
+        request.Headers.GetValues("x-gateway-token").Should().ContainSingle("im-from-orchestrator");
+    }
+    
+    [Fact]
+    public async Task TransformRequestAsync_RemovesClientSuppliedGatewayTokenHeader_IfProxyActionHasNoToken()
+    {
+        // Arrange
+        var request = new HttpRequestMessage();
+        request.Headers.Add("x-gateway-token", "spoofed");
+        var actionResult = new ProxyActionResult(ProxyDestination.Thumbs, false, "new/path");
+        var sut = new PathRewriteTransformer(actionResult);
+
+        // Act
+        await sut.TransformRequestAsync(new DefaultHttpContext(), request, "http://test.example.com", CancellationToken.None);
+        
+        // Assert
+        request.Headers.Should().NotContainKey("x-gateway-token");
+    }
+
+    [Fact]
     public async Task TransformRequestAsync_RemovesCloudfrontIdHeaderIfPresent()
     {
         // Arrange

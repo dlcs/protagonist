@@ -89,4 +89,32 @@ public class IngestHandlerTests
             .MustHaveHappened();
         success.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task HandleMessage_DecrementsAdjunctQueue_NotDefault_ForAdjunctIngestMessage()
+    {
+        // Arrange
+        var body = new JsonObject
+        {
+            ["created"] = "1985-10-26T09:00:00"
+        };
+        var queueMessage = new QueueMessage
+        {
+            Body = body, QueueName = "protagonist-adjunct",
+            MessageAttributes = new() { { SqsQueueUtilities.Constants.MessageAttributeNames.IngestType, IngestAdjunctRequest.IngestType } }
+        };
+        A.CallTo(() => adjunctIngester.Ingest(A<IngestAdjunctRequest>._, A<CancellationToken>._))
+            .Returns(new IngestResult(new AssetId(1, 2, "fake"), IngestResultStatus.Success));
+
+        // Act
+        var success = await sut.HandleMessage(queueMessage, CancellationToken.None);
+
+        // Assert
+        A.CallTo(() => adjunctIngester.Ingest(A<IngestAdjunctRequest>._, A<CancellationToken>._)).MustHaveHappened();
+        A.CallTo(() => customerQueueRepository.DecrementSize(A<int>._, QueueNames.Adjunct, A<int>._, A<CancellationToken>._))
+            .MustHaveHappened();
+        A.CallTo(() => customerQueueRepository.DecrementSize(A<int>._, QueueNames.Default, A<int>._, A<CancellationToken>._))
+            .MustNotHaveHappened();
+        success.Should().BeTrue();
+    }
 }

@@ -34,7 +34,7 @@ public class TempController: Controller
         return new JsonResult(new
         {
             spaces = await context.Spaces.CountAsync(),
-            keys = listObjects.S3Objects.Count 
+            keys = listObjects.S3Objects?.Count ?? 0 
         });
     }
 }

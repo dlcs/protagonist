@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -7,6 +8,7 @@ using DLCS.Model.Assets;
 using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using DLCS.Repository.Strategy;
+using DLCS.Repository.OriginStrategies;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Test.Helpers.Http;
@@ -132,4 +134,25 @@ public class BasicHttpAuthOriginStrategyTests
         result.Stream.Should().BeSameAs(Stream.Null);
         result.IsEmpty.Should().BeTrue();
     }
+
+    [Fact]
+    public async Task LoadAssetFromOrigin_Throws_IfOriginBlocked()
+    {
+        // Arrange
+        A.CallTo(() => credentialsRepository.GetBasicCredentialsForOriginStrategy(A<CustomerOriginStrategy>._))
+            .Returns(new BasicCredentials { User = "user", Password = "password" });
+        httpHandler.RegisterCallback(_ => throw GetBlockedException());
+        const string originUri = "https://test.example.com/string";
+
+        // Act
+        Func<Task> action = () =>
+            sut.LoadFromOrigin(new Asset { Id = assetId, Origin = originUri }, customerOriginStrategy);
+
+        // Assert
+        await action.Should().ThrowAsync<OriginAddressBlockedException>();
+    }
+
+    private static HttpRequestException GetBlockedException()
+        => new("blocked",
+            new OriginAddressBlockedException("test.example.com", IPAddress.Loopback, IPNetwork.Parse("127.0.0.0/8")));
 }

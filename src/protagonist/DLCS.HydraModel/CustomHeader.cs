@@ -31,7 +31,7 @@ public class CustomHeader : DlcsResource
     
     [HydraLink(Description = "URI of the registered DLCS role that assets must have for this HTTP header to be set. " +
                              "Leave blank to set headers for assets with no roles.",
-        Range = "vocab:Role", ReadOnly = true, WriteOnly = false)]
+        Range = "vocab:Role", ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 11, PropertyName = "role")]
     public string? Role { get; set; }
     

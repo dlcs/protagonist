@@ -1,7 +1,9 @@
-﻿using DLCS.Core.Types;
+﻿using DLCS.AWS.Configuration;
+using DLCS.Core.Types;
 using DLCS.Model.Customers;
 using DLCS.Model.Messaging;
 using Engine.Data;
+using Microsoft.AspNetCore.Components;
 
 namespace Engine.Ingest;
 
@@ -32,12 +34,17 @@ public interface IAdjunctIngesterPostProcess
 
 public class AdjunctIngester(
     ICustomerOriginStrategyRepository customerOriginRepository,
+    ICustomerAwsContext customerAwsContext,
     IngestExecutor executor,
     IEngineAssetRepository engineAssetRepository,
-    ILogger<AdjunctIngester> logger) : IAdjunctIngester
+    ILogger<AdjunctIngester> logger)
+    : DeliverableIngester(customerOriginRepository, customerAwsContext), IAdjunctIngester
 {
     public async Task<IngestResult> Ingest(IngestAdjunctRequest request, CancellationToken cancellationToken = default)
     {
+        // Scope any AWS requests made during this ingest to the customer that owns the asset
+        using var customerAwsScope = SetCustomerAwsContext(request.AssetId);
+
         var adjunct = await engineAssetRepository.GetAdjunct(request.Id, request.AssetId, request.BatchId, cancellationToken);
         
         if (adjunct == null)
@@ -48,7 +55,7 @@ public class AdjunctIngester(
         }
         
         // get any matching CustomerOriginStrategy
-        var customerOriginStrategy = await customerOriginRepository.GetCustomerOriginStrategy(adjunct);
+        var customerOriginStrategy = await GetCustomerOriginStrategy(adjunct);
 
         // now ingest the adjunct
         var status = await executor.IngestAdjunct(adjunct, customerOriginStrategy, cancellationToken);

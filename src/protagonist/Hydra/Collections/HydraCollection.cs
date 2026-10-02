@@ -3,10 +3,12 @@ using Newtonsoft.Json;
 namespace Hydra.Collections;
 
 /// <summary>
-/// This doesn't have to be all the same type. But usually will be.
-/// If you really have to mix, use object.
+/// A collection of related Hydra resources, see https://www.hydra-cg.com/spec/latest/core/#collections 
 /// </summary>
-/// <typeparam name="T"></typeparam>
+/// <remarks>
+/// This doesn't have to be all the same type. But usually will be.
+/// If you really have to mix, use object as T
+/// </remarks>
 public class HydraCollection<T> : JsonLdBaseWithHydraContext
 {
     public override string Type => "Collection";
@@ -21,5 +23,6 @@ public class HydraCollection<T> : JsonLdBaseWithHydraContext
     public T[]? Members { get; set; }
 
     [JsonProperty(Order = 90, PropertyName = "view")]
+    [HydraLink(Description = "The view options for the collection of items", ReadOnly = true)]
     public PartialCollectionView? View { get; set; }
 }

@@ -48,12 +48,12 @@ public class ImageStorage : DlcsResource
 
     [RdfProperty(Description = "When these figures were last computed",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 55, PropertyName = "lastChecked")]
+    [JsonProperty(Order = 56, PropertyName = "lastChecked")]
     public DateTime? LastChecked { get; set; }
 
     [RdfProperty(Description = "If a computation of these figures is currently running",
         Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 55, PropertyName = "checkingInProgress")]
+    [JsonProperty(Order = 57, PropertyName = "checkingInProgress")]
     public bool CheckingInProgress { get; set; }
 
 }

@@ -10,8 +10,8 @@ namespace DLCS.HydraModel;
 [HydraClass(typeof(SpaceClass),
        Description = "Spaces allow you to partition images into groups. You can use them to organise your " +
                      "images logically, like folders. You can also define different default settings to apply " +
-                     "to images registered in a space. For example, default access control behaviour for all " +
-                     "images in a space, or default tags. These can be overridden for individual images. " +
+                     "to images registered in a space, for example default tags. " +
+                     "These can be overridden for individual images. " +
                      "There is no limit to the number of images you can register in a space.",
        UriTemplate = "/customers/{0}/spaces/{1}")]
 [Unstable(Note = "Under active development")]
@@ -52,12 +52,6 @@ public class Space : DlcsResource
     [JsonProperty(Order = 12, PropertyName = "defaultTags")]
     public string[]? DefaultTags { get; set; }
 
-    [RdfProperty(Description = "Default size at which role-based authorisation will be enforced. -1=open, 0=always require auth",
-        Range = Names.XmlSchema.Integer, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 14, PropertyName = "maxUnauthorised")]
-    public int? MaxUnauthorised { get; set; }
-    
-    
     [RdfProperty(Description = "Computed count of the number of images in the space.",
         Range = Names.XmlSchema.Integer, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 14, PropertyName = "approximateNumberOfImages")]
@@ -79,11 +73,6 @@ public class Space : DlcsResource
     [JsonProperty(Order = 23, PropertyName = "defaultDeliveryChannels")]
     public string? DefaultDeliveryChannels { get; set; }
     
-    [HydraLink(Description = "Metadata options for the space", // TOOD- what exactly?
-        Range = "vocab:Metadata", ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 24, PropertyName = "metadata")]
-    public string? Metadata { get; set; }
-
     [HydraLink(Description = "Storage policy for the space", 
         Range = "vocab:CustomerStorage", ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 28, PropertyName = "storage")]
@@ -105,35 +94,29 @@ public class SpaceClass : Class
             "GET", "PUT", "PATCH", "DELETE");
 
         var images = GetHydraLinkProperty("images");
-        images.SupportedOperations = CommonOperations
-            .GetStandardCollectionOperations("_:customer_space_image_", "Image", "vocab:Image");
-        images.SupportedOperations.WithMethod("GET").Description =
-            "Can take query parameters";
-        images.SupportedOperations.WithMethod("POST").Description =
-            "Push an image for immediate processing, asynchronously. Might fail or timeout. This operation is rate-limited.";
-
-        GetHydraLinkProperty("defaultRoles").SupportedOperations = CommonOperations
-            .GetStandardCollectionOperations("_:customer_space_defaultRole_", "Role", "vocab:Role");
-
-        GetHydraLinkProperty("metadata").SupportedOperations = new []
+        images.SupportedOperations = new[]
         {
+            CommonOperations.StandardCollectionGet(
+                "_:customer_space_image_collection_retrieve", "Retrieves all Images", "Can take query parameters"),
             new Operation
             {
-                Id = Id,
-                Method = "GET",
-                Label = "Retrieve the metadata",
-                Description = "desc",
-                Returns = "vocab:Metadata",
+                Id = "_:customer_space_image_bulk_update",
+                Method = "PATCH",
+                Label = "Update one or more images in the space",
+                Description = "Each image in the supplied collection must have an id, and may only " +
+                              "set fields that do not require the asset to be reprocessed.",
+                Expects = Names.Hydra.Collection,
+                Returns = Names.Hydra.Collection,
                 StatusCodes = new[]
                 {
-                    new Status
-                    {
-                        StatusCode = 200,
-                        Description = "OK"
-                    }
+                    new Status { StatusCode = 200, Description = "OK" },
+                    new Status { StatusCode = 400, Description = "Bad Request" }
                 }
             }
         };
+
+        GetHydraLinkProperty("defaultRoles").SupportedOperations = CommonOperations
+            .GetStandardCollectionOperations("_:customer_space_defaultRole_", "Role", "vocab:Role");
     }
 }
 

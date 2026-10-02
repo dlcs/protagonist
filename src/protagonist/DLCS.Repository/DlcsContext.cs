@@ -393,11 +393,19 @@ public partial class DlcsContext : DbContext
 
             entity.Property(e => e.Roles)
                 .IsRequired()
-                .HasMaxLength(1000);
+                .HasMaxLength(1000)
+                .HasConversion(
+                    r => string.Join(",", r),
+                    r => r.Split(",", StringSplitOptions.RemoveEmptyEntries),
+                    stringArrayComparer);
 
             entity.Property(e => e.Tags)
                 .IsRequired()
-                .HasMaxLength(1000);
+                .HasMaxLength(1000)
+                .HasConversion(
+                    t => string.Join(",", t),
+                    t => t.Split(",", StringSplitOptions.RemoveEmptyEntries),
+                    stringArrayComparer);
 
             entity.Property(e => e.ThumbnailPolicy)
                 .IsRequired()
@@ -782,7 +790,7 @@ public partial class DlcsContext : DbContext
                 .WithMany(b => b.BatchAdjuncts)
                 .HasForeignKey(e => e.BatchId);
 
-            entity.HasOne<Adjunct>()
+            entity.HasOne(e => e.Adjunct)
                 .WithMany(a => a.AdjunctBatchAdjuncts)
                 .HasForeignKey(e => new { e.AdjunctId, e.AssetId })
                 .HasPrincipalKey(a => new { a.Id, a.AssetId });

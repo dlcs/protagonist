@@ -16,6 +16,7 @@ using DLCS.Repository.Assets.CustomHeaders;
 using DLCS.Repository.Auth;
 using DLCS.Repository.CustomerPath;
 using DLCS.Repository.Customers;
+using DLCS.Repository.OriginStrategies;
 using DLCS.Repository.Policies;
 using DLCS.Repository.Strategy;
 using DLCS.Web.Auth;

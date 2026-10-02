@@ -77,25 +77,6 @@ public class Customer : DlcsResource
     [JsonProperty(Order = 17, PropertyName = "defaultDeliveryChannels")]
     public string? DefaultDeliveryChannels { get; set; }
     
-    [HydraLink(Description = "Collection of IIIF Authentication services available for use with your images. The images are" +
-                             " associated with the auth services via Roles. An AuthService is a means of acquiring a role.",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 18, PropertyName = "authServices")]
-    public string? AuthServices { get; set; }
-    
-    [HydraLink(Description = "Collection of external services which provide aq login page (typically) and an endpoint " +
-                             " from which the DLCS acquires the user's named roles. This enables integration with external auth mechanisms.",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 19, PropertyName = "roleProviders")]
-    public string? RoleProviders { get; set; }
-    
-    [HydraLink(Description = "Collection of the available roles you can assign to your images. In order for a user to see an image, the " +
-                             "user must have the role associated with the image, or one of them. Users interact with an AuthService to " +
-                             "acquire a role or roles.",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 20, PropertyName = "roles")]
-    public string? Roles { get; set; }
-
     [HydraLink(Description = "The Customer's view on the DLCS ingest queue. As well as allowing you to query the status of batches you " +
                              "have registered, you can POST new batches to the queue.",
         Range = "vocab:Queue", ReadOnly = true, WriteOnly = false)]
@@ -119,31 +100,32 @@ public class Customer : DlcsResource
     public string? Storage { get; set; }
 
     [HydraLink(Description = "Api keys allocated to this customer. The accompanying secret is only available at creation time. " +
-                             "To obtain a key and a secret, make an empty POST to this collection with administrator privileges and the returned " +
-                             "Key object will include the generates secret.",
+                             "To obtain a key and a secret, make an empty POST to this collection while authenticated as this customer, " +
+                             "and the returned Key object will include the generated secret.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 25, PropertyName = "keys")]
     public string? Keys { get; set; }
     
+    [HydraLink(Description = "The Customer's view on the DLCS adjunct queue. As well as allowing you to query the status " +
+                             "of adjunct batches you have registered, you can POST new collections of adjuncts to the queue.",
+        Range = "vocab:CustomerAdjunctQueue", ReadOnly = true, WriteOnly = false)]
+    [JsonProperty(Order = 27, PropertyName = "adjunctQueue")]
+    public string? AdjunctQueue { get; set; }
+
     [HydraLink(Description = "Additional HTTP headers (e.g., for caching) that will be sent for assets that match a role.",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 26, PropertyName = "customHeaders")]
     public string? CustomHeaders { get; set; }
 
-    [RdfProperty(Description = "Is this user the admin customer?",
+    [RdfProperty(Description = "Is this user the admin customer? Only present (true) on the admin customer; never emitted as false.",
         Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 33, PropertyName = "administrator ")]
+    [JsonProperty(Order = 33, PropertyName = "administrator")]
     public bool? Administrator { get; set; }
-    
+
     [RdfProperty(Description = "Datetime this customer was created.",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 34, PropertyName = "created ")]
+    [JsonProperty(Order = 34, PropertyName = "created")]
     public DateTime? Created { get; set; }
-
-    [RdfProperty(Description = "Has the customer accepted the EULA?",
-        Range = Names.XmlSchema.Boolean, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 35, PropertyName = "acceptedAgreement ")]
-    public bool? AcceptedAgreement { get; set; }
 }
 
 public class CustomerClass : Class
@@ -172,25 +154,36 @@ public class CustomerClass : Class
         GetHydraLinkProperty("originStrategies").SupportedOperations = CommonOperations
             .GetStandardCollectionOperations(operationId + "originStrategy_", "Origin Strategy", "vocab:OriginStrategy");
 
-        GetHydraLinkProperty("authServices").SupportedOperations = CommonOperations
-            .GetStandardCollectionOperations(operationId + "authService_", "Auth Service", "vocab:AuthService");
-
-        GetHydraLinkProperty("roles").SupportedOperations = CommonOperations
-            .GetStandardCollectionOperations(operationId + "role_", "Role", "vocab:Role");
-
         GetHydraLinkProperty("queue").SupportedOperations = QueueClass.GetSpecialQueueOperations();
+
+        GetHydraLinkProperty("adjunctQueue").SupportedOperations =
+            CustomerAdjunctQueueClass.GetSpecialAdjunctQueueOperations();
 
         GetHydraLinkProperty("spaces").SupportedOperations = CommonOperations
             .GetStandardCollectionOperations(operationId + "space_", "Space", "vocab:Space");
 
         
         var images = GetHydraLinkProperty("allImages");
-        images.SupportedOperations = CommonOperations
-            .GetStandardCollectionOperations("_:customer_image_", "Image", "vocab:Image");
-        images.SupportedOperations.WithMethod("GET").Description =
-            "Can take query parameters";
-        images.SupportedOperations.WithMethod("POST").Description =
-            "Push an image for immediate processing, asynchronously. Might fail or timeout. This operation is rate-limited.";
+        images.SupportedOperations = new[]
+        {
+            CommonOperations.StandardCollectionGet(
+                "_:customer_image_collection_retrieve", "Retrieves all Images", "Can take query parameters"),
+            new Operation
+            {
+                Id = "_:customer_image_retrieve_by_id",
+                Method = "POST",
+                Label = "Retrieve a specified list of images",
+                Description = "The body is a Collection whose members each carry an id; the matching images " +
+                              "are returned in a single, unpaged Collection.",
+                Expects = Names.Hydra.Collection,
+                Returns = Names.Hydra.Collection,
+                StatusCodes = new[]
+                {
+                    new Status { StatusCode = 200, Description = "OK" },
+                    new Status { StatusCode = 400, Description = "Bad Request" }
+                }
+            }
+        };
 
     }
 }

@@ -33,7 +33,7 @@ public class GetBatchAssets(int customerId, int batchId, AssetQueryModel assetQu
 
 public class GetBatchAssetsHandler(DlcsContext dlcsContext) : GetBatchAssetsBase<GetBatchAssets>(dlcsContext)
 {
-    protected override IQueryable<Asset> GetBatchAssets(DlcsContext dlcsContext, GetBatchAssets request)
+    protected override IQueryable<Asset> GetEntities(DlcsContext dlcsContext, GetBatchAssets request)
         => dlcsContext.BatchAssets
             .AsNoTracking()
             .Include(ba => ba.Batch)

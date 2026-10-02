@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using DLCS.AWS.S3;
 using DLCS.Core.Caching;
 using DLCS.Core.Guard;
+using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Model.Customers;
@@ -229,7 +229,7 @@ public class MemoryAssetTracker(
                 orchestrationAsset.Channels |= AvailableDeliveryChannel.Timebased;
             
             orchestrationAsset.AssetId = assetId;
-            orchestrationAsset.Roles = asset.RolesList.ToList();
+            orchestrationAsset.Roles = asset.Roles?.ToList() ?? [];
             orchestrationAsset.RequiresAuth = asset.HasRoles;
             return orchestrationAsset;
         }

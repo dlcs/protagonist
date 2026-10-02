@@ -151,12 +151,13 @@ public class AssetToS3(
             var itemOnDisk = await assetToDisk.CopyItemToLocalDisk(context, diskDestination, verifySize,
                 customerOriginStrategy, cancellationToken);
 
+            // set before any early return so the file on disk is always cleaned up
+            downloadedFile = itemOnDisk.Location;
+
             if (itemOnDisk.FileExceedsAllowance)
             {
                 return itemOnDisk;
             }
-
-            downloadedFile = itemOnDisk.Location;
 
             if (validator != null)
             {

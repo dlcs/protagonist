@@ -15,7 +15,6 @@ The DLCS uses a number of S3 keys in various buckets to store assets. These gene
 | Video output       | `"{StorageBucket}/{storage-key}/full/full/max/max/0/default.{extension}"` | `dlcs-storage/1/2/foo/full/full/max/max/0/default.mp4` | Location where transcoded video stored                                                            |
 | Timebased Metadata | `"{StorageBucket}/{storage-key}/metadata"`                                | `dlcs-storage/1/2/foo/metadata`                        | XML blob storing ElasticTranscoder JobId                                                          |
 | Adjuncts           | `"{StorageBucket}/{storage-key}/adjuncts/{adjunct-id}"`                   | `dlcs-storage/1/2/foo/adjuncts/bar`                    | Location where asset's adjuncts are stored                                                        |
-| Transient Images   | `"{StorageBucket}/transient/{storage-key}"`                               | `dlcs-storage/transient/1/2/foo`                       | Location of transient images, that will be cleaned up by lifecycle policies                       |
 | Thumbnail          | `"{ThumbsBucket}/{storage-key}/{access}/{longestEdge}.jpg"`               | `dlcs-thumbs/1/2/foo/open/100.jpg`                     | Location of specific thumbnail                                                                    |
 | Legacy Thumbnail   | `"{ThumbsBucket}/{storage-key}/full/{w},{h}/0/default.jpg"`               | `dlcs-thumbs/1/2/foo/full/100,200/0/default.jpg`       | Location of specific thumbnail using legacy layout                                                |
 | Thumbnail Sizes    | `"{ThumbsBucket}/{storage-key}/s.json"`                                   | `dlcs-thumbs/1/2/foo/s.json`                           | JSON blob storing known thumbnails                                                                |
@@ -23,7 +22,6 @@ The DLCS uses a number of S3 keys in various buckets to store assets. These gene
 | Thumbnail Root     | `"{ThumbsBucket}/{storage-key}/"`                                         | `dlcs-thumbs/1/2/foo/`                                 | Root key where thumbnails will reside                                                             |
 | Output Location    | `"{OutputBucket}/{storage-key}/"`                                         | `dlcs-output/1/2/foo/`                                 | Root key where DLCS 'output' is stored (e.g. projected NQ to PDF or Zip)                          |
 | Origin Location    | `"{OriginBucket}/{storage-key}"`                                          | `dlcs-origin/1/2/foo`                                  | Location where directly uploaded bytes are stored                                                 |
-
 
 ## Timebased
 

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Model.Processing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Processing;
@@ -34,6 +35,31 @@ q.""Customer"", q.""Size"", q.""Name"", b.""BatchesWaiting"", b.""ImagesWaiting"
         catch (Exception ex)
         {
             logger.LogError(ex, "Error getting customer counts for customer {Customer}, queue {Queue}", customer, name);
+            return null;
+        }
+    }
+
+    public async Task<AdjunctQueue?> GetAdjunctQueue(int customer, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // BatchesWaiting/AdjunctsWaiting only count batches that haven't started processing yet (nothing
+            // Completed or Errored) - this excludes batches currently being worked on, which still count towards
+            // Size. Raw SQL rather than EF, as above - a single scan of AdjunctBatches via the subquery, rather
+            // than the two correlated-subquery scans EF would generate for BatchesWaiting/AdjunctsWaiting.
+            const string sql = @"SELECT
+q.""Customer"", q.""Size"", b.""BatchesWaiting"", b.""AdjunctsWaiting"" FROM ""Queues"" q,
+	(SELECT COUNT(""Id"") AS ""BatchesWaiting"", COALESCE(SUM(""Count""), 0) AS ""AdjunctsWaiting""
+    FROM ""AdjunctBatches"" WHERE ""Customer"" = @customer AND ""Finished"" IS NULL AND ""Completed"" = 0
+    AND ""Errors"" = 0) b
+  WHERE q.""Customer"" = @customer AND ""Name"" = @name
+";
+            return await this.QueryFirstOrDefaultAsync<AdjunctQueue>(sql,
+                new { customer, name = QueueNames.Adjunct });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting adjunct queue counts for customer {Customer}", customer);
             return null;
         }
     }

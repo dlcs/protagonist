@@ -73,7 +73,6 @@ public class ImageController : HydraController
     ///     PUT: /customers/1/spaces/1/images/my-image
     ///     {
     ///         "@type":"Image",
-    ///         "family": "I",
     ///         "origin": "https://example.text/.../image.jpeg",
     ///         "mediaType": "image/jpeg",
     ///         "string1": "my-metadata"
@@ -81,12 +80,12 @@ public class ImageController : HydraController
     /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))]
     [ProducesResponseType((int)HttpStatusCode.Created, Type = typeof(DLCS.HydraModel.Image))]
-    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(Error))]
     [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000, ValueLengthLimit = 100_000_000)]
     [HttpPut]
     public async Task<IActionResult> PutImage(
@@ -153,12 +152,12 @@ public class ImageController : HydraController
     ///     }
     /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK, Type = typeof(DLCS.HydraModel.Image))]
-    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(ProblemDetails))]
-    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(ProblemDetails))]
+    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.MethodNotAllowed, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.InsufficientStorage, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.NotImplemented, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.InternalServerError, Type = typeof(Error))]
     [HttpPatch]
     public async Task<IActionResult> PatchImage(
         [FromRoute] int customerId,
@@ -183,7 +182,7 @@ public class ImageController : HydraController
     /// and processed eventually. 
     /// </summary>
     [ProducesResponseType((int)HttpStatusCode.NoContent)]
-    [ProducesResponseType((int)HttpStatusCode.NotFound)]
+    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(Error))]
     [HttpDelete]
     public async Task<IActionResult> DeleteAsset([FromRoute] int customerId, [FromRoute] int spaceId,
         [FromRoute] string imageId, [FromQuery] string? deleteFrom, CancellationToken cancellationToken)
@@ -212,8 +211,8 @@ public class ImageController : HydraController
     ///     POST /customers/99/spaces/10/images/changed_image/reingest
     /// </remarks>
     [ProducesResponseType((int)HttpStatusCode.OK)]
-    [ProducesResponseType((int)HttpStatusCode.NotFound)]
-    [ProducesResponseType((int)HttpStatusCode.BadRequest)]
+    [ProducesResponseType((int)HttpStatusCode.NotFound, Type = typeof(Error))]
+    [ProducesResponseType((int)HttpStatusCode.BadRequest, Type = typeof(Error))]
     [HttpPost]
     [Route("reingest")]
     public Task<IActionResult> ReingestAsset([FromRoute] int customerId, [FromRoute] int spaceId,
@@ -241,7 +240,7 @@ public class ImageController : HydraController
     ///     }
     /// </remarks>
     [ProducesResponseType(201, Type = typeof(DLCS.HydraModel.Image))]
-    [ProducesResponseType(400, Type = typeof(ProblemDetails))]
+    [ProducesResponseType(400, Type = typeof(Error))]
     [HttpPost]  // This should be a PUT? But then it will be the same op to same location as a normal asset without File.
     [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000, ValueLengthLimit = 100_000_000)]
     public async Task<IActionResult> PostImageWithFileBytes(

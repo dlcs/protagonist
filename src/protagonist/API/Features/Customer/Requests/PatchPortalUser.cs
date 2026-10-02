@@ -14,7 +14,7 @@ namespace API.Features.Customer.Requests;
 /// </summary>
 public class PatchPortalUser : IRequest<PatchPortalUserResult>
 {
-    public User PortalUser { get; set; }
+    public required User PortalUser { get; set; }
     public string? Password { get; set; }
 }
 
@@ -44,24 +44,38 @@ public class PatchPortalUserHandler : IRequestHandler<PatchPortalUser, PatchPort
 
     public async Task<PatchPortalUserResult> Handle(PatchPortalUser request, CancellationToken cancellationToken)
     {
-        var dbUser = await dbContext.Users.FindAsync(new object?[]{request.PortalUser.Id}, cancellationToken);
-        if (dbUser == null)
+        const string defaultErrorMessage = "Unable to Patch portal user.";
+        
+        var dbUser = await dbContext.Users.FindAsync([request.PortalUser.Id], cancellationToken);
+        if (dbUser == null || dbUser.Customer != request.PortalUser.Customer)
         {
-            return new PatchPortalUserResult() { Error = "No such user" };
+            return new PatchPortalUserResult { Error = "No such user" };
         }
-
+        
         if (request.PortalUser.Email.HasText() && request.PortalUser.Email != dbUser.Email)
         {
-            var existingUserWithEmail = await dbContext.Users.SingleOrDefaultAsync(
-                u => u.Email == request.PortalUser.Email, cancellationToken: cancellationToken);
-            if (existingUserWithEmail != null)
-            {
-                return new PatchPortalUserResult() { Conflict = true, Error = "A user with that email already exists." };
-            }
             if (!request.PortalUser.Email.IsValidEmail())
             {
                 return new PatchPortalUserResult { Error = "Email address is invalid" };
             }
+
+            var requestEmail = request.PortalUser.Email.ToLower();
+            var emailInThisCustomer = await dbContext.Users.AnyAsync(
+                u => u.Customer == dbUser.Customer && u.Id != dbUser.Id && u.Email.ToLower() == requestEmail,
+                cancellationToken);
+            if (emailInThisCustomer)
+            {
+                return new PatchPortalUserResult { Conflict = true, Error = "Portal user already exists." };
+            }
+
+            var emailInAnyCustomer = await dbContext.Users.AnyAsync(
+                u => u.Id != dbUser.Id && u.Email.ToLower() == requestEmail, cancellationToken);
+            if (emailInAnyCustomer)
+            {
+                // deliberately opaque: don't reveal that the email is in use by another customer
+                return new PatchPortalUserResult { Conflict = true, Error = defaultErrorMessage };
+            }
+
             dbUser.Email = request.PortalUser.Email;
         }
         if (request.Password.HasText())
@@ -87,7 +101,7 @@ public class PatchPortalUserHandler : IRequestHandler<PatchPortalUser, PatchPort
         
         return new PatchPortalUserResult
         {
-            Error = "Unable to Patch portal user."
+            Error = defaultErrorMessage
         };
     }
 }

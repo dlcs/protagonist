@@ -62,7 +62,7 @@ public static class S3Extensions
         => metadataResponse.Headers.ToObjectInBucketHeaders(metadataResponse.ETag, metadataResponse.LastModified);
 
     private static ObjectInBucketHeaders ToObjectInBucketHeaders(this HeadersCollection headersCollection, string eTag,
-        DateTime lastModified)
+        DateTime? lastModified)
         => new()
         {
             CacheControl = headersCollection.CacheControl,
@@ -71,8 +71,8 @@ public static class S3Extensions
             ContentLength = headersCollection.ContentLength == -1L ? null : headersCollection.ContentLength,
             ContentMD5 = headersCollection.ContentMD5,
             ContentType = headersCollection.ContentType,
-            ExpiresUtc = headersCollection.ExpiresUtc,
+            ExpiresUtc = headersCollection.Expires,
             ETag = eTag,
-            LastModified = lastModified,
+            LastModified = lastModified.GetValueOrDefault(),
         };
 }

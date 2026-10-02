@@ -12,6 +12,7 @@ public class CollectionXTests
     {
         IEnumerable<int> coll = null;
 
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
         coll.IsNullOrEmpty().Should().BeTrue();
     }
     
@@ -36,6 +37,7 @@ public class CollectionXTests
     {
         List<int> coll = null;
 
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalse
         coll.IsNullOrEmpty().Should().BeTrue();
     }
     
@@ -60,6 +62,7 @@ public class CollectionXTests
     {
         List<int> coll = null;
 
+        // ReSharper disable once ExpressionIsAlwaysNull
         coll.IsEmpty().Should().BeFalse();
     }
     
@@ -133,6 +136,7 @@ public class CollectionXTests
     {
         int[] coll = null;
 
+        // ReSharper disable once ExpressionIsAlwaysNull
         coll.ContainsOnly(123).Should().BeFalse();
     }
     
@@ -176,5 +180,82 @@ public class CollectionXTests
         var list = item.AsArray();
 
         list.Should().ContainSingle(i => i == item);
+    }
+
+    [Fact]
+    public void ToSeparatedString_ReturnsEmptyString_IfNull()
+    {
+        IEnumerable<string> coll = null;
+
+        // ReSharper disable once ExpressionIsAlwaysNull
+        coll.ToSeparatedString().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ToSeparatedString_ReturnsEmptyString_IfEmpty()
+    {
+        var coll = Enumerable.Empty<string>();
+
+        coll.ToSeparatedString().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ToSeparatedString_JoinsWithDefaultSeparator()
+    {
+        var coll = new[] { "a", "b", "c" };
+
+        coll.ToSeparatedString().Should().Be("a,b,c");
+    }
+
+    [Fact]
+    public void ToSeparatedString_JoinsWithSpecifiedSeparator()
+    {
+        var coll = new[] { "a", "b", "c" };
+
+        coll.ToSeparatedString('|').Should().Be("a|b|c");
+    }
+
+    [Fact]
+    public void ToSeparatedString_OnlyEnumeratesSourceOnce()
+    {
+        // Arrange - a lazy source that records each time it's enumerated from the start
+        var enumerationCount = 0;
+        IEnumerable<string> Source()
+        {
+            enumerationCount++;
+            yield return "a";
+            yield return "b";
+        }
+
+        // Act
+        var result = Source().ToSeparatedString();
+
+        // Assert
+        result.Should().Be("a,b");
+        enumerationCount.Should().Be(1);
+    }
+
+    [Fact]
+    public void AddRange_List()
+    {
+        var initial = new List<int> { 2 };
+        var toAdd = new List<int> { 2, 3 };
+        var expected = new List<int> { 2, 2, 3 };
+
+        initial.AddRange(toAdd);
+        initial.Should().BeEquivalentTo(expected);
+    }
+    
+    [Fact]
+    public void AddRange_Hashset()
+    {
+        var initial = new HashSet<int> { 2 };
+        var toAdd = new HashSet<int> { 2, 3 };
+        
+        // Will de-duplicate automatically
+        var expected = new HashSet<int> { 2, 3 };
+
+        initial.AddRange(toAdd);
+        initial.Should().BeEquivalentTo(expected);
     }
 }
