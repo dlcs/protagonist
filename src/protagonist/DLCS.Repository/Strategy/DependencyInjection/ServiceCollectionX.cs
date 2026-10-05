@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Net.Http;
 using DLCS.Model.Customers;
+using DLCS.Repository.OriginStrategies;
 using DLCS.Repository.SFTP;
 using DLCS.Repository.Strategy.Utils;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace DLCS.Repository.Strategy.DependencyInjection;
 
@@ -22,9 +25,14 @@ public static class ServiceCollectionX
     /// to get specific implementation by <see cref="OriginStrategyType"/>.
     /// </summary>
     /// <param name="services">Current <see cref="IServiceCollection"/> object</param>
+    /// <param name="configuration">Current <see cref="IConfiguration"/> object</param>
     /// <returns>Modified service collection</returns>
-    public static IServiceCollection AddOriginStrategies(this IServiceCollection services)
+    public static IServiceCollection AddOriginStrategies(this IServiceCollection services,
+        IConfiguration configuration)
     {
+        var originStrategySettings = OriginStrategySettings.FromConfiguration(configuration);
+        var addressPolicy = new OriginAddressPolicy(originStrategySettings);
+
         services
             .AddSingleton<S3AmbientOriginStrategy>()
             .AddSingleton<DefaultOriginStrategy>()
@@ -34,6 +42,10 @@ public static class ServiceCollectionX
             .AddSingleton<IFileSaver, FileSaver>()
             .AddSingleton<ISftpReader, SftpReader>()
             .AddSingleton<ISftpWrapper, SftpWrapper>()
+            // Policy is constructed above, rather than by DI, so that an invalid range fails at startup; the
+            // factory is only here to get hold of a logger
+            .AddSingleton<IOriginAddressPolicy>(provider => LogAllowedRanges(addressPolicy, provider))
+            .AddSingleton<OriginConnectionGuard>()
             .AddSingleton<OriginStrategyResolver>(provider => strategy => strategy switch
             {
                 OriginStrategyType.Default => provider.GetRequiredService<DefaultOriginStrategy>(),
@@ -49,12 +61,34 @@ public static class ServiceCollectionX
                 client.DefaultRequestHeaders.Add("Accept", "*/*");
                 client.DefaultRequestHeaders.Add("User-Agent", "DLCS/2.0");
             })
-            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            .ConfigurePrimaryHttpMessageHandler(provider => new SocketsHttpHandler
             {
                 AllowAutoRedirect = true,
-                MaxAutomaticRedirections = 8
+                MaxAutomaticRedirections = 8,
+                ConnectCallback = provider.GetRequiredService<OriginConnectionGuard>().ConnectAsync,
+
+                // A proxy would resolve the origin host on our behalf, leaving OriginConnectionGuard to check the
+                // proxy address only. Disabled so that an ambient HTTP_PROXY can't defeat the address checks
+                UseProxy = false
             });
 
         return services;
+    }
+
+    /// <summary>
+    /// Warn about any configured <see cref="OriginStrategySettings.AllowedIpRanges"/> - these weaken the origin
+    /// address checks, so a setting that has escaped local development shouldn't be able to do so quietly.
+    /// This is output on first resolution, not startup.
+    /// </summary>
+    private static OriginAddressPolicy LogAllowedRanges(OriginAddressPolicy addressPolicy, IServiceProvider provider)
+    {
+        if (addressPolicy.AllowedRanges.Count > 0)
+        {
+            provider.GetRequiredService<ILogger<OriginAddressPolicy>>().LogWarning(
+                "Origins are permitted to resolve to {AllowedOriginRanges}, which would otherwise be blocked",
+                addressPolicy.AllowedRanges);
+        }
+
+        return addressPolicy;
     }
 }

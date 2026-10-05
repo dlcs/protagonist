@@ -12,3 +12,12 @@ public static class AssetIdGenerator
         string assetPostfix = "")
         => new(customer, space, $"{asset}{assetPostfix}");
 }
+
+public static class AdjunctIdGenerator
+{
+    /// <summary>
+    /// Generate new test adjunct id using calling function and optional postfix
+    /// </summary>
+    public static string GetAdjunctId([CallerMemberName] string adjunct = "", string postfix = "")
+        => $"{adjunct}{postfix}";
+}

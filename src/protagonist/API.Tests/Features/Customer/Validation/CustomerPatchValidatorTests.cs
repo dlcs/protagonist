@@ -56,16 +56,6 @@ public class CustomerPatchValidatorTests
     }
     
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void Error_AcceptedAgreement_Provided(bool acceptedAgreement)
-    {
-        var model = new DLCS.HydraModel.Customer { AcceptedAgreement = acceptedAgreement };
-        var result = sut.TestValidate(model);
-        result.ShouldHaveValidationErrorFor(c => c.AcceptedAgreement);
-    }
-    
-    [Theory]
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]

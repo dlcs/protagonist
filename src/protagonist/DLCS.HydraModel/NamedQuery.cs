@@ -23,7 +23,6 @@ namespace DLCS.HydraModel;
                   " constructs a IIIF resource from them, using the parameters provided. Information on designing and configuring named queries is" +
                   " provided in a special topic.",
     UriTemplate = "/customers/{0}/namedQueries/{1}")]
-[Unstable(Note = "Currently the named query implementation is a placeholder,")]
 public class NamedQuery : DlcsResource
 {
     [JsonIgnore]
@@ -56,7 +55,7 @@ public class NamedQuery : DlcsResource
 
     [RdfProperty(Description = "URI template",
         Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 11, PropertyName = "template")]
+    [JsonProperty(Order = 12, PropertyName = "template")]
     public string? Template { get; set; }
 
 }
@@ -72,6 +71,6 @@ public class NamedQueryClass : Class
     {
         SupportedOperations = CommonOperations.GetStandardResourceOperations(
             "_:customer_namedqueries_", "Named Query", Id,
-            "GET", "PUT", "PATCH", "DELETE");
+            "GET", "PUT", "DELETE");
     }
 }

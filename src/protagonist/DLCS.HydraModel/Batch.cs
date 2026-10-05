@@ -62,25 +62,18 @@ public class Batch : DlcsResource
     [JsonProperty(Order = 14, PropertyName = "superseded")]
     public bool Superseded { get; set; }
 
-    [RdfProperty(Description = "Estimated Completion (best guess as to when this batch might be finished)",
-        Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 15, PropertyName = "estCompletion")]
-    public DateTime? EstCompletion { get; set; }
-
     [HydraLink(Description = "Collection of all the images in the batch",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 20, PropertyName = "images")]
     public string? Images { get; set; }
 
-    [HydraLink(Description = "Collection of images that have completed processing",
+    [HydraLink(Description = "Collection of all the assets specified by the batch at creation time, " +
+                             "whatever their current state. Many batches can include the same asset in this " +
+                             "collection, whereas only one batch can include an asset in its images collection. " +
+                             "Supports asset query parameters (q, orderBy, orderByDescending, page, pageSize).",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 20, PropertyName = "completedImages")]
-    public string? CompletedImages { get; set; }
-
-    [HydraLink(Description = "Collection of images that encountered errors",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 20, PropertyName = "errorImages")]
-    public string? ErrorImages { get; set; }
+    [JsonProperty(Order = 21, PropertyName = "assets")]
+    public string? Assets { get; set; }
 
     [HydraLink(Description = "POST to this to force an update of the batch's superseded property. " +
                              "Returns JSON object with single success property (boolean). ",
@@ -113,20 +106,13 @@ public class BatchClass : Class
                 null)
         };
 
-        GetHydraLinkProperty("completedImages").SupportedOperations = new[]
+        GetHydraLinkProperty("assets").SupportedOperations = new[]
         {
             CommonOperations.StandardCollectionGet(
-                operationId + "completedImage_collection_retrieve",
-                "Retrieves all COMPLETED images in batch",
-                null)
+                operationId + "asset_collection_retrieve",
+                "Retrieves all assets specified by the batch at creation time",
+                "Can take query parameters")
         };
 
-        GetHydraLinkProperty("errorImages").SupportedOperations = new[]
-        {
-            CommonOperations.StandardCollectionGet(
-                operationId + "errorImage_collection_retrieve",
-                "Retrieves all ERROR images in batch",
-                null)
-        };
     }
 }

@@ -55,6 +55,7 @@ public class StoredNamedQueryManager(
         // If we hit here there is no projection - create one
         var imageResults = await namedQueryResult.Results
             .IncludeRelationsForProjections()
+            .OrderByNamedQuery(parsedNamedQuery)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
         if (imageResults.Count == 0)

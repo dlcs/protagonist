@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Nodes;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.SQS;
 using DLCS.AWS.Transcoding;
 using DLCS.AWS.Transcoding.Models;
@@ -14,11 +15,14 @@ public class TranscodeCompleteHandlerTests
 {
     private readonly TranscodeCompleteHandler sut;
     private readonly ITimebasedIngestorCompletion completion;
+    private readonly ICustomerAwsContext customerAwsContext;
 
     public TranscodeCompleteHandlerTests()
     {
         completion = A.Fake<ITimebasedIngestorCompletion>();
-        sut = new TranscodeCompleteHandler(completion, NullLogger<TranscodeCompleteHandler>.Instance);
+        customerAwsContext = new AsyncLocalCustomerAwsContext();
+        sut = new TranscodeCompleteHandler(completion, customerAwsContext,
+            NullLogger<TranscodeCompleteHandler>.Instance);
     }
     
     [Fact]
@@ -132,5 +136,30 @@ public class TranscodeCompleteHandlerTests
 
         // Assert
         result.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_SetsCustomerAwsContext_ForDurationOfCompletion()
+    {
+        // Arrange
+        const string fileName = "MediaConvertNotification.json";
+        var filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Samples", fileName);
+
+        var queueMessage = new QueueMessage
+        {
+            Body = JsonObject.Parse(System.IO.File.OpenRead(filePath)).AsObject()
+        };
+
+        int? customerDuringCompletion = null;
+        A.CallTo(() => completion.CompleteSuccessfulIngest(A<AssetId>._, A<int?>._, A<string>._, A<CancellationToken>._))
+            .Invokes(() => customerDuringCompletion = customerAwsContext.CurrentCustomer)
+            .Returns(true);
+
+        // Act
+        await sut.HandleMessage(queueMessage, CancellationToken.None);
+
+        // Assert
+        customerDuringCompletion.Should().Be(2, "AWS requests are scoped to the customer that owns the asset");
+        customerAwsContext.CurrentCustomer.Should().BeNull("customer is cleared once the message is handled");
     }
 }

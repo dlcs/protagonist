@@ -368,6 +368,6 @@ public class S3StorageKeyGeneratorTests
         
         // Assert
         result.Bucket.Should().Be("timebased-out");
-        result.Key.Should().Be($"{jobId}/10/20/foo-bar/transcode");
+        result.Key.Should().Be($"10/20/foo-bar/{jobId}/transcode");
     }
 }

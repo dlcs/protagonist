@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Extensions.Logging;
+using IPNetwork = System.Net.IPNetwork;
 
 namespace DLCS.Web.Configuration;
 
@@ -41,7 +42,7 @@ public static class ServiceCollectionX
             if (knownNetworks.Equals(allNetworks))
             {
                 logger.LogWarning("Forwarded header values accepted from all networks and proxies");
-                opts.KnownNetworks.Clear();
+                opts.KnownIPNetworks.Clear();
                 opts.KnownProxies.Clear();
             }
             else
@@ -49,7 +50,7 @@ public static class ServiceCollectionX
                 logger.LogInformation("Forwarded header values accepted from networks: {KnownNetworks}", knownNetworks);
                 foreach (var kn in knownNetworks.SplitSeparatedString(","))
                 {
-                    opts.KnownNetworks.Add(IPNetwork.Parse(kn));
+                    opts.KnownIPNetworks.Add(IPNetwork.Parse(kn));
                 }
             }
         });

@@ -12,9 +12,30 @@
         <PackageReference Include="LazyCache.AspNetCore"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug"/>
+        <PackageReference Include="NetVips"/>
         <PackageReference Include="Serilog.AspNetCore"/>
-        <PackageReference Include="SixLabors.ImageSharp"/>
     </ItemGroup>
+
+    <PropertyGroup>
+        <!-- libvips is a native dependency, so it must match the runtime being *targeted*, not the machine doing the
+             build. A RID-specific build (dotnet publish -r ...) names its target; a RID-agnostic one, as the
+             Dockerfiles use, can only be for the build host. -->
+        <VipsRuntimeIdentifier Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</VipsRuntimeIdentifier>
+        <VipsRuntimeIdentifier Condition="'$(VipsRuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Linux'))">linux-x64</VipsRuntimeIdentifier>
+        <VipsRuntimeIdentifier Condition="'$(VipsRuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('Windows'))">win-x64</VipsRuntimeIdentifier>
+        <VipsRuntimeIdentifier Condition="'$(VipsRuntimeIdentifier)' == '' And $([MSBuild]::IsOSPlatform('OSX'))">osx-arm64</VipsRuntimeIdentifier>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Only the matching RID is pulled in - the full set of NetVips.Native.* packages is ~25MB each.
+             Add a PackageVersion to Directory.Packages.props to support another RID. -->
+        <PackageReference Include="NetVips.Native.$(VipsRuntimeIdentifier)"
+                          Condition="'$(VipsRuntimeIdentifier)' != ''"/>
+    </ItemGroup>
+
+    <Target Name="WarnIfNoLibVips" BeforeTargets="Build" Condition="'$(VipsRuntimeIdentifier)' == ''">
+        <Warning Text="No NetVips.Native package matches this build - Thumbs will fail to start when resizing is enabled. Add a NetVips.Native.&lt;rid&gt; PackageVersion for '$(RuntimeIdentifier)'."/>
+    </Target>
 
     <ItemGroup>
         <ProjectReference Include="..\DLCS.Repository\DLCS.Repository.csproj"/>

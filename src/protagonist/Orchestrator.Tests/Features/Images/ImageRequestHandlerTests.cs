@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using DLCS.Core.Exceptions;
@@ -312,7 +313,7 @@ public class ImageRequestHandlerTests
     [InlineData("/full/901,901/", "Size too large")]
     [InlineData("/full/max/", "Max size")]
     [InlineData("/0,0,900,900/900,/", "Tiled region")]
-    [InlineData("/pct:0,0,512,512/!10,10/", "Percent region")]
+    [InlineData("/pct:0,0,50,50/!10,10/", "Percent region")]
     [InlineData("/square/!901,901/", "Square region too large")]
     public async Task HandleRequest_Returns401_IfAssetRequiresAuth_AndUserNotAuthorised_AndRequestNotForOpenFullMax(
         string iiifRequest, string reason)
@@ -596,7 +597,7 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/v2/2/2/test-image/0,0,512,512/max/0/default.jpg", true, "0,0,512,512/5000,5000/0/default.jpg", true)] // v2 /max
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/max/0/default.jpg", true, "0,0,512,512/512,512/0/default.jpg", false)] // v3 /max
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/^max/0/default.jpg", true, "0,0,512,512/^5000,5000/0/default.jpg", false)] // v3 /^max
-    [InlineData("/iiif-img/v2/2/2/test-image/pct:0,0,512,512/full/0/default.jpg", true, "pct:0,0,512,512/1000,1000/0/default.jpg", true)] // pct: full v2
+    [InlineData("/iiif-img/v2/2/2/test-image/pct:0,0,50,50/full/0/default.jpg", true, "pct:0,0,50,50/500,500/0/default.jpg", true)] // pct: full v2
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.png", false, "0,0,512,512/100,100/0/default.png", false)] // png
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.tif", false, "0,0,512,512/100,100/0/default.tif", false)] // tif
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/90/default.jpg", false, "0,0,512,512/100,100/90/default.jpg", false)] // rotation
@@ -858,13 +859,109 @@ public class ImageRequestHandlerTests
     }
     # endregion
 
+    # region GatewayToken
+    // Tokens below are for the "s3://storage/2/2/test-image" and "%2F2%2F2%2Ftest-image" identifiers, signed with
+    // secret "shared-secret" in time bucket 981792 (ie 2026-01-01T00:00:00Z with a 1800s window)
+    [Fact]
+    public async Task HandleRequest_SpecialServer_SetsGatewayTokenForIdentifier()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/iiif-img/2/2/test-image/full/max/0/default.png";
+
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000,
+                Size = new Size(1000, 1000), S3Location = "s3://storage/2/2/test-image"
+            });
+        var sut = GetImageRequestHandlerWithMockPathParser(gatewayTokenGenerator: GetGatewayTokenGenerator());
+
+        // Act
+        var result = (ProxyActionResult)await sut.HandleRequest(context);
+
+        // Assert
+        result.Target.Should().Be(ProxyDestination.SpecialServer);
+        result.GatewayToken.Should().Be("a4a740031b1d1a9adce384fedaf7c3144f6844bc103c3401bac5d510c6507fb3");
+    }
+
+    [Fact]
+    public async Task HandleRequest_ImageServer_SetsGatewayTokenForIdentifier()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/iiif-img/2/2/test-image/0,0,512,512/256,/0/default.jpg";
+
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000,
+                Size = new Size(1000, 1000), S3Location = "s3://storage/2/2/test-image"
+            });
+        var settings = CreateOrchestratorSettings();
+        settings.ImageServerPathConfig[ImageServer.Cantaloupe].PathTemplate = "%2F{customer}%2F{space}%2F{image}";
+        var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: settings,
+            gatewayTokenGenerator: GetGatewayTokenGenerator());
+
+        // Act
+        var result = (ProxyActionResult)await sut.HandleRequest(context);
+
+        // Assert
+        result.Target.Should().Be(ProxyDestination.ImageServer);
+        result.GatewayToken.Should().Be("2a31b4f832e300188d2061116af14e2ec474d6322721e3b1bfdab9f0f4744f85");
+    }
+
+    [Fact]
+    public async Task HandleRequest_DoesNotSetGatewayToken_IfNoSecretConfigured()
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/iiif-img/2/2/test-image/full/max/0/default.png";
+
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000,
+                Size = new Size(1000, 1000), S3Location = "s3://storage/2/2/test-image"
+            });
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        // Act
+        var result = (ProxyActionResult)await sut.HandleRequest(context);
+
+        // Assert
+        result.GatewayToken.Should().BeNull();
+    }
+
+    private static GatewayTokenGenerator GetGatewayTokenGenerator()
+    {
+        var timeProvider = A.Fake<TimeProvider>();
+        A.CallTo(() => timeProvider.GetUtcNow()).Returns(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+
+        var settings = new OrchestratorSettings
+        {
+            GatewayToken = new GatewayTokenSettings { Secret = "shared-secret", WindowSecs = 1800 }
+        };
+        return new GatewayTokenGenerator(Options.Create(settings), new NullLogger<GatewayTokenGenerator>(),
+            timeProvider);
+    }
+    # endregion
+
     private ImageRequestHandler GetImageRequestHandlerWithMockPathParser(bool mockPathParser = false,
-        OrchestratorSettings orchestratorSettings = null)
+        OrchestratorSettings orchestratorSettings = null, GatewayTokenGenerator gatewayTokenGenerator = null)
     {
         // mockPathParser = true will return A.Fake, else return actual impl with fake repo 
         var requestProcessor = new AssetRequestProcessor(new NullLogger<AssetRequestProcessor>(), assetTracker, adjunctTracker,
             mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl);
+        var settings = Options.Create(orchestratorSettings ?? CreateOrchestratorSettings());
         return new(new NullLogger<ImageRequestHandler>(), requestProcessor, scopeFactory, customHeaderRepository,
-            Options.Create(orchestratorSettings ?? CreateOrchestratorSettings()));
+            settings,
+            gatewayTokenGenerator ?? new GatewayTokenGenerator(settings, new NullLogger<GatewayTokenGenerator>()));
     }
 }

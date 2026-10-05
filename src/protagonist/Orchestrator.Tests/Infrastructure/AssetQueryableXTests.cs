@@ -116,5 +116,25 @@ public class AssetQueryableXTests
         asset.Adjuncts.Should().HaveCount(3);
         asset.Adjuncts.Should().BeInAscendingOrder(a => a.Id);
     }
+
+    [Fact]
+    public async Task IncludeRelationsForProjections_ReturnsHostedAdjuncts()
+    {
+        var assetId = AssetIdGenerator.GetAssetId();
+        const string externalAdjunctId = "external-adjunct";
+        const string hostedAdjunctId = "hosted-adjunct";
+        await dbContext.Images
+            .AddTestAsset(assetId)
+            .WithTestAdjunct(externalAdjunctId, externalId: "https://example.com/external")
+            .WithTestAdjunct(hostedAdjunctId, origin: "https://example.com/hosted-origin");
+        await dbContext.SaveChangesAsync();
+
+        var asset = await dbContext.Images.Where(i => i.Id == assetId).IncludeRelationsForProjections().SingleAsync();
+
+        asset.Should().NotBeNull();
+        asset.Adjuncts.Should().HaveCount(2);
+        asset.Adjuncts.Should().Contain(a => a.Id == hostedAdjunctId && a.Origin == "https://example.com/hosted-origin");
+        asset.Adjuncts.Should().Contain(a => a.Id == externalAdjunctId);
+    }
 }
 

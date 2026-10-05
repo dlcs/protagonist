@@ -20,7 +20,7 @@ public class S3ExtensionsTests
                 ContentEncoding = "gzip",
                 ContentLength = 132123,
                 ContentType = "application/json",
-                ExpiresUtc = DateTime.UtcNow,
+                Expires = DateTime.UtcNow,
                 ContentMD5 = "md5",
             },
             ETag = "my-e-tag",
@@ -37,7 +37,7 @@ public class S3ExtensionsTests
         objectFromBucket.Headers.ContentEncoding.Should().Be(getObjectResponse.Headers.ContentEncoding);
         objectFromBucket.Headers.ContentLength.Should().Be(getObjectResponse.Headers.ContentLength);
         objectFromBucket.Headers.ContentType.Should().Be(getObjectResponse.Headers.ContentType);
-        objectFromBucket.Headers.ExpiresUtc.Should().Be(getObjectResponse.Headers.ExpiresUtc);
+        objectFromBucket.Headers.ExpiresUtc.Should().Be(getObjectResponse.Headers.Expires);
         objectFromBucket.Headers.ContentMD5.Should().Be(getObjectResponse.Headers.ContentMD5);
         objectFromBucket.Headers.ETag.Should().Be(getObjectResponse.ETag);
         objectFromBucket.Headers.LastModified.Should().Be(getObjectResponse.LastModified);

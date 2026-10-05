@@ -32,36 +32,28 @@ public class Image : DlcsResource
     [JsonIgnore]
     public string? StorageIdentifier { get; set; }
 
-    [RdfProperty(Description = "The identifier for the image within the space - its URI component.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+    [RdfProperty(Description = "The identifier for the image within the space - its URI component. " +
+                               "Determined by the request URL; a value in a request body must agree with it.",
+        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 10, PropertyName = "id")]
     public string? ModelId { get; set; }
-    
+
+    [RdfProperty(Description = "The identifier of the space this image belongs to. Determined by the request URL; " +
+                               "an image cannot be moved to another space.",
+        Range = Names.XmlSchema.Integer, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 10, PropertyName = "space")]
     public int? Space { get; set; }
 
     [RdfProperty(Description = "image service URI - where the IIIF Image API is exposed for this image",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 11, PropertyName = "imageService")]
     public string? ImageService  { get; set; }
-    
 
-    [RdfProperty(Description = "Degraded info.json URI - if a user does not have permission to view the full image, " +
-                               "but a degraded image is permitted, the DLCS will redirect them to this URI.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
-    [JsonProperty(Order = 12, PropertyName = "degradedInfoJson")]
-    public string? DegradedInfoJson { get; set; }
-    
     [RdfProperty(Description = "Thumbnail image service URI",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 13, PropertyName = "thumbnailImageService")]
     public string? ThumbnailImageService { get; set; }
 
-    [RdfProperty(Description = "Direct URI of the 400 pixel thumbnail",
-        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 13, PropertyName = "thumbnail400")]
-    public string? Thumbnail400 { get; set; }
-    
     [RdfProperty(Description = "Date the image was added",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 14, PropertyName = "created")]
@@ -93,16 +85,6 @@ public class Image : DlcsResource
     [JsonProperty(Order = 19, PropertyName = "openFullMax")]
     public int? OpenFullMax { get; set; }
     
-    [RdfProperty(Description = "When the image was added to the queue",
-        Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 30, PropertyName = "queued")]
-    public DateTime? Queued { get; set; }
-
-    [RdfProperty(Description = "When the image was taken off the queue",
-        Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 31, PropertyName = "dequeued")]
-    public DateTime? Dequeued { get; set; }
-    
     [RdfProperty(Description = "When the image processing finished (image ready)",
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 32, PropertyName = "finished")]
@@ -114,7 +96,7 @@ public class Image : DlcsResource
     public bool? Ingesting { get; set; }
 
     [RdfProperty(Description = "Reported errors with this image",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 40, PropertyName = "error")]
     public string? Error { get; set; }
     
@@ -189,8 +171,8 @@ public class Image : DlcsResource
     [JsonProperty(Order = 82, PropertyName = "storage")]
     public string? Storage { get; set; } 
     
-    [RdfProperty(Description = "Media Type (content type)",
-        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
+    [RdfProperty(Description = "Media Type (content type). Required when registering an asset and on every PUT.",
+        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 120, PropertyName = "mediaType")]
     public string? MediaType { get; set; }
     
@@ -199,19 +181,8 @@ public class Image : DlcsResource
     [JsonProperty(Order = 130, PropertyName = "family")]
     public AssetFamily? Family { get; set; } 
     
-    // TODO - Replace this with https://github.com/dlcs/protagonist/issues/148
-    [RdfProperty(Description = "URI of a text source for this asset (e.g., OCR data, captions etc",
-        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 120, PropertyName = "text")]
-    public string? Text { get; set; }
-    
-    [RdfProperty(Description = "Media type and/or profile to identify the format of the text",
-        Range = Names.XmlSchema.String, ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 130, PropertyName = "textType")]
-    public string? TextType { get; set; } // e.g., METS-ALTO, hOCR, TEI, text/plain etc
-    
-    [RdfProperty(Description = "Delivery channel specifying how the asset will be available.",
-        Range = Names.XmlSchema.String, ReadOnly = false, WriteOnly = false)]
+    [RdfProperty(Description = "The delivery channels this asset is available on, determines what the platform produces for the asset.",
+        Range = "vocab:DeliveryChannel", ReadOnly = false, WriteOnly = false)]
     [JsonProperty(Order = 140, PropertyName = "deliveryChannels")]
     [JsonConverter(typeof(ImageDeliveryChannelsConverter))]
     public DeliveryChannel[]? DeliveryChannels { get; set; }
@@ -228,20 +199,34 @@ public class Image : DlcsResource
     [JsonProperty(Order = 71, PropertyName = "batch")]
     public string? Batch { get; set; }
     
-    [HydraLink(Description = "The image optimisation policy used when this image was last processed (e.g., registered)",
+    [Obsolete("Use deliveryChannels instead. May still appear on assets processed before delivery channels existed.")]
+    [HydraLink(Description = "Deprecated - use deliveryChannels instead. The image optimisation policy used when " +
+                             "this image was last processed; may still appear on assets processed before delivery " +
+                             "channels existed. Cannot be set.",
         Range = "vocab:ImageOptimisationPolicy", ReadOnly = true, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 80, PropertyName = "imageOptimisationPolicy")]
     public string? ImageOptimisationPolicy { get; set; }
 
-    [HydraLink(Description = "The thumbnail settings used when this image was last processed (e.g., registered)",
+    [Obsolete("Use deliveryChannels instead. May still appear on assets processed before delivery channels existed.")]
+    [HydraLink(Description = "Deprecated - use deliveryChannels instead. The thumbnail settings used when this " +
+                             "image was last processed; may still appear on assets processed before delivery " +
+                             "channels existed. Cannot be set.",
         Range = "vocab:ThumbnailPolicy", ReadOnly = true, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 81, PropertyName = "thumbnailPolicy")]
     public string? ThumbnailPolicy { get; set; }
     
-    [HydraLink(Description = "The manifests associated with this asset",
-        Range = "vocab:Manifests", ReadOnly = true, WriteOnly = false, SetManually = true)]
+    [HydraLink(Description = "The manifests associated with this asset. This property is maintained by the " +
+                             "platform's IIIF Presentation component; although writeable, it should not be " +
+                             "modified in normal operations",
+        Range = "vocab:Manifests", ReadOnly = false, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 82, PropertyName = "manifests")]
     public string[]? Manifests { get; set; }
+
+    [HydraLink(Description = "IIIF Presentation manifest generated by the platform for this asset, " +
+                             "presenting the outputs of its delivery channels",
+        Range = "iiif:Manifest", ReadOnly = true, WriteOnly = false, SetManually = true)]
+    [JsonProperty(Order = 83, PropertyName = "manifest")]
+    public string? Manifest { get; set; }
 }
 
 public class ImageClass: Class

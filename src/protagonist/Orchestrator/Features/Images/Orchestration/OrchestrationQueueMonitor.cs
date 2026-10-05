@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using DLCS.Web.Logging;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -9,20 +10,12 @@ namespace Orchestrator.Features.Images.Orchestration;
 /// <summary>
 /// BackgroundService that monitors queue for requests to orchestrate images.
 /// </summary>
-public class OrchestrationQueueMonitor : BackgroundService
+public class OrchestrationQueueMonitor(
+    IOrchestrationQueue orchestrationQueue,
+    IImageOrchestrator imageOrchestrator,
+    ILogger<OrchestrationQueueMonitor> logger)
+    : BackgroundService
 {
-    private readonly IOrchestrationQueue orchestrationQueue;
-    private readonly IImageOrchestrator imageOrchestrator;
-    private readonly ILogger<OrchestrationQueueMonitor> logger;
-
-    public OrchestrationQueueMonitor(IOrchestrationQueue orchestrationQueue, IImageOrchestrator imageOrchestrator,
-        ILogger<OrchestrationQueueMonitor> logger)
-    {
-        this.orchestrationQueue = orchestrationQueue;
-        this.imageOrchestrator = imageOrchestrator;
-        this.logger = logger;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Starting OrchestrationQueueMonitor");
@@ -34,7 +27,10 @@ public class OrchestrationQueueMonitor : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var orchestrationImage = await orchestrationQueue.DequeueRequest(stoppingToken);
+            var (orchestrationImage, correlationId) = await orchestrationQueue.DequeueRequest(stoppingToken);
+
+            // Re-establish the correlation-id of the request that queued this, so orchestration can be tied back to it
+            using var _ = LogContextHelpers.SetCorrelationId(correlationId ?? $"n_{Guid.NewGuid().ToString()}");
 
             try
             {

@@ -22,16 +22,16 @@ public static class CustomHeaderConverter
     /// <summary>
     /// Convert Hydra CustomHeader entity to EF resource
     /// </summary>
-    public static DLCS.Model.Assets.CustomHeaders.CustomHeader ToDlcsModel(this DLCS.HydraModel.CustomHeader hydraNamedQuery)
+    public static DLCS.Model.Assets.CustomHeaders.CustomHeader ToDlcsModel(this DLCS.HydraModel.CustomHeader hydraCustomHeader)
     {
         return new DLCS.Model.Assets.CustomHeaders.CustomHeader()
         {
-            Id = hydraNamedQuery.ModelId,
-            Customer = hydraNamedQuery.CustomerId,
-            Space = hydraNamedQuery.SpaceId,
-            Role = hydraNamedQuery.Role,
-            Key = hydraNamedQuery.Key,
-            Value = hydraNamedQuery.Value
+            Id = hydraCustomHeader.ModelId,
+            Customer = hydraCustomHeader.CustomerId,
+            Space = hydraCustomHeader.SpaceId,
+            Role = hydraCustomHeader.Role,
+            Key = hydraCustomHeader.Key,
+            Value = hydraCustomHeader.Value
         };
     }
 }

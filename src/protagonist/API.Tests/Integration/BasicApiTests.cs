@@ -31,6 +31,7 @@ public class BasicApiTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var ep = await response.ReadAsHydraResponseAsync<EntryPoint>();
         ep.Should().NotBeNull();
         ep.Type.Should().Be("vocab:EntryPoint");
+        ep.Queue.Should().EndWith("/queue", "the entry point advertises the global queue summary");
     }
 
     [Fact]

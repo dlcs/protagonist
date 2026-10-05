@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using API.Features.Adjuncts;
 using API.Features.Assets;
@@ -6,6 +7,7 @@ using API.Features.Customer;
 using API.Features.DeliveryChannels.DataAccess;
 using API.Infrastructure.Messaging;
 using API.Infrastructure.Requests.Pipelines;
+using API.Infrastructure.Swagger;
 using DLCS.AWS.Configuration;
 using DLCS.AWS.MediaConvert;
 using DLCS.AWS.S3;
@@ -39,7 +41,7 @@ using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace API.Infrastructure;
 
@@ -137,24 +139,14 @@ public static class ServiceCollectionX
                     Description = "Basic Authorization header using the Bearer scheme.",
                 });
 
-            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
             {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "basic",
-                        },
-                        Scheme = "basic",
-                        Name = "Authorization",
-                        In = ParameterLocation.Header
-                    },
-                    new string[] { }
-                },
+                { new OpenApiSecuritySchemeReference("basic", document), new List<string>() },
             });
             
+            // Honour the Hydra ReadOnly/WriteOnly flags on model properties
+            c.SchemaFilter<HydraReadWriteSchemaFilter>();
+
             // Set the comments path for the Swagger JSON and UI.
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);

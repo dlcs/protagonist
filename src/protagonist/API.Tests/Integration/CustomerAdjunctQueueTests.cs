@@ -11,9 +11,11 @@ using API.Tests.Integration.Infrastructure;
 using DLCS.AWS.SNS.Messaging;
 using DLCS.Model.Assets;
 using DLCS.Model.Messaging;
+using DLCS.Model.Processing;
 using DLCS.Repository;
 using DLCS.Web.Response;
 using FakeItEasy;
+using Hydra.Collections;
 using Hydra.Model;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +24,7 @@ using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Test.Helpers.Integration.Infrastructure;
 using AdjunctBatch = DLCS.HydraModel.AdjunctBatch;
+using CustomerAdjunctQueue = DLCS.HydraModel.CustomerAdjunctQueue;
 
 namespace API.Tests.Integration;
 
@@ -420,6 +423,230 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
     }
 
     [Fact]
+    public async Task GetAdjunctQueue_Returns404_WhenQueueNotFound()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetAdjunctQueue_Returns200_WithSizeFromQueueRow_WhenNoBatches()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Queues.AddAsync(new Queue { Customer = assetId.Customer, Name = QueueNames.Adjunct, Size = 7 });
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var queue = await response.ReadAsHydraResponseAsync<CustomerAdjunctQueue>();
+        queue.Size.Should().Be(7);
+        queue.BatchesWaiting.Should().Be(0);
+        queue.AdjunctsWaiting.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task GetAdjunctQueue_Returns200_WithBatchesWaitingAndAdjunctsWaiting_ExcludingInProgressAndFinishedBatches()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Queues.AddAsync(new Queue { Customer = assetId.Customer, Name = QueueNames.Adjunct, Size = 10 });
+        // finished - excluded
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 5, completed: 5,
+            finished: DateTime.UtcNow);
+        // unfinished, nothing started yet - counts as waiting
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 5, completed: 0);
+        // unfinished but already partially processed - excluded, still being worked on
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 8, completed: 6);
+        // unfinished but has an error recorded - also excluded, platform has started working on it
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 3, errors: 1);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var queue = await response.ReadAsHydraResponseAsync<CustomerAdjunctQueue>();
+        queue.Size.Should().Be(10);
+        queue.BatchesWaiting.Should().Be(1, "only batch 2 has not started processing");
+        queue.AdjunctsWaiting.Should().Be(5, "only batch 2's 5 adjuncts have not started processing");
+    }
+
+    [Fact]
+    public async Task GetAdjunctQueue_Links_ResolveToWorkingCollectionEndpoints()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Queues.AddAsync(new Queue { Customer = assetId.Customer, Name = QueueNames.Adjunct, Size = 0 });
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 1, completed: 0);
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, count: 1, completed: 1,
+            finished: DateTime.UtcNow);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var queue = await response.ReadAsHydraResponseAsync<CustomerAdjunctQueue>();
+
+        // Assert
+        queue.Batches.Should().EndWith("/adjunctQueue/batches");
+        queue.Active.Should().EndWith("/adjunctQueue/active");
+        queue.Recent.Should().EndWith("/adjunctQueue/recent");
+
+        var batches = await (await httpClient.AsCustomer(assetId.Customer).GetAsync(queue.Batches))
+            .ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
+        batches.TotalItems.Should().Be(2);
+
+        var active = await (await httpClient.AsCustomer(assetId.Customer).GetAsync(queue.Active))
+            .ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
+        active.TotalItems.Should().Be(1);
+
+        var recent = await (await httpClient.AsCustomer(assetId.Customer).GetAsync(queue.Recent))
+            .ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
+        recent.TotalItems.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetAdjunctBatches_Returns200_Empty_WhenNoBatches()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var batches = await response.ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
+        batches.Members.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetAdjunctBatches_Returns200_MostRecentlySubmittedFirst_ByDefault()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var earlier = DateTime.UtcNow.AddMinutes(-10);
+        var later = DateTime.UtcNow;
+        var earlierBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: earlier, finished: DateTime.UtcNow)).Entity;
+        var laterBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: later)).Entity;
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var batches = await response.ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
+        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(laterBatch.Id, earlierBatch.Id);
+    }
+
+    [Fact]
+    public async Task GetAdjunctBatches_Returns200_OrdersAscending_WhenOrderByRequested()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var earlier = DateTime.UtcNow.AddMinutes(-10);
+        var later = DateTime.UtcNow;
+        var earlierBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: earlier)).Entity;
+        var laterBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: later)).Entity;
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches?orderBy=submitted");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var batches = await response.ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
+        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(earlierBatch.Id, laterBatch.Id);
+    }
+
+    [Fact]
+    public async Task GetActiveAdjunctBatches_Returns200_OnlyUnfinishedBatches()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var activeBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer)).Entity;
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer, finished: DateTime.UtcNow);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/active");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var batches = await response.ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
+        batches.Members.Should().ContainSingle(b => b.GetLastPathElementAsInt() == activeBatch.Id);
+    }
+
+    [Fact]
+    public async Task GetActiveAdjunctBatches_Returns200_OrdersDescending_WhenOrderByDescendingRequested()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var earlier = DateTime.UtcNow.AddMinutes(-10);
+        var later = DateTime.UtcNow;
+        var earlierBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: earlier)).Entity;
+        var laterBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            submitted: later)).Entity;
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/active?orderByDescending=submitted");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var batches = await response.ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
+        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(laterBatch.Id, earlierBatch.Id);
+    }
+
+    [Fact]
+    public async Task GetRecentAdjunctBatches_Returns200_OnlyFinishedBatches_OrderedByFinishedDescending()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer);
+        var olderFinishedBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            finished: DateTime.UtcNow.AddDays(-7))).Entity;
+        var newerFinishedBatch = (await dbContext.AdjunctBatches.AddTestAdjunctBatch(customer: assetId.Customer,
+            finished: DateTime.UtcNow)).Entity;
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/recent");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var batches = await response.ReadAsHydraResponseAsync<HydraCollection<AdjunctBatch>>();
+        batches.Members.Select(b => b.GetLastPathElementAsInt()).Should().ContainInOrder(newerFinishedBatch.Id, olderFinishedBatch.Id);
+    }
+
+    [Fact]
     public async Task GetAdjunctBatch_Returns404_WhenBatchNotFound()
     {
         // Arrange
@@ -501,6 +728,380 @@ public class CustomerAdjunctQueueTests : IClassFixture<ProtagonistAppFactory<Sta
         batch.Errors.Should().Be(createdBatch.Errors);
         batch.Finished.Should().BeCloseTo(createdBatch.Finished.Value, TimeSpan.FromSeconds(2));
         ParseBatchId(batch).Should().Be(batchId);
+    }
+
+    [Fact]
+    public async Task GetBatchCurrentAdjuncts_Returns404_WhenBatchNotFound()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/999999/current");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetBatchCurrentAdjuncts_Returns404_WhenBatchBelongsToDifferentCustomer()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var otherCustomerBatch = new DLCS.Model.Assets.AdjunctBatch
+        {
+            Customer = assetId.Customer + 1,
+            Submitted = DateTime.UtcNow,
+            Count = 0,
+            Completed = 0,
+            Errors = 0
+        };
+        dbContext.AdjunctBatches.Add(otherCustomerBatch);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/{otherCustomerBatch.Id}/current");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetBatchCurrentAdjuncts_Returns200_WithAdjuncts()
+    {
+        // Arrange
+        var assetIdOne = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetIdTwo = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+
+        var batch = new DLCS.Model.Assets.AdjunctBatch
+        {
+            Customer = assetIdOne.Customer, Submitted = DateTime.UtcNow, Count = 2, Completed = 2, Errors = 0
+        };
+        dbContext.AdjunctBatches.Add(batch);
+        await dbContext.SaveChangesAsync();
+
+        await dbContext.Images.AddTestAsset(assetIdOne).WithTestAdjunct("adj-1", batch: batch.Id);
+        await dbContext.Images.AddTestAsset(assetIdTwo).WithTestAdjunct("adj-2", batch: batch.Id);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetIdOne.Customer)
+            .GetAsync($"/customers/{assetIdOne.Customer}/adjunctQueue/batches/{batch.Id}/current");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjuncts = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        adjuncts.TotalItems.Should().Be(2);
+        adjuncts.Members.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetBatchCurrentAdjuncts_Returns200_SupportsPaging()
+    {
+        // Arrange
+        var assetIdOne = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetIdTwo = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+        var assetIdThree = AssetIdGenerator.GetAssetId(assetPostfix: "3");
+
+        var batch = new DLCS.Model.Assets.AdjunctBatch
+        {
+            Customer = assetIdOne.Customer, Submitted = DateTime.UtcNow, Count = 3, Completed = 3, Errors = 0
+        };
+        dbContext.AdjunctBatches.Add(batch);
+        await dbContext.SaveChangesAsync();
+
+        await dbContext.Images.AddTestAsset(assetIdOne).WithTestAdjunct("adj-1", batch: batch.Id);
+        await dbContext.Images.AddTestAsset(assetIdTwo).WithTestAdjunct("adj-2", batch: batch.Id);
+        await dbContext.Images.AddTestAsset(assetIdThree).WithTestAdjunct("adj-3", batch: batch.Id);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetIdOne.Customer)
+            .GetAsync($"/customers/{assetIdOne.Customer}/adjunctQueue/batches/{batch.Id}/current?pageSize=2&page=2");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjuncts = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        adjuncts.TotalItems.Should().Be(3);
+        adjuncts.Members.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GetBatchCurrentAdjuncts_Returns200_OrdersByCreatedDescending()
+    {
+        // Arrange
+        var assetIdOne = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetIdTwo = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+
+        var batch = new DLCS.Model.Assets.AdjunctBatch
+        {
+            Customer = assetIdOne.Customer, Submitted = DateTime.UtcNow, Count = 2, Completed = 2, Errors = 0
+        };
+        dbContext.AdjunctBatches.Add(batch);
+        await dbContext.SaveChangesAsync();
+
+        var earlier = DateTime.UtcNow.AddMinutes(-10);
+        var later = DateTime.UtcNow;
+        await dbContext.Images.AddTestAsset(assetIdOne).WithTestAdjunct("adj-early", batch: batch.Id, created: earlier);
+        await dbContext.Images.AddTestAsset(assetIdTwo).WithTestAdjunct("adj-late", batch: batch.Id, created: later);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetIdOne.Customer)
+            .GetAsync($"/customers/{assetIdOne.Customer}/adjunctQueue/batches/{batch.Id}/current?orderByDescending=created");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjuncts = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        adjuncts.Members.Should().HaveCount(2);
+        adjuncts.Members![0].Id.Should().EndWith("/adj-late");
+        adjuncts.Members![1].Id.Should().EndWith("/adj-early");
+    }
+
+    [Fact]
+    public async Task GetBatchCurrentAdjuncts_Returns200_OrdersByCreatedDescending_WhenUnknownOrderByField()
+    {
+        // Arrange
+        var assetIdOne = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetIdTwo = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+
+        var batch = new DLCS.Model.Assets.AdjunctBatch
+        {
+            Customer = assetIdOne.Customer, Submitted = DateTime.UtcNow, Count = 2, Completed = 2, Errors = 0
+        };
+        dbContext.AdjunctBatches.Add(batch);
+        await dbContext.SaveChangesAsync();
+
+        var earlier = DateTime.UtcNow.AddMinutes(-10);
+        var later = DateTime.UtcNow;
+        await dbContext.Images.AddTestAsset(assetIdOne).WithTestAdjunct("adj-early", batch: batch.Id, created: earlier);
+        await dbContext.Images.AddTestAsset(assetIdTwo).WithTestAdjunct("adj-late", batch: batch.Id, created: later);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetIdOne.Customer)
+            .GetAsync($"/customers/{assetIdOne.Customer}/adjunctQueue/batches/{batch.Id}/current?orderByDescending=notAllowed");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjuncts = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        adjuncts.Members.Should().HaveCount(2);
+        adjuncts.Members![0].Id.Should().EndWith("/adj-late");
+        adjuncts.Members![1].Id.Should().EndWith("/adj-early");
+    }
+
+    [Fact]
+    public async Task GetBatchAdjuncts_Returns404_WhenBatchNotFound()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/999999/adjuncts");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetBatchAdjuncts_Returns404_WhenBatchBelongsToDifferentCustomer()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        var otherCustomerBatch = new DLCS.Model.Assets.AdjunctBatch
+        {
+            Customer = assetId.Customer + 1,
+            Submitted = DateTime.UtcNow,
+            Count = 0,
+            Completed = 0,
+            Errors = 0
+        };
+        dbContext.AdjunctBatches.Add(otherCustomerBatch);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/{otherCustomerBatch.Id}/adjuncts");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetBatchAdjuncts_Returns200_WithAdjuncts()
+    {
+        // Arrange
+        var assetIdOne = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetIdTwo = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+
+        var batch = new DLCS.Model.Assets.AdjunctBatch
+        {
+            Customer = assetIdOne.Customer, Submitted = DateTime.UtcNow, Count = 2, Completed = 2, Errors = 0
+        };
+        dbContext.AdjunctBatches.Add(batch);
+        await dbContext.SaveChangesAsync();
+
+        await dbContext.Images.AddTestAsset(assetIdOne).WithTestAdjunct("adj-1");
+        await dbContext.Images.AddTestAsset(assetIdTwo).WithTestAdjunct("adj-2");
+        await dbContext.SaveChangesAsync();
+
+        batch.AddAdjunctBatchAdjunct("adj-1", assetIdOne).AddAdjunctBatchAdjunct("adj-2", assetIdTwo);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetIdOne.Customer)
+            .GetAsync($"/customers/{assetIdOne.Customer}/adjunctQueue/batches/{batch.Id}/adjuncts");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjuncts = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        adjuncts.TotalItems.Should().Be(2);
+        adjuncts.Members.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetBatchAdjuncts_Returns200_SupportsPaging()
+    {
+        // Arrange
+        var assetIdOne = AssetIdGenerator.GetAssetId(assetPostfix: "1");
+        var assetIdTwo = AssetIdGenerator.GetAssetId(assetPostfix: "2");
+        var assetIdThree = AssetIdGenerator.GetAssetId(assetPostfix: "3");
+
+        var batch = new DLCS.Model.Assets.AdjunctBatch
+        {
+            Customer = assetIdOne.Customer, Submitted = DateTime.UtcNow, Count = 3, Completed = 3, Errors = 0
+        };
+        dbContext.AdjunctBatches.Add(batch);
+        await dbContext.SaveChangesAsync();
+
+        await dbContext.Images.AddTestAsset(assetIdOne).WithTestAdjunct("adj-1");
+        await dbContext.Images.AddTestAsset(assetIdTwo).WithTestAdjunct("adj-2");
+        await dbContext.Images.AddTestAsset(assetIdThree).WithTestAdjunct("adj-3");
+        await dbContext.SaveChangesAsync();
+
+        batch.AddAdjunctBatchAdjunct("adj-1", assetIdOne)
+            .AddAdjunctBatchAdjunct("adj-2", assetIdTwo)
+            .AddAdjunctBatchAdjunct("adj-3", assetIdThree);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetIdOne.Customer)
+            .GetAsync($"/customers/{assetIdOne.Customer}/adjunctQueue/batches/{batch.Id}/adjuncts?pageSize=2&page=2");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjuncts = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        adjuncts.TotalItems.Should().Be(3);
+        adjuncts.Members.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GetBatchAdjuncts_Returns200_ExcludesReassignedAdjunct_ButAdjunctsEndpointIncludesIt()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+
+        var jsonBatchOne = $$"""
+                     {
+                       "member": [{
+                         "id": "adj-reassign",
+                         "asset": "{{assetId}}",
+                         "@type": "Image",
+                         "mediaType": "image/jpeg",
+                         "iiifLink": "seeAlso",
+                         "externalId": "https://example.com/one.jpg"
+                       }]
+                     }
+                     """;
+        var responseBatchOne = await httpClient.AsCustomer(assetId.Customer)
+            .PostAsync($"/customers/{assetId.Customer}/adjunctQueue",
+                new StringContent(jsonBatchOne, Encoding.UTF8, "application/json"));
+        responseBatchOne.StatusCode.Should().Be(HttpStatusCode.Created);
+        var batchOneId = ParseBatchId(await responseBatchOne.ReadAsHydraResponseAsync<AdjunctBatch>());
+
+        var jsonBatchTwo = $$"""
+                     {
+                       "member": [{
+                         "id": "adj-reassign",
+                         "asset": "{{assetId}}",
+                         "@type": "Image",
+                         "mediaType": "image/jpeg",
+                         "iiifLink": "seeAlso",
+                         "externalId": "https://example.com/two.jpg"
+                       }]
+                     }
+                     """;
+        var responseBatchTwo = await httpClient.AsCustomer(assetId.Customer)
+            .PostAsync($"/customers/{assetId.Customer}/adjunctQueue",
+                new StringContent(jsonBatchTwo, Encoding.UTF8, "application/json"));
+        responseBatchTwo.StatusCode.Should().Be(HttpStatusCode.Created);
+        var batchTwoId = ParseBatchId(await responseBatchTwo.ReadAsHydraResponseAsync<AdjunctBatch>());
+
+        // Act & Assert
+        var currentInBatchOne = await (await httpClient.AsCustomer(assetId.Customer)
+                .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/{batchOneId}/current"))
+            .ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        currentInBatchOne.TotalItems.Should().Be(0, "adjunct has since been reassigned to another batch");
+
+        var adjunctsInBatchOne = await (await httpClient.AsCustomer(assetId.Customer)
+                .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/{batchOneId}/adjuncts"))
+            .ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        adjunctsInBatchOne.TotalItems.Should().Be(1, "historical record of batch membership is retained");
+
+        var currentInBatchTwo = await (await httpClient.AsCustomer(assetId.Customer)
+                .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/{batchTwoId}/current"))
+            .ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        currentInBatchTwo.TotalItems.Should().Be(1);
+
+        var adjunctsInBatchTwo = await (await httpClient.AsCustomer(assetId.Customer)
+                .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/{batchTwoId}/adjuncts"))
+            .ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        adjunctsInBatchTwo.TotalItems.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetBatchAdjuncts_Returns200_ExcludesDeletedAdjunct()
+    {
+        // Arrange
+        var assetId = AssetIdGenerator.GetAssetId();
+        await dbContext.Images.AddTestAsset(assetId);
+        await dbContext.SaveChangesAsync();
+
+        var json = $$"""
+                     {
+                       "member": [{
+                         "id": "adj-deleted",
+                         "asset": "{{assetId}}",
+                         "@type": "Image",
+                         "mediaType": "image/jpeg",
+                         "iiifLink": "seeAlso",
+                         "externalId": "https://example.com/deleted.jpg"
+                       }]
+                     }
+                     """;
+        var postResponse = await httpClient.AsCustomer(assetId.Customer)
+            .PostAsync($"/customers/{assetId.Customer}/adjunctQueue",
+                new StringContent(json, Encoding.UTF8, "application/json"));
+        postResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var batchId = ParseBatchId(await postResponse.ReadAsHydraResponseAsync<AdjunctBatch>());
+
+        var adjunct = await dbContext.Adjuncts.SingleAsync(a => a.AssetId == assetId && a.Id == "adj-deleted");
+        dbContext.Adjuncts.Remove(adjunct);
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.AsCustomer(assetId.Customer)
+            .GetAsync($"/customers/{assetId.Customer}/adjunctQueue/batches/{batchId}/adjuncts");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var adjuncts = await response.ReadAsHydraResponseAsync<HydraCollection<DLCS.HydraModel.Adjunct>>();
+        adjuncts.TotalItems.Should().Be(0);
     }
 
     /// <summary>

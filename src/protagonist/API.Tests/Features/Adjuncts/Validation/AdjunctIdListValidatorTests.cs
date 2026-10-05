@@ -61,7 +61,7 @@ public class AdjunctIdListValidatorTests
         Dictionary<AssetId, List<string>> adjuncts = null;
         
         var result = sut.TestValidate(adjuncts);
-        result.ShouldHaveAnyValidationError();
+        result.ShouldHaveValidationErrors();
     }
     
     [Fact]
@@ -70,7 +70,7 @@ public class AdjunctIdListValidatorTests
         Dictionary<AssetId, List<string>> adjuncts = [];
         
         var result = sut.TestValidate(adjuncts);
-        result.ShouldHaveAnyValidationError();
+        result.ShouldHaveValidationErrors();
     }
     
     [Fact]
@@ -83,7 +83,7 @@ public class AdjunctIdListValidatorTests
         };
         
         var result = sut.TestValidate(adjuncts);
-        result.ShouldHaveAnyValidationError().WithErrorMessage($"Members contains 1 duplicate Id(s): asset Id: {assetId} : adjunct id: first");
+        result.ShouldHaveValidationErrors().WithErrorMessage($"Members contains 1 duplicate Id(s): asset Id: {assetId} : adjunct id: first");
     }
     
     [Fact]
@@ -96,7 +96,7 @@ public class AdjunctIdListValidatorTests
         };
         
         var result = sut.TestValidate(adjuncts);
-        result.ShouldHaveAnyValidationError().WithErrorMessage($"Members contains 1 duplicate Id(s): asset Id: {assetId} : adjunct id: first");
+        result.ShouldHaveValidationErrors().WithErrorMessage($"Members contains 1 duplicate Id(s): asset Id: {assetId} : adjunct id: first");
     }
     
     [Fact]
@@ -113,7 +113,7 @@ public class AdjunctIdListValidatorTests
             kvp.Value.SelectMany(a => a).Distinct().Count() == kvp.Value.SelectMany(a => a).Count());
         
         var result = sut.TestValidate(adjuncts);
-        result.ShouldHaveAnyValidationError().WithErrorMessage($"Members contains 1 duplicate Id(s): asset Id: {assetId} : adjunct id: first");
+        result.ShouldHaveValidationErrors().WithErrorMessage($"Members contains 1 duplicate Id(s): asset Id: {assetId} : adjunct id: first");
     }
     
     [Fact]
@@ -126,7 +126,7 @@ public class AdjunctIdListValidatorTests
         };
         
         var result = sut.TestValidate(adjuncts);
-        result.ShouldHaveAnyValidationError().WithErrorMessage("Maximum adjuncts in single batch is 4");
+        result.ShouldHaveValidationErrors().WithErrorMessage("Maximum adjuncts in single batch is 4");
     }
     
     [Fact]
@@ -142,7 +142,7 @@ public class AdjunctIdListValidatorTests
         };
         
         var result = sut.TestValidate(adjuncts);
-        result.ShouldHaveAnyValidationError().WithErrorMessage("Maximum adjuncts in single batch is 4");
+        result.ShouldHaveValidationErrors().WithErrorMessage("Maximum adjuncts in single batch is 4");
     }
     
     [Theory]
@@ -158,7 +158,7 @@ public class AdjunctIdListValidatorTests
         };
         
         var result = sut.TestValidate(adjuncts);
-        result.ShouldHaveAnyValidationError()
+        result.ShouldHaveValidationErrors()
             .WithErrorMessage(
                 "Adjunct id contains at least one of the following restricted characters. Invalid values are: \\ /");
     }

@@ -23,18 +23,9 @@ public interface ICustomerOriginStrategyRepository
     public Task<CustomerOriginStrategy> GetCustomerOriginStrategy(AssetId assetId, string origin);
 
     /// <summary>
-    /// Get <see cref="CustomerOriginStrategy"/> for specified <see cref="Asset"/>.
+    /// Get <see cref="CustomerOriginStrategy"/> for specified <see cref="IDeliverable"/>.
     /// </summary>
-    /// <param name="asset">Asset to get <see cref="CustomerOriginStrategy"/> for.</param>
-    /// <param name="initialIngestion">Whether the strategy is to be used for initial ingestion or not.</param>
+    /// <param name="deliverable">Deliverable to get <see cref="CustomerOriginStrategy"/> for.</param>
     /// <returns><see cref="CustomerOriginStrategy"/> to use for <see cref="Asset"/>.</returns>
-    Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Asset asset, bool initialIngestion = false);
-
-    /// <summary>
-    /// Get <see cref="CustomerOriginStrategy"/> for specified <see cref="Adjunct"/>.
-    /// </summary>
-    /// <param name="adjunct">Adjunct to get <see cref="CustomerOriginStrategy"/> for.</param>
-    /// <param name="customerId">Customer which has submitted the adjunct</param>
-    /// <returns><see cref="CustomerOriginStrategy"/> to use for <see cref="Asset"/>.</returns>
-    Task<CustomerOriginStrategy> GetCustomerOriginStrategy(Adjunct adjunct);
+    Task<CustomerOriginStrategy> GetCustomerOriginStrategy(IDeliverable deliverable);
 }

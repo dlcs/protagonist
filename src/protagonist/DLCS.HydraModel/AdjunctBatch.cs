@@ -1,10 +1,11 @@
 using System;
 using Hydra;
+using Hydra.Model;
 using Newtonsoft.Json;
 
 namespace DLCS.HydraModel;
 
-[HydraClass(typeof(AdjunctBatch),
+[HydraClass(typeof(AdjunctBatchClass),
     Description = "Represents a submitted batch of adjuncts.",
     UriTemplate = "/customers/{0}/adjunctQueue/batches/{1}")]
 public class AdjunctBatch : DlcsResource
@@ -50,17 +51,48 @@ public class AdjunctBatch : DlcsResource
         Range = Names.XmlSchema.DateTime, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 15, PropertyName = "finished")]
     public DateTime? Finished { get; set; }
-
-    /* TODO - the following 2 Hydra link properties are not implemented yet - they will be added in future PR.
-     Leaving these commented out for now until implemented as they are working as-is but added too early
-     
-     [HydraLink(Description = "Collection of adjuncts currently claimed by this batch",
-        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
+    
+    [HydraLink(Description = "Collection of adjuncts currently claimed by this batch",
+        Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false, SetManually = true)]
     [JsonProperty(Order = 20, PropertyName = "currentAdjuncts")]
     public string? CurrentAdjuncts { get; set; }
 
     [HydraLink(Description = "All adjuncts historically associated with this batch",
         Range = Names.Hydra.Collection, ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 21, PropertyName = "adjuncts")]
-    public string? Adjuncts { get; set; }*/
+    public string? Adjuncts { get; set; }
+}
+
+public class AdjunctBatchClass : Class
+{
+    public AdjunctBatchClass()
+    {
+        BootstrapViaReflection(typeof(AdjunctBatch));
+    }
+
+    public override void DefineOperations()
+    {
+        string operationId = "_:customer_adjunctQueue_batch_";
+        SupportedOperations = CommonOperations.GetStandardResourceOperations(
+            operationId, "AdjunctBatch", Id,
+            "GET");
+
+        // These collections are read only
+
+        GetHydraLinkProperty("currentAdjuncts").SupportedOperations = new[]
+        {
+            CommonOperations.StandardCollectionGet(
+                operationId + "current_collection_retrieve",
+                "Retrieves the adjuncts currently claimed by this batch",
+                null)
+        };
+
+        GetHydraLinkProperty("adjuncts").SupportedOperations = new[]
+        {
+            CommonOperations.StandardCollectionGet(
+                operationId + "adjunct_collection_retrieve",
+                "Retrieves all adjuncts historically associated with this batch",
+                null)
+        };
+    }
 }

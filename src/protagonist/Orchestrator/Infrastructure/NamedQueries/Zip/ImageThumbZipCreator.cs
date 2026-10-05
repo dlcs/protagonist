@@ -40,7 +40,7 @@ public class ImageThumbZipCreator(
         {
             // NOTE - if another process is working on this zip file this will throw an exception
             DeleteZipFileIfExists(zipFilePath);
-            await CreateZipFileOnDisk(parsedNamedQuery, assets, storageKey, zipFilePath, cancellationToken);
+            await CreateZipFileOnDisk(assets, storageKey, zipFilePath, cancellationToken);
 
             return await UploadZipToS3(parsedNamedQuery, zipFilePath);
         }
@@ -70,8 +70,8 @@ public class ImageThumbZipCreator(
         };
     }
 
-    private async Task CreateZipFileOnDisk(ZipParsedNamedQuery parsedNamedQuery, List<Asset> assets,
-        string storageKey, string zipFilePath, CancellationToken cancellationToken)
+    private async Task CreateZipFileOnDisk(List<Asset> assets, string storageKey, string zipFilePath,
+        CancellationToken cancellationToken)
     {
         Logger.LogDebug("Creating new zip archive for {S3Key} at {LocalPath} with {AssetCount} assets",
             storageKey, zipFilePath, assets.Count);
@@ -81,7 +81,7 @@ public class ImageThumbZipCreator(
         using var zipArchive = new ZipArchive(zipToOpen, ZipArchiveMode.Create);
 
         int imageCount = 0;
-        foreach (var i in NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery))
+        foreach (var i in assets)
         {
             if (cancellationToken.IsCancellationRequested)
             {

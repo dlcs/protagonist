@@ -43,10 +43,6 @@ public class CustomerQueue : DlcsResource
     [JsonProperty(Order = 20, PropertyName = "batches")]
     public string? Batches { get; set; }
     
-    [HydraLink(Description = "All images for customer", Range = "vocab:Image", ReadOnly = true, WriteOnly = false)]
-    [JsonProperty(Order = 21, PropertyName = "images")]
-    public string? Images { get; set; }
-    
     [HydraLink(Description = "All active batches for customer", Range = "vocab:Queue", ReadOnly = true, WriteOnly = false)]
     [JsonProperty(Order = 22, PropertyName = "active")]
     public string? Active { get; set; }
@@ -109,17 +105,6 @@ public class CustomerQueueClass : Class
             }
         };
 
-        GetHydraLinkProperty("images").SupportedOperations = new[]
-        {
-            new Operation
-            {
-                Id = "_:customer_queue_batch_collection_retrieve",
-                Method = "GET",
-                Label = "Retrieves all images across batches for customer",
-                Returns = Names.Hydra.Collection
-            }
-        };
-        
         GetHydraLinkProperty("priority").SupportedOperations = new[]
         {
             new Operation

@@ -265,10 +265,10 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
     
     [Fact]
-    public async Task Post_DeleteImages_200_WithMatches()
+    public async Task Post_DeleteImages_204_WithMatches()
     {
         // Arrange
-        var reference = nameof(Post_DeleteImages_200_WithMatches);
+        var reference = nameof(Post_DeleteImages_204_WithMatches);
         await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/deleteImages_1"), ref1: reference);
         await dbContext.Images.AddTestAsset(AssetId.FromString("99/1/deleteImages_2"), ref1: reference);
         await dbContext.Images.AddTestAsset(AssetId.FromString("99/2/deleteImages_3"), space: 2, ref1: reference);
@@ -287,7 +287,7 @@ public class CustomerImageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var response = await httpClient.AsCustomer().PostAsync("/customers/99/deleteImages", content);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         dbContext.Images.Count(i => i.Reference1 == reference).Should().Be(0);
     }
     

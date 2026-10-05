@@ -60,20 +60,21 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
-        
-        const string newAdjunctJson = """
-                                      {
-                                                "id": "someAdjunctId",
-                                                "@type": "AnnotationPage",
-                                                "externalId": "https://some-location.com/an-adjunct",
-                                                "iiifLink": "seeAlso",
-                                                "mediaType": "a-mediaType",
-                                                "label": {"label": ["value"]},
-                                                "motivation": "a motivation",
-                                                "provides": "translation",
-                                                "language": ["en"],
-                                              }
-                                      """;
+
+        var adjunctId = AdjunctIdGenerator.GetAdjunctId();
+        var newAdjunctJson = $$"""
+                               {
+                                         "id": "{{adjunctId}}",
+                                         "@type": "AnnotationPage",
+                                         "externalId": "https://some-location.com/an-adjunct",
+                                         "iiifLink": "seeAlso",
+                                         "mediaType": "a-mediaType",
+                                         "label": {"label": ["value"]},
+                                         "motivation": "a motivation",
+                                         "provides": "translation",
+                                         "language": ["en"],
+                                       }
+                               """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -94,10 +95,10 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var adjunct = hydra.Members![0];
         adjunct.Id.Should()
             .Be(
-                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
         adjunct.Asset.Should().Be($"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}");
         adjunct.IIIFLink.Should().Be("seeAlso");
-        adjunct.Label.First().Key.Should().Be("label");
+        adjunct.Label!.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
         adjunct.PublicId.Should().Be("https://some-location.com/an-adjunct");
@@ -215,22 +216,23 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
+        var adjunctId = AdjunctIdGenerator.GetAdjunctId();
 
         await dbContext.Images.AddTestAsset(assetId)
-            .WithTestAdjunct("someAdjunctId");
+            .WithTestAdjunct(adjunctId);
         await dbContext.SaveChangesAsync();
-        
-        const string newAdjunctJson = """
-                                      {
-                                                "id": "someAdjunctId",
-                                                "@type": "Image",
-                                                "externalId": "https://some-location.com/an-adjunct",
-                                                "iiifLink": "seeAlso",
-                                                "mediaType": "a-mediaType",
-                                                "label": {"label": ["value"]},
-                                                "language": ["en"],
-                                              }
-                                      """;
+
+        var newAdjunctJson = $$"""
+                               {
+                                         "id": "{{adjunctId}}",
+                                         "@type": "Image",
+                                         "externalId": "https://some-location.com/an-adjunct",
+                                         "iiifLink": "seeAlso",
+                                         "mediaType": "a-mediaType",
+                                         "label": {"label": ["value"]},
+                                         "language": ["en"],
+                                       }
+                               """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -242,7 +244,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
-        error.Detail.Should().Be("Create failed. Adjunct or adjuncts with id(s) in (someAdjunctId) already exists");
+        error.Detail.Should().Be($"Create failed. Adjunct or adjuncts with id(s) in ({adjunctId}) already exists");
     }
     
     [Fact]
@@ -250,23 +252,23 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        const string adjunctId = "someAdjunctId";
+        var adjunctId = AdjunctIdGenerator.GetAdjunctId();
 
         await dbContext.Images.AddTestAsset(assetId) 
             .WithTestAdjunct(adjunctId.ToUpper());
         await dbContext.SaveChangesAsync();
-        
-        const string newAdjunctJson = $$"""
-                                        {
-                                                  "id": "{{adjunctId}}",
-                                                  "@type": "Image",
-                                                  "externalId": "https://some-location.com/an-adjunct",
-                                                  "iiifLink": "seeAlso",
-                                                  "mediaType": "a-mediaType",
-                                                  "label": {"label": ["value"]},
-                                                  "language": ["en"],
-                                                }
-                                        """;
+
+        var newAdjunctJson = $$"""
+                               {
+                                         "id": "{{adjunctId}}",
+                                         "@type": "Image",
+                                         "externalId": "https://some-location.com/an-adjunct",
+                                         "iiifLink": "seeAlso",
+                                         "mediaType": "a-mediaType",
+                                         "label": {"label": ["value"]},
+                                         "language": ["en"],
+                                       }
+                               """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -278,7 +280,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
         
         var error = await response.ReadAsJsonAsync<Error>(ensureSuccess: false);
-        error.Detail.Should().Be("Create failed. Adjunct or adjuncts with id(s) in (someAdjunctId) already exists");
+        error.Detail.Should().Be($"Create failed. Adjunct or adjuncts with id(s) in ({adjunctId}) already exists");
     }
     
     [Fact]
@@ -317,12 +319,13 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
+        var adjunctId = AdjunctIdGenerator.GetAdjunctId();
 
         await dbContext.Images.AddTestAsset(assetId)
-            .WithTestAdjunct("someAdjunctId", motivation: "a motivation");
+            .WithTestAdjunct(adjunctId, motivation: "a motivation");
         await dbContext.SaveChangesAsync();
         
-        var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}";
 
         // Act
         var response = await httpClient.AsCustomer(assetId.Customer).GetAsync(path);
@@ -333,7 +336,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         adjunct.Id.Should()
             .Be(
-                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
         adjunct.IIIFLink.Should().Be("seeAlso");
         adjunct.Motivation.Should().Be("a motivation");
     }
@@ -396,11 +399,16 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
+        var adjunctIds = new[]
+        {
+            AdjunctIdGenerator.GetAdjunctId(postfix: "2"), AdjunctIdGenerator.GetAdjunctId(),
+            AdjunctIdGenerator.GetAdjunctId(postfix: "3")
+        };
 
         await dbContext.Images.AddTestAsset(assetId)
-            .WithTestAdjunct("someAdjunctId2")
-            .WithTestAdjunct("someAdjunctId")
-            .WithTestAdjunct("someAdjunctId3");
+            .WithTestAdjunct(adjunctIds[0])
+            .WithTestAdjunct(adjunctIds[1])
+            .WithTestAdjunct(adjunctIds[2]);
         await dbContext.SaveChangesAsync();
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
@@ -412,16 +420,16 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var adjunct = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
-        adjunct.Members.Length.Should().Be(3);
+        adjunct.Members!.Length.Should().Be(3);
         adjunct.Members[0].Id.Should()
             .Be(
-                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctIds[1]}");
         adjunct.Members[1].Id.Should()
             .Be(
-                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId2");
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctIds[0]}");
         adjunct.Members[2].Id.Should()
             .Be(
-                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId3");
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctIds[2]}");
     }
     
     [Fact]
@@ -442,7 +450,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var adjunct = await response.ReadAsHydraResponseAsync<HydraCollection<Adjunct>>();
 
-        adjunct.Members.Length.Should().Be(0);
+        adjunct.Members!.Length.Should().Be(0);
     }
     
     [Fact]
@@ -603,25 +611,28 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        await dbContext.Images.AddTestAsset(assetId)
-            .WithTestAdjunct("someAdjunctId", created: DateTime.UtcNow.AddDays(-2), motivation: "something", provides: "something");
+        var adjunctId = AdjunctIdGenerator.GetAdjunctId();
+        await dbContext.Images
+            .AddTestAsset(assetId)
+            .WithTestAdjunct(adjunctId, created: DateTime.UtcNow.AddDays(-2), motivation: "something",
+                provides: "something");
         await dbContext.SaveChangesAsync();
+
+        var updateAdjunctJson = $$"""
+                                  {
+                                            "id": "{{adjunctId}}",
+                                            "@type": "Image",
+                                            "externalId": "https://some-location.com/an-adjunct",
+                                            "iiifLink": "seeAlso",
+                                            "mediaType": "a-mediaType",
+                                            "label": {"label": ["value"]},
+                                            "language": ["en"],
+                                            "motivation": "changed",
+                                            "provides": "changed"
+                                          }
+                                  """;
         
-        const string updateAdjunctJson = """
-                                         {
-                                                   "id": "someAdjunctId",
-                                                   "@type": "Image",
-                                                   "externalId": "https://some-location.com/an-adjunct",
-                                                   "iiifLink": "seeAlso",
-                                                   "mediaType": "a-mediaType",
-                                                   "label": {"label": ["value"]},
-                                                   "language": ["en"],
-                                                   "motivation": "changed",
-                                                   "provides": "changed"
-                                                 }
-                                         """;
-        
-        var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}";
         var content = new StringContent(updateAdjunctJson, Encoding.UTF8, "application/json");
 
         // Act
@@ -632,9 +643,9 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var adjunct = await response.ReadAsHydraResponseAsync<Adjunct>();
         adjunct.Id.Should()
             .Be(
-                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
         adjunct.IIIFLink.Should().Be("seeAlso");
-        adjunct.Label.First().Key.Should().Be("label");
+        adjunct.Label!.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.Created.Should().BeCloseTo(DateTime.UtcNow.AddDays(-2), TimeSpan.FromSeconds(5));
         adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -653,25 +664,25 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        const string adjunctId = "someAdjunctId";
+        var adjunctId = AdjunctIdGenerator.GetAdjunctId();
 
         await dbContext.Images.AddTestAsset(assetId);
         await dbContext.SaveChangesAsync();
+
+        var newAdjunctJson = $$"""
+                               {
+                                         "id": "{{adjunctId}}",
+                                         "@type": "Image",
+                                         "externalId": "https://some-location.com/an-adjunct",
+                                         "iiifLink": "seeAlso",
+                                         "mediaType": "a-mediaType",
+                                         "label": {"label": ["value"]},
+                                         "language": ["en"],
+                                         "size": 1234,
+                                       }
+                               """;
         
-        const string newAdjunctJson = """
-                                      {
-                                                "id": "someAdjunctId",
-                                                "@type": "Image",
-                                                "externalId": "https://some-location.com/an-adjunct",
-                                                "iiifLink": "seeAlso",
-                                                "mediaType": "a-mediaType",
-                                                "label": {"label": ["value"]},
-                                                "language": ["en"],
-                                                "size": 1234,
-                                              }
-                                      """;
-        
-        var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
 
         // Act
@@ -683,7 +694,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var expectedAdjunctId = $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}";
         adjunct.Id.Should().Be(expectedAdjunctId);
         adjunct.IIIFLink.Should().Be("seeAlso");
-        adjunct.Label.First().Key.Should().Be("label");
+        adjunct.Label!.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.Created.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
@@ -705,7 +716,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        var adjunctId = assetId.Asset;
+        var adjunctId = AdjunctIdGenerator.GetAdjunctId();
 
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
@@ -733,7 +744,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         adjunct.Id.Should().Be(expectedAdjunctId);
         adjunct.IIIFLink.Should().Be("annotations");
-        adjunct.Label.First().Key.Should().Be("none");
+        adjunct.Label!.First().Key.Should().Be("none");
         adjunct.Created.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
@@ -750,7 +761,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
-        var adjunctId = assetId.Asset;
+        var adjunctId = AdjunctIdGenerator.GetAdjunctId();
 
         await dbContext.Images.AddTestAsset(assetId); 
         await dbContext.SaveChangesAsync();
@@ -779,7 +790,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .Be(
                 $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
         adjunct.IIIFLink.Should().Be("annotations");
-        adjunct.Label.First().Key.Should().Be("none");
+        adjunct.Label!.First().Key.Should().Be("none");
         adjunct.Created.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.Finished.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         adjunct.ExternalId.Should().Be("https://some-location.com/an-adjunct");
@@ -811,13 +822,14 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
+        var adjunctId = AdjunctIdGenerator.GetAdjunctId();
 
         await dbContext.Images.AddTestAsset(assetId)
-            .WithTestAdjunct("someAdjunctId");
+            .WithTestAdjunct(adjunctId);
         await dbContext.CustomerStorages.AddTestCustomerStorage(numberOfAdjuncts: 2, sizeOfAdjuncts: 500);
         await dbContext.SaveChangesAsync();
 
-        var path = $"{assetId.ToApiResourcePath()}/adjuncts/someAdjunctId";
+        var path = $"{assetId.ToApiResourcePath()}/adjuncts/{adjunctId}";
 
         // Act
         var response = await httpClient.AsCustomer(assetId.Customer).DeleteAsync(path);
@@ -840,6 +852,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
     {
         // Arrange
         var assetId = AssetIdGenerator.GetAssetId();
+        var adjunctId = AdjunctIdGenerator.GetAdjunctId();
 
         await dbContext.CustomerStorages.AddTestCustomerStorage();
         await dbContext.Images.AddTestAsset(assetId);
@@ -849,18 +862,18 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a.Single().AssetId == assetId),
                 A<CancellationToken>._))
             .ReturnsLazily(_ => Task.FromResult(1));
-        
-        const string newAdjunctJson = """
-                                      {
-                                                "id": "someAdjunctId",
-                                                "@type": "Image",
-                                                "origin": "https://some-location.com/an-adjunct",
-                                                "iiifLink": "seeAlso",
-                                                "mediaType": "a-mediaType",
-                                                "label": {"label": ["value"]},
-                                                "language": ["en"],
-                                              }
-                                      """;
+
+        var newAdjunctJson = $$"""
+                               {
+                                         "id": "{{adjunctId}}",
+                                         "@type": "Image",
+                                         "origin": "https://some-location.com/an-adjunct",
+                                         "iiifLink": "seeAlso",
+                                         "mediaType": "a-mediaType",
+                                         "label": {"label": ["value"]},
+                                         "language": ["en"],
+                                       }
+                               """;
         
         var path = $"{assetId.ToApiResourcePath()}/adjuncts";
         var content = new StringContent(newAdjunctJson, Encoding.UTF8, "application/json");
@@ -878,12 +891,12 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         var adjunct = hydra.Members![0];
         adjunct.Id.Should()
             .Be(
-                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/someAdjunctId");
+                $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
         adjunct.IIIFLink.Should().Be("seeAlso");
-        adjunct.Label.First().Key.Should().Be("label");
+        adjunct.Label!.First().Key.Should().Be("label");
         adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
         adjunct.Origin.Should().Be("https://some-location.com/an-adjunct");
-        adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/someAdjunctId");
+        adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/{adjunctId}");
         adjunct.Ingesting.Should().Be(true, "the adjunct was sent to engine for ingestion");
         adjunct.Error.Should().BeNullOrEmpty("no errors yet");
         response.Headers.Location.Should()
@@ -892,7 +905,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
 
         A.CallTo(() =>
                 IngestNotificationSender.SendIngestAdjunctRequest(
-                    A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a[0].AssetId == assetId && a[0].Id == "someAdjunctId"),
+                    A<IReadOnlyList<DLCS.Model.Assets.Adjunct>>.That.Matches(a => a[0].AssetId == assetId && a[0].Id == adjunctId),
                     A<CancellationToken>._))
             .MustHaveHappened();
 
@@ -951,7 +964,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         result.Should().NotBeNull("A collection result is expected");
         result.Members.Should().NotBeNullOrEmpty("two adjuncts are expected");
 
-        for(var i = 0; i < result.Members.Length; i++)
+        for(var i = 0; i < result.Members!.Length; i++)
         {
             var adjunct = result.Members[i];
             var adjunctId = $"someAdjunctId{i + 1}";
@@ -959,7 +972,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 .Be(
                     $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
             adjunct.IIIFLink.Should().Be("seeAlso");
-            adjunct.Label.First().Key.Should().Be("label");
+            adjunct.Label!.First().Key.Should().Be("label");
             adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
             adjunct.Origin.Should().Be($"https://some-location.com/an-adjunct{i+1}");
             adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/{adjunctId}");
@@ -1032,7 +1045,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
         result.Should().NotBeNull("A collection result is expected");
         result.Members.Should().NotBeNullOrEmpty("two adjuncts are expected");
 
-        for(var i = 0; i < result.Members.Length; i++)
+        for(var i = 0; i < result.Members!.Length; i++)
         {
             var adjunct = result.Members[i];
             var adjunctId = $"someAdjunctId{i + 1}";
@@ -1041,7 +1054,7 @@ public class AdjunctTests : IClassFixture<ProtagonistAppFactory<Startup>>
                 .Be(
                     $"http://localhost/customers/{assetId.Customer}/spaces/{assetId.Space}/images/{assetId.Asset}/adjuncts/{adjunctId}");
             adjunct.IIIFLink.Should().Be("seeAlso");
-            adjunct.Label.First().Key.Should().Be("label");
+            adjunct.Label!.First().Key.Should().Be("label");
             adjunct.Language.Should().Contain(l => l == "en").And.HaveCount(1);
             adjunct.Origin.Should().Be($"https://some-location.com/an-adjunct{i+1}");
             adjunct.PublicId.Should().Be($"https://dlcs.digirati.io/adjuncts/99/1/{assetId.Asset}/{adjunctId}");

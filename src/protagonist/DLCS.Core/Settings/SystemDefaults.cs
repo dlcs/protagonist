@@ -1,4 +1,6 @@
-﻿namespace DLCS.Core.Settings;
+﻿using System;
+
+namespace DLCS.Core.Settings;
 
 public static class SystemDefaults
 {
@@ -15,4 +17,9 @@ public static class SystemDefaults
     /// The system default minimum allowed value for the maxWidth property.
     /// </summary>
     public const int MinimumMaxWidth = 256;
+
+    /// <summary>
+    /// The default Postgres version used to configure EF's Npgsql provider and integration test containers.
+    /// </summary>
+    public static readonly Version PostgresVersion = new(18, 0);
 }

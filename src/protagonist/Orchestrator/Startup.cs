@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
 using DLCS.Repository;
@@ -15,7 +15,6 @@ using DLCS.Web.Views;
 using JetBrains.Annotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,7 +60,7 @@ public class Startup
             .Configure<PathTemplateOptions>(configuration.GetSection("PathRules"))
             .Configure<CacheSettings>(cachingSection);
 
-        var orchestratorSettings = configuration.Get<OrchestratorSettings>();
+        var orchestratorSettings = configuration.GetRequired<OrchestratorSettings>();
         
         services
             .AddTransient<TimingHandler>()
@@ -71,11 +70,12 @@ public class Startup
             .AddSingleton<FileRequestHandler>()
             .AddSingleton<AdjunctRequestHandler>()
             .AddSingleton<S3ProxyPathGenerator>()
+            .AddSingleton<GatewayTokenGenerator>()
             .AddTransient<IAssetPathGenerator, ConfigDrivenAssetPathGenerator>()
             .AddSingleton<AssetRequestProcessor>()
             .AddSingleton<DownstreamDestinationSelector>()
-            .AddCaching(cachingSection.Get<CacheSettings>())
-            .AddOriginStrategies()
+            .AddCaching(cachingSection.GetRequired<CacheSettings>())
+            .AddOriginStrategies(configuration)
             .AddDataAccess(configuration)
             .AddMediatR()
             .AddHttpContextAccessor()
@@ -88,7 +88,6 @@ public class Startup
             .AddInfoJsonClient()
             .AddIIIFBuilding()
             .AddIIIFAuth(orchestratorSettings);
-        
         
         services.ConfigureForwardedHeaders(configuration);
 
@@ -127,8 +126,7 @@ public class Startup
     {
         DlcsContextConfiguration.TryRunMigrations(configuration, logger);
         
-        var applicationOptions = configuration.Get<OrchestratorSettings>();
-        var pathBase = applicationOptions.PathBase;
+        var pathBase = configuration.GetRequired<OrchestratorSettings>().PathBase;
         
         if (env.IsDevelopment())
         {
@@ -137,6 +135,7 @@ public class Startup
 
         app
             .HandlePathBase(pathBase, logger)
+            .UseCorrelationId()
             .UseForwardedHeaders()
             .UseRouting()
             .UseOptions()

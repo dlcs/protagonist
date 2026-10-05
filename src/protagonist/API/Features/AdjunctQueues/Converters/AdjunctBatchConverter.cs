@@ -11,7 +11,8 @@ public static class AdjunctBatchConverter
     /// Convert AdjunctBatch entity to API resource
     /// </summary>
     public static DLCS.HydraModel.AdjunctBatch ToHydra(this AdjunctBatch batch, string baseUrl)
-        => new(baseUrl, batch.Customer, batch.Id)
+    {
+        var hydraBatch = new DLCS.HydraModel.AdjunctBatch(baseUrl, batch.Customer, batch.Id)
         {
             Submitted = batch.Submitted,
             Count = batch.Count,
@@ -19,6 +20,10 @@ public static class AdjunctBatchConverter
             Errors = batch.Errors,
             Finished = batch.Finished,
         };
+        // SetManually link: the route is /current, not /currentAdjuncts
+        hydraBatch.CurrentAdjuncts = $"{hydraBatch.Id}/current";
+        return hydraBatch;
+    }
 
     /// <summary>
     /// Convert Hydra AdjunctBatch to entity

@@ -179,7 +179,7 @@ public class S3StorageKeyGenerator(IOptions<AWSSettings> awsOptions) : IStorageK
 
     public ObjectInBucket GetTranscodeDestinationRoot(AssetId assetId, string jobId)
     {
-        var key = $"{jobId}/{GetStorageKey(assetId)}/transcode";
+        var key = $"{GetStorageKey(assetId)}/{jobId}/transcode";
         return new ObjectInBucket(s3Options.TimebasedOutputBucket, key);
     }
 }

@@ -52,7 +52,7 @@ public static class AssetConverter
             Finished = dbAsset.Finished,
             Ingesting = dbAsset.Ingesting,
             Error = dbAsset.Error,
-            Tags = dbAsset.TagsList.ToArray(),
+            Tags = dbAsset.Tags ?? [],
             String1 = dbAsset.Reference1,
             String2 = dbAsset.Reference2,
             String3 = dbAsset.Reference3,
@@ -64,8 +64,9 @@ public static class AssetConverter
             Height = dbAsset.Height,
             MediaType = dbAsset.MediaType,
             Family = (AssetFamily)dbAsset.Family,
-            Roles = dbAsset.RolesList.ToArray(),
+            Roles = dbAsset.Roles ?? [],
             Manifests = dbAsset.Manifests?.ToArray() ?? [],
+            Manifest = $"{urlRoots.ResourceRoot}iiif-manifest/{dbAsset.Id}",
         };
 
         if (dbAsset.Batch > 0)
@@ -208,7 +209,7 @@ public static class AssetConverter
         
         if (hydraImage.Tags != null)
         {
-            asset.TagsList = hydraImage.Tags;
+            asset.Tags = hydraImage.Tags;
         }
 
         SetSizeRestriction(hydraImage, asset);
@@ -275,11 +276,28 @@ public static class AssetConverter
             throw new BadRequestException("Space must be 0 or greater.");
         }
         
+        if (!modelId.IsNullOrEmpty() && hydraImage.ModelId.HasText())
+        {
+            // The route asserts an id and the body also carries one - they must agree.
+            // Tolerate the Deliverator-era full form "{customer}/{space}/{id}" in the body.
+            var bodyModelId = hydraImage.ModelId;
+            var bodyPrefix = $"{hydraImage.CustomerId}/{hydraImage.Space!.Value}/";
+            if (bodyModelId.StartsWith(bodyPrefix))
+            {
+                bodyModelId = bodyModelId.Substring(bodyPrefix.Length);
+            }
+
+            if (bodyModelId != modelId)
+            {
+                throw new BadRequestException("The id in the request body does not agree with the request URL.");
+            }
+        }
+
         if (modelId.IsNullOrEmpty())
         {
             modelId = hydraImage.ModelId;
         }
-        
+
         if (modelId.IsNullOrEmpty() && hydraImage.Id.HasText())
         {
             modelId = hydraImage.Id.GetLastPathElement();
@@ -352,14 +370,14 @@ public static class AssetConverter
             if (!hydraImage.Roles.IsNullOrEmpty())
             {
                 // If roles have been provided, use them
-                targetAsset.RolesList = hydraImage.Roles!;
+                targetAsset.Roles = hydraImage.Roles!;
             }
             else
             {
                 // No roles provided but we may need to assign an unobtainable role to simulate behaviour
                 if (maxUnauth >= 0)
                 {
-                    targetAsset.RolesList = [Asset.UnobtainableRole];
+                    targetAsset.Roles = [Asset.UnobtainableRole];
                 }
             }
             
@@ -369,7 +387,7 @@ public static class AssetConverter
         
         if (hydraImage.Roles != null)
         {
-            targetAsset.RolesList = hydraImage.Roles;
+            targetAsset.Roles = hydraImage.Roles;
         }
         
         if (hydraImage.MaxWidth != null)

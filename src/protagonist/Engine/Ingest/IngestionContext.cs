@@ -4,7 +4,6 @@ using DLCS.Core.Collections;
 using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
-using DLCS.Repository.Strategy;
 using Engine.Ingest.Persistence;
 
 namespace Engine.Ingest;
@@ -32,7 +31,7 @@ public class AdjunctIngestionContext : IngestionContext
 
     public override IOriginItem GetOriginItem() => Adjunct;
 
-    public override AssetFromOrigin CreateAssetFromOrigin(long received, string location, string contentType)
+    public override AssetFromOrigin CreateAssetFromOrigin(long received, string location, string? contentType)
         => new AdjunctFromOrigin(Adjunct.Id, AssetId, received, location, contentType);
 
     public override string GetMediaType() => Adjunct.MediaType;
@@ -84,8 +83,8 @@ public class IngestionContext(Asset asset)
     /// </summary>
     /// <param name="received">bytes received when ingesting item</param>
     /// <param name="location">location where the item has been stored</param>
-    /// <param name="contentType">content type of the item</param>
-    public virtual AssetFromOrigin CreateAssetFromOrigin(long received, string location, string contentType)
+    /// <param name="contentType">content type of the item, if known</param>
+    public virtual AssetFromOrigin CreateAssetFromOrigin(long received, string location, string? contentType)
         => new(AssetId, received, location, contentType);
 
     /// <summary>

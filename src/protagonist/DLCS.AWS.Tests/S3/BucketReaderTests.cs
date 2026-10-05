@@ -3,6 +3,7 @@ using System.Text;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using DLCS.AWS.Configuration;
 using DLCS.AWS.S3;
 using DLCS.AWS.S3.Models;
 using DLCS.Core.Exceptions;
@@ -19,7 +20,7 @@ public class BucketReaderTests
     public BucketReaderTests()
     {
         s3Client = A.Fake<IAmazonS3>();
-        sut = new S3BucketReader(s3Client, new NullLogger<S3BucketReader>());
+        sut = new S3BucketReader(new AmbientAwsClientProvider<IAmazonS3>(s3Client), new NullLogger<S3BucketReader>());
     }
 
     [Fact]

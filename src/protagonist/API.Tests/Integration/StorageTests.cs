@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using API.Client;
 using API.Tests.Integration.Infrastructure;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -48,11 +49,13 @@ public class StorageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Act
         var response = await httpClient.AsCustomer(customerId).GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var model = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.CustomerStorage>();
+        model!.StoragePolicy.Should().EndWith("/storagePolicies/default");
     }
-    
+
     [Fact]
     public async Task Get_CustomerStorage_400_IfNotFound()
     {
@@ -91,11 +94,14 @@ public class StorageTests : IClassFixture<ProtagonistAppFactory<Startup>>
         
         // Act
         var response = await httpClient.AsCustomer(customerId).GetAsync(path);
-        
+
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var model = await response.ReadAsHydraResponseAsync<DLCS.HydraModel.CustomerStorage>();
+        // policies are customer-level only - a space-level response must not echo one
+        model!.StoragePolicy.Should().BeNull();
     }
-    
+
     [Fact]
     public async Task Get_SpaceStorage_400_IfNotFound()
     {

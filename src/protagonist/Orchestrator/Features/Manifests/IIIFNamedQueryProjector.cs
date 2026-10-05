@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Guard;
@@ -35,6 +34,7 @@ public class IIIFNamedQueryProjector(IIIFManifestBuilder manifestBuilder, ILogge
 
         var assets = await namedQueryResult.Results
             .IncludeRelationsForProjections()
+            .OrderByNamedQuery(parsedNamedQuery)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
         if (assets.Count == 0)
@@ -43,11 +43,9 @@ public class IIIFNamedQueryProjector(IIIFManifestBuilder manifestBuilder, ILogge
             return null;
         }
 
-        var orderedImages = NamedQueryProjections.GetOrderedAssets(assets, parsedNamedQuery).ToList();
-
         return iiifPresentationVersion == Version.V2
-            ? await GenerateV2Manifest(parsedNamedQuery, customerPathElement, orderedImages, request, cancellationToken)
-            : await GenerateV3Manifest(parsedNamedQuery, customerPathElement, orderedImages, request, cancellationToken);
+            ? await GenerateV2Manifest(parsedNamedQuery, customerPathElement, assets, request, cancellationToken)
+            : await GenerateV3Manifest(parsedNamedQuery, customerPathElement, assets, request, cancellationToken);
     }
 
     private async Task<JsonLdBase> GenerateV2Manifest(IIIFParsedNamedQuery parsedNamedQuery,

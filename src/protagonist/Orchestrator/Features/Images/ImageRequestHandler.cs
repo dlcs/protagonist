@@ -35,6 +35,7 @@ public class ImageRequestHandler
     private readonly IServiceScopeFactory scopeFactory;
     private readonly ICustomHeaderRepository customHeaderRepository;
     private readonly IOptions<OrchestratorSettings> orchestratorSettings;
+    private readonly GatewayTokenGenerator gatewayTokenGenerator;
     private readonly Dictionary<string, CompiledRegexThumbUpscaleConfig> upscaleConfig;
     private readonly bool haveUpscaleRules;
     private readonly bool strictImageRequests;
@@ -44,13 +45,15 @@ public class ImageRequestHandler
         AssetRequestProcessor assetRequestProcessor,
         IServiceScopeFactory scopeFactory,
         ICustomHeaderRepository customHeaderRepository,
-        IOptions<OrchestratorSettings> orchestratorSettings)
+        IOptions<OrchestratorSettings> orchestratorSettings,
+        GatewayTokenGenerator gatewayTokenGenerator)
     {
         this.logger = logger;
         this.assetRequestProcessor = assetRequestProcessor;
         this.scopeFactory = scopeFactory;
         this.customHeaderRepository = customHeaderRepository;
         this.orchestratorSettings = orchestratorSettings;
+        this.gatewayTokenGenerator = gatewayTokenGenerator;
 
         upscaleConfig = orchestratorSettings.Value.Proxy?.ThumbUpscaleConfig?
                             .Where(kvp => kvp.Value.UpscaleThreshold > 0)
@@ -149,7 +152,8 @@ public class ImageRequestHandler
             }
         }
         
-        // Update the SizeParameter as it may have altered during parsing
+        // Update the RegionParameter and SizeParameter as they may have altered during parsing
+        assetRequest.IIIFImageRequest.Region = proxyRequest.ProxyRegionParameter;
         assetRequest.IIIFImageRequest.Size = proxyRequest.ProxySizeParameter;
         
         if (proxyRequest.RepresentsFullRegion)
@@ -275,17 +279,24 @@ public class ImageRequestHandler
             ? settings.GetSpecialServerPath(orchestrationImage.S3Location ?? string.Empty, imageApiVersion)
             : settings.GetImageServerPath(orchestrationImage.AssetId, imageApiVersion);
 
-        if (string.IsNullOrEmpty(downstreamPath))
+        if (downstreamPath == null)
         {
             logger.LogDebug("Unable to fulfil image request: {Path}. Could not generate ImageServer path",
                 requestModel.NormalisedFullPath);
             return new StatusCodeResult(HttpStatusCode.BadRequest);
         }
         
-        var imageServerPath = downstreamPath.ToConcatenated('/', requestModel.IIIFImageRequest.GetImageRequestOnly());
+        var imageServerPath =
+            downstreamPath.FullPath.ToConcatenated('/', requestModel.IIIFImageRequest.GetImageRequestOnly());
+        
+        // Sign the identifier so that the image-server can verify the request came from Orchestrator
+        var gatewayToken = gatewayTokenGenerator.GetToken(downstreamPath.Identifier);
+        
         IProxyActionResult proxyActionResult = specialServer
             ? new ProxyActionResult(ProxyDestination.SpecialServer, orchestrationImage.RequiresAuth, imageServerPath)
-            : new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth, imageServerPath);
+                { GatewayToken = gatewayToken }
+            : new ProxyImageServerResult(orchestrationImage, orchestrationImage.RequiresAuth, imageServerPath)
+                { GatewayToken = gatewayToken };
         return proxyActionResult;
     }
 

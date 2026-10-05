@@ -15,8 +15,8 @@ public static class CustomerConverter
         var customer = new DLCS.HydraModel.Customer(baseUrl, dbCustomer.Id, dbCustomer.Name, dbCustomer.DisplayName)
         {
             Created = dbCustomer.Created,
-            Administrator = dbCustomer.Administrator,
-            AcceptedAgreement = dbCustomer.AcceptedAgreement
+            // null rather than false so that NullValueHandling.Ignore omits for ordinary customers
+            Administrator = dbCustomer.Administrator ? true : null
         };
         return customer;
     }

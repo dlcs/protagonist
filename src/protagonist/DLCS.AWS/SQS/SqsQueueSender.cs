@@ -49,20 +49,24 @@ public class SqsQueueSender(IAmazonSQS client, SqsQueueUtilities queueUtilities,
         const int batchSize = 10;
         var queueUrl = await QueueLookup.GetQueueUrl(queueUtilities, queueName, cancellationToken);
         var successCount = 0;
-        try
+        var batchCount = 0;
+        var count = 0;
+
+        foreach (var batch in messageContents.Chunk(batchSize))
         {
-            var batchCount = 0;
-            var count = 0;
-            foreach (var batch in messageContents.Chunk(batchSize))
+            var batchPrefix = $"{batchIdentifier}_{++batchCount}";
+            var entries = batch
+                .Select(c => new SendMessageBatchRequestEntry($"{batchPrefix}_{++count}", c)
+                {
+                    // Note: It seems recommended to have an instance-per-entry, not reuse the same one
+                    MessageAttributes = GetMessageAttributesDictionary(messageAttributes)
+                })
+                .ToList();
+
+            // Each chunk is an independent SQS call - a failure sending one must not abandon those that follow it,
+            // else the caller is told nothing was sent while earlier chunks are already on the queue
+            try
             {
-                var batchPrefix = $"{batchIdentifier}_{++batchCount}";
-                var entries = batch
-                    .Select(c => new SendMessageBatchRequestEntry($"{batchPrefix}_{++count}", c)
-                    {
-                        // Note: It seems recommended to have an instance-per-entry, not reuse the same one
-                        MessageAttributes = GetMessageAttributesDictionary(messageAttributes)
-                    })
-                    .ToList();
                 var batchResult = await client.SendMessageBatchAsync(queueUrl, entries, cancellationToken);
 
                 if (!batchResult.HttpStatusCode.IsSuccess())
@@ -71,27 +75,30 @@ public class SqsQueueSender(IAmazonSQS client, SqsQueueUtilities queueUtilities,
                         batchResult.HttpStatusCode);
                 }
 
-                if (batchResult.Failed.Count > 0)
+                foreach (var errorEntry in batchResult.Failed ?? [])
                 {
-                    foreach (var errorEntry in batchResult.Failed)
-                    {
-                        logger.LogError("Failed message {MessageId}, message: {Error}", errorEntry.Id,
-                            errorEntry.Message);
-                    }
+                    logger.LogError("Failed message {MessageId}, message: {Error}", errorEntry.Id,
+                        errorEntry.Message);
                 }
 
-                successCount += batchResult.Successful.Count;
+                successCount += batchResult.Successful?.Count ?? 0;
             }
+            catch (BatchRequestTooLongException)
+            {
+                logger.LogError("Batch {BatchIdentifier} chunk {BatchPrefix} too long. Batch size: {BatchSize}",
+                    batchIdentifier, batchPrefix, batchSize);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error sending chunk {BatchPrefix} to {QueueName}", batchPrefix, queueName);
+            }
+        }
 
-            return successCount;
-        }
-        catch (BatchRequestTooLongException)
+        if (successCount != messageContents.Count)
         {
-            logger.LogError("Batch {BatchIdentifier} too long. Batch size: {BatchSize}", batchIdentifier, batchSize);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error sending message to {QueueName}", queueName);
+            logger.LogError(
+                "Batch {BatchIdentifier} to {QueueName} incomplete - queued {SuccessCount} of {MessageCount} messages",
+                batchIdentifier, queueName, successCount, messageContents.Count);
         }
 
         return successCount;
