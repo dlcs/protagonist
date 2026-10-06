@@ -82,10 +82,11 @@ public class AssetRequestProcessor(
     /// <summary>
     /// Determine whether the current request is permitted to access an asset (or adjunct) with the given roles.
     /// </summary>
-    /// <param name="assetId">AssetId the roles belong to</param>
+    /// <param name="deliverableId">Id of the asset or adjunct the roles belong to</param>
     /// <param name="roles">Roles associated with the asset/adjunct being requested</param>
     /// <param name="httpRequest">Current <see cref="HttpRequest"/>, used to determine auth mechanism + for logging</param>
-    public async Task<bool> IsAuthenticated(AssetId assetId, IReadOnlyList<string> roles, HttpRequest httpRequest)
+    public async Task<bool> IsAuthenticated(DeliverableId deliverableId, IReadOnlyList<string> roles,
+        HttpRequest httpRequest)
     {
         // IAssetAccessValidator is in container with a Lifetime.Scope
         using var scope = scopeFactory.CreateScope();
@@ -95,7 +96,7 @@ public class AssetRequestProcessor(
         var authMechanism = httpRequest.Method == "GET" ? AuthMechanism.Cookie : AuthMechanism.All;
         logger.LogDebug("Authenticating request for {Method} {Path} via {Mechanism}", httpRequest.Method,
             httpRequest.Path, authMechanism);
-        var authResult = await assetAccessValidator.TryValidate(assetId, roles, authMechanism);
+        var authResult = await assetAccessValidator.TryValidate(deliverableId, roles, authMechanism);
 
         return authResult is AssetAccessResult.Open or AssetAccessResult.Authorized;
     }

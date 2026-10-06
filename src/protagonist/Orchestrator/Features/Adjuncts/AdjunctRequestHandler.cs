@@ -60,8 +60,8 @@ public class AdjunctRequestHandler(
         
         if (orchestrationAdjunct.RequiresAuth)
         {
-            if (!await assetRequestProcessor.IsAuthenticated(adjunctRequest.GetAssetId(), orchestrationAdjunct.Roles,
-                    httpContext.Request))
+            if (!await assetRequestProcessor.IsAuthenticated(adjunctRequest.GetDeliverableId(),
+                    orchestrationAdjunct.Roles, httpContext.Request))
             {
                 logger.LogDebug("User not authenticated for {Method} {Path}", httpContext.Request.Method,
                     httpContext.Request.Path);
@@ -83,13 +83,7 @@ public class AdjunctRequestHandler(
 
         var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget, !orchestrationAdjunct.OptimisedOrigin ?? true);
         var proxyActionResult = new ProxyActionResult(ProxyDestination.S3, orchestrationAdjunct.RequiresAuth, proxyPath);
-        proxyActionResult.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
-        if (orchestrationAdjunct.RequiresAuth)
-        {
-            // Ensure authorised adjuncts aren't cached in any interim (e.g. CDN) cache layers
-            proxyActionResult.Headers.Add("Cache-Control", PrivateCacheControl);
-        }
-        return proxyActionResult;
+        return AddResponseHeaders(proxyActionResult, orchestrationAdjunct);
     }
 
     private IdRewriteProxyActionResult GetIdRewriteResult(AdjunctDeliveryRequest adjunctRequest,
@@ -108,6 +102,12 @@ public class AdjunctRequestHandler(
             // set like this as future types of adjuncts could change this i.e.: restricted or not etc.
             MaxSizeBytes = orchestratorOptions.Value.MaxAdjunctSizeBytes
         };
+        return AddResponseHeaders(result, orchestrationAdjunct);
+    }
+
+    private static T AddResponseHeaders<T>(T result, OrchestrationAdjunct orchestrationAdjunct)
+        where T : IProxyActionResult
+    {
         result.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
         if (orchestrationAdjunct.RequiresAuth)
         {

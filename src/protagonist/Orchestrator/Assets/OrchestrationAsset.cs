@@ -25,7 +25,7 @@ public class OrchestrationAsset : IOriginItem
     /// <summary>
     /// Gets list of roles associated with Asset
     /// </summary>
-    public List<string> Roles { get; set; } = new();
+    public IReadOnlyList<string> Roles { get; set; } = [];
     
     /// <summary>
     /// Get or set Asset origin 

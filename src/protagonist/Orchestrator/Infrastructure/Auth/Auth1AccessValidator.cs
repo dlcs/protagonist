@@ -23,12 +23,12 @@ public class Auth1AccessValidator(
     IHttpContextAccessor httpContextAccessor)
     : IAssetAccessValidator
 {
-    public Task<AssetAccessResult> TryValidate(AssetId assetId, IReadOnlyList<string> roles, AuthMechanism mechanism,
+    public Task<AssetAccessResult> TryValidate(DeliverableId deliverableId, IReadOnlyList<string> roles, AuthMechanism mechanism,
         CancellationToken cancellationToken = default) => mechanism switch
     {
-        AuthMechanism.All => TryValidateAll(assetId.Customer, roles),
-        AuthMechanism.Cookie => TryValidateCookie(assetId.Customer, roles),
-        AuthMechanism.BearerToken => TryValidateBearerToken(assetId.Customer, roles),
+        AuthMechanism.All => TryValidateAll(deliverableId.AssetId.Customer, roles),
+        AuthMechanism.Cookie => TryValidateCookie(deliverableId.AssetId.Customer, roles),
+        AuthMechanism.BearerToken => TryValidateBearerToken(deliverableId.AssetId.Customer, roles),
         _ => throw new ArgumentOutOfRangeException(nameof(mechanism), mechanism, null)
     };
 

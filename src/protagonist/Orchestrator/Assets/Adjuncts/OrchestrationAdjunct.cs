@@ -40,12 +40,12 @@ public class OrchestrationAdjunct : IOriginItem
     public string ItemId => Id;
 
     /// <summary>
-    /// Gets list of roles associated with this adjunct, inherited from the parent Asset
+    /// Gets list of roles associated with this adjunct
     /// </summary>
-    public List<string> Roles { get; set; } = new();
+    public IReadOnlyList<string> Roles { get; set; } = [];
 
     /// <summary>
-    /// Get boolean indicating whether this adjunct is restricted, based on parent Asset roles
+    /// Get boolean indicating whether this adjunct is restricted
     /// </summary>
     public bool RequiresAuth => Roles.Count > 0;
 

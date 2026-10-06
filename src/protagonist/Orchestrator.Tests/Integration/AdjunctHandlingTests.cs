@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Orchestrator.Settings;
 using Orchestrator.Tests.Integration.Infrastructure;
+using Stubbery;
 using Test.Helpers.Data;
 using Test.Helpers.Integration;
 using Yarp.ReverseProxy.Forwarder;
@@ -32,6 +33,7 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
     private readonly DlcsContext dbContext;
     private readonly HttpClient httpClient;
     private readonly string stubAddress;
+    private readonly ApiStub apiStub;
     private readonly IAmazonS3 amazonS3;
     private readonly List<ImageDeliveryChannel> deliveryChannelsForFile =
     [
@@ -48,10 +50,12 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         var dbFixture1 = orchestratorFixture.DbFixture;
         dbContext = dbFixture1.DbContext;
         stubAddress = orchestratorFixture.ApiStub.Address;
+        apiStub = orchestratorFixture.ApiStub;
         amazonS3 = orchestratorFixture.LocalStackFixture.AWSS3ClientFactory();
         httpClient = factory
             .WithConnectionString(dbFixture1.ConnectionString)
             .WithLocalStack(orchestratorFixture.LocalStackFixture)
+            .WithConfigValue("Auth:Auth2ServiceRoot", $"{stubAddress}/auth2/")
             .WithTestServices(services =>
             {
                 services
@@ -409,11 +413,13 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
 
     [Fact]
-    public async Task Get_RequiresAuth_ReturnsAdjunct_IfCookieProvided()
+    public async Task Get_RequiresAuth_Returns401_IfAuth1CookieProvided()
     {
+        // Adjuncts can only be accessed via IIIF Auth v2, a valid Auth1 cookie is not sufficient
+        
         // Arrange
         var id = AssetIdGenerator.GetAssetId();
-        const string adjunctId = nameof(Get_RequiresAuth_ReturnsAdjunct_IfCookieProvided);
+        const string adjunctId = nameof(Get_RequiresAuth_Returns401_IfAuth1CookieProvided);
         await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
                 origin: $"{stubAddress}/testfile", roles: "clickthrough",
                 imageDeliveryChannels: deliveryChannelsForFile)
@@ -430,9 +436,57 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         var response = await httpClient.SendAsync(request);
 
         // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+    }
+
+    [Fact]
+    public async Task Get_RequiresAuth_ReturnsAdjunct_IfAuth2VerifiesAdjunctAccess()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_RequiresAuth_ReturnsAdjunct_IfAuth2VerifiesAdjunctAccess);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: "auth2-role",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+        apiStub.Get($"/auth2/verifyaccess/{id}/{adjunctId}", (_, _) => string.Empty)
+            .IfQueryArg("roles", "auth2-role");
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("Cookie", $"dlcs-auth2-{id.Customer}=anything;");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.CacheControl!.Private.Should().BeTrue("authorised adjuncts must not be cached publicly");
-        response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+    }
+
+    [Fact]
+    public async Task Get_RequiresAuth_Returns401_IfAuth2OnlyVerifiesAssetAccess()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_RequiresAuth_Returns401_IfAuth2OnlyVerifiesAssetAccess);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: "auth2-role",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+
+        // Only the parent asset is verified - the adjunct-specific path is not stubbed so returns 404
+        apiStub.Get($"/auth2/verifyaccess/{id}", (_, _) => string.Empty)
+            .IfQueryArg("roles", "auth2-role");
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("Cookie", $"dlcs-auth2-{id.Customer}=anything;");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
