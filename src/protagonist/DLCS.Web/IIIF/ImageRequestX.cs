@@ -40,7 +40,7 @@ public static class ImageRequestX
     }
 
     /// <summary>
-    /// Check if the IIIF ImageRequest is a supported format, quality and non-zero size.  
+    /// Check if the IIIF ImageRequest is a supported format and quality.  
     /// </summary>
     /// <param name="request">Candidate <see cref="ImageRequest"/></param>
     /// <param name="invalidMessage">String detailing why object cannot be handled</param>
@@ -59,13 +59,6 @@ public static class ImageRequestX
         if (!Qualities.All.Contains(request.Quality, StringComparer.OrdinalIgnoreCase))
         {
             invalidMessage = $"Requested quality '{request.Quality}' not supported, must be one of '{Qualities.AllCsv}'";
-            return false;
-        }
-
-        var size = request.Size;
-        if (!((size.Width ?? 1) > 0 && (size.Height ?? 1) > 0))
-        {
-            invalidMessage = "Requested size must be greater than 0";
             return false;
         }
 

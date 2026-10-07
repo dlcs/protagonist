@@ -186,7 +186,7 @@ public class ImageRequestHandlerTests
     [Theory]
     [InlineData("full/501,")]
     [InlineData("full/,501")]
-    [InlineData("square/pct:51,")]
+    [InlineData("square/pct:51")]
     [InlineData("0,0,512,512/512,")]
     public async Task HandleRequest_Returns403_IfRequestedExceedsMaxWidth(string sizeAndRegion)
     {
