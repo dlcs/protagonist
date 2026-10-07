@@ -33,12 +33,11 @@ public class AdjunctProbeServiceHandler(
 {
     public Task<DescriptionResourceResponse> Handle(AdjunctProbeService request, CancellationToken cancellationToken)
     {
-        var assetId = request.AssetId;
-        var adjunctId = request.AdjunctId;
+        var deliverableId = new DeliverableId(request.AssetId, request.AdjunctId);
 
-        return ProbeServiceSupport.HandleProbeRequest(assetId, httpContextAccessor, logger,
-            () => adjunctTracker.GetOrchestrationAdjunct(adjunctId, assetId),
-            (adjunct, accessToken) => iiifAuth2Client.GetProbeServiceResultForAdjunct(assetId, adjunctId,
-                adjunct.Roles, accessToken, cancellationToken));
+        return ProbeServiceSupport.HandleProbeRequest(deliverableId, httpContextAccessor, logger,
+            () => adjunctTracker.GetOrchestrationAdjunct(request.AdjunctId, request.AssetId),
+            (adjunct, accessToken) => iiifAuth2Client.GetProbeServiceResult(deliverableId, adjunct.Roles,
+                accessToken, cancellationToken));
     }
 }

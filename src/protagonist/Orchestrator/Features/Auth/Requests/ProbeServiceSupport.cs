@@ -25,13 +25,13 @@ public static class ProbeServiceSupport
     /// Handle a full probe service request for an item (asset or adjunct): checks for a bearer token, looks up the
     /// item, and evaluates the auth requirements, calling the downstream auth service if required.
     /// </summary>
-    /// <param name="assetId">AssetId the request relates to, used for logging</param>
+    /// <param name="deliverableId">Id of the asset or adjunct the request relates to, used for logging</param>
     /// <param name="httpContextAccessor">Used to read the bearer token from the current request</param>
     /// <param name="logger">Logger for the calling handler</param>
     /// <param name="lookupItem">Delegate to fetch the item (asset or adjunct) being probed</param>
     /// <param name="getDownstreamProbeResult">Delegate to call the downstream auth service for the found item</param>
     public static async Task<DescriptionResourceResponse> HandleProbeRequest<T>(
-        AssetId assetId,
+        DeliverableId deliverableId,
         IHttpContextAccessor httpContextAccessor,
         ILogger logger,
         Func<Task<T?>> lookupItem,
@@ -41,43 +41,44 @@ public static class ProbeServiceSupport
         var accessToken = GetAccessToken(httpContextAccessor);
         if (string.IsNullOrWhiteSpace(accessToken))
         {
-            logger.LogDebug("ProbeService request for {AssetId} has no bearer token", assetId);
+            logger.LogDebug("ProbeService request for {DeliverableId} has no bearer token", deliverableId);
             return DescriptionResourceResponse.Restricted(AuthProbeResult2Builder.MissingCredentials);
         }
 
         var item = await lookupItem();
         if (item == null)
         {
-            logger.LogDebug("ProbeService request for not-found {AssetId}", assetId);
+            logger.LogDebug("ProbeService request for not-found {DeliverableId}", deliverableId);
             return DescriptionResourceResponse.Empty;
         }
 
-        return await Resolve(item.RequiresAuth, item.Roles, assetId, logger,
+        return await Resolve(item.RequiresAuth, item.Roles, deliverableId, logger,
             () => getDownstreamProbeResult(item, accessToken));
     }
 
     private static async Task<DescriptionResourceResponse> Resolve(
         bool requiresAuth,
         IReadOnlyList<string> roles,
-        AssetId assetId,
+        DeliverableId deliverableId,
         ILogger logger,
         Func<Task<AuthProbeResult2>> getDownstreamProbeResult)
     {
         if (!requiresAuth)
         {
-            logger.LogDebug("ProbeService request for non auth {AssetId}", assetId);
+            logger.LogDebug("ProbeService request for non auth {DeliverableId}", deliverableId);
             return DescriptionResourceResponse.Restricted(AuthProbeResult2Builder.Okay);
         }
 
         if (roles.IsNullOrEmpty())
         {
-            logger.LogInformation("ProbeService request for auth {AssetId} with no roles", assetId);
+            logger.LogInformation("ProbeService request for auth {DeliverableId} with no roles", deliverableId);
             return DescriptionResourceResponse.Restricted(AuthProbeResult2Builder.Okay);
         }
 
         if (roles.ContainsOnly(Asset.UnobtainableRole))
         {
-            logger.LogInformation("ProbeService request for auth {AssetId} with unobtainable role", assetId);
+            logger.LogInformation("ProbeService request for auth {DeliverableId} with unobtainable role",
+                deliverableId);
             return DescriptionResourceResponse.Restricted(AuthProbeResult2Builder.UnobtainableRole);
         }
 

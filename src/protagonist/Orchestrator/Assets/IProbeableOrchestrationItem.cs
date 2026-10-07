@@ -15,5 +15,5 @@ public interface IProbeableOrchestrationItem
     /// <summary>
     /// Gets list of roles associated with item
     /// </summary>
-    List<string> Roles { get; }
+    IReadOnlyList<string> Roles { get; }
 }

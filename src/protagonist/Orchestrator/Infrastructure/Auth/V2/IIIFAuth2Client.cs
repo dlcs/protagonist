@@ -41,33 +41,24 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
         }
     }
 
-    public Task<AuthProbeResult2> GetProbeServiceResult(AssetId assetId, IReadOnlyList<string> roles, string accessToken,
-        CancellationToken cancellationToken)
-        => GetProbeServiceResult($"probe_internal/{assetId}?roles={GetRolesString(roles)}", assetId, cancellationToken,
-            accessToken);
-
-    public Task<AuthProbeResult2> GetProbeServiceResultForAdjunct(AssetId assetId, string adjunctId,
-        IReadOnlyList<string> roles, string accessToken, CancellationToken cancellationToken)
-        => GetProbeServiceResult($"probe_internal/{assetId}/{adjunctId}?roles={GetRolesString(roles)}",
-            assetId, cancellationToken, accessToken);
-
-    private async Task<AuthProbeResult2> GetProbeServiceResult(string path, AssetId assetId,
-        CancellationToken cancellationToken, string accessToken)
+    public async Task<AuthProbeResult2> GetProbeServiceResult(DeliverableId deliverableId, IReadOnlyList<string> roles,
+        string accessToken, CancellationToken cancellationToken)
     {
+        var path = $"probe_internal/{deliverableId}?roles={GetRolesString(roles)}";
         try
         {
             var httpRequest = new HttpRequestMessage(HttpMethod.Get, path);
             httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             var response = await httpClient.SendAsync(httpRequest, cancellationToken);
             response.EnsureSuccessStatusCode();
-
+            
             var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
             var probeServiceResult = contentStream.FromJsonStream<AuthProbeResult2>();
             return probeServiceResult;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error getting IIIF Probe Service2 for {AssetId}", assetId);
+            logger.LogError(ex, "Error getting IIIF Probe Service2 for {DeliverableId}", deliverableId);
             return AuthProbeResult2Builder.UnexpectedError;
         }
     }

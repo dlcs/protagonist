@@ -200,6 +200,18 @@ public class IIIFAuth2ClientTests
     }
 
     [Fact]
+    public async Task GetProbeServiceResult_Adjunct_CallsCorrectPath()
+    {
+        // Act
+        await sut.GetProbeServiceResult(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"),
+            ["role1", "role2"], "accessToken", CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should()
+            .ContainSingle(s => s == "http://auth-2/probe_internal/99/100/foo/mets.xml?roles=role1,role2");
+    }
+
+    [Fact]
     public async Task GetAuthServicesForAsset_ReturnsErrorProbeService_IfHttpException()
     {
         // Arrange
