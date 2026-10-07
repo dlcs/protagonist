@@ -11,13 +11,13 @@ namespace Orchestrator.Infrastructure.Auth;
 /// </summary>
 public class Auth2AccessValidator(IIIFAuth2Client iiifAuth2Client) : IAssetAccessValidator
 {
-    public async Task<AssetAccessResult> TryValidate(AssetId assetId, IReadOnlyList<string> roles, AuthMechanism mechanism,
+    public async Task<AssetAccessResult> TryValidate(DeliverableId deliverableId, IReadOnlyList<string> roles, AuthMechanism mechanism,
         CancellationToken cancellationToken = default)
     {
         // NOTE(DG) - caller of this has checked appropriate cookie exists
         if (mechanism == AuthMechanism.BearerToken) return AssetAccessResult.Unauthorized;
 
-        var canAccess = await iiifAuth2Client.VerifyAccess(assetId, roles, cancellationToken);
+        var canAccess = await iiifAuth2Client.VerifyAccess(deliverableId, roles, cancellationToken);
 
         return canAccess ? AssetAccessResult.Authorized : AssetAccessResult.Unauthorized;
     }

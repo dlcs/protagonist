@@ -273,6 +273,62 @@ public class IIIFAuth2ClientTests
             .ContainSingle(s => s == "http://auth-2/verifyaccess/99/100/foo?roles=role1,role2,role3");
     }
 
+    [Fact]
+    public async Task VerifyAccess_Adjunct_CallsCorrectPath_SingleRole()
+    {
+        // Act
+        await sut.VerifyAccess(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"), ["role1"],
+            CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should()
+            .ContainSingle(s => s == "http://auth-2/verifyaccess/99/100/foo/mets.xml?roles=role1");
+    }
+
+    [Fact]
+    public async Task VerifyAccess_Adjunct_CallsCorrectPath_MultipleRole()
+    {
+        // Act
+        await sut.VerifyAccess(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"), ["role1", "role2", "role3"],
+            CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should()
+            .ContainSingle(s => s == "http://auth-2/verifyaccess/99/100/foo/mets.xml?roles=role1,role2,role3");
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.BadGateway)]
+    [InlineData(HttpStatusCode.Redirect)]
+    public async Task VerifyAccess_Adjunct_ReturnsFalse_IfHttpException(HttpStatusCode statusCode)
+    {
+        // Arrange
+        httpHandler.SetResponse(new HttpResponseMessage(statusCode));
+
+        // Act
+        var response = await sut.VerifyAccess(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"), ["role1"],
+            CancellationToken.None);
+
+        // Assert
+        response.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task VerifyAccess_Adjunct_ReturnsTrue_IfSuccess()
+    {
+        // Arrange
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        var response = await sut.VerifyAccess(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"), ["role1"],
+            CancellationToken.None);
+
+        // Assert
+        response.Should().BeTrue();
+    }
+
     [Theory]
     [InlineData(HttpStatusCode.InternalServerError)]
     [InlineData(HttpStatusCode.BadRequest)]

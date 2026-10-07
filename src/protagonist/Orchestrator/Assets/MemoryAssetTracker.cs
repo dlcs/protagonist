@@ -174,7 +174,8 @@ public class MemoryAssetTracker(
             Origin = origin,
             IIIFLink = adjunct.IIIFLink,
             MediaType = new StringValues(adjunct.MediaType),
-            OptimisedOrigin = cos.Optimised
+            OptimisedOrigin = cos.Optimised,
+            Roles = adjunct.GetDeliverableRoles()
         };
         
         return  orchestrationAdjunct;
@@ -229,7 +230,7 @@ public class MemoryAssetTracker(
                 orchestrationAsset.Channels |= AvailableDeliveryChannel.Timebased;
             
             orchestrationAsset.AssetId = assetId;
-            orchestrationAsset.Roles = asset.Roles?.ToList() ?? [];
+            orchestrationAsset.Roles = asset.Roles ?? [];
             orchestrationAsset.RequiresAuth = asset.HasRoles;
             return orchestrationAsset;
         }

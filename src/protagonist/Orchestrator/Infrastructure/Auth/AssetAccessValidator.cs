@@ -25,30 +25,33 @@ public class AssetAccessValidator(
     ILogger<AssetAccessValidator> logger)
     : IAssetAccessValidator
 {
-    public async Task<AssetAccessResult> TryValidate(AssetId assetId, IReadOnlyList<string> roles, AuthMechanism mechanism, CancellationToken cancellationToken = default)
+    public async Task<AssetAccessResult> TryValidate(DeliverableId deliverableId, IReadOnlyList<string> roles, AuthMechanism mechanism, CancellationToken cancellationToken = default)
     {
         if (roles.ContainsOnly(Asset.UnobtainableRole))
         {
-            logger.LogTrace("{AssetId} only has unobtainable role, shortcutting check", assetId);
+            logger.LogTrace("{DeliverableId} only has unobtainable role, shortcutting check", deliverableId);
             return AssetAccessResult.Unauthorized;
         }
-        
-        if (ShouldAttemptAuth1(assetId.Customer, mechanism))
+
+        var customer = deliverableId.AssetId.Customer;
+
+        // Adjuncts can only be validated via Auth2
+        if (!deliverableId.IsAdjunct && ShouldAttemptAuth1(customer, mechanism))
         {
-            var auth1Status = await auth1AccessValidator.TryValidate(assetId, roles, mechanism, cancellationToken);
+            var auth1Status = await auth1AccessValidator.TryValidate(deliverableId, roles, mechanism, cancellationToken);
             if (auth1Status == AssetAccessResult.Authorized)
             {
-                logger.LogTrace("{AssetId} can be viewed via Auth1", assetId);
+                logger.LogTrace("{DeliverableId} can be viewed via Auth1", deliverableId);
                 return auth1Status;
             }
         }
 
-        if (HasAuth2Cookie(assetId.Customer))
+        if (HasAuth2Cookie(customer))
         {
-            var auth2Status = await auth2AccessValidator.TryValidate(assetId, roles, mechanism, cancellationToken);
+            var auth2Status = await auth2AccessValidator.TryValidate(deliverableId, roles, mechanism, cancellationToken);
             if (auth2Status == AssetAccessResult.Authorized)
             {
-                logger.LogTrace("{AssetId} can be viewed via Auth2", assetId);
+                logger.LogTrace("{DeliverableId} can be viewed via Auth2", deliverableId);
                 return auth2Status;
             }
         }

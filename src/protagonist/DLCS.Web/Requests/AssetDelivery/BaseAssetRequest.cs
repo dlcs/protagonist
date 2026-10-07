@@ -71,4 +71,9 @@ public class BaseAssetRequest : IBasicPathElements
     /// Generate an <see cref="Core.Types.AssetId"/> object from BaseAssetRequest
     /// </summary>
     public AssetId GetAssetId() => new(Customer.Id, Space, AssetId);
+
+    /// <summary>
+    /// Generate a <see cref="DeliverableId"/> object, identifying the resource requested
+    /// </summary>
+    public virtual DeliverableId GetDeliverableId() => GetAssetId();
 }

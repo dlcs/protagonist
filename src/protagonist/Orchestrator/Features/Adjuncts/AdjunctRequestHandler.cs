@@ -23,6 +23,8 @@ public class AdjunctRequestHandler(
     IAssetPathGenerator assetPathGenerator,
     IOptions<OrchestratorSettings> orchestratorOptions)
 {
+    private const string PrivateCacheControl = "private, max-age=600";
+
     /// <summary>
     /// Handle /adjuncts/ request, returning object detailing operation that should be carried out.
     /// </summary>
@@ -56,8 +58,18 @@ public class AdjunctRequestHandler(
             return new StatusCodeResult(HttpStatusCode.NotFound);
         }
         
-        // TBD - AUTH
+        if (orchestrationAdjunct.RequiresAuth)
+        {
+            if (!await assetRequestProcessor.IsAuthenticated(adjunctRequest.GetDeliverableId(),
+                    orchestrationAdjunct.Roles, httpContext.Request))
+            {
+                logger.LogDebug("User not authenticated for {Method} {Path}", httpContext.Request.Method,
+                    httpContext.Request.Path);
+                return new StatusCodeResult(HttpStatusCode.Unauthorized);
+            }
+        }
 
+        // By here it's either open, or user is authenticated
         if (httpContext.Request.Method == "HEAD")
         {
             // quit with success as we've done all we need to
@@ -71,10 +83,9 @@ public class AdjunctRequestHandler(
 
         var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget, !orchestrationAdjunct.OptimisedOrigin ?? true);
         var proxyActionResult = new ProxyActionResult(ProxyDestination.S3, orchestrationAdjunct.RequiresAuth, proxyPath);
-        proxyActionResult.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
-        return proxyActionResult;
+        return AddResponseHeaders(proxyActionResult, orchestrationAdjunct);
     }
-    
+
     private IdRewriteProxyActionResult GetIdRewriteResult(AdjunctDeliveryRequest adjunctRequest,
         ObjectInBucket proxyTarget, OrchestrationAdjunct orchestrationAdjunct)
     {
@@ -91,7 +102,18 @@ public class AdjunctRequestHandler(
             // set like this as future types of adjuncts could change this i.e.: restricted or not etc.
             MaxSizeBytes = orchestratorOptions.Value.MaxAdjunctSizeBytes
         };
+        return AddResponseHeaders(result, orchestrationAdjunct);
+    }
+
+    private static T AddResponseHeaders<T>(T result, OrchestrationAdjunct orchestrationAdjunct)
+        where T : IProxyActionResult
+    {
         result.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
+        if (orchestrationAdjunct.RequiresAuth)
+        {
+            // Ensure authorised adjuncts aren't cached in any interim (e.g. CDN) cache layers
+            result.Headers.Add("Cache-Control", PrivateCacheControl);
+        }
         return result;
     }
 

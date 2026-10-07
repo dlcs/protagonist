@@ -63,9 +63,10 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
         }
     }
 
-    public async Task<bool> VerifyAccess(AssetId assetId, IReadOnlyList<string> roles, CancellationToken cancellationToken)
+    public async Task<bool> VerifyAccess(DeliverableId deliverableId, IReadOnlyList<string> roles,
+        CancellationToken cancellationToken)
     {
-        var path = $"verifyaccess/{assetId}?roles={GetRolesString(roles)}";
+        var path = $"verifyaccess/{deliverableId}?roles={GetRolesString(roles)}";
         try
         {
             var response = await httpClient.GetAsync(path, cancellationToken);
@@ -73,7 +74,7 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error verifying access for {AssetId}", assetId);
+            logger.LogError(ex, "Error verifying access for {DeliverableId}", deliverableId);
             return false;
         }   
     }
