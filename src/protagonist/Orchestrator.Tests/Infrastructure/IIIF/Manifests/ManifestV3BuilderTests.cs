@@ -531,6 +531,7 @@ public class ManifestV3BuilderTests
                 IIIFLink = IIIFLinkType.InlineAnnotation,
                 MediaType = "text/plain",
                 AssetId = AssetIdGenerator.GetAssetId(),
+                Asset = asset,
                 Type = "AnnotationPage",
                 ExternalId = new Uri("http://some.id/first")
             },
@@ -540,6 +541,7 @@ public class ManifestV3BuilderTests
                 IIIFLink = IIIFLinkType.InlineAnnotation,
                 MediaType = "text/plain",
                 AssetId = AssetIdGenerator.GetAssetId(),
+                Asset = asset,
                 Type = "AnnotationPage",
                 Label = new LanguageMap("en", "first"),
                 Motivation = "something",
