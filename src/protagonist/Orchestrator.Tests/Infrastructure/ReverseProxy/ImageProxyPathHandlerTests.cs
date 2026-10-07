@@ -643,7 +643,7 @@ public class ImageProxyPathHandlerTests
             new()
             {
                 { "full/101,", Size.Square(100), Size.Square(101), "101," },
-                { "square/,101,", Size.Square(100), Size.Square(101), ",101" },
+                { "square/,101", Size.Square(100), Size.Square(101), ",101" },
                 { "0,0,512,512/101,101", Size.Square(100), Size.Square(101), "101,101" },
             };
         
