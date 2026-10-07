@@ -1,4 +1,6 @@
-﻿namespace DLCS.Core.Types;
+﻿using System;
+
+namespace DLCS.Core.Types;
 
 /// <summary>
 /// Identifier for a deliverable DLCS resource - either an Asset or an Adjunct of an Asset
@@ -31,4 +33,9 @@ public class DeliverableId
     public override string ToString() => IsAdjunct ? $"{AssetId}/{AdjunctId}" : AssetId.ToString();
 
     public static implicit operator DeliverableId(AssetId assetId) => new(assetId);
+
+    public override bool Equals(object? obj)
+        => obj is DeliverableId other && AssetId == other.AssetId && AdjunctId == other.AdjunctId;
+
+    public override int GetHashCode() => HashCode.Combine(AssetId, AdjunctId);
 }

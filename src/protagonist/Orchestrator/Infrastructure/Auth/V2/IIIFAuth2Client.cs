@@ -21,13 +21,13 @@ namespace Orchestrator.Infrastructure.Auth.V2;
 /// </summary>
 public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> logger) : IIIIFAuthBuilder
 {
-    public async Task<IService?> GetAuthServicesForAsset(AssetId assetId, IReadOnlyList<string> roles, CancellationToken cancellationToken = default)
+    public async Task<IService?> GetAuthServices(DeliverableId deliverableId, IReadOnlyList<string> roles, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("Getting auth 2 services description for {AssetId}, {@Roles}", assetId, roles);
+        logger.LogTrace("Getting auth 2 services description for {DeliverableId}, {@Roles}", deliverableId, roles);
         
         if (roles.ContainsOnly(Asset.UnobtainableRole)) return null;
         
-        var path = $"services/{assetId}?roles={GetRolesString(roles)}";
+        var path = $"services/{deliverableId}?roles={GetRolesString(roles)}";
         try
         {
             await using var authServices = await httpClient.GetStreamAsync(path, cancellationToken);
@@ -36,7 +36,7 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error getting IIIF Auth2 Services for {AssetId}", assetId);
+            logger.LogError(ex, "Error getting IIIF Auth2 Services for {DeliverableId}", deliverableId);
             return null;
         }
     }

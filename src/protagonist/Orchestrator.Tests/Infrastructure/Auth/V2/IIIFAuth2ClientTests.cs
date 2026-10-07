@@ -31,7 +31,7 @@ public class IIIFAuth2ClientTests
     }
 
     [Fact]
-    public async Task GetAuthServicesForAsset_NoOp_IfUnobtainableRoleOnly()
+    public async Task GetAuthServices_NoOp_IfUnobtainableRoleOnly()
     {
         var orchestrationImage = new OrchestrationImage
         {
@@ -39,7 +39,7 @@ public class IIIFAuth2ClientTests
         };
         
         // Act
-        var result = await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
+        var result = await sut.GetAuthServices(orchestrationImage.AssetId, orchestrationImage.Roles,
             CancellationToken.None);
         
         // Assert
@@ -48,7 +48,7 @@ public class IIIFAuth2ClientTests
     }
 
     [Fact]
-    public async Task GetAuthServicesForAsset_CallsCorrectPath_SingleRole()
+    public async Task GetAuthServices_CallsCorrectPath_SingleRole()
     {
         // Arrange
         var orchestrationImage = new OrchestrationImage
@@ -57,14 +57,14 @@ public class IIIFAuth2ClientTests
         };
         
         // Act
-        await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+        await sut.GetAuthServices(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
         
         // Assert
         httpHandler.CallsMade.Should().ContainSingle(s => s == "http://auth-2/services/99/100/foo?roles=role1");
     }
 
     [Fact]
-    public async Task GetAuthServicesForAsset_CallsCorrectPath_IgnoringUnobtainableRole()
+    public async Task GetAuthServices_CallsCorrectPath_IgnoringUnobtainableRole()
     {
         // Arrange
         var orchestrationImage = new OrchestrationImage
@@ -73,14 +73,14 @@ public class IIIFAuth2ClientTests
         };
 
         // Act
-        await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+        await sut.GetAuthServices(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
 
         // Assert
         httpHandler.CallsMade.Should().ContainSingle(s => s == "http://auth-2/services/99/100/foo?roles=role1");
     }
 
     [Fact]
-    public async Task GetAuthServicesForAsset_CallsCorrectPath_MultipleRoles()
+    public async Task GetAuthServices_CallsCorrectPath_MultipleRoles()
     {
         // Arrange
         var orchestrationImage = new OrchestrationImage
@@ -89,17 +89,29 @@ public class IIIFAuth2ClientTests
         };
         
         // Act
-        await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+        await sut.GetAuthServices(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
         
         // Assert
         httpHandler.CallsMade.Should()
             .ContainSingle(s => s == "http://auth-2/services/99/100/foo?roles=role1,role2,role3");
     }
 
+    [Fact]
+    public async Task GetAuthServices_Adjunct_CallsCorrectPath()
+    {
+        // Act
+        await sut.GetAuthServices(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"),
+            ["role1"], CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should()
+            .ContainSingle(s => s == "http://auth-2/services/99/100/foo/mets.xml?roles=role1");
+    }
+
     [Theory]
     [InlineData(HttpStatusCode.NotFound)]
     [InlineData(HttpStatusCode.InternalServerError)]
-    public async Task GetAuthServicesForAsset_ReturnsNull_IfHttpException(HttpStatusCode status)
+    public async Task GetAuthServices_ReturnsNull_IfHttpException(HttpStatusCode status)
     {
         // Arrange
         var orchestrationImage = new OrchestrationImage
@@ -110,7 +122,7 @@ public class IIIFAuth2ClientTests
         httpHandler.SetResponse(new HttpResponseMessage(status));
 
         // Act
-        var response = await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
+        var response = await sut.GetAuthServices(orchestrationImage.AssetId, orchestrationImage.Roles,
             CancellationToken.None);
 
         // Assert
@@ -118,7 +130,7 @@ public class IIIFAuth2ClientTests
     }
     
     [Fact]
-    public async Task GetAuthServicesForAsset_ReturnsNull_IfSuccess_ButUnableToDeserialise()
+    public async Task GetAuthServices_ReturnsNull_IfSuccess_ButUnableToDeserialise()
     {
         // Arrange
         var orchestrationImage = new OrchestrationImage
@@ -131,7 +143,7 @@ public class IIIFAuth2ClientTests
         httpHandler.SetResponse(httpResponseMessage);
 
         // Act
-        var response = await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
+        var response = await sut.GetAuthServices(orchestrationImage.AssetId, orchestrationImage.Roles,
             CancellationToken.None);
 
         // Assert
@@ -139,7 +151,7 @@ public class IIIFAuth2ClientTests
     }
     
     [Fact]
-    public async Task GetAuthServicesForAsset_ReturnsProbeService_IfSuccess()
+    public async Task GetAuthServices_ReturnsProbeService_IfSuccess()
     {
         // Arrange
         var orchestrationImage = new OrchestrationImage
@@ -157,7 +169,7 @@ public class IIIFAuth2ClientTests
         httpHandler.SetResponse(httpResponseMessage);
 
         // Act
-        var response = await sut.GetAuthServicesForAsset(orchestrationImage.AssetId, orchestrationImage.Roles,
+        var response = await sut.GetAuthServices(orchestrationImage.AssetId, orchestrationImage.Roles,
             CancellationToken.None);
 
         // Assert
@@ -212,7 +224,7 @@ public class IIIFAuth2ClientTests
     }
 
     [Fact]
-    public async Task GetAuthServicesForAsset_ReturnsErrorProbeService_IfHttpException()
+    public async Task GetAuthServices_ReturnsErrorProbeService_IfHttpException()
     {
         // Arrange
         var orchestrationImage = new OrchestrationImage
@@ -231,7 +243,7 @@ public class IIIFAuth2ClientTests
     }
     
     [Fact]
-    public async Task GetAuthServicesForAsset_ReturnsDownstreamProbeService()
+    public async Task GetAuthServices_ReturnsDownstreamProbeService()
     {
         // Arrange
         var orchestrationImage = new OrchestrationImage
@@ -365,7 +377,7 @@ public class IIIFAuth2ClientTests
     }
     
     [Fact]
-    public async Task GetAuthServicesForAsset_ReturnsTrue_IfSuccess()
+    public async Task GetAuthServices_ReturnsTrue_IfSuccess()
     {
         // Arrange
         var orchestrationImage = new OrchestrationImage
