@@ -41,10 +41,10 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
         }
     }
 
-    public async Task<AuthProbeResult2> GetProbeServiceResult(AssetId assetId, IReadOnlyList<string> roles, string accessToken,
-        CancellationToken cancellationToken)
+    public async Task<AuthProbeResult2> GetProbeServiceResult(DeliverableId deliverableId, IReadOnlyList<string> roles,
+        string accessToken, CancellationToken cancellationToken)
     {
-        var path = $"probe_internal/{assetId}?roles={GetRolesString(roles)}";
+        var path = $"probe_internal/{deliverableId}?roles={GetRolesString(roles)}";
         try
         {
             var httpRequest = new HttpRequestMessage(HttpMethod.Get, path);
@@ -58,7 +58,7 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error getting IIIF Probe Service2 for {AssetId}", assetId);
+            logger.LogError(ex, "Error getting IIIF Probe Service2 for {DeliverableId}", deliverableId);
             return AuthProbeResult2Builder.UnexpectedError;
         }
     }

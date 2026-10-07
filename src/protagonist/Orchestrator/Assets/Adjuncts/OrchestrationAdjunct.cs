@@ -5,7 +5,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Orchestrator.Assets;
 
-public class OrchestrationAdjunct : IOriginItem
+public class OrchestrationAdjunct : IOriginItem, IAccessControlledOrchestrationItem
 {
     /// <summary>
     /// Model id of the adjunct
