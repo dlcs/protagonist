@@ -5,7 +5,7 @@
 /// </summary>
 public class DeliverableId
 {
-    /// <summary>Id of Asset, or parent Asset if this is a deliverable</summary>
+    /// <summary>Id of Asset, or parent Asset if this is an adjunct</summary>
     public AssetId AssetId { get; }
 
     /// <summary>Id of Adjunct, null if this identifies an Asset</summary>

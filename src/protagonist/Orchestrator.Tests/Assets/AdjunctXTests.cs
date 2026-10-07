@@ -1,3 +1,4 @@
+using System;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using Orchestrator.Assets;
@@ -25,11 +26,13 @@ public class AdjunctXTests
     }
 
     [Fact]
-    public void GetDeliverableRoles_ReturnsEmpty_IfNoParentAsset()
+    public void GetDeliverableRoles_Throws_IfNoParentAsset()
     {
         var adjunct = CreateAdjunct();
 
-        adjunct.GetDeliverableRoles().Should().BeEmpty();
+        Action action = () => adjunct.GetDeliverableRoles();
+
+        action.Should().Throw<InvalidOperationException>();
     }
 
     private static Adjunct CreateAdjunct() => new()

@@ -487,7 +487,8 @@ public class MemoryAssetTrackerTests
                 Origin = origin,
                 MediaType = "application/json",
                 IIIFLink = IIIFLinkType.SeeAlso,
-                Type = "a_type"
+                Type = "a_type",
+                Asset = new Asset()
             });
 
         A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, origin))
@@ -569,7 +570,8 @@ public class MemoryAssetTrackerTests
                 Origin = origin,
                 MediaType = "application/json",
                 IIIFLink = IIIFLinkType.SeeAlso,
-                Type = "a_type"
+                Type = "a_type",
+                Asset = new Asset()
             });
 
         A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, origin))
