@@ -36,7 +36,7 @@ public static class ProbeServiceSupport
         ILogger logger,
         Func<Task<T?>> lookupItem,
         Func<T, string, Task<AuthProbeResult2>> getDownstreamProbeResult)
-        where T : class, IProbeableOrchestrationItem
+        where T : class, IAccessControlledOrchestrationItem
     {
         var accessToken = GetAccessToken(httpContextAccessor);
         if (string.IsNullOrWhiteSpace(accessToken))

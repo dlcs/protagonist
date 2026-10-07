@@ -10,7 +10,7 @@ namespace Orchestrator.Assets;
 /// <summary>
 /// Represents an asset during orchestration.
 /// </summary>
-public class OrchestrationAsset : IOriginItem, IProbeableOrchestrationItem
+public class OrchestrationAsset : IOriginItem, IAccessControlledOrchestrationItem
 {
     /// <summary>
     /// Get or set the AssetId for tracked Asset

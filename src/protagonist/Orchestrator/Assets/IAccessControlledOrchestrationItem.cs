@@ -5,7 +5,7 @@ namespace Orchestrator.Assets;
 /// <summary>
 /// Implemented by orchestration items (assets, adjuncts) that can be the subject of an auth probe service request
 /// </summary>
-public interface IProbeableOrchestrationItem
+public interface IAccessControlledOrchestrationItem
 {
     /// <summary>
     /// Get boolean indicating whether item is restricted or not
