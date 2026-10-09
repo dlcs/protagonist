@@ -22,12 +22,13 @@ namespace Orchestrator.Infrastructure.Auth.V2;
 /// </summary>
 public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> logger) : IIIIFAuthBuilder
 {
-    public async Task<IService?> GetAuthServices(DeliverableId deliverableId, IReadOnlyList<string> roles, CancellationToken cancellationToken = default)
+    public async Task<IService?> GetAuthServices(DeliverableId deliverableId, IReadOnlyList<string> roles,
+        CancellationToken cancellationToken = default)
     {
         logger.LogTrace("Getting auth 2 services description for {DeliverableId}, {@Roles}", deliverableId, roles);
-        
+
         if (roles.ContainsOnly(Asset.UnobtainableRole)) return null;
-        
+
         var path = $"services/{deliverableId}?roles={GetRolesString(roles)}";
         try
         {

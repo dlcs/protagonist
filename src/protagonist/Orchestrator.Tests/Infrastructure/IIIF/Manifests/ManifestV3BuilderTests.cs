@@ -16,8 +16,10 @@ using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.IIIF.Manifests;
+using Orchestrator.Settings;
 using Test.Helpers;
 using Test.Helpers.Data;
 
@@ -43,7 +45,8 @@ public class ManifestV3BuilderTests
                 new List<Size> { new(150, 100), new(300, 200) },
                 new(300, 200)));
 
-        sut = new ManifestV3Builder(builderUtils, assetPathGenerator, authBuilder, new NullLogger<ManifestV3Builder>());
+        sut = new ManifestV3Builder(builderUtils, assetPathGenerator, authBuilder,
+            Options.Create(new OrchestratorSettings()), new NullLogger<ManifestV3Builder>());
     }
 
     [Fact]

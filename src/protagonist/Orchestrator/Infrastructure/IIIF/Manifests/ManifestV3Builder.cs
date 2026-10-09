@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -24,6 +25,8 @@ using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Orchestrator.Settings;
 using IIIFAuth2 = IIIF.Auth.V2;
 using PresentationApiVersion = IIIF.Presentation.Version;
 
@@ -37,6 +40,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     private readonly IAssetPathGenerator assetPathGenerator;
     private readonly IIIIFAuthBuilder authBuilder;
     private readonly ILogger<ManifestV3Builder> logger;
+    private readonly AuthSettings authSettings;
     private const string AdjunctAnnotationRoutePrefix = "adjunct-annotations";
 
     /// <summary>
@@ -45,11 +49,13 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     public ManifestV3Builder(IManifestBuilderUtils builderUtils,
         IAssetPathGenerator assetPathGenerator,
         IIIIFAuthBuilder authBuilder,
+        IOptions<OrchestratorSettings> orchestratorSettings,
         ILogger<ManifestV3Builder> logger) : base(builderUtils)
     {
         this.assetPathGenerator = assetPathGenerator;
         this.authBuilder = authBuilder;
         this.logger = logger;
+        authSettings = orchestratorSettings.Value.Auth;
     }
     
     protected override PresentationApiVersion PresentationApiVersion => PresentationApiVersion.V3;
@@ -454,62 +460,41 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     private async Task<Dictionary<DeliverableId, AuthProbeService2>?> GetProbeServices(IReadOnlyCollection<Asset> assets,
         CancellationToken cancellationToken)
     {
-        var assetsRequiringAuth = assets.Where(a => a.HasRoles).ToList();
-        var adjunctsRequiringAuth = assets
-            .SelectMany(a => a.Adjuncts ?? [])
-            .Where(adj => IsHostedAdjunct(adj) && adj.GetDeliverableRoles().Count > 0)
+        var itemsRequiringAuth = assets
+            .Where(a => a.HasRoles)
+            .Select(a => new AccessControlledItem(a.Id, a.Roles ?? []))
+            .Concat(assets
+                .SelectMany(a => a.Adjuncts ?? [])
+                .Where(adj => IsHostedAdjunct(adj) && adj.GetDeliverableRoles().Count > 0)
+                .Select(adj =>
+                    new AccessControlledItem(new DeliverableId(adj.AssetId, adj.Id), adj.GetDeliverableRoles())))
             .ToList();
 
-        var assetsRequiringAuthCount = assetsRequiringAuth.Count;
-        if (assetsRequiringAuthCount == 0 && adjunctsRequiringAuth.Count == 0) return null;
+        var itemsRequiringAuthCount = itemsRequiringAuth.Count;
+        if (itemsRequiringAuthCount == 0) return null;
 
-        var logLevel = assetsRequiringAuthCount > 10 ? LogLevel.Information : LogLevel.Debug;
-        logger.Log(logLevel, "Getting Auth services for {AuthAssetCount} assets", assetsRequiringAuthCount);
+        var logLevel = itemsRequiringAuthCount > 10 ? LogLevel.Information : LogLevel.Debug;
+        logger.Log(logLevel, "Getting Auth services for {AuthItemCount} assets and adjuncts", itemsRequiringAuthCount);
 
-        // This is doing a lot - batch the requests up?
+        // NOTE - this makes 1 request per item, a bulk endpoint on the auth service would avoid this
         var sw = Stopwatch.StartNew();
-        var probeServices = new Dictionary<DeliverableId, AuthProbeService2>(assetsRequiringAuthCount);
-        var taskList = new List<Task>(assetsRequiringAuthCount);
-        foreach (var asset in assetsRequiringAuth)
+        var probeServices = new ConcurrentDictionary<DeliverableId, AuthProbeService2>();
+        var parallelOptions = new ParallelOptions
         {
-            taskList.Add(authBuilder.GetAuthServices(asset.Id, asset.Roles ?? [], cancellationToken)
-                .ContinueWith(antecedent =>
-                    {
-                        if (antecedent.Result is AuthProbeService2 probeService2)
-                            probeServices[asset.Id] = probeService2;
-                    },
-                    TaskContinuationOptions.OnlyOnRanToCompletion));
-        }
-
-        await Task.WhenAll(taskList);
-        await AddAdjunctProbeServices(adjunctsRequiringAuth, probeServices, cancellationToken);
+            MaxDegreeOfParallelism = authSettings.AuthServicesConcurrency, CancellationToken = cancellationToken
+        };
+        await Parallel.ForEachAsync(itemsRequiringAuth, parallelOptions, async (item, ct) =>
+        {
+            if (await authBuilder.GetAuthServices(item.DeliverableId, item.Roles, ct) is AuthProbeService2 probeService)
+            {
+                probeServices[item.DeliverableId] = probeService;
+            }
+        });
         sw.Stop();
-        logger.Log(logLevel, "Got Auth services for {AuthAssetCount} assets in {Elapsed}ms", assetsRequiringAuthCount,
-            sw.ElapsedMilliseconds);
+        logger.Log(logLevel, "Got Auth services for {AuthItemCount} assets and adjuncts in {Elapsed}ms",
+            itemsRequiringAuthCount, sw.ElapsedMilliseconds);
 
-        return probeServices;
-    }
-
-    /// <summary>
-    /// Add probe services for adjuncts to the dictionary for later use.
-    /// </summary>
-    private async Task AddAdjunctProbeServices(List<Adjunct> adjunctsRequiringAuth,
-        Dictionary<DeliverableId, AuthProbeService2> probeServices, CancellationToken cancellationToken)
-    {
-        if (adjunctsRequiringAuth.Count == 0) return;
-
-        var requested = await Task.WhenAll(adjunctsRequiringAuth.Select(async adjunct =>
-        {
-            var deliverableId = new DeliverableId(adjunct.AssetId, adjunct.Id);
-            var service = await authBuilder.GetAuthServices(deliverableId, adjunct.GetDeliverableRoles(),
-                cancellationToken);
-            return (deliverableId, service);
-        }));
-        
-        foreach (var (deliverableId, service) in requested)
-        {
-            if (service is AuthProbeService2 probeService2) probeServices[deliverableId] = probeService2;
-        }
+        return new Dictionary<DeliverableId, AuthProbeService2>(probeServices);
     }
 
     private static List<IService> GetDistinctAccessServices(Dictionary<DeliverableId, AuthProbeService2>? probeServices)
