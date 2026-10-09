@@ -7,14 +7,14 @@ using IIIF;
 namespace Orchestrator.Infrastructure.IIIF;
 
 /// <summary>
-/// Basic interface for getting auth services for an asset
+/// Basic interface for getting auth services for an asset or adjunct
 /// </summary>
 public interface IIIIFAuthBuilder
 {
     /// <summary>
-    /// Generate a IIIF <see cref="IService"/> for authorisation services for specified asset.
+    /// Generate a IIIF <see cref="IService"/> for authorisation services for specified asset or adjunct.
     /// </summary>
     /// <returns><see cref="IService"/> if found, else null</returns>
-    Task<IService?> GetAuthServicesForAsset(AssetId assetId, IReadOnlyList<string> roles,
+    Task<IService?> GetAuthServices(DeliverableId deliverableId, IReadOnlyList<string> roles,
         CancellationToken cancellationToken = default);
 }

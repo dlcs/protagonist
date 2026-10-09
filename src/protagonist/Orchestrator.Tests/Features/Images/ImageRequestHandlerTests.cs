@@ -219,14 +219,15 @@ public class ImageRequestHandlerTests
 
         var roles = new List<string> { "role" };
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var orchestrationImage = new OrchestrationImage
+        {
+            Size = new Size(1000, 1000), MaxWidth = 5000, Roles = roles, RequiresAuth = true, 
+            Channels = AvailableDeliveryChannel.Image, S3Location = "s3://"
+        };
         A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(new AssetId(2, 2, "test-image")))
-            .Returns(new OrchestrationImage
-            {
-                Size = new Size(1000, 1000), MaxWidth = 5000, Roles = roles, RequiresAuth = true, 
-                Channels = AvailableDeliveryChannel.Image, S3Location = "s3://"
-            });
-        A.CallTo(() => accessValidator.TryValidate(A<DeliverableId>.That.Matches(a => a.AssetId.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).Returns(AssetAccessResult.Unauthorized);
+            .Returns(orchestrationImage);
+        A.CallTo(() => accessValidator.TryValidate(orchestrationImage, AuthMechanism.Cookie, CancellationToken.None))
+            .Returns(AssetAccessResult.Unauthorized);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act
@@ -267,8 +268,10 @@ public class ImageRequestHandlerTests
         // Assert
         result!.Target.Should().Be(ProxyDestination.SpecialServer);
         result.HasPath.Should().BeTrue();
-        A.CallTo(() => accessValidator.TryValidate(A<DeliverableId>.That.Matches(a => a.AssetId.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).MustNotHaveHappened();
+        A.CallTo(() =>
+                accessValidator.TryValidate(A<IAccessControlledOrchestrationItem>._, AuthMechanism.Cookie,
+                    CancellationToken.None))
+            .MustNotHaveHappened();
     }
     
     [Theory]
@@ -305,8 +308,10 @@ public class ImageRequestHandlerTests
         // Assert
         result.Target.Should().Be(ProxyDestination.SpecialServer);
         result.HasPath.Should().BeTrue();
-        A.CallTo(() => accessValidator.TryValidate(A<DeliverableId>.That.Matches(a => a.AssetId.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).MustNotHaveHappened();
+        A.CallTo(() =>
+                accessValidator.TryValidate(A<IAccessControlledOrchestrationItem>._, AuthMechanism.Cookie,
+                    CancellationToken.None))
+            .MustNotHaveHappened();
     }
 
     [Theory]
@@ -323,15 +328,17 @@ public class ImageRequestHandlerTests
         context.Request.Path = $"/iiif-img/2/2/test-image{iiifRequest}0/default.jpg";
 
         var roles = new List<string> { "role" };
+        var assetId = new AssetId(2, 2, "test-image");
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(new AssetId(2, 2, "test-image")))
-            .Returns(new OrchestrationImage
-            {
-                Roles = roles, OpenFullMax = 900, Size = new Size(1800, 1800), RequiresAuth = true,
-                S3Location = "s3://storage/2/2/test-image", Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000
-            });
-        A.CallTo(() => accessValidator.TryValidate(A<DeliverableId>.That.Matches(a => a.AssetId.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).Returns(AssetAccessResult.Unauthorized);
+        var orchestrationImage = new OrchestrationImage
+        {
+            Roles = roles, OpenFullMax = 900, Size = new Size(1800, 1800), RequiresAuth = true,
+            S3Location = "s3://storage/2/2/test-image", Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000
+        };
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(orchestrationImage);
+        A.CallTo(() => accessValidator.TryValidate(orchestrationImage, AuthMechanism.Cookie, CancellationToken.None))
+            .Returns(AssetAccessResult.Unauthorized);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act
@@ -464,8 +471,12 @@ public class ImageRequestHandlerTests
                 RequiresAuth = true, Size = new Size(1000, 1000), OpenFullMax = 300,
                 Channels = AvailableDeliveryChannel.Image, Reingest = true
             });
-        A.CallTo(() => accessValidator.TryValidate(A<DeliverableId>.That.Matches(a => a.AssetId.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).Returns(accessResult);
+        A.CallTo(() =>
+                accessValidator.TryValidate(
+                    A<IAccessControlledOrchestrationItem>.That.Matches(a =>
+                        a.DeliverableId.AssetId.Customer == 2 && a.Roles == roles), AuthMechanism.Cookie,
+                    CancellationToken.None))
+            .Returns(accessResult);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act
@@ -496,8 +507,12 @@ public class ImageRequestHandlerTests
                 RequiresAuth = true, Size = new Size(1000, 1000), OpenFullMax = 300,
                 Channels = AvailableDeliveryChannel.Image, Reingest = false
             });
-        A.CallTo(() => accessValidator.TryValidate(A<DeliverableId>.That.Matches(a => a.AssetId.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).Returns(accessResult);
+        A.CallTo(() =>
+                accessValidator.TryValidate(
+                    A<IAccessControlledOrchestrationItem>.That.Matches(a =>
+                        a.DeliverableId.AssetId.Customer == 2 && a.Roles == roles), AuthMechanism.Cookie,
+                    CancellationToken.None))
+            .Returns(accessResult);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act

@@ -44,6 +44,9 @@ public class OrchestrationAdjunct : IOriginItem, IAccessControlledOrchestrationI
     /// </summary>
     public IReadOnlyList<string> Roles { get; set; } = [];
 
+    /// <inheritdoc/>
+    public DeliverableId DeliverableId => new(AssetId, Id);
+
     /// <summary>
     /// Get boolean indicating whether this adjunct is restricted
     /// </summary>

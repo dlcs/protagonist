@@ -1,6 +1,4 @@
-﻿using DLCS.Core.Types;
-
-namespace DLCS.Web.Requests.AssetDelivery;
+﻿namespace DLCS.Web.Requests.AssetDelivery;
 
 /// <summary>
 /// Model for a request made for a DLCS asset adjunct
@@ -11,7 +9,4 @@ public class AdjunctDeliveryRequest : BaseAssetRequest
     /// Id of the requested adjunct
     /// </summary>
     public string? AdjunctId { get; set; }
-
-    /// <inheritdoc />
-    public override DeliverableId GetDeliverableId() => new(GetAssetId(), AdjunctId);
 }

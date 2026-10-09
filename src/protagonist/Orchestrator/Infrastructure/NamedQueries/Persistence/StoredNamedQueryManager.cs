@@ -12,6 +12,7 @@ using DLCS.Repository.NamedQueries.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orchestrator.Assets;
 using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.NamedQueries.Persistence.Models;
 using Orchestrator.Settings;
@@ -131,8 +132,8 @@ public class StoredNamedQueryManager(
     private async Task<bool> CanUserViewItem(StoredParsedNamedQuery parsedNamedQuery, ControlFile controlFile)
     {
         var mockAssetId = GetMockAssetId(parsedNamedQuery);
-        var access = await assetAccessValidator.TryValidate(mockAssetId, controlFile.Roles ?? new List<string>(),
-            AuthMechanism.Cookie);
+        var accessControlledItem = new AccessControlledItem(mockAssetId, controlFile.Roles ?? []);
+        var access = await assetAccessValidator.TryValidate(accessControlledItem, AuthMechanism.Cookie);
         return access is AssetAccessResult.Open or AssetAccessResult.Authorized;
     }
     

@@ -6,12 +6,14 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using IIIF;
 using IIIF.Auth.V2;
 using IIIF.Serialisation;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
 
 namespace Orchestrator.Infrastructure.Auth.V2;
@@ -21,13 +23,15 @@ namespace Orchestrator.Infrastructure.Auth.V2;
 /// </summary>
 public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> logger) : IIIIFAuthBuilder
 {
-    public async Task<IService?> GetAuthServicesForAsset(AssetId assetId, IReadOnlyList<string> roles, CancellationToken cancellationToken = default)
+    public async Task<IService?> GetAuthServices(DeliverableId deliverableId, IReadOnlyList<string> roles,
+        CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("Getting auth 2 services description for {AssetId}, {@Roles}", assetId, roles);
-        
+        logger.LogTrace("Getting auth 2 services description for {DeliverableId}, {@Roles}", deliverableId, roles);
+
         if (roles.ContainsOnly(Asset.UnobtainableRole)) return null;
-        
-        var path = $"services/{assetId}?roles={GetRolesString(roles)}";
+
+        var rolesString = GetRolesString(roles);
+        var path = $"services/{deliverableId}?roles={rolesString}";
         try
         {
             await using var authServices = await httpClient.GetStreamAsync(path, cancellationToken);
@@ -36,7 +40,8 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error getting IIIF Auth2 Services for {AssetId}", assetId);
+            logger.LogError(ex, "Error getting IIIF Auth2 Services for {DeliverableId}, {Roles}", deliverableId,
+                rolesString);
             return null;
         }
     }
@@ -44,7 +49,8 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
     public async Task<AuthProbeResult2> GetProbeServiceResult(DeliverableId deliverableId, IReadOnlyList<string> roles,
         string accessToken, CancellationToken cancellationToken)
     {
-        var path = $"probe_internal/{deliverableId}?roles={GetRolesString(roles)}";
+        var rolesString = GetRolesString(roles);
+        var path = $"probe_internal/{deliverableId}?roles={rolesString}";
         try
         {
             var httpRequest = new HttpRequestMessage(HttpMethod.Get, path);
@@ -54,19 +60,20 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
             
             var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
             var probeServiceResult = contentStream.FromJsonStream<AuthProbeResult2>();
-            return probeServiceResult;
+            return probeServiceResult.ThrowIfNull(nameof(probeServiceResult));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error getting IIIF Probe Service2 for {DeliverableId}", deliverableId);
+            logger.LogError(ex, "Error getting IIIF Probe Service2 for {DeliverableId}, {Roles}", deliverableId,
+                rolesString);
             return AuthProbeResult2Builder.UnexpectedError;
         }
     }
 
-    public async Task<bool> VerifyAccess(DeliverableId deliverableId, IReadOnlyList<string> roles,
-        CancellationToken cancellationToken)
+    public async Task<bool> VerifyAccess(IAccessControlledOrchestrationItem orchestrationItem, CancellationToken cancellationToken)
     {
-        var path = $"verifyaccess/{deliverableId}?roles={GetRolesString(roles)}";
+        var deliverableId = orchestrationItem.DeliverableId;
+        var path = $"verifyaccess/{deliverableId}?roles={GetRolesString(orchestrationItem.Roles)}";
         try
         {
             var response = await httpClient.GetAsync(path, cancellationToken);

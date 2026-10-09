@@ -63,8 +63,7 @@ public class TimeBasedRequestHandler
         var proxyTarget = GetRequestedAssetHttpUri(assetRequest);
         if (orchestrationAsset.RequiresAuth)
         {
-            if (!await assetRequestProcessor.IsAuthenticated(assetRequest.GetDeliverableId(),
-                    orchestrationAsset.Roles, httpContext.Request))
+            if (!await assetRequestProcessor.IsAuthenticated(orchestrationAsset, httpContext.Request))
             {
                 logger.LogDebug("User not authenticated for {Method} {Path}", httpContext.Request.Method,
                     httpContext.Request.Path);

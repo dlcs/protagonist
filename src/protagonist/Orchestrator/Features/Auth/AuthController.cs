@@ -141,8 +141,8 @@ public class AuthController : IIIFAssetControllerBase
     }
 
     /// <summary>
-    /// IIIF Authorization Flow 2.0 ProbeService. The probe service is used by the client to understand whether the user
-    /// has access to the access-controlled resource for which the probe service is declared.
+    /// IIIF Authorization Flow 2.0 ProbeService for an asset. The probe service is used by the client to understand
+    /// whether the user has access to the access-controlled resource for which the probe service is declared.
     /// </summary>
     /// <param name="customer">Customer Id</param>
     /// <param name="space">Space Id</param>
@@ -159,8 +159,8 @@ public class AuthController : IIIFAssetControllerBase
             () => new ProbeService(customer, space, image), cacheTtl: 0, cancellationToken: cancellationToken);
 
     /// <summary>
-    /// IIIF Authorization Flow 2.0 ProbeService for an adjunct. Adjuncts inherit the roles of their parent Asset,
-    /// so access is validated using the same customer/space/image roles as the parent Asset.
+    /// IIIF Authorization Flow 2.0 ProbeService for an adjunct. The probe service is used by the client to understand
+    /// whether the user has access to the access-controlled resource for which the probe service is declared.
     /// </summary>
     /// <param name="customer">Customer Id</param>
     /// <param name="space">Space Id</param>

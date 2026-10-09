@@ -1,14 +1,13 @@
-﻿using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Web;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Assets;
 using Orchestrator.Features.Auth;
 
 namespace Orchestrator.Infrastructure.Auth;
@@ -25,8 +24,11 @@ public class AssetAccessValidator(
     ILogger<AssetAccessValidator> logger)
     : IAssetAccessValidator
 {
-    public async Task<AssetAccessResult> TryValidate(DeliverableId deliverableId, IReadOnlyList<string> roles, AuthMechanism mechanism, CancellationToken cancellationToken = default)
+    public async Task<AssetAccessResult> TryValidate(IAccessControlledOrchestrationItem orchestrationItem,
+        AuthMechanism mechanism, CancellationToken cancellationToken = default)
     {
+        var roles = orchestrationItem.Roles;
+        var deliverableId = orchestrationItem.DeliverableId;
         if (roles.ContainsOnly(Asset.UnobtainableRole))
         {
             logger.LogTrace("{DeliverableId} only has unobtainable role, shortcutting check", deliverableId);
@@ -38,7 +40,7 @@ public class AssetAccessValidator(
         // Adjuncts can only be validated via Auth2
         if (!deliverableId.IsAdjunct && ShouldAttemptAuth1(customer, mechanism))
         {
-            var auth1Status = await auth1AccessValidator.TryValidate(deliverableId, roles, mechanism, cancellationToken);
+            var auth1Status = await auth1AccessValidator.TryValidate(orchestrationItem, mechanism, cancellationToken);
             if (auth1Status == AssetAccessResult.Authorized)
             {
                 logger.LogTrace("{DeliverableId} can be viewed via Auth1", deliverableId);
@@ -48,7 +50,7 @@ public class AssetAccessValidator(
 
         if (HasAuth2Cookie(customer))
         {
-            var auth2Status = await auth2AccessValidator.TryValidate(deliverableId, roles, mechanism, cancellationToken);
+            var auth2Status = await auth2AccessValidator.TryValidate(orchestrationItem, mechanism, cancellationToken);
             if (auth2Status == AssetAccessResult.Authorized)
             {
                 logger.LogTrace("{DeliverableId} can be viewed via Auth2", deliverableId);

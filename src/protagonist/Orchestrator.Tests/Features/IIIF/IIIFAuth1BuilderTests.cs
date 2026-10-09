@@ -38,21 +38,21 @@ public class IIIFAuth1BuilderTests
     }
 
     [Fact]
-    public async Task GetAuthServicesForAsset_Null_IfUnableToFindAuthServices()
+    public async Task GetAuthServices_Null_IfUnableToFindAuthServices()
     {
         // Arrange
         var asset = GetAsset();
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
+        var result = await sut.GetAuthServices(asset.AssetId, asset.Roles);
         
         // Assert
         result.Should().BeNull();
     }
     
     [Fact]
-    public async Task GetAuthServicesForAsset_Null_IfUnobtainableRole_Only()
+    public async Task GetAuthServices_Null_IfUnobtainableRole_Only()
     {
         // Arrange
         var asset = GetAsset();
@@ -60,7 +60,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
+        var result = await sut.GetAuthServices(asset.AssetId, asset.Roles);
         
         // Assert
         result.Should().BeNull();
@@ -69,7 +69,7 @@ public class IIIFAuth1BuilderTests
     [Theory]
     [InlineData("http://iiif.io/api/auth/1/login/clickthrough")]
     [InlineData("http://iiif.io/api/auth/3/clickthrough")]
-    public async Task GetAuthServicesForAsset_ReturnsNull_IfParentProfileUnknown_AndThrowIfUnsupportedFalse(string profile)
+    public async Task GetAuthServices_ReturnsNull_IfParentProfileUnknown_AndThrowIfUnsupportedFalse(string profile)
     {
         // Arrange
         var asset = GetAsset();
@@ -83,7 +83,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
+        var result = await sut.GetAuthServices(asset.AssetId, asset.Roles);
         
         // Assert
         result.Should().BeNull();
@@ -92,7 +92,7 @@ public class IIIFAuth1BuilderTests
     [Theory]
     [InlineData("http://iiif.io/api/auth/1/login/clickthrough")]
     [InlineData("http://iiif.io/api/auth/3/clickthrough")]
-    public async Task GetAuthServicesForAsset_Throws_IfParentProfileUnknown_AndThrowIfUnsupportedTrue(string profile)
+    public async Task GetAuthServices_Throws_IfParentProfileUnknown_AndThrowIfUnsupportedTrue(string profile)
     {
         // Arrange
         var asset = GetAsset();
@@ -106,7 +106,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut(true);
         
         // Act 
-        Func<Task> action = () => sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
+        Func<Task> action = () => sut.GetAuthServices(asset.AssetId, asset.Roles);
         
         // Assert
         await action.Should()
@@ -119,7 +119,7 @@ public class IIIFAuth1BuilderTests
     [InlineData("http://iiif.io/api/auth/1/clickthrough")]
     [InlineData("http://iiif.io/api/auth/1/kiosk")]
     [InlineData("http://iiif.io/api/auth/1/external")]
-    public async Task GetAuthServicesForAsset_ReturnsCookieServiceWithNoChildren_IfNoChildServices_AuthCookie1(string profile)
+    public async Task GetAuthServices_ReturnsCookieServiceWithNoChildren_IfNoChildServices_AuthCookie1(string profile)
     {
         // Arrange
         var asset = GetAsset();
@@ -133,7 +133,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
+        var result = await sut.GetAuthServices(asset.AssetId, asset.Roles);
         
         // Assert
         result.Id.Should().Be("The-Parent");
@@ -152,7 +152,7 @@ public class IIIFAuth1BuilderTests
     [InlineData("http://iiif.io/api/auth/1/clickthrough")]
     [InlineData("http://iiif.io/api/auth/1/kiosk")]
     [InlineData("http://iiif.io/api/auth/1/external")]
-    public async Task GetAuthServicesForAsset_ReturnsCookieServiceWithNoChildren_IfNoChildServices_AuthCookie1_IfAccompaniedByUnobtainable(string profile)
+    public async Task GetAuthServices_ReturnsCookieServiceWithNoChildren_IfNoChildServices_AuthCookie1_IfAccompaniedByUnobtainable(string profile)
     {
         // Arrange
         var asset = GetAsset();
@@ -166,7 +166,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
+        var result = await sut.GetAuthServices(asset.AssetId, asset.Roles);
         
         // Assert
         result.Id.Should().Be("The-Parent");
@@ -186,7 +186,7 @@ public class IIIFAuth1BuilderTests
     [InlineData("http://iiif.io/api/auth/0/kiosk", "Auth spec kiosk")]
     [InlineData("http://iiif.io/api/auth/0/external", "Auth spec external")]
     [InlineData("http://iiif.io/api/auth/0/login/clickthrough", "Not standard but in supported list")]
-    public async Task GetAuthServicesForAsset_ReturnsCookieServiceWithNoChildren_IfNoChildServices_AuthCookie0(string profile, string reason)
+    public async Task GetAuthServices_ReturnsCookieServiceWithNoChildren_IfNoChildServices_AuthCookie0(string profile, string reason)
     {
         // Arrange
         var asset = GetAsset();
@@ -200,7 +200,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
+        var result = await sut.GetAuthServices(asset.AssetId, asset.Roles);
         
         // Assert
         result.Id.Should().Be("The-Parent");
@@ -216,7 +216,7 @@ public class IIIFAuth1BuilderTests
     }
     
     [Fact]
-    public async Task GetAuthServicesForAsset_ReturnsCookieServiceWithServices_IfChildServices()
+    public async Task GetAuthServices_ReturnsCookieServiceWithServices_IfChildServices()
     {
         // Arrange
         var asset = GetAsset();
@@ -252,7 +252,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
+        var result = await sut.GetAuthServices(asset.AssetId, asset.Roles);
         
         // Assert
         result.Id.Should().Be("The-Parent");
@@ -272,7 +272,7 @@ public class IIIFAuth1BuilderTests
     [Theory]
     [InlineData("http://iiif.io/api/auth/3/logout")]
     [InlineData("http://iiif.io/api/auth/3/token")]
-    public async Task GetAuthServicesForAsset_NullChildren_IfNonLevel1ChildServiceFound(string profile)
+    public async Task GetAuthServices_NullChildren_IfNonLevel1ChildServiceFound(string profile)
     {
         // Arrange
         var asset = GetAsset();
@@ -291,7 +291,7 @@ public class IIIFAuth1BuilderTests
         var sut = GetSut();
         
         // Act 
-        var result = await sut.GetAuthServicesForAsset(asset.AssetId, asset.Roles);
+        var result = await sut.GetAuthServices(asset.AssetId, asset.Roles);
         
         // Assert
         var authCookieSvc = result as AuthCookieService;

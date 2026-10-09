@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -14,6 +15,7 @@ using DLCS.Model.IIIF;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
+using Orchestrator.Assets;
 using Orchestrator.Features.Adjuncts;
 using IIIF;
 using IIIF.Auth.V2;
@@ -23,6 +25,8 @@ using IIIF.Presentation.V3.Annotation;
 using IIIF.Presentation.V3.Content;
 using IIIF.Presentation.V3.Strings;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Orchestrator.Settings;
 using IIIFAuth2 = IIIF.Auth.V2;
 using PresentationApiVersion = IIIF.Presentation.Version;
 
@@ -36,6 +40,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     private readonly IAssetPathGenerator assetPathGenerator;
     private readonly IIIIFAuthBuilder authBuilder;
     private readonly ILogger<ManifestV3Builder> logger;
+    private readonly AuthSettings authSettings;
     private const string AdjunctAnnotationRoutePrefix = "adjunct-annotations";
 
     /// <summary>
@@ -44,11 +49,13 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     public ManifestV3Builder(IManifestBuilderUtils builderUtils,
         IAssetPathGenerator assetPathGenerator,
         IIIIFAuthBuilder authBuilder,
+        IOptions<OrchestratorSettings> orchestratorSettings,
         ILogger<ManifestV3Builder> logger) : base(builderUtils)
     {
         this.assetPathGenerator = assetPathGenerator;
         this.authBuilder = authBuilder;
         this.logger = logger;
+        authSettings = orchestratorSettings.Value.Auth;
     }
     
     protected override PresentationApiVersion PresentationApiVersion => PresentationApiVersion.V3;
@@ -61,7 +68,6 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     {
         BuilderUtils.SetPresentationVersion(PresentationApiVersion.V3);
         var probeServices = await GetProbeServices(assets, cancellationToken);
-        var anyAssetRequireAuth = !probeServices.IsNullOrEmpty();
 
         var manifest = new Manifest
         {
@@ -71,7 +77,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         };
 
         manifest.EnsurePresentation3Context();
-        if (anyAssetRequireAuth)
+        if (probeServices.Count > 0)
         {
             logger.LogTrace(
                 "ManifestId {ManifestId} has at least 1 asset requiring auth - adding Auth2 context + services",
@@ -88,12 +94,10 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         return manifest;
     }
 
-    private async Task PopulateManifest(Manifest manifest, List<Asset> assets,
-        CustomerPathElement customerPathElement, Dictionary<AssetId, AuthProbeService2>? authProbeServices,
-        CancellationToken cancellationToken)
+    private async Task PopulateManifest(Manifest manifest, List<Asset> assets, CustomerPathElement customerPathElement,
+        IReadOnlyDictionary<DeliverableId, AuthProbeService2> probeServices, CancellationToken cancellationToken)
     {
         logger.LogDebug("Populating manifest {ManifestId}", manifest.Id);
-        var probeServices = authProbeServices ?? new Dictionary<AssetId, AuthProbeService2>();
         int counter = 0;
         var canvases = new List<Canvas>(assets.Count);
         var additionalContexts = new List<string>();
@@ -112,13 +116,13 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         {
             manifest.EnsureContext(additionalContext);
         }
-        
+
         manifest.Items = canvases;
         manifest.Thumbnail = canvases.FirstOrDefault(c => !c.Thumbnail.IsNullOrEmpty())?.Thumbnail;
     }
 
     private async Task<AssetCanvas> GetCanvas(Asset asset, CustomerPathElement customerPathElement, int canvasIndex,
-        Dictionary<AssetId, AuthProbeService2> authProbeServices, CancellationToken cancellationToken)
+        IReadOnlyDictionary<DeliverableId, AuthProbeService2> authProbeServices, CancellationToken cancellationToken)
     {
         /*
          * If 'iiif-img'; add "Image" body on AnnotationPage>PaintingAnnotation with ImageService
@@ -151,9 +155,10 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
     }
 
     private async Task<AssetCanvas> GetCanvasForAsset(Asset asset, CustomerPathElement customerPathElement, Canvas canvas,
-        Dictionary<AssetId, AuthProbeService2> authProbeServices, CancellationToken cancellationToken)
+        IReadOnlyDictionary<DeliverableId, AuthProbeService2> authProbeServices, CancellationToken cancellationToken)
     {
-        var authServices = GetAuthServices(asset, authProbeServices);
+        var assetProbeService = authProbeServices.GetValueOrDefault(asset.Id);
+        var authServices = GetAuthServices(assetProbeService);
         
         logger.LogTrace("Adding canvas {CanvasId} to manifest", canvas.Id);
         
@@ -205,7 +210,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             if (asset.HasSingleDeliveryChannel(AssetDeliveryChannels.None) && !asset.Adjuncts.IsNullOrEmpty())
             {
                 logger.LogDebug("{AssetId} has 'none' channel and adjuncts - adding Canvas", asset.Id);
-                AddAdjunctsToCanvas(canvas, asset);
+                AddAdjunctsToCanvas(canvas, asset, authProbeServices);
                 return new AssetCanvas(canvas, additionalContexts);
             }
             return new AssetCanvas(null, null);
@@ -218,7 +223,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             canvas.Thumbnail = thumbnail.AsListOf<ExternalResource>();
         }
 
-        AddAdjunctsToCanvas(canvas, asset);
+        AddAdjunctsToCanvas(canvas, asset, authProbeServices);
         
         return new AssetCanvas(canvas, additionalContexts);
     }
@@ -389,14 +394,12 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
 
     private record AssetCanvas(Canvas? Canvas, IList<string>? AdditionalContexts);
     
-    private static List<IService>? GetAuthServices(Asset asset, Dictionary<AssetId, AuthProbeService2> authProbeServices)
-    {
-        if (authProbeServices.IsNullOrEmpty()) return null;
-        if (!authProbeServices.TryGetValue(asset.Id, out var probeService2)) return null;
+    private static List<IService>? GetAuthServices(AuthProbeService2? assetProbeService)
+        => assetProbeService?.ToEmbeddedService().AsListOf<IService>();
 
-        var authServiceToAdd = probeService2.ToEmbeddedService();
-        return authServiceToAdd.AsListOf<IService>();
-    }
+    private static List<IService>? GetAdjunctAuthServices(Adjunct adjunct,
+        IReadOnlyDictionary<DeliverableId, AuthProbeService2> authProbeServices)
+        => GetAuthServices(authProbeServices.GetValueOrDefault(new DeliverableId(adjunct.AssetId, adjunct.Id)));
 
     private IPaintable GetPaintableForTranscode(Asset asset, CustomerPathElement customerPathElement,
         AVTranscode transcode, List<IService>? authServices) =>
@@ -445,54 +448,62 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         };
         return assetPathGenerator.GetFullPathForRequest(fileRequest, BuilderUtils.UseNativeFormatForAssets, false);
     }
-    
-    private async Task<Dictionary<AssetId, AuthProbeService2>?> GetProbeServices(IReadOnlyCollection<Asset> assets,
-        CancellationToken cancellationToken)
+
+    private async Task<IReadOnlyDictionary<DeliverableId, AuthProbeService2>> GetProbeServices(
+        IReadOnlyCollection<Asset> assets, CancellationToken cancellationToken)
     {
-        var assetsRequiringAuth = assets.Where(a => a.HasRoles).ToList();
+        var itemsRequiringAuth = assets
+            .Where(a => a.HasRoles)
+            .Select(a => new AccessControlledItem(a.Id, a.Roles ?? []))
+            .Concat(assets
+                .SelectMany(a => a.Adjuncts ?? [])
+                .Where(adj => adj.IsHosted() && adj.GetDeliverableRoles().Count > 0)
+                .Select(adj =>
+                    new AccessControlledItem(new DeliverableId(adj.AssetId, adj.Id), adj.GetDeliverableRoles())))
+            .ToList();
 
-        var assetsRequiringAuthCount = assetsRequiringAuth.Count;
-        if (assetsRequiringAuthCount == 0) return null;
+        var itemsRequiringAuthCount = itemsRequiringAuth.Count;
+        if (itemsRequiringAuthCount == 0) return new Dictionary<DeliverableId, AuthProbeService2>();
 
-        var logLevel = assetsRequiringAuthCount > 10 ? LogLevel.Information : LogLevel.Debug;
-        logger.Log(logLevel, "Getting Auth services for {AuthAssetCount} assets", assetsRequiringAuthCount);
+        var logLevel = itemsRequiringAuthCount > 10 ? LogLevel.Information : LogLevel.Debug;
+        logger.Log(logLevel, "Getting Auth services for {AuthItemCount} assets and adjuncts", itemsRequiringAuthCount);
 
-        // This is doing a lot - batch the requests up?
+        // NOTE - this makes 1 request per item, a bulk endpoint on the auth service would avoid this
         var sw = Stopwatch.StartNew();
-        var probeServices = new Dictionary<AssetId, AuthProbeService2>(assetsRequiringAuthCount);
-        var taskList = new List<Task>(assetsRequiringAuthCount);
-        foreach (var asset in assetsRequiringAuth)
+        var probeServices = new ConcurrentDictionary<DeliverableId, AuthProbeService2>();
+        var parallelOptions = new ParallelOptions
         {
-            taskList.Add(authBuilder.GetAuthServicesForAsset(asset.Id, asset.Roles ?? [], cancellationToken)
-                .ContinueWith(antecedent =>
-                    {
-                        if (antecedent.Result is AuthProbeService2 probeService2)
-                            probeServices[asset.Id] = probeService2;
-                    },
-                    TaskContinuationOptions.OnlyOnRanToCompletion));
-        }
-
-        await Task.WhenAll(taskList);
+            MaxDegreeOfParallelism = authSettings.AuthServicesConcurrency, CancellationToken = cancellationToken
+        };
+        await Parallel.ForEachAsync(itemsRequiringAuth, parallelOptions, async (item, ct) =>
+        {
+            if (await authBuilder.GetAuthServices(item.DeliverableId, item.Roles, ct) is AuthProbeService2 probeService)
+            {
+                probeServices[item.DeliverableId] = probeService;
+            }
+        });
         sw.Stop();
-        logger.Log(logLevel, "Got Auth services for {AuthAssetCount} assets in {Elapsed}ms", assetsRequiringAuthCount,
-            sw.ElapsedMilliseconds);
+        logger.Log(logLevel, "Got Auth services for {AuthItemCount} assets and adjuncts in {Elapsed}ms",
+            itemsRequiringAuthCount, sw.ElapsedMilliseconds);
 
         return probeServices;
     }
 
-    private static List<IService> GetDistinctAccessServices(Dictionary<AssetId, AuthProbeService2>? probeServices)
+    private static List<IService> GetDistinctAccessServices(
+        IReadOnlyDictionary<DeliverableId, AuthProbeService2> probeServices)
     {
         // Get a list of all _distinct_ access services - these are embedded at Manifest level
         // Canvases will contain references
-        var accessServices = probeServices!
-            .SelectMany(kvp => kvp.Value.Service?.OfType<AuthAccessService2>() ?? Array.Empty<AuthAccessService2>())
+        var accessServices = probeServices
+            .SelectMany(kvp => kvp.Value.Service?.OfType<AuthAccessService2>() ?? [])
             .DistinctBy(accessService => accessService.Id)
             .Cast<IService>()
             .ToList();
         return accessServices;
     }
-    
-    private void AddAdjunctsToCanvas(Canvas canvas, Asset asset)
+
+    private void AddAdjunctsToCanvas(Canvas canvas, Asset asset,
+        IReadOnlyDictionary<DeliverableId, AuthProbeService2> authProbeServices)
     {
         var adjuncts = asset.Adjuncts ?? Enumerable.Empty<Adjunct>();
         
@@ -511,6 +522,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                     {
                         Id = GetAdjunctId(adjunct),
                         Label = adjunct.Label,
+                        Service = GetAdjunctAuthServices(adjunct, authProbeServices),
                     });
                     break;
                 case IIIFLinkType.Rendering:
@@ -563,6 +575,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
                 Profile = adjunct.Profile,
                 Label = adjunct.Label,
                 Language = adjunct.Language?.ToList(),
+                Service = GetAdjunctAuthServices(adjunct, authProbeServices),
             };
 
         string? GetAdjunctId(Adjunct adjunct)
