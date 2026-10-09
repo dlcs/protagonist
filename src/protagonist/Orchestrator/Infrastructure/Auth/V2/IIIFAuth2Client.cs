@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
+using DLCS.Core.Guard;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using IIIF;
@@ -29,7 +30,8 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
 
         if (roles.ContainsOnly(Asset.UnobtainableRole)) return null;
 
-        var path = $"services/{deliverableId}?roles={GetRolesString(roles)}";
+        var rolesString = GetRolesString(roles);
+        var path = $"services/{deliverableId}?roles={rolesString}";
         try
         {
             await using var authServices = await httpClient.GetStreamAsync(path, cancellationToken);
@@ -38,7 +40,8 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error getting IIIF Auth2 Services for {DeliverableId}", deliverableId);
+            logger.LogError(ex, "Error getting IIIF Auth2 Services for {DeliverableId}, {Roles}", deliverableId,
+                rolesString);
             return null;
         }
     }
@@ -46,7 +49,8 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
     public async Task<AuthProbeResult2> GetProbeServiceResult(DeliverableId deliverableId, IReadOnlyList<string> roles,
         string accessToken, CancellationToken cancellationToken)
     {
-        var path = $"probe_internal/{deliverableId}?roles={GetRolesString(roles)}";
+        var rolesString = GetRolesString(roles);
+        var path = $"probe_internal/{deliverableId}?roles={rolesString}";
         try
         {
             var httpRequest = new HttpRequestMessage(HttpMethod.Get, path);
@@ -56,11 +60,12 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
             
             var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
             var probeServiceResult = contentStream.FromJsonStream<AuthProbeResult2>();
-            return probeServiceResult;
+            return probeServiceResult.ThrowIfNull(nameof(probeServiceResult));
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error getting IIIF Probe Service2 for {DeliverableId}", deliverableId);
+            logger.LogError(ex, "Error getting IIIF Probe Service2 for {DeliverableId}, {Roles}", deliverableId,
+                rolesString);
             return AuthProbeResult2Builder.UnexpectedError;
         }
     }
