@@ -15,7 +15,7 @@ public class DeliverableId
     public string? AdjunctId { get; }
 
     /// <summary>Whether this identifies an Adjunct, rather than an Asset</summary>
-    [MemberNotNullWhen(true,  nameof(AdjunctId))]
+    [MemberNotNullWhen(true, nameof(AdjunctId))]
     public bool IsAdjunct => AdjunctId != null;
 
     /// <summary>
