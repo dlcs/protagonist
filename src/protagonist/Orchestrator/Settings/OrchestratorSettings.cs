@@ -289,7 +289,7 @@ public class AuthSettings
     /// Maximum number of concurrent requests to auth service when fetching auth services for multiple assets and
     /// adjuncts (e.g. when building a manifest)
     /// </summary>
-    public int AuthServicesConcurrency { get; set; } = 10;
+    public int AuthServicesConcurrency { get; set; } = 30;
 }
 
 /// <summary>
