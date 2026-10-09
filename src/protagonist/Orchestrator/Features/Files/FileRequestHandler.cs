@@ -56,8 +56,7 @@ public class FileRequestHandler(
         
         if (orchestrationAsset.RequiresAuth)
         {
-            if (!await assetRequestProcessor.IsAuthenticated(assetRequest.GetDeliverableId(),
-                    orchestrationAsset.Roles, httpContext.Request))
+            if (!await assetRequestProcessor.IsAuthenticated(orchestrationAsset, httpContext.Request))
             {
                 logger.LogDebug("User not authenticated for {Method} {Path}", httpContext.Request.Method,
                     httpContext.Request.Path);

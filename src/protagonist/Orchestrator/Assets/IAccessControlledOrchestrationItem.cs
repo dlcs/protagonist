@@ -1,9 +1,10 @@
 using System.Collections.Generic;
+using DLCS.Core.Types;
 
 namespace Orchestrator.Assets;
 
 /// <summary>
-/// Implemented by orchestration items (assets, adjuncts) that can be the subject of an auth probe service request
+/// Implemented by orchestration items (assets, adjuncts) that can be the subject of access control
 /// </summary>
 public interface IAccessControlledOrchestrationItem
 {
@@ -16,4 +17,9 @@ public interface IAccessControlledOrchestrationItem
     /// Gets list of roles associated with item
     /// </summary>
     IReadOnlyList<string> Roles { get; }
+    
+    /// <summary>
+    /// Identifier for this deliverable
+    /// </summary>
+    DeliverableId DeliverableId { get; }
 }

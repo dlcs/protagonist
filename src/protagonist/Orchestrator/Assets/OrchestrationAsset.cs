@@ -26,7 +26,10 @@ public class OrchestrationAsset : IOriginItem, IAccessControlledOrchestrationIte
     /// Gets list of roles associated with Asset
     /// </summary>
     public IReadOnlyList<string> Roles { get; set; } = [];
-    
+
+    /// <inheritdoc/>
+    public DeliverableId DeliverableId => new(AssetId);
+
     /// <summary>
     /// Get or set Asset origin 
     /// </summary>

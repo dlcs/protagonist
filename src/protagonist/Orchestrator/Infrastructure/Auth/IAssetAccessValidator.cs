@@ -1,20 +1,18 @@
-﻿using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Types;
+using Orchestrator.Assets;
 
 namespace Orchestrator.Infrastructure.Auth;
 
 public interface IAssetAccessValidator
 {
     /// <summary>
-    /// Validate whether current request has access to the specified roles for customer.
+    /// Validate whether current request has access to the specified item.
     /// This will try to validate request using specified <see cref="AuthMechanism"/>
     /// </summary>
-    /// <param name="deliverableId">Id of current Asset or Adjunct</param>
-    /// <param name="roles">Roles associated with Asset or Adjunct</param>
+    /// <param name="orchestrationItem">Asset or Adjunct to validate</param>
     /// <param name="mechanism">Which mechanism to use to authorize user</param>
     /// <returns><see cref="AssetAccessResult"/> enum representing result of validation</returns>
-    Task<AssetAccessResult> TryValidate(DeliverableId deliverableId, IReadOnlyList<string> roles, AuthMechanism mechanism,
+    Task<AssetAccessResult> TryValidate(IAccessControlledOrchestrationItem orchestrationItem, AuthMechanism mechanism,
         CancellationToken cancellationToken = default);
 }

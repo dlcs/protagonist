@@ -60,8 +60,7 @@ public class AdjunctRequestHandler(
         
         if (orchestrationAdjunct.RequiresAuth)
         {
-            if (!await assetRequestProcessor.IsAuthenticated(adjunctRequest.GetDeliverableId(),
-                    orchestrationAdjunct.Roles, httpContext.Request))
+            if (!await assetRequestProcessor.IsAuthenticated(orchestrationAdjunct, httpContext.Request))
             {
                 logger.LogDebug("User not authenticated for {Method} {Path}", httpContext.Request.Method,
                     httpContext.Request.Path);

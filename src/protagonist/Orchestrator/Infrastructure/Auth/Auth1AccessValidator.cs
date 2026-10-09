@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using DLCS.Core.Types;
 using DLCS.Repository.Auth;
 using DLCS.Web;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Http;
+using Orchestrator.Assets;
 using Orchestrator.Features.Auth;
 
 namespace Orchestrator.Infrastructure.Auth;
@@ -23,12 +22,17 @@ public class Auth1AccessValidator(
     IHttpContextAccessor httpContextAccessor)
     : IAssetAccessValidator
 {
-    public Task<AssetAccessResult> TryValidate(DeliverableId deliverableId, IReadOnlyList<string> roles, AuthMechanism mechanism,
-        CancellationToken cancellationToken = default) => mechanism switch
+    public Task<AssetAccessResult> TryValidate(IAccessControlledOrchestrationItem orchestrationItem,
+        AuthMechanism mechanism,
+        CancellationToken cancellationToken = default) =>
+        TryValidate(orchestrationItem.DeliverableId.AssetId.Customer, orchestrationItem.Roles, mechanism);
+    
+    private Task<AssetAccessResult> TryValidate(int customerId, IReadOnlyList<string> roles, AuthMechanism mechanism) 
+        => mechanism switch
     {
-        AuthMechanism.All => TryValidateAll(deliverableId.AssetId.Customer, roles),
-        AuthMechanism.Cookie => TryValidateCookie(deliverableId.AssetId.Customer, roles),
-        AuthMechanism.BearerToken => TryValidateBearerToken(deliverableId.AssetId.Customer, roles),
+        AuthMechanism.All => TryValidateAll(customerId, roles),
+        AuthMechanism.Cookie => TryValidateCookie(customerId, roles),
+        AuthMechanism.BearerToken => TryValidateBearerToken(customerId, roles),
         _ => throw new ArgumentOutOfRangeException(nameof(mechanism), mechanism, null)
     };
 

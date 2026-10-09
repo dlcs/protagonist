@@ -13,7 +13,7 @@ using Orchestrator.Assets;
 using Orchestrator.Infrastructure.Auth.V2;
 using Orchestrator.Models;
 
-namespace Orchestrator.Features.Auth.Requests;
+namespace Orchestrator.Features.Auth;
 
 /// <summary>
 /// Shared logic for evaluating IIIF Authorization Flow 2.0 ProbeService requests, used by both asset and adjunct

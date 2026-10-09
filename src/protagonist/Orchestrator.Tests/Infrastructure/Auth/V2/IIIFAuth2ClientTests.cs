@@ -274,7 +274,7 @@ public class IIIFAuth2ClientTests
         };
         
         // Act
-        await sut.VerifyAccess(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
         
         // Assert
         httpHandler.CallsMade.Should().ContainSingle(s => s == "http://auth-2/verifyaccess/99/100/foo?roles=role1");
@@ -290,7 +290,7 @@ public class IIIFAuth2ClientTests
         };
         
         // Act
-        await sut.VerifyAccess(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
         
         // Assert
         httpHandler.CallsMade.Should()
@@ -301,8 +301,13 @@ public class IIIFAuth2ClientTests
     public async Task VerifyAccess_Adjunct_CallsCorrectPath_SingleRole()
     {
         // Act
-        await sut.VerifyAccess(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"), ["role1"],
-            CancellationToken.None);
+        var orchestrationAdjunct = new OrchestrationAdjunct
+        {
+            AssetId = AssetId.FromString("99/100/foo"), 
+            Roles = ["role1"],
+            Id = "mets.xml"
+        };
+        await sut.VerifyAccess(orchestrationAdjunct, CancellationToken.None);
 
         // Assert
         httpHandler.CallsMade.Should()
@@ -313,8 +318,13 @@ public class IIIFAuth2ClientTests
     public async Task VerifyAccess_Adjunct_CallsCorrectPath_MultipleRole()
     {
         // Act
-        await sut.VerifyAccess(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"), ["role1", "role2", "role3"],
-            CancellationToken.None);
+        var orchestrationAdjunct = new OrchestrationAdjunct
+        {
+            AssetId = AssetId.FromString("99/100/foo"), 
+            Roles = ["role1", "role2", "role3"],
+            Id = "mets.xml"
+        };
+        await sut.VerifyAccess(orchestrationAdjunct, CancellationToken.None);
 
         // Assert
         httpHandler.CallsMade.Should()
@@ -329,11 +339,16 @@ public class IIIFAuth2ClientTests
     public async Task VerifyAccess_Adjunct_ReturnsFalse_IfHttpException(HttpStatusCode statusCode)
     {
         // Arrange
+        var orchestrationAdjunct = new OrchestrationAdjunct
+        {
+            AssetId = AssetId.FromString("99/100/foo"), 
+            Roles = ["role1"],
+            Id = "mets.xml"
+        };
         httpHandler.SetResponse(new HttpResponseMessage(statusCode));
 
         // Act
-        var response = await sut.VerifyAccess(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"), ["role1"],
-            CancellationToken.None);
+        var response = await sut.VerifyAccess(orchestrationAdjunct, CancellationToken.None);
 
         // Assert
         response.Should().BeFalse();
@@ -343,11 +358,16 @@ public class IIIFAuth2ClientTests
     public async Task VerifyAccess_Adjunct_ReturnsTrue_IfSuccess()
     {
         // Arrange
+        var orchestrationAdjunct = new OrchestrationAdjunct
+        {
+            AssetId = AssetId.FromString("99/100/foo"), 
+            Roles = ["role1"],
+            Id = "mets.xml"
+        };
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
 
         // Act
-        var response = await sut.VerifyAccess(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"), ["role1"],
-            CancellationToken.None);
+        var response = await sut.VerifyAccess(orchestrationAdjunct, CancellationToken.None);
 
         // Assert
         response.Should().BeTrue();
@@ -369,8 +389,7 @@ public class IIIFAuth2ClientTests
         httpHandler.SetResponse(new HttpResponseMessage(statusCode));
 
         // Act
-        var response =
-            await sut.VerifyAccess(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+        var response = await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
 
         // Assert
         response.Should().Be(false);
@@ -389,7 +408,7 @@ public class IIIFAuth2ClientTests
 
         // Act
         var response =
-            await sut.VerifyAccess(orchestrationImage.AssetId, orchestrationImage.Roles, CancellationToken.None);
+            await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
 
         // Assert
         response.Should().BeTrue();

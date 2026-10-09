@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DLCS.Core.Types;
 
@@ -14,6 +15,7 @@ public class DeliverableId
     public string? AdjunctId { get; }
 
     /// <summary>Whether this identifies an Adjunct, rather than an Asset</summary>
+    [MemberNotNullWhen(true,  nameof(AdjunctId))]
     public bool IsAdjunct => AdjunctId != null;
 
     /// <summary>

@@ -12,6 +12,7 @@ using IIIF;
 using IIIF.Auth.V2;
 using IIIF.Serialisation;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
 
 namespace Orchestrator.Infrastructure.Auth.V2;
@@ -63,10 +64,10 @@ public class IIIFAuth2Client(HttpClient httpClient, ILogger<IIIFAuth2Client> log
         }
     }
 
-    public async Task<bool> VerifyAccess(DeliverableId deliverableId, IReadOnlyList<string> roles,
-        CancellationToken cancellationToken)
+    public async Task<bool> VerifyAccess(IAccessControlledOrchestrationItem orchestrationItem, CancellationToken cancellationToken)
     {
-        var path = $"verifyaccess/{deliverableId}?roles={GetRolesString(roles)}";
+        var deliverableId = orchestrationItem.DeliverableId;
+        var path = $"verifyaccess/{deliverableId}?roles={GetRolesString(orchestrationItem.Roles)}";
         try
         {
             var response = await httpClient.GetAsync(path, cancellationToken);

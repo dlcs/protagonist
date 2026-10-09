@@ -218,8 +218,7 @@ public class ImageRequestHandler
         // IAssetAccessValidator is in container with ServiceLifetime.Scoped
         using var scope = scopeFactory.CreateScope();
         var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
-        var authResult = await assetAccessValidator.TryValidate(assetRequest.GetAssetId(), orchestrationImage.Roles,
-            AuthMechanism.Cookie);
+        var authResult = await assetAccessValidator.TryValidate(orchestrationImage, AuthMechanism.Cookie);
 
         return authResult == AssetAccessResult.Unauthorized;
     }
