@@ -401,11 +401,6 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         IReadOnlyDictionary<DeliverableId, AuthProbeService2> authProbeServices)
         => GetAuthServices(authProbeServices.GetValueOrDefault(new DeliverableId(adjunct.AssetId, adjunct.Id)));
 
-    /// <summary>
-    /// Only hosted adjuncts are served, and access controlled, by DLCS
-    /// </summary>
-    private static bool IsHostedAdjunct(Adjunct adjunct) => adjunct is { Origin: not null, ExternalId: null };
-
     private IPaintable GetPaintableForTranscode(Asset asset, CustomerPathElement customerPathElement,
         AVTranscode transcode, List<IService>? authServices) =>
         MIMEHelper.IsVideo(transcode.MediaType)
@@ -462,7 +457,7 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
             .Select(a => new AccessControlledItem(a.Id, a.Roles ?? []))
             .Concat(assets
                 .SelectMany(a => a.Adjuncts ?? [])
-                .Where(adj => IsHostedAdjunct(adj) && adj.GetDeliverableRoles().Count > 0)
+                .Where(adj => adj.IsHosted() && adj.GetDeliverableRoles().Count > 0)
                 .Select(adj =>
                     new AccessControlledItem(new DeliverableId(adj.AssetId, adj.Id), adj.GetDeliverableRoles())))
             .ToList();
