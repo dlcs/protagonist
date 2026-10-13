@@ -465,6 +465,44 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
 
     [Fact]
+    public async Task Get_RequiresAuth_AnnotationAdjunct_ReturnsPrivateCacheControl_IfAuth2VerifiesAdjunctAccess()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId =
+            nameof(Get_RequiresAuth_AnnotationAdjunct_ReturnsPrivateCacheControl_IfAuth2VerifiesAdjunctAccess);
+        var s3Key = $"{id}/adjuncts/{adjunctId}";
+        var origin = $"http://{LocalStackFixture.OriginBucketName}.s3.amazonaws.com/{s3Key}";
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            BucketName = LocalStackFixture.OriginBucketName,
+            Key = s3Key,
+            ContentBody = """{ "id": "https://old.example.org/1", "type": "AnnotationPage", "items": [] }""",
+            ContentType = "application/json"
+        });
+
+        await dbContext.Images
+            .AddTestAsset(id, mediaType: "text/plain", origin: $"{stubAddress}/testfile", roles: "auth2-role",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, mediaType: "application/json", iiifLinkType: IIIFLinkType.Annotations,
+                origin: origin);
+        await dbContext.SaveChangesAsync();
+        apiStub.Get($"/auth2/verifyaccess/{id}/{adjunctId}", (_, _) => string.Empty)
+            .IfQueryArg("roles", "auth2-role");
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("Cookie", $"dlcs-auth2-{id.Customer}=anything;");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl!.Private.Should().BeTrue("authorised adjuncts must not be cached publicly");
+        response.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromSeconds(600));
+    }
+
+    [Fact]
     public async Task Get_RequiresAuth_Returns401_IfAuth2OnlyVerifiesAssetAccess()
     {
         // Arrange

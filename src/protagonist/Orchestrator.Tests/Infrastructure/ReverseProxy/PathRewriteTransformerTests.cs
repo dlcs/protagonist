@@ -270,14 +270,20 @@ public class PathRewriteTransformerTests
             .WhoseValue.Single().Should().Be("max-age=60");
     }
     
-    [Fact]
-    public async Task TransformResponseAsync_AddsPrivateCacheHeaders_IfImageServer_AndRequiresAuth()
+    [Theory]
+    [InlineData(ProxyDestination.ImageServer)]
+    [InlineData(ProxyDestination.Orchestrator)]
+    [InlineData(ProxyDestination.ResizeThumbs)]
+    [InlineData(ProxyDestination.Thumbs)]
+    [InlineData(ProxyDestination.SpecialServer)]
+    [InlineData(ProxyDestination.S3)]
+    public async Task TransformResponseAsync_AddsPrivateCacheHeaders_IfRequiresAuth(ProxyDestination proxyDestination)
     {
         // Arrange
         var context = new DefaultHttpContext();
         var responseMessage = new HttpResponseMessage();
         responseMessage.Headers.Add("Cache-Control", "max-age=200");
-        var actionResult = new ProxyActionResult(ProxyDestination.ImageServer, true, "whatever");
+        var actionResult = new ProxyActionResult(proxyDestination, true, "whatever");
         var sut = new PathRewriteTransformer(actionResult);
         
         // Act
