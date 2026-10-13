@@ -108,9 +108,10 @@ public class AdjunctRequestHandler(
         where T : IProxyActionResult
     {
         result.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
-        if (orchestrationAdjunct.RequiresAuth)
+        if (orchestrationAdjunct.RequiresAuth && result is IdRewriteProxyActionResult)
         {
-            // Ensure authorised adjuncts aren't cached in any interim (e.g. CDN) cache layers
+            // Ensure authorised adjuncts aren't cached in any interim (e.g. CDN) cache layers, only required for
+            // results not proxied via YARP
             result.Headers.Add("Cache-Control", PrivateCacheControl);
         }
         return result;

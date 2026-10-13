@@ -69,8 +69,8 @@ public class PathRewriteTransformer : HttpTransformer
         return shouldProxyBody;
     }
 
-    private bool IsDownstreamError(HttpResponseMessage? proxyResponse) 
-        => proxyResponse == null || !proxyResponse.IsSuccessStatusCode;
+    private static bool IsDownstreamError(HttpResponseMessage? proxyResponse) 
+        => proxyResponse is not { IsSuccessStatusCode: true };
 
     private void EnsureCacheHeaders(HttpContext httpContext, bool isDownstreamError)
     {
@@ -81,13 +81,17 @@ public class PathRewriteTransformer : HttpTransformer
             httpContext.Response.Headers[cacheControlHeader] = "max-age=60";
             return;
         }
+
+        if (proxyAction.RequiresAuth)
+        {
+            httpContext.Response.Headers[cacheControlHeader] = "private, max-age=600";
+            return;
+        }
         
         if (proxyAction.Target is not ProxyDestination.ImageServer and not ProxyDestination.SpecialServer) return;
 
-        var cacheControl = proxyAction.RequiresAuth
-            ? "private, max-age=600"
-            : "public, s-maxage=2419200, max-age=2419200, stale-if-error=86400";
-        httpContext.Response.Headers[cacheControlHeader] = cacheControl;
+        httpContext.Response.Headers[cacheControlHeader] =
+            "public, s-maxage=2419200, max-age=2419200, stale-if-error=86400";
     }
 
     private static void EnsureCorsHeaders(HttpContext httpContext)
