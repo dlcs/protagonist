@@ -782,6 +782,91 @@ public class ImageRequestHandlerTests
     }
     
     [Theory]
+    [InlineData("/iiif-img/2/2/test-image/full/150,150/0/default.jpg", ProxyDestination.Thumbs, "2_2_test-image.jpg")]
+    [InlineData("/iiif-img/2/2/test-image/full/100,100/0/default.jpg", ProxyDestination.ResizeThumbs, "2_2_test-image.jpg")]
+    [InlineData("/iiif-img/2/2/test-image/5,5,90,90/90,/0/default.png", ProxyDestination.ImageServer, "2_2_test-image.png")]
+    [InlineData("/iiif-img/2/2/test-image/full/max/0/default.jpg", ProxyDestination.SpecialServer, "2_2_test-image.jpg")]
+    public async Task HandleRequest_SetsContentDisposition_IfFilenameIdTemplate(string path, ProxyDestination destination,
+        string expectedFilename)
+    {
+        // Arrange
+        var context = GetContextForFilenameTest(path, "{id}");
+        var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: GetResizeThumbSettings());
+
+        // Act
+        var result = (ProxyActionResult)await sut.HandleRequest(context);
+
+        // Assert
+        result.Target.Should().Be(destination);
+        result.Headers.Should().ContainKey("Content-Disposition")
+            .WhoseValue.ToString().Should()
+            .Be($"attachment; filename={expectedFilename}; filename*=UTF-8''{expectedFilename}");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("myfile.jpg")]
+    [InlineData("id")]
+    [InlineData("{reference1}")]
+    public async Task HandleRequest_DoesNotSetContentDisposition_IfFilenameMissingOrUnsupported(string filename)
+    {
+        // Arrange
+        var context = GetContextForFilenameTest("/iiif-img/2/2/test-image/full/max/0/default.jpg", filename);
+        var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: GetResizeThumbSettings());
+
+        // Act
+        var result = (ProxyActionResult)await sut.HandleRequest(context);
+
+        // Assert
+        result.Headers.Should().NotContainKey("Content-Disposition");
+    }
+
+    [Theory]
+    [InlineData("Content-Disposition")]
+    [InlineData("content-disposition")]
+    public async Task HandleRequest_ContentDispositionFromFilename_OverridesCustomHeader(string customHeaderKey)
+    {
+        // Arrange
+        var context = GetContextForFilenameTest("/iiif-img/2/2/test-image/full/max/0/default.jpg", "{id}");
+        A.CallTo(() => customHeaderRepository.GetForCustomer(2)).Returns(new List<CustomHeader>
+        {
+            new() { Space = null, Role = null, Key = customHeaderKey, Value = "inline" },
+        });
+        var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: GetResizeThumbSettings());
+
+        // Act
+        var result = (ProxyActionResult)await sut.HandleRequest(context);
+
+        // Assert
+        result.Headers.Should().ContainSingle(h => h.Key.ToLower() == "content-disposition")
+            .Which.Value.ToString().Should().StartWith("attachment;");
+    }
+
+    private DefaultHttpContext GetContextForFilenameTest(string path, string? filename)
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Path = path;
+        if (filename != null) context.Request.QueryString = QueryString.Create("filename", filename);
+
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, OpenThumbs = [[150, 150]], S3Location = "s3://storage/2/2/test-image",
+                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Size = new Size(1000, 1000),
+            });
+        return context;
+    }
+
+    private static OrchestratorSettings GetResizeThumbSettings()
+    {
+        var settings = CreateOrchestratorSettings();
+        settings.Proxy.CanResizeThumbs = true;
+        return settings;
+    }
+
+    [Theory]
     [InlineData("/iiif-img/2/2/test-image/full/90,/0/default.jpg")] // special
     [InlineData("/iiif-img/2/2/test-image/full/!150,150/0/default.jpg")] // thumbs
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.png")] // tile (image-server)

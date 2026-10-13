@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -16,6 +17,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
@@ -113,7 +115,7 @@ public class ImageRequestHandler
             return new StatusCodeResult(HttpStatusCode.InternalServerError);
         }
 
-        await SetCustomHeaders(orchestrationImage, result);
+        await SetResponseHeaders(httpContext, orchestrationImage, assetRequest, result);
         return proxyActionResult;
     }
 
@@ -310,18 +312,49 @@ public class ImageRequestHandler
             ? requestModel.VersionPathValue.ParseToIIIFImageApiVersion()
             : orchestratorSettings.Value.DefaultIIIFImageVersion;
 
-    private async Task SetCustomHeaders(OrchestrationImage orchestrationImage,
-        ProxyActionResult proxyActionResult)
+    /// <summary>
+    /// Set any headers to be added to response. Order is significant, later headers take precedence:
+    /// customer custom headers, then Content-Disposition (if supported ?filename= template requested), then debug
+    /// headers.
+    /// </summary>
+    private async Task SetResponseHeaders(HttpContext httpContext, OrchestrationImage orchestrationImage,
+        ImageAssetDeliveryRequest assetRequest, ProxyActionResult proxyActionResult)
     {
         var customerHeaders = (await customHeaderRepository.GetForCustomer(orchestrationImage.AssetId.Customer))
             .ToList();
 
         CustomHeaderProcessor.SetProxyImageHeaders(customerHeaders, orchestrationImage, proxyActionResult);
 
+        SetContentDisposition(httpContext, orchestrationImage, assetRequest, proxyActionResult);
+
         if (orchestratorSettings.Value.Proxy.AddProxyDebugHeaders)
         {
             proxyActionResult.WithHeader("x-proxy-destination", proxyActionResult.Target.ToString());
         }
+    }
+
+    /// <summary>
+    /// Set Content-Disposition if supported ?filename= request param specified
+    /// </summary>
+    private void SetContentDisposition(HttpContext httpContext, OrchestrationImage orchestrationImage,
+        ImageAssetDeliveryRequest assetRequest, ProxyActionResult proxyActionResult)
+    {
+        if (!DownloadFilename.TryGetContentDisposition(httpContext.Request.Query, orchestrationImage.AssetId,
+                assetRequest.IIIFImageRequest.Format, out var contentDisposition))
+        {
+            return;
+        }
+
+        // Headers dictionary is case-sensitive, remove any custom header that differs only by case
+        foreach (var key in proxyActionResult.Headers.Keys
+                     .Where(k => k.Equals(HeaderNames.ContentDisposition, StringComparison.OrdinalIgnoreCase))
+                     .ToList())
+        {
+            proxyActionResult.Headers.Remove(key);
+        }
+
+        logger.LogTrace("Setting content-disposition header {ContentDisposition}", contentDisposition);
+        proxyActionResult.WithHeader(HeaderNames.ContentDisposition, contentDisposition);
     }
 }
 
