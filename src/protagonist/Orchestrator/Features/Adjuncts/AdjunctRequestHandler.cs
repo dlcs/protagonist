@@ -107,11 +107,11 @@ public class AdjunctRequestHandler(
     private static T AddResponseHeaders<T>(T result, OrchestrationAdjunct orchestrationAdjunct)
         where T : IProxyActionResult
     {
-        result.Headers.Add("Content-Type", orchestrationAdjunct.MediaType!.Value);
+        result.WithHeader("Content-Type", orchestrationAdjunct.MediaType!.Value);
         if (orchestrationAdjunct.RequiresAuth)
         {
             // Ensure authorised adjuncts aren't cached in any interim (e.g. CDN) cache layers
-            result.Headers.Add("Cache-Control", PrivateCacheControl);
+            result.WithHeader("Cache-Control", PrivateCacheControl);
         }
         return result;
     }

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -343,14 +342,6 @@ public class ImageRequestHandler
                 assetRequest.IIIFImageRequest.Format, out var contentDisposition))
         {
             return;
-        }
-
-        // Headers dictionary is case-sensitive, remove any custom header that differs only by case
-        foreach (var key in proxyActionResult.Headers.Keys
-                     .Where(k => k.Equals(HeaderNames.ContentDisposition, StringComparison.OrdinalIgnoreCase))
-                     .ToList())
-        {
-            proxyActionResult.Headers.Remove(key);
         }
 
         logger.LogTrace("Setting content-disposition header {ContentDisposition}", contentDisposition);
