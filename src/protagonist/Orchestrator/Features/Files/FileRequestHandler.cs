@@ -73,7 +73,7 @@ public class FileRequestHandler(
 
         var proxyPath = proxyPathGenerator.GetProxyPath(proxyTarget, !orchestrationAsset.OptimisedOrigin ?? true);
         var proxyActionResult = new ProxyActionResult(ProxyDestination.S3, orchestrationAsset.RequiresAuth, proxyPath);
-        proxyActionResult.Headers.Add("Content-Type", orchestrationAsset.MediaType!.Value);
+        proxyActionResult.WithHeader("Content-Type", orchestrationAsset.MediaType!.Value);
         return proxyActionResult;
     }
 

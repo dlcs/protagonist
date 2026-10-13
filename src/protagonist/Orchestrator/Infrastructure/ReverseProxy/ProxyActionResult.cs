@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using DLCS.AWS.S3.Models;
@@ -72,7 +73,7 @@ public class ProxyActionResult : IProxyActionResult
     /// <summary>
     /// A collection of any Headers to set on response object. 
     /// </summary>
-    public Dictionary<string, StringValues> Headers { get; } = new();
+    public Dictionary<string, StringValues> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
     
     public ProxyActionResult(ProxyDestination target, bool requiresAuth, string? path = null)
     {
@@ -100,7 +101,7 @@ public class StatusCodeResult(HttpStatusCode statusCode, string? message = null)
     /// <summary>
     /// A collection of any Headers to set on response object. 
     /// </summary>
-    public Dictionary<string, StringValues> Headers { get; } = new();
+    public Dictionary<string, StringValues> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     public static StatusCodeResult NotFound => new(HttpStatusCode.NotFound);
 }
@@ -128,7 +129,7 @@ public class IdRewriteProxyActionResult(ObjectInBucket source, string newId) : I
     /// <summary>
     /// A collection of any Headers to set on response object.
     /// </summary>
-    public Dictionary<string, StringValues> Headers { get; } = new();
+    public Dictionary<string, StringValues> Headers { get; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 public static class ProxyActionResultsX
