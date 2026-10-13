@@ -150,6 +150,20 @@ When multiple placeholders are supported, rules are needed for:
 `/file/` and `/iiif-av/` could support the same parameter, though `/file/` responses may already contain a
 `Content-Disposition` header from S3 object metadata.
 
+## Alternative Implementation
+
+Alternative approach suggested in [PR#1326](https://github.com/dlcs/protagonist/pull/1326) review, recorded here should we want to revisit in the future.
+
+> An alternative would be to have a "download" delivery channel, that can take image api params but returns with extra content disposition header
+> 
+> `/iiif-img/c/s/id/params/default.jpg`
+> 
+> `/iiif-img-download/c/s/id/params/default.jpg`
+>
+> ... this way it could be controlled per image, or as a default delivery channel, etc. An image just has this channel. The delivery channel policy could be extended as far as you like for determining how the file is named.
+>
+> However - it's more complicated and not incompatible with this simpler approach.
+
 ## Open Questions
 
 * Should an unsupported `filename` value be ignored (proposed) or return `400 Bad Request`?
