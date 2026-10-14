@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using IIIF.ImageApi;
 
 namespace DLCS.Web.IIIF;
@@ -58,7 +57,8 @@ public static class ImageRequestX
 
         if (!Qualities.All.Contains(request.Quality, StringComparer.OrdinalIgnoreCase))
         {
-            invalidMessage = $"Requested quality '{request.Quality}' not supported, must be one of '{Qualities.AllCsv}'";
+            invalidMessage =
+                $"Requested quality '{request.Quality}' not supported, must be one of '{Qualities.AllCsv}'";
             return false;
         }
 

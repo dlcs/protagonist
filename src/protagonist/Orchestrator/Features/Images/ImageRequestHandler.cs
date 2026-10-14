@@ -11,7 +11,6 @@ using DLCS.Repository.Assets;
 using DLCS.Web.IIIF;
 using DLCS.Web.Requests.AssetDelivery;
 using IIIF;
-using IIIF.ImageApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
