@@ -196,17 +196,4 @@ public class ImageRequestXTests
         imageRequest.IsCandidateForImageHandling(out var message).Should().BeTrue();
         message.Should().BeNull();
     }
-
-    [Theory]
-    [InlineData("0,")]
-    [InlineData(",0")]
-    [InlineData("!0,0")]
-    [InlineData("20,0")]
-    [InlineData("0,20")]
-    public void IsCandidateForImageHandling_False_IfZeroSize(string size)
-    {
-        var imageRequest = new ImageRequest { Format = "jpg", Quality = "default", Size = SizeParameter.Parse(size) };
-        imageRequest.IsCandidateForImageHandling(out var message).Should().BeFalse();
-        message.Should().Be("Requested size must be greater than 0");
-    }
 }

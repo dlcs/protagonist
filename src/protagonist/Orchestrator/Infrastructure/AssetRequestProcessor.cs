@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Net;
 using System.Threading.Tasks;
 using DLCS.Core.Exceptions;
-using DLCS.Core.Types;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Http;

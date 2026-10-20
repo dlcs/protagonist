@@ -86,4 +86,21 @@ public class ImageRequestTests : IClassFixture<ProtagonistAppFactory<Startup>>
             .Be($"Requested rotation value not supported, use '0'");
         responseObject["statusCode"].ToString().Should().Be("400");
     }
+
+    [Theory]
+    [InlineData("full/!200,/0/default.jpg")]
+    [InlineData("full/!,200/0/default.jpg")]
+    [InlineData("full/!200/0/default.jpg")]
+    [InlineData("info.json/full/200,/0/default.jpg")]
+    public async Task GetThumbnail_Returns400_IfMalformedRequest(string imageRequest)
+    {
+        // Arrange
+        var id = $"99/1/{nameof(GetThumbnail_Returns400_IfMalformedRequest)}";
+
+        // Act
+        var response = await httpClient.GetAsync($"thumbs/{id}/{imageRequest}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 }
