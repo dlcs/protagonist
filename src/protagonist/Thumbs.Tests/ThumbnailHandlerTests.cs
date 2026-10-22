@@ -141,4 +141,48 @@ public class ThumbnailHandlerTests
         // Assert
         result.IsEmpty.Should().BeTrue("a missing source must not throw out of the handler");
     }
+
+    [Fact]
+    public async Task GetThumbnail_ReturnsEmpty_WhenExactSizeThumbnailHasNoContent()
+    {
+        // Arrange
+        A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._, A<CancellationToken>._))
+            .ReturnsLazily((ObjectInBucket o, CancellationToken _) => new ObjectFromBucket(o, null, null));
+
+        // Act - 200x400 is an open size
+        await using var result = await GetSut().GetThumbnail(AssetId, Confined(200, 400));
+
+        // Assert
+        result.IsEmpty.Should().BeTrue("a missing exact size thumbnail must not be returned as empty stream");
+    }
+
+    [Fact]
+    public async Task GetThumbnail_ReturnsEmpty_WhenNoOpenSizes()
+    {
+        // Arrange
+        A.CallTo(() => thumbRepository.GetOpenSizes(A<AssetId>._)).Returns(new List<int[]>());
+
+        // Act
+        await using var result = await GetSut().GetThumbnail(AssetId, Confined(200, 400));
+
+        // Assert
+        result.IsEmpty.Should().BeTrue();
+        A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._, A<CancellationToken>._))
+            .MustNotHaveHappened();
+    }
+
+    [Fact]
+    public async Task GetThumbnail_ReturnsEmpty_WhenOpenSizesNull()
+    {
+        // Arrange
+        A.CallTo(() => thumbRepository.GetOpenSizes(A<AssetId>._)).Returns((List<int[]>?)null);
+
+        // Act
+        await using var result = await GetSut().GetThumbnail(AssetId, Confined(200, 400));
+
+        // Assert
+        result.IsEmpty.Should().BeTrue();
+        A.CallTo(() => bucketReader.GetObjectFromBucket(A<ObjectInBucket>._, A<CancellationToken>._))
+            .MustNotHaveHappened();
+    }
 }
