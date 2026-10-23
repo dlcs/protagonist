@@ -370,7 +370,7 @@ This wording doesn't belong on `access_services`. It varies by *reason*, not by 
 
 ## Appendix
 
-### Data Model Changes
+### Suggested Data Model Changes
 
 All in the IIIF-Auth-V2 database:
 
@@ -473,7 +473,9 @@ Migrating existing data:
 * **Asset roles become entries.** This changes their storage and validation (including rejecting inconsistent entries, see [Role entries](#role-entries-and--or)), and how they're passed to IIIF-Auth-V2.
 * Role prefixes are part of the role URI, so they need no extra column.
 
-## Open Questions
+## Open Decisions
+
+There are suggested approaches for some of these above, they can be confirmed and documented in relevant tickets.
 
 * **Role expression encoding**: how asset role entries are stored and passed between services. A suggestion, with alternatives, is in [Storing and transmitting role entries](#storing-and-transmitting-role-entries).
 * **Emitting `external`**: proposed only when IP alone grants access. In spec order, `external` is listed first, which matters for clients that only use the first service. The alternative is never emitting `external`, and relying on the probe and token-less evaluation.
