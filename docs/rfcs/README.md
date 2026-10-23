@@ -25,3 +25,4 @@
 23. [Hosted annotation adjunt id](023-hosted-adjunct-id.md)
 24. [Adjunct access control](024-adjunct-access-control.md)
 26. [Controlling download filename](026-download-filename.md)
+27. [Access Control Model: Role Combinations, IP-Restrictions and Appointments](027-access-control-model.md)
