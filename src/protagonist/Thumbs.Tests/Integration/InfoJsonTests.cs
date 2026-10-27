@@ -188,4 +188,41 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
     }
+
+    [Fact]
+    public async Task GetInfoJson_ReturnsRequestedVersion_ViaConneg_WhenOtherVersionCached()
+    {
+        // Arrange
+        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_ReturnsRequestedVersion_ViaConneg_WhenOtherVersionCached)}");
+        const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/image/2/context.json\"";
+        const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
+        await dbFixture.DbContext.Images.AddTestAsset(id);
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[800,800],[400,400],[200,200]]}"
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var v2Request = new HttpRequestMessage(HttpMethod.Get, $"thumbs/{id}/info.json");
+        v2Request.Headers.Add("Accept", iiif2);
+        var v2Response = await httpClient.SendAsync(v2Request);
+
+        var v3Request = new HttpRequestMessage(HttpMethod.Get, $"thumbs/{id}/info.json");
+        v3Request.Headers.Add("Accept", iiif3);
+        var v3Response = await httpClient.SendAsync(v3Request);
+
+        // Assert
+        var v2Json = JObject.Parse(await v2Response.Content.ReadAsStringAsync());
+        v2Json["@context"].ToString().Should().Be("http://iiif.io/api/image/2/context.json");
+        v2Response.Headers.CacheControl.Public.Should().BeTrue("response must be cacheable for this test to be valid");
+
+        var v3Json = JObject.Parse(await v3Response.Content.ReadAsStringAsync());
+        v3Json["@context"].ToString().Should()
+            .Be("http://iiif.io/api/image/3/context.json", "cached v2 response must not be served for v3 request");
+        v3Response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
+    }
 }
