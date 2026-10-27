@@ -126,7 +126,11 @@ Three entries, any of which will do: `ccg-pa-2`, *or* `ccg-pa-4`, *or* an appoin
 ### Storing and transmitting role entries
 
 > [!TIP]
-> **Suggestion, not a requirement.** How entries are stored and passed between services is open. The approach below is one way to do it, with alternatives.
+> **Suggestion** 
+> 
+> How entries are stored and passed between services is open. The approach below is the recommended way to do it, with alternatives listed.
+>
+> When implementing we may find a compelling reason to use an alternative so I've listed them here.
 
 Today, `roles` is a `string[]` in the API. In the database it's `Images.Roles`, a `varchar(1000)` that an EF value converter joins with commas, and which Orchestrator's Dapper query (`DapperColumnMapping.SplitDelimited`) and CSV ingest split on commas. It's passed to IIIF-Auth-V2 as `?roles=uri1,uri2`. So commas already mean "or", and role URIs are already assumed to contain no commas.
 
@@ -137,12 +141,13 @@ Today, `roles` is a `string[]` in the API. In the database it's `Images.Roles`, 
 ```
 
 * No change for assets with single-role entries, no schema change, and CSV ingest keeps working.
-* **Restrict the characters in role names.** The DLCS saves role URIs, so IIIF-Auth-V2 can reject `+`, `,` and whitespace in role names when roles are created, and Protagonist checks the same rule when an asset is saved. The separators are then safe.
+* The `+` is evident what this is (you need _"ip:ccg-office and ccg-all-staff"_).
+* **Restrict the characters in role names.** The DLCS saves role URIs, so IIIF-Auth-V2 can reject `+`, `,`, `:` and whitespace in role names when roles are created, and Protagonist checks the same rule when an asset is saved. The separators are then safe.
 * **Widen `Images.Roles`** to `text` (or well beyond 1000 characters), as several entries of full URIs soon add up.
 * Protagonist validates entries when an asset is saved: every role is known, no duplicates, and entries are consistent (see above).
 * A shared `RoleEntry` type (`Parse`/`ToString`) keeps the API, ingest and Orchestrator agreeing on the format.
 
-Alternatives:
+Alternative approaches:
 
 | Option               | API `roles`                                         | Database                                                      | For                                                      | Against                                                                                                   |
 | -------------------- | --------------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
