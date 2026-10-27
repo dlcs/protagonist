@@ -88,6 +88,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should()
             .Be("application/json", "application/json unless Accept header specified");
     }
@@ -123,6 +124,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should()
             .Be("application/ld+json", "application/ld+json as Accept header specified");
     }
@@ -183,6 +185,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
     }
 }
