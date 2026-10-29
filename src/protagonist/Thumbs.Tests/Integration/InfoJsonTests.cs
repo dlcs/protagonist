@@ -194,7 +194,7 @@ public class InfoJsonTests : IClassFixture<ProtagonistAppFactory<Startup>>
     public async Task GetInfoJson_ReturnsRequestedVersion_ViaConneg_WhenOtherVersionCached()
     {
         // Arrange
-        var id = AssetId.FromString($"99/1/{nameof(GetInfoJson_ReturnsRequestedVersion_ViaConneg_WhenOtherVersionCached)}");
+        var id = AssetIdGenerator.GetAssetId();
         const string iiif2 = "application/ld+json; profile=\"http://iiif.io/api/image/2/context.json\"";
         const string iiif3 = "application/ld+json; profile=\"http://iiif.io/api/image/3/context.json\"";
         await dbFixture.DbContext.Images.AddTestAsset(id);
