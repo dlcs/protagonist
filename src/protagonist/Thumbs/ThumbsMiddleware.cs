@@ -135,7 +135,7 @@ public class ThumbsMiddleware
         var (requestedVersion, _) = DiscoverRequestedImageApiVersion(context, request);
         
         context.Response.ContentType = context.Request.GetIIIFContentType(requestedVersion);
-        context.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding" };
+        context.Response.Headers[HeaderNames.Vary] = new[] { "Accept-Encoding", "Accept" };
         SetCacheControl(context);
         
         var id = GetFullImagePath(request, requestedVersion);
