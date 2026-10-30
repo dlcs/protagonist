@@ -4,16 +4,24 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Linq;
 using System.Threading;
+using DLCS.Core.Caching;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using IIIF;
 using IIIF.Auth.V2;
 using IIIF.Serialisation;
+using LazyCache;
+using LazyCache.Providers;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
+using Orchestrator.Features.Auth;
 using Orchestrator.Infrastructure.Auth.V2;
+using Orchestrator.Settings;
 using Test.Helpers.Http;
 
 namespace Orchestrator.Tests.Infrastructure.Auth.V2;
@@ -28,14 +36,27 @@ public class IIIFAuth2ClientTests
     public IIIFAuth2ClientTests()
     {
         httpHandler = new ControllableHttpMessageHandler();
-        var httpClient = new HttpClient(httpHandler);
-        httpClient.BaseAddress = new Uri("http://auth-2/");
 
         var httpContext = new DefaultHttpContext();
         httpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.0.0.5");
         httpContextAccessor = new HttpContextAccessor { HttpContext = httpContext };
 
-        sut = new IIIFAuth2Client(httpClient, httpContextAccessor, new NullLogger<IIIFAuth2Client>());
+        sut = GetSut(new CacheSettings());
+    }
+
+    private IIIFAuth2Client GetSut(CacheSettings cacheSettings)
+    {
+        var httpClient = new HttpClient(httpHandler);
+        httpClient.BaseAddress = new Uri("http://auth-2/");
+
+        // Use a new cache per sut so results aren't shared between tests. SizeLimit set to match Orchestrator, which
+        // requires every entry to specify a Size
+        var appCache = new CachingService(
+            new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions { SizeLimit = 100 })));
+        var authCookieManager = new AuthCookieManager(httpContextAccessor, Options.Create(new AuthSettings()));
+        var orchestratorOptions = Options.Create(new OrchestratorSettings { Caching = cacheSettings });
+        return new IIIFAuth2Client(httpClient, httpContextAccessor, appCache, authCookieManager, orchestratorOptions,
+            new NullLogger<IIIFAuth2Client>());
     }
 
     [Fact]
@@ -549,4 +570,274 @@ public class IIIFAuth2ClientTests
         // Assert
         response.Should().BeTrue();
     }
+
+    [Theory]
+    [InlineData(HttpStatusCode.OK, true)]
+    [InlineData(HttpStatusCode.Unauthorized, false)]
+    [InlineData(HttpStatusCode.Forbidden, false)]
+    public async Task VerifyAccess_CachesResult_IfGrantedOrDenied(HttpStatusCode statusCode, bool expected)
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] };
+        httpHandler.SetResponse(new HttpResponseMessage(statusCode));
+
+        // Act
+        var first = await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        var second = await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        first.Should().Be(expected);
+        second.Should().Be(expected);
+        httpHandler.CallsMade.Should().ContainSingle();
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.Redirect)]
+    public async Task VerifyAccess_DoesNotCacheResult_IfError(HttpStatusCode statusCode)
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] };
+        httpHandler.SetResponse(new HttpResponseMessage(statusCode));
+
+        // Act
+        var first = await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+        var second = await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        first.Should().BeFalse();
+        second.Should().BeTrue("error result was not cached");
+        httpHandler.CallsMade.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task VerifyAccess_DoesNotShareResult_BetweenAuth2Cookies()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] };
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        httpContextAccessor.HttpContext.Request.Headers.Cookie = "dlcs-auth2-99=user-one";
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        httpContextAccessor.HttpContext.Request.Headers.Cookie = "dlcs-auth2-99=user-two";
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        httpContextAccessor.HttpContext.Request.Headers.Cookie = "dlcs-auth2-99=user-one";
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().HaveCount(2, "user-one result is cached, user-two is separate");
+    }
+
+    [Fact]
+    public async Task VerifyAccess_SharesResult_IfOnlyNonAuth2CookieDiffers()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] };
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        httpContextAccessor.HttpContext.Request.Headers.Cookie = "dlcs-auth2-99=user-one; dlcs-token-99=id=a";
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        httpContextAccessor.HttpContext.Request.Headers.Cookie = "dlcs-auth2-99=user-one; dlcs-token-99=id=b";
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle("key uses Auth2 cookie only");
+    }
+
+    [Fact]
+    public async Task VerifyAccess_DoesNotShareResult_BetweenClientIps_IfIpRole()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = [IpRole] };
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        httpContextAccessor.HttpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.0.0.6");
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task VerifyAccess_SharesResult_BetweenClientIps_IfNoIpRole()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] };
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        httpContextAccessor.HttpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.0.0.6");
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle("client IP is not forwarded so doesn't affect result");
+    }
+
+    [Fact]
+    public async Task VerifyAccess_CallsPath_WithOrderedDistinctRoles_ExcludingUnobtainable()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role3", Asset.UnobtainableRole, "role1", "role3"]
+        };
+
+        // Act
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should()
+            .ContainSingle(s => s == "http://auth-2/verifyaccess/99/100/foo?roles=role1,role3");
+    }
+
+    [Fact]
+    public async Task VerifyAccess_SharesResult_IfRolesInDifferentOrder()
+    {
+        // Arrange
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        await sut.VerifyAccess(
+            new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", "role2"] },
+            CancellationToken.None);
+        await sut.VerifyAccess(
+            new OrchestrationImage
+            {
+                AssetId = AssetId.FromString("99/100/foo"), Roles = ["role2", Asset.UnobtainableRole, "role1"]
+            },
+            CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle("both resolve to the same roles string");
+    }
+
+    [Fact]
+    public async Task VerifyAccess_DoesNotShareResult_BetweenDeliverables()
+    {
+        // Arrange
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        await sut.VerifyAccess(new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] },
+            CancellationToken.None);
+        await sut.VerifyAccess(new OrchestrationImage { AssetId = AssetId.FromString("99/100/bar"), Roles = ["role1"] },
+            CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task VerifyAccess_DoesNotCache_IfDisabled()
+    {
+        // Arrange
+        var noCacheSut = GetSut(GetCacheSettings(granted: 0, denied: 0));
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] };
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        await noCacheSut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        await noCacheSut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().HaveCount(2);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.OK)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    public async Task VerifyAccess_UsesShortDefaultTtl_NotCacheDuration_IfNoOverride(HttpStatusCode statusCode)
+    {
+        // Arrange - preconfigured durations are long, defaults should be used rather than these
+        var longDurationSut = GetSut(new CacheSettings
+        {
+            TimeToLive = new Dictionary<CacheSource, CacheGroupSettings>
+            {
+                [CacheSource.Memory] = new() { ShortTtlSecs = 600, DefaultTtlSecs = 600, LongTtlSecs = 600 }
+            }
+        });
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] };
+        httpHandler.SetResponse(new HttpResponseMessage(statusCode));
+
+        // Act
+        await longDurationSut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        await Task.Delay(TimeSpan.FromSeconds(5.5));
+        await longDurationSut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().HaveCount(2, "default ttl (5s granted, 2s denied) has expired");
+    }
+
+    [Fact]
+    public async Task VerifyAccess_UsesOverrideTtl_IfConfigured()
+    {
+        // Arrange
+        var overrideSut = GetSut(GetCacheSettings(granted: 1, denied: 1));
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] };
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        await overrideSut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        await overrideSut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        await Task.Delay(TimeSpan.FromSeconds(1.5));
+        await overrideSut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().HaveCount(2, "cached for 1s then expired");
+    }
+
+    [Fact]
+    public async Task VerifyAccess_CachesDenied_IfOnlyGrantedDisabled()
+    {
+        // Arrange
+        var grantedDisabledSut = GetSut(GetCacheSettings(granted: 0, denied: 10));
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] };
+
+        // Act
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.Forbidden));
+        await grantedDisabledSut.VerifyAccess(orchestrationImage, CancellationToken.None);
+        await grantedDisabledSut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle("denied result is cached");
+    }
+
+    [Fact]
+    public async Task VerifyAccess_ConcurrentRequests_ResultInSingleCall()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] };
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+        httpHandler.RegisterCallback(_ => Thread.Sleep(200));
+
+        // Act
+        var results = await Task.WhenAll(Enumerable.Range(0, 20)
+            .Select(_ => Task.Run(() => sut.VerifyAccess(orchestrationImage, CancellationToken.None))));
+
+        // Assert
+        results.Should().AllBeEquivalentTo(true);
+        httpHandler.CallsMade.Should().ContainSingle();
+    }
+
+    private static CacheSettings GetCacheSettings(int granted, int denied) => new()
+    {
+        TimeToLive = new Dictionary<CacheSource, CacheGroupSettings>
+        {
+            [CacheSource.Memory] = new()
+            {
+                Overrides = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [CacheOverrideKeys.VerifyAccess] = granted,
+                    [CacheOverrideKeys.VerifyAccessDenied] = denied,
+                }
+            }
+        }
+    };
 }
