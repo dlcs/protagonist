@@ -41,6 +41,17 @@ public class OrchestratorSettings
     public ImageServer ImageServer { get; set; } = ImageServer.Cantaloupe;
 
     /// <summary>
+    /// If true info.json status codes can be non-200. This would only happen if the image for requires auth and the
+    /// user doesn't have appropriate access.
+    /// </summary>
+    /// <remarks>
+    /// Pre-IIIF Auth flow 2, info.json could returns a non-2xx to reflect the status of the asset being requested.
+    /// This is disabled by default but can be enabled, for legacy reasons, via this flag. The plan is to remove auth1
+    /// support shortly, this is a safety switch to re-enable should we run into issues.
+    /// </remarks>
+    public bool InfoJsonCanBeNon200 { get; set; }
+
+    /// <summary>
     /// Configuration for specifying paths to images stored on fast disk.
     /// </summary>
     public Dictionary<ImageServer, ImageServerConfig> ImageServerPathConfig { get; set; } = new();
