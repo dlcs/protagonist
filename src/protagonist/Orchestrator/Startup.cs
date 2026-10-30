@@ -89,7 +89,8 @@ public class Startup
             .AddIIIFBuilding()
             .AddIIIFAuth(orchestratorSettings);
         
-        services.ConfigureForwardedHeaders(configuration);
+        // Client IP is forwarded to IIIF Auth2 for evaluating IP roles
+        services.ConfigureForwardedHeaders(configuration, useForwardedFor: true);
 
         services
             .AddFeatureFolderViews()
