@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using DLCS.Core.Types;
@@ -9,6 +10,7 @@ using DLCS.Model.Assets;
 using IIIF;
 using IIIF.Auth.V2;
 using IIIF.Serialisation;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure.Auth.V2;
@@ -18,7 +20,9 @@ namespace Orchestrator.Tests.Infrastructure.Auth.V2;
 
 public class IIIFAuth2ClientTests
 {
+    private const string IpRole = "https://api.dlcs.io/customers/99/roles/ip:reading-room";
     private readonly ControllableHttpMessageHandler httpHandler;
+    private readonly HttpContextAccessor httpContextAccessor;
     private readonly IIIFAuth2Client sut;
 
     public IIIFAuth2ClientTests()
@@ -27,7 +31,11 @@ public class IIIFAuth2ClientTests
         var httpClient = new HttpClient(httpHandler);
         httpClient.BaseAddress = new Uri("http://auth-2/");
 
-        sut = new IIIFAuth2Client(httpClient, new NullLogger<IIIFAuth2Client>());
+        var httpContext = new DefaultHttpContext();
+        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.0.0.5");
+        httpContextAccessor = new HttpContextAccessor { HttpContext = httpContext };
+
+        sut = new IIIFAuth2Client(httpClient, httpContextAccessor, new NullLogger<IIIFAuth2Client>());
     }
 
     [Fact]
@@ -224,6 +232,98 @@ public class IIIFAuth2ClientTests
     }
 
     [Fact]
+    public async Task GetProbeServiceResult_SendsAuthorization_IfAccessToken()
+    {
+        // Arrange
+        HttpRequestMessage request = null;
+        httpHandler.RegisterCallback(r => request = r);
+
+        // Act
+        await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), ["role1"], "accessToken",
+            CancellationToken.None);
+
+        // Assert
+        request.Headers.Authorization.Should().Be(new AuthenticationHeaderValue("Bearer", "accessToken"));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task GetProbeServiceResult_DoesNotSendAuthorization_IfNoAccessToken(string accessToken)
+    {
+        // Arrange
+        HttpRequestMessage request = null;
+        httpHandler.RegisterCallback(r => request = r);
+
+        // Act
+        await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), [IpRole], accessToken,
+            CancellationToken.None);
+
+        // Assert
+        request.Headers.Authorization.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task GetProbeServiceResult_ReturnsMissingCredentials_WithoutCall_IfNoAccessToken_AndNoIpRole(
+        string accessToken)
+    {
+        // Act
+        var result = await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), ["role1"], accessToken,
+            CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().BeEmpty();
+        result.Should().BeEquivalentTo(AuthProbeResult2Builder.MissingCredentials);
+    }
+
+    [Fact]
+    public async Task GetProbeServiceResult_SendsForwardedFor_IfIpRole()
+    {
+        // Arrange
+        HttpRequestMessage request = null;
+        httpHandler.RegisterCallback(r => request = r);
+
+        // Act
+        await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), ["role1", IpRole], null,
+            CancellationToken.None);
+
+        // Assert
+        request.Headers.GetValues("X-Forwarded-For").Should().ContainSingle(v => v == "10.0.0.5");
+    }
+
+    [Fact]
+    public async Task GetProbeServiceResult_DoesNotSendForwardedFor_IfNoIpRole()
+    {
+        // Arrange
+        HttpRequestMessage request = null;
+        httpHandler.RegisterCallback(r => request = r);
+
+        // Act
+        await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), ["role1"], "accessToken",
+            CancellationToken.None);
+
+        // Assert
+        request.Headers.Contains("X-Forwarded-For").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetProbeServiceResult_DoesNotSendForwardedFor_IfIpRole_ButNoClientIp()
+    {
+        // Arrange
+        HttpRequestMessage request = null;
+        httpHandler.RegisterCallback(r => request = r);
+        httpContextAccessor.HttpContext.Connection.RemoteIpAddress = null;
+
+        // Act
+        await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), [IpRole], null, CancellationToken.None);
+
+        // Assert
+        request.Headers.Contains("X-Forwarded-For").Should().BeFalse();
+    }
+
+    [Fact]
     public async Task GetAuthServices_ReturnsErrorProbeService_IfHttpException()
     {
         // Arrange
@@ -371,6 +471,42 @@ public class IIIFAuth2ClientTests
 
         // Assert
         response.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task VerifyAccess_SendsForwardedFor_IfIpRole()
+    {
+        // Arrange
+        HttpRequestMessage request = null;
+        httpHandler.RegisterCallback(r => request = r);
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1", IpRole]
+        };
+
+        // Act
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        request.Headers.GetValues("X-Forwarded-For").Should().ContainSingle(v => v == "10.0.0.5");
+    }
+
+    [Fact]
+    public async Task VerifyAccess_DoesNotSendForwardedFor_IfNoIpRole()
+    {
+        // Arrange
+        HttpRequestMessage request = null;
+        httpHandler.RegisterCallback(r => request = r);
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"]
+        };
+
+        // Act
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        request.Headers.Contains("X-Forwarded-For").Should().BeFalse();
     }
 
     [Theory]
