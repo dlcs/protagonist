@@ -15,14 +15,18 @@ public static class CacheSettingX
     /// Optional <see cref="CacheOverrideKeys"/> value identifying this caching action. If a ttl override is configured for this
     /// key it takes precedence over <paramref name="duration"/>.
     /// </param>
+    /// <param name="defaultTtl">
+    /// Optional ttl, in secs, used if no override is configured for <paramref name="named"/>. Takes precedence over
+    /// <paramref name="duration"/>.
+    /// </param>
     public static MemoryCacheEntryOptions GetMemoryCacheOptions(this CacheSettings cacheSettings,
         CacheDuration duration = CacheDuration.Default, long size = 1,
-        CacheItemPriority priority = CacheItemPriority.Normal, string? named = null)
+        CacheItemPriority priority = CacheItemPriority.Normal, string? named = null, int? defaultTtl = null)
         => new()
         {
             Priority = priority,
             Size = size,
             AbsoluteExpirationRelativeToNow =
-                TimeSpan.FromSeconds(cacheSettings.GetTtl(duration, CacheSource.Memory, named)),
+                TimeSpan.FromSeconds(cacheSettings.GetTtl(duration, CacheSource.Memory, named, defaultTtl)),
         };
 }

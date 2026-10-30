@@ -488,6 +488,52 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
     }
 
     [Fact]
+    public async Task ProbeService_ReturnsProbeResult_FromDownstreamAuthService_IfIpRole_AndNoAccessToken()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "ip:reading-room");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        var downstreamProbeResult = new AuthProbeResult2 { Status = 999 };
+        apiStub
+            .Get($"probe_internal/{id}?roles=ip:reading-room", (_, _) => downstreamProbeResult.AsJson())
+            .IfHeader("X-Forwarded-For", "10.0.0.5");
+
+        var path = $"auth/v2/probe/{id}";
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5");
+        var result = await httpClient.SendAsync(request);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.Headers.CacheControl!.Private.Should().BeTrue();
+
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Should().BeEquivalentTo(downstreamProbeResult);
+    }
+
+    [Fact]
+    public async Task ProbeService_ReturnsProbeResultWith401Status_IfNoIpRole_AndNoAccessToken()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "test-role");
+        await dbFixture.DbContext.SaveChangesAsync();
+        var path = $"auth/v2/probe/{id}";
+
+        // Act
+        var result = await httpClient.GetAsync(path);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Status.Should().Be(401);
+    }
+
+    [Fact]
     public async Task AdjunctProbeService_ReturnsProbeResultWith401Status_IfNoAccessToken()
     {
         // Arrange

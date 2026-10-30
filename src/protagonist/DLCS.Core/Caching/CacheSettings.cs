@@ -32,19 +32,23 @@ public class CacheSettings
     /// <param name="duration">Pre configured ttl to fetch, used if no override configured for <paramref name="named"/></param>
     /// <param name="source">Cache source to get ttl for</param>
     /// <param name="named">Optional name of cache override to fetch, see <see cref="CacheOverrideKeys"/></param>
+    /// <param name="defaultTtl">
+    /// Optional ttl, in secs, to use if no override is configured for <paramref name="named"/>. Takes precedence over
+    /// <paramref name="duration"/>, for caching actions where none of the preconfigured durations are suitable
+    /// </param>
     /// <returns>Ttl, in secs</returns>
     public int GetTtl(CacheDuration duration = CacheDuration.Default, CacheSource source = CacheSource.Memory,
-        string? named = null)
+        string? named = null, int? defaultTtl = null)
         => TimeToLive.TryGetValue(source, out var settings)
-            ? settings.GetTtl(duration, named)
-            : GetFallback(duration, named);
+            ? settings.GetTtl(duration, named, defaultTtl)
+            : GetFallback(duration, named, defaultTtl);
 
     private readonly CacheGroupSettings fallback = new();
 
-    private int GetFallback(CacheDuration duration, string? named) =>
+    private int GetFallback(CacheDuration duration, string? named, int? defaultTtl) =>
         TimeToLive.TryGetValue(CacheSource.Memory, out var settings)
-            ? settings.GetTtl(duration, named)
-            : fallback.GetTtl(duration, named);
+            ? settings.GetTtl(duration, named, defaultTtl)
+            : fallback.GetTtl(duration, named, defaultTtl);
 }
 
 public class CacheGroupSettings
@@ -59,10 +63,14 @@ public class CacheGroupSettings
     /// </summary>
     public Dictionary<string, int> Overrides { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public int GetTtl(CacheDuration duration, string? named = null)
+    /// <summary>
+    /// Get ttl for named override, if configured. Else <paramref name="defaultTtl"/>, if provided. Else ttl for
+    /// <paramref name="duration"/>
+    /// </summary>
+    public int GetTtl(CacheDuration duration, string? named = null, int? defaultTtl = null)
         => named != null && Overrides.TryGetValue(named, out var ttl)
             ? ttl
-            : GetDurationTtl(duration);
+            : defaultTtl ?? GetDurationTtl(duration);
 
     private int GetDurationTtl(CacheDuration duration)
         => duration switch

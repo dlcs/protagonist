@@ -465,6 +465,56 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
     }
 
     [Fact]
+    public async Task Get_RequiresAuth_ReturnsAdjunct_IfIpRole_AndAuth2VerifiesAccess_WithoutCookie()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_RequiresAuth_ReturnsAdjunct_IfIpRole_AndAuth2VerifiesAccess_WithoutCookie);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: "ip:reading-room",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+        apiStub.Get($"/auth2/verifyaccess/{id}/{adjunctId}", (_, _) => string.Empty)
+            .IfQueryArg("roles", "ip:reading-room")
+            .IfHeader("X-Forwarded-For", "10.0.0.5");
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl!.Private.Should().BeTrue("authorised adjuncts must not be cached publicly");
+    }
+
+    [Fact]
+    public async Task Get_RequiresAuth_Returns401_IfNoIpRole_AndNoCookie()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_RequiresAuth_Returns401_IfNoIpRole_AndNoCookie);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: "auth2-role",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+
+        // Auth2 would grant access, but isn't called as there's no cookie and no IP role
+        apiStub.Get($"/auth2/verifyaccess/{id}/{adjunctId}", (_, _) => string.Empty)
+            .IfQueryArg("roles", "auth2-role");
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task Get_RequiresAuth_Returns401_IfAuth2OnlyVerifiesAssetAccess()
     {
         // Arrange

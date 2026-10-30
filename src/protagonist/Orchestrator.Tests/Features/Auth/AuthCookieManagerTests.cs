@@ -129,6 +129,91 @@ public class AuthCookieManagerTests
     }
     
     [Fact]
+    public void GetAuth2CookieValueForCustomer_Null_IfNoCookies()
+    {
+        // Arrange
+        var sut = GetSut();
+
+        // Act
+        var cookieValue = sut.GetAuth2CookieValueForCustomer(123);
+
+        // Assert
+        cookieValue.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetAuth2CookieValueForCustomer_Null_IfNoCookieForDifferentCustomer()
+    {
+        // Arrange
+        var sut = GetSut();
+        request.Headers.Append("Cookie", "auth2-token-999=whatever");
+
+        // Act
+        var cookieValue = sut.GetAuth2CookieValueForCustomer(123);
+
+        // Assert
+        cookieValue.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetAuth2CookieValueForCustomer_Null_IfOnlyAuth1CookieForCustomer()
+    {
+        // Arrange
+        var sut = GetSut();
+        request.Headers.Append("Cookie", "auth-token-123=whatever");
+
+        // Act
+        var cookieValue = sut.GetAuth2CookieValueForCustomer(123);
+
+        // Assert
+        cookieValue.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetAuth2CookieValueForCustomer_ReturnsCookieValue_IfFound()
+    {
+        // Arrange
+        var sut = GetSut();
+        request.Headers.Append("Cookie", "auth-token-123=auth1; auth2-token-123=auth2");
+
+        // Act
+        var cookieValue = sut.GetAuth2CookieValueForCustomer(123);
+
+        // Assert
+        cookieValue.Should().Be("auth2");
+    }
+
+    [Fact]
+    public void HasAuth2CookieForCustomer_True_IfFound()
+    {
+        // Arrange
+        var sut = GetSut();
+        request.Headers.Append("Cookie", "auth2-token-123=whatever");
+
+        // Act
+        var hasCookie = sut.HasAuth2CookieForCustomer(123);
+
+        // Assert
+        hasCookie.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("auth2-token-999=whatever")]
+    [InlineData("auth-token-123=whatever")]
+    public void HasAuth2CookieForCustomer_False_IfNotFoundForCustomer(string cookieHeader)
+    {
+        // Arrange
+        var sut = GetSut();
+        request.Headers.Append("Cookie", cookieHeader);
+
+        // Act
+        var hasCookie = sut.HasAuth2CookieForCustomer(123);
+
+        // Assert
+        hasCookie.Should().BeFalse();
+    }
+
+    [Fact]
     public void SetCookieInResponse_AppendsCookieToResponse_WithCurrentDomain_IfUserCurrentDomainForCookieTrue()
     {
         // Arrange
@@ -212,6 +297,7 @@ public class AuthCookieManagerTests
         {
             CookieDomains = additionalDomains.ToList(),
             CookieNameFormat = "auth-token-{0}",
+            Auth2CookieNameFormat = "auth2-token-{0}",
             UseCurrentDomainForCookie = useCurrentDomainForCookie
         });
         return new AuthCookieManager(contextAccessor, options);

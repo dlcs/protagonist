@@ -51,10 +51,20 @@ public static class CacheOverrideKeys
     public const string CustomerPath = "CustomerPath";
 
     /// <summary>
+    /// IIIF Auth2 verifyaccess results where access was granted
+    /// </summary>
+    public const string VerifyAccess = "VerifyAccess";
+
+    /// <summary>
+    /// IIIF Auth2 verifyaccess results where access was denied
+    /// </summary>
+    public const string VerifyAccessDenied = "VerifyAccessDenied";
+
+    /// <summary>
     /// All valid override keys.
     /// </summary>
     public static readonly IReadOnlySet<string> Known = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        Asset, Adjunct, OrchestrationAsset, OrchestrationAdjunct, Policy, CustomerPath
+        Asset, Adjunct, OrchestrationAsset, OrchestrationAdjunct, Policy, CustomerPath, VerifyAccess, VerifyAccessDenied
     };
 }
