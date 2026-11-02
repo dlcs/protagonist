@@ -188,13 +188,14 @@ An IpRestriction provider is **one place**, which may have several ranges. Its c
   "default": {
     "config": "IpRestriction",
     "ranges": [ "10.0.0.0/24", "2001:db8:1007::/48" ],
-    "placeName": "the Research Centre"
+    "locationPhrase": "at the Research Centre"
   }
 }
 ```
 
 * A request from one of the ranges has every `ip:` role whose `RoleProviderId` is this provider. Usually that's one role (`ip:reading-room`). If several roles should be granted by the same ranges, they all point at the same provider.
-* Each place is its own provider (reading room, campus, head office), which is also what the `placeName` wording and the choice between `external` services (see [Which access services an asset gets](#which-access-services-an-asset-gets)) rely on.
+* Each place is its own provider (reading room, campus, head office), which is also what the `locationPhrase` wording and the choice between `external` services (see [Which access services an asset gets](#which-access-services-an-asset-gets)) rely on.
+* `locationPhrase` contains predicate and place name to allow better reading error messages ("on the VPN", "at the campus", "from the library").
 * IpRestriction roles are never stored in a session: being on site needs no sign-in, so no session or token is required. IIIF-Auth-V2 matches the client IP on each probe and `verifyAccess` request.
 
 #### IpRestriction providers grant only `ip:` roles
@@ -371,7 +372,7 @@ This wording doesn't belong on `access_services`. It varies by *reason*, not by 
 
 * Messages are **keyed templates with placeholders** (e.g. `blocked.appointmentNotStarted.note` with `{start}` and `{end}`), with defaults in code.
 * A new `probe_messages` table holds a customer's overrides, optionally per role provider (e.g. one IdP's sign-in phrase). A message is taken from the provider's row if there is one, then the customer's row, then the default.
-* Place names for `{where}` come from IpRestriction provider configuration (`placeName`).
+* Place names for `{where}` come from IpRestriction provider configuration (`locationPhrase`).
 
 ## Appendix
 
