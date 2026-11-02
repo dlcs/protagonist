@@ -140,6 +140,7 @@ public static class ServiceCollectionX
             .AddScoped<IAssetAccessValidator, AssetAccessValidator>()
             .AddScoped<IRoleProviderService, HttpAwareRoleProviderService>()
             .AddScoped<IAuthPathGenerator, ConfigDrivenAuthPathGenerator>()
+            .AddSingleton<IClientIpResolver, ClientIpResolver>()
             .AddScoped<IIIIFAuthBuilder>(provider => provider.GetRequiredService<IIIFAuth2Client>())
             .AddHeaderPropagation(options => options.Headers.Add("Cookie"))
             .AddHttpClient<IIIFAuth2Client>(client =>

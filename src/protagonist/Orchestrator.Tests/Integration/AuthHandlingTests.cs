@@ -29,6 +29,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
     private readonly DlcsDatabaseFixture dbFixture;
     private readonly HttpClient httpClient;
     private readonly ApiStub apiStub;
+    private const string CdnSecret = "test-cdn-secret";
 
     public AuthHandlingTests(ProtagonistAppFactory<Startup> factory, ApiStub apiStub, DlcsDatabaseFixture databaseFixture)
     {
@@ -40,6 +41,7 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithConfigValue("Auth:Auth2ServiceRoot", apiStub.Address)
+            .WithConfigValue("Auth:CdnOriginVerify:Secrets:0", CdnSecret)
             .CreateClient();
 
         dbFixture.CleanUp();
@@ -513,6 +515,55 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
 
         var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
         probeResult2.Should().BeEquivalentTo(downstreamProbeResult);
+    }
+
+    [Fact]
+    public async Task ProbeService_ForwardsViewerIp_IfIpRole_AndValidCdnSecret()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "ip:reading-room");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        var downstreamProbeResult = new AuthProbeResult2 { Status = 999 };
+        apiStub
+            .Get($"probe_internal/{id}?roles=ip:reading-room", (_, _) => downstreamProbeResult.AsJson())
+            .IfHeader("X-Forwarded-For", "203.0.113.7");
+
+        // Act - via CDN: spoofed entry, viewer added by CDN, CDN edge added by load balancer
+        var request = new HttpRequestMessage(HttpMethod.Get, $"auth/v2/probe/{id}");
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5, 203.0.113.7, 130.176.0.1");
+        request.Headers.Add("X-Origin-Verify", CdnSecret);
+        var result = await httpClient.SendAsync(request);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Should().BeEquivalentTo(downstreamProbeResult, "viewer IP forwarded as single XFF value");
+    }
+
+    [Fact]
+    public async Task ProbeService_ForwardsRightmostIp_IfIpRole_AndNoCdnSecret()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "ip:reading-room");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        var downstreamProbeResult = new AuthProbeResult2 { Status = 999 };
+        apiStub
+            .Get($"probe_internal/{id}?roles=ip:reading-room", (_, _) => downstreamProbeResult.AsJson())
+            .IfHeader("X-Forwarded-For", "198.51.100.9");
+
+        // Act - direct to load balancer: spoofed entry, caller added by load balancer
+        var request = new HttpRequestMessage(HttpMethod.Get, $"auth/v2/probe/{id}");
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5, 198.51.100.9");
+        var result = await httpClient.SendAsync(request);
+
+        // Assert
+        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
+        probeResult2.Should().BeEquivalentTo(downstreamProbeResult, "rightmost IP forwarded, not spoofed entry");
     }
 
     [Fact]

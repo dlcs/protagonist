@@ -301,6 +301,35 @@ public class AuthSettings
     /// adjuncts (e.g. when building a manifest)
     /// </summary>
     public int AuthServicesConcurrency { get; set; } = 30;
+
+    /// <summary>
+    /// Settings for identifying requests that came via a CDN, used to determine the client IP
+    /// </summary>
+    public CdnOriginVerifySettings CdnOriginVerify { get; set; } = new();
+}
+
+/// <summary>
+/// Settings for identifying requests that came via a CDN (e.g. CloudFront, Cloudflare) in front of the load balancer,
+/// using a secret custom header added by the CDN. Used to determine client IP from x-forwarded-for when Orchestrator is
+/// accessible both via the CDN and directly via load balancer.
+/// </summary>
+public class CdnOriginVerifySettings
+{
+    /// <summary>
+    /// Name of custom header added by the CDN
+    /// </summary>
+    public string HeaderName { get; set; } = "X-Origin-Verify";
+
+    /// <summary>
+    /// Accepted secret values for <see cref="HeaderName"/>. Multiple values are supported to allow rotation. If empty,
+    /// requests are never treated as coming via the CDN.
+    /// </summary>
+    public List<string> Secrets { get; set; } = new();
+
+    /// <summary>
+    /// Whether any secrets are configured
+    /// </summary>
+    public bool IsEnabled => Secrets.Any(s => !string.IsNullOrEmpty(s));
 }
 
 /// <summary>

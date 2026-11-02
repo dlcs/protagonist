@@ -25,6 +25,7 @@ using Orchestrator.Features.Files;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
+using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Infrastructure.ReverseProxy;
@@ -89,8 +90,7 @@ public class Startup
             .AddIIIFBuilding()
             .AddIIIFAuth(orchestratorSettings);
         
-        // Client IP is forwarded to IIIF Auth2 for evaluating IP roles
-        services.ConfigureForwardedHeaders(configuration, useForwardedFor: true);
+        services.ConfigureForwardedHeaders(configuration);
 
         services
             .AddFeatureFolderViews()
@@ -137,6 +137,7 @@ public class Startup
         app
             .HandlePathBase(pathBase, logger)
             .UseCorrelationId()
+            .UseClientIpCapture()
             .UseForwardedHeaders()
             .UseRouting()
             .UseOptions()

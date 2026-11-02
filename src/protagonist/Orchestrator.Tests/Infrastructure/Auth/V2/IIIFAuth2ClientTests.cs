@@ -20,6 +20,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Features.Auth;
+using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Auth.V2;
 using Orchestrator.Settings;
 using Test.Helpers.Http;
@@ -31,6 +32,8 @@ public class IIIFAuth2ClientTests
     private const string IpRole = "https://api.dlcs.io/customers/99/roles/ip:reading-room";
     private readonly ControllableHttpMessageHandler httpHandler;
     private readonly HttpContextAccessor httpContextAccessor;
+    private readonly IClientIpResolver clientIpResolver;
+    private IPAddress? clientIp = IPAddress.Parse("10.0.0.5");
     private readonly IIIFAuth2Client sut;
 
     public IIIFAuth2ClientTests()
@@ -38,8 +41,9 @@ public class IIIFAuth2ClientTests
         httpHandler = new ControllableHttpMessageHandler();
 
         var httpContext = new DefaultHttpContext();
-        httpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.0.0.5");
         httpContextAccessor = new HttpContextAccessor { HttpContext = httpContext };
+        clientIpResolver = A.Fake<IClientIpResolver>();
+        A.CallTo(() => clientIpResolver.GetClientIp()).ReturnsLazily(() => clientIp);
 
         sut = GetSut(new CacheSettings());
     }
@@ -55,7 +59,7 @@ public class IIIFAuth2ClientTests
             new MemoryCacheProvider(new MemoryCache(new MemoryCacheOptions { SizeLimit = 100 })));
         var authCookieManager = new AuthCookieManager(httpContextAccessor, Options.Create(new AuthSettings()));
         var orchestratorOptions = Options.Create(new OrchestratorSettings { Caching = cacheSettings });
-        return new IIIFAuth2Client(httpClient, httpContextAccessor, appCache, authCookieManager, orchestratorOptions,
+        return new IIIFAuth2Client(httpClient, clientIpResolver, appCache, authCookieManager, orchestratorOptions,
             new NullLogger<IIIFAuth2Client>());
     }
 
@@ -335,7 +339,7 @@ public class IIIFAuth2ClientTests
         // Arrange
         HttpRequestMessage request = null;
         httpHandler.RegisterCallback(r => request = r);
-        httpContextAccessor.HttpContext.Connection.RemoteIpAddress = null;
+        clientIp = null;
 
         // Act
         await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), [IpRole], null, CancellationToken.None);
@@ -513,6 +517,50 @@ public class IIIFAuth2ClientTests
     }
 
     [Fact]
+    public async Task VerifyAccess_DoesNotSendForwardedFor_IfIpRole_ButNoClientIp()
+    {
+        // Arrange
+        HttpRequestMessage request = null;
+        httpHandler.RegisterCallback(r => request = r);
+        clientIp = null;
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = [IpRole] };
+
+        // Act
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        request.Headers.Contains("X-Forwarded-For").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task VerifyAccess_ResolvesClientIpOnce_IfIpRole()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = [IpRole] };
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        A.CallTo(() => clientIpResolver.GetClientIp()).MustHaveHappenedOnceExactly();
+    }
+
+    [Fact]
+    public async Task VerifyAccess_DoesNotResolveClientIp_IfNoIpRole()
+    {
+        // Arrange
+        var orchestrationImage = new OrchestrationImage { AssetId = AssetId.FromString("99/100/foo"), Roles = ["role1"] };
+        httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK));
+
+        // Act
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        A.CallTo(() => clientIpResolver.GetClientIp()).MustNotHaveHappened();
+    }
+
+    [Fact]
     public async Task VerifyAccess_DoesNotSendForwardedFor_IfNoIpRole()
     {
         // Arrange
@@ -657,7 +705,7 @@ public class IIIFAuth2ClientTests
 
         // Act
         await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
-        httpContextAccessor.HttpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.0.0.6");
+        clientIp = IPAddress.Parse("10.0.0.6");
         await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
 
         // Assert
@@ -673,7 +721,7 @@ public class IIIFAuth2ClientTests
 
         // Act
         await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
-        httpContextAccessor.HttpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.0.0.6");
+        clientIp = IPAddress.Parse("10.0.0.6");
         await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
 
         // Assert

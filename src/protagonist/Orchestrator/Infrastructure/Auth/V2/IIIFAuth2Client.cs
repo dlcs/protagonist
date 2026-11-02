@@ -18,7 +18,6 @@ using IIIF;
 using IIIF.Auth.V2;
 using IIIF.Serialisation;
 using LazyCache;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -38,7 +37,7 @@ namespace Orchestrator.Infrastructure.Auth.V2;
 /// </remarks>
 public class IIIFAuth2Client(
     HttpClient httpClient,
-    IHttpContextAccessor httpContextAccessor,
+    IClientIpResolver clientIpResolver,
     IAppCache appCache,
     AuthCookieManager authCookieManager,
     IOptions<OrchestratorSettings> orchestratorOptions,
@@ -110,7 +109,7 @@ public class IIIFAuth2Client(
                 httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             }
 
-            AddForwardedForIfRequired(httpRequest, roles);
+            AddForwardedForIfRequired(httpRequest, GetClientIpIfRequired(roles));
             var response = await httpClient.SendAsync(httpRequest, cancellationToken);
             response.EnsureSuccessStatusCode();
             
@@ -142,12 +141,14 @@ public class IIIFAuth2Client(
             defaultTtl: DefaultVerifyAccessTtlSecs);
         var deniedTtl = cacheSettings.GetTtl(named: CacheOverrideKeys.VerifyAccessDenied,
             defaultTtl: DefaultVerifyAccessDeniedTtlSecs);
+        // Resolved once so the IP sent matches the IP in the cache key
+        var clientIp = GetClientIpIfRequired(orchestrationItem.Roles);
         if (grantedTtl <= 0 && deniedTtl <= 0)
         {
-            return await CallVerifyAccess(orchestrationItem, cancellationToken) ?? false;
+            return await CallVerifyAccess(orchestrationItem, clientIp, cancellationToken) ?? false;
         }
 
-        var cacheKey = GetVerifyAccessCacheKey(orchestrationItem);
+        var cacheKey = GetVerifyAccessCacheKey(orchestrationItem, clientIp);
 
         // Low priority as cheap to recreate. Expiration is overwritten in factory once result is known, ttl here only
         // needs to be valid (> 0)
@@ -158,7 +159,7 @@ public class IIIFAuth2Client(
             return await appCache.GetOrAddAsync(cacheKey, async entry =>
             {
                 // Result is shared by concurrent callers so not cancelled by any one of them
-                var canAccess = await CallVerifyAccess(orchestrationItem, CancellationToken.None) ??
+                var canAccess = await CallVerifyAccess(orchestrationItem, clientIp, CancellationToken.None) ??
                                 throw new VerifyAccessFailedException();
 
                 var ttl = canAccess ? grantedTtl : deniedTtl;
@@ -177,14 +178,14 @@ public class IIIFAuth2Client(
     /// Call verifyaccess. Returns true if access granted, false if denied (401/403) or null if an error occurred
     /// </summary>
     private async Task<bool?> CallVerifyAccess(IAccessControlledOrchestrationItem orchestrationItem,
-        CancellationToken cancellationToken)
+        IPAddress? clientIp, CancellationToken cancellationToken)
     {
         var deliverableId = orchestrationItem.DeliverableId;
         var path = $"verifyaccess/{deliverableId}?roles={GetRolesString(orchestrationItem.Roles)}";
         try
         {
             var httpRequest = new HttpRequestMessage(HttpMethod.Get, path);
-            AddForwardedForIfRequired(httpRequest, orchestrationItem.Roles);
+            AddForwardedForIfRequired(httpRequest, clientIp);
             var response = await httpClient.SendAsync(httpRequest, cancellationToken);
             if (response.IsSuccessStatusCode) return true;
             if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) return false;
@@ -204,14 +205,13 @@ public class IIIFAuth2Client(
     /// Get cache key for verifyaccess result. This includes everything that the result depends on: deliverable,
     /// roles, client IP (only if roles contain an IP role, as it's only forwarded then) and Auth2 cookie value (hashed)
     /// </summary>
-    private string GetVerifyAccessCacheKey(IAccessControlledOrchestrationItem orchestrationItem)
+    private string GetVerifyAccessCacheKey(IAccessControlledOrchestrationItem orchestrationItem, IPAddress? resolvedIp)
     {
         var deliverableId = orchestrationItem.DeliverableId;
         var roles = GetRolesString(orchestrationItem.Roles);
 
-        var httpContext = httpContextAccessor.HttpContext;
         var clientIp = orchestrationItem.Roles.ContainsIpRole()
-            ? httpContext?.Connection.RemoteIpAddress?.ToString() ?? "none"
+            ? resolvedIp?.ToString() ?? "none"
             : "-";
 
         var cookieValue = authCookieManager.GetAuth2CookieValueForCustomer(deliverableId.AssetId.Customer);
@@ -223,20 +223,25 @@ public class IIIFAuth2Client(
     }
 
     /// <summary>
-    /// Add x-forwarded-for header containing client IP, if roles contain an IP role. The client IP is
-    /// RemoteIpAddress, which will have been set from incoming x-forwarded-for by forwarded headers middleware
+    /// Get client IP if roles contain an IP role, as that's the only time it's forwarded. The client IP is determined by
+    /// <see cref="IClientIpResolver"/>. Null if no IP role or client IP can't be determined
     /// </summary>
-    private void AddForwardedForIfRequired(HttpRequestMessage httpRequest, IReadOnlyList<string> roles)
+    private IPAddress? GetClientIpIfRequired(IReadOnlyList<string> roles)
     {
-        if (!roles.ContainsIpRole()) return;
+        if (!roles.ContainsIpRole()) return null;
 
-        var clientIp = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress;
-        if (clientIp == null)
-        {
-            logger.LogDebug("Roles contain IP role but unable to determine client IP");
-            return;
-        }
+        var clientIp = clientIpResolver.GetClientIp();
+        if (clientIp == null) logger.LogDebug("Roles contain IP role but unable to determine client IP");
+        return clientIp;
+    }
 
+    /// <summary>
+    /// Add x-forwarded-for header containing only client IP, if known. Auth service then has a single, resolved client
+    /// IP regardless of how the request reached Orchestrator
+    /// </summary>
+    private static void AddForwardedForIfRequired(HttpRequestMessage httpRequest, IPAddress? clientIp)
+    {
+        if (clientIp == null) return;
         httpRequest.Headers.Add(ForwardedForHeader, clientIp.ToString());
     }
 
