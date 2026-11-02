@@ -1,12 +1,15 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Threading.Tasks;
 using DLCS.Core.Exceptions;
 using DLCS.Web.Requests.AssetDelivery;
 using DLCS.Web.Response;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Orchestrator.Assets;
+using Orchestrator.Infrastructure.Auth;
 
 namespace Orchestrator.Infrastructure;
 
@@ -17,7 +20,8 @@ public class AssetRequestProcessor(
     ILogger<AssetRequestProcessor> logger,
     IAssetTracker assetTracker,
     IAdjunctTracker adjunctTracker,
-    IAssetDeliveryPathParser assetDeliveryPathParser)
+    IAssetDeliveryPathParser assetDeliveryPathParser,
+    IServiceScopeFactory scopeFactory)
 {
     /// <summary>
     /// Try and parse current asset request, handling possible errors that may occur
@@ -72,5 +76,26 @@ public class AssetRequestProcessor(
         }
 
         return adjunct;
+    }
+
+    /// <summary>
+    /// Determine whether the current request is permitted to access an asset (or adjunct) with the given roles.
+    /// </summary>
+    /// <param name="orchestrationItem">Orchestration item to check</param>
+    /// <param name="httpRequest">Current <see cref="HttpRequest"/>, used to determine auth mechanism + for logging</param>
+    public async Task<bool> IsAuthenticated(IAccessControlledOrchestrationItem orchestrationItem,
+        HttpRequest httpRequest)
+    {
+        // IAssetAccessValidator is in container with a Lifetime.Scope
+        using var scope = scopeFactory.CreateScope();
+        var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
+
+        // We can get HEAD or GET requests here, for GET requests we only check Cookies, bearer tokens are ignored
+        var authMechanism = httpRequest.Method == "GET" ? AuthMechanism.Cookie : AuthMechanism.All;
+        logger.LogDebug("Authenticating request for {Method} {Path} via {Mechanism}", httpRequest.Method,
+            httpRequest.Path, authMechanism);
+        var authResult = await assetAccessValidator.TryValidate(orchestrationItem, authMechanism);
+
+        return authResult is AssetAccessResult.Open or AssetAccessResult.Authorized;
     }
 }

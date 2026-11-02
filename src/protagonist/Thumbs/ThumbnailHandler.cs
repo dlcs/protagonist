@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using DLCS.AWS.S3;
+using DLCS.Core.Collections;
 using DLCS.Core.Streams;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
@@ -35,13 +36,15 @@ public class ThumbnailHandler(
         {
             var location = storageKeyGenerator.GetThumbnailLocation(assetId, sizeCandidate.LongestEdge!.Value);
             var objectFromBucket = await bucketReader.GetObjectFromBucket(location);
-            return ThumbnailResponse.ExactSize(objectFromBucket.Stream);
+            if (!objectFromBucket.Stream.IsNull()) return ThumbnailResponse.ExactSize(objectFromBucket.Stream);
+
+            logger.LogWarning("Thumbnail for '{Path}' in s.json without matching jpg", imageRequest.OriginalPath);
+            return ThumbnailResponse.Empty;
         }
 
         if (!settings.Value.Resize)
         {
-            logger.LogDebug("Could not find thumbnail for '{Path}' and resizing disabled",
-                imageRequest.OriginalPath);
+            logger.LogDebug("Could not find thumbnail for '{Path}' and resizing disabled", imageRequest.OriginalPath);
             return ThumbnailResponse.Empty;
         }
         
@@ -69,7 +72,7 @@ public class ThumbnailHandler(
     private async Task<SizeCandidate?> GetThumbnailSizeCandidate(AssetId assetId, ImageRequest imageRequest)
     {
         var openSizes = await thumbRepository.GetOpenSizes(assetId);
-        if (openSizes == null) return null;
+        if (openSizes.IsNullOrEmpty()) return null;
         
         var sizes = openSizes.Select(Size.FromArray).ToList();
 

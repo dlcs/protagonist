@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Net;
 using System.Threading.Tasks;
+using DLCS.Core.Exceptions;
 using DLCS.Model.PathElements;
 using DLCS.Web.Requests.AssetDelivery;
 using FakeItEasy;
@@ -249,7 +251,27 @@ public class AssetDeliveryPathParserTests
         // Assert
         await action.Should().ThrowAsync<ArgumentException>();
     }
-    
+
+    [Theory]
+    [InlineData("/iiif-img/99/1/the-astronaut/full/!800,/0/default.jpg")]
+    [InlineData("/iiif-img/99/1/the-astronaut/full/!,800/0/default.jpg")]
+    [InlineData("/iiif-img/99/1/the-astronaut/full/!800/0/default.jpg")]
+    [InlineData("/iiif-img/99/1/the-astronaut/info.json/full/800,/0/default.jpg")]
+    [InlineData("/thumbs/99/1/the-astronaut/full/!800,/0/default.jpg")]
+    [InlineData("/thumbs/99/1/the-astronaut/info.json/full/800,/0/default.jpg")]
+    public async Task ParseForHttp_ImageRequest_ThrowsBadRequest_IfImageRequestInvalid(string path)
+    {
+        // Arrange
+        A.CallTo(() => pathCustomerRepository.GetCustomerPathElement("99"))
+            .Returns(new CustomerPathElement(99, "Test-Customer"));
+
+        // Act
+        Func<Task> action = () => sut.ParseForHttp<ImageAssetDeliveryRequest>(path);
+
+        // Assert
+        (await action.Should().ThrowAsync<HttpException>()).Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
     [Fact]
     public async Task Parse_TimeBasedRequest_WithCustomerName_FullParse()
     {

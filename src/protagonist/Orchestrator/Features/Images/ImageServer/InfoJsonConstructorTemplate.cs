@@ -140,7 +140,7 @@ public abstract class InfoJsonConstructorTemplate<T>(
     protected async Task<IService?> GetAuth2Service(OrchestrationImage orchestrationImage,
         CancellationToken cancellationToken)
     {
-        var authServicesForAsset = await iiifAuthBuilder.GetAuthServicesForAsset(orchestrationImage.AssetId,
+        var authServicesForAsset = await iiifAuthBuilder.GetAuthServices(orchestrationImage.AssetId,
             orchestrationImage.Roles, cancellationToken);
 
         if (authServicesForAsset == null)

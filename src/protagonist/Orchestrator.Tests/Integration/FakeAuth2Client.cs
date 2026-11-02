@@ -9,11 +9,12 @@ namespace Orchestrator.Tests.Integration;
 
 public class FakeAuth2Client : IIIIFAuthBuilder
 {
-    public Task<IService> GetAuthServicesForAsset(AssetId assetId, IReadOnlyList<string> roles, CancellationToken cancellationToken = default)
+    public Task<IService> GetAuthServices(DeliverableId deliverableId, IReadOnlyList<string> roles, CancellationToken cancellationToken = default)
     {
+        var assetId = deliverableId.AssetId;
         var probeService = new AuthProbeService2
         {
-            Id = $"http://localhost/auth/v2/probe/{assetId}",
+            Id = $"http://localhost/auth/v2/probe/{deliverableId}",
             Service =
             [
                 new AuthAccessService2

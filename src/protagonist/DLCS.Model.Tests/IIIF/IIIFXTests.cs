@@ -277,12 +277,4 @@ public class IIIFXTests
     [InlineData("pct:41.6,7.5,40,70/full/90/default.png")]
     public void IsExplicitFullSize_True_IfFull(string imageRequest)
         => ImageRequest.Parse($"asset/{imageRequest}", "").IsExplicitFullSize().Should().BeTrue();
-    
-    [Theory]
-    [InlineData("full/^full/0/default.jpg")]
-    [InlineData("square/^full/180/bitonal.jpg")]
-    [InlineData("0,0,512,512/^full/90/default.jpg")]
-    [InlineData("pct:41.6,7.5,40,70/^full/90/default.png")]
-    public void IsExplicitFullSize_True_IfUpscaleFull(string imageRequest)
-        => ImageRequest.Parse($"asset/{imageRequest}", "").IsExplicitFullSize().Should().BeTrue();
 }

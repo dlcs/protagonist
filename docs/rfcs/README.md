@@ -24,3 +24,4 @@
 22. [Stub Assets](022-stub-assets.md)
 23. [Hosted annotation adjunt id](023-hosted-adjunct-id.md)
 24. [Adjunct access control](024-adjunct-access-control.md)
+26. [Controlling download filename](026-download-filename.md)

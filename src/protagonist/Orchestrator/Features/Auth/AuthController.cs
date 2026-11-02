@@ -141,8 +141,8 @@ public class AuthController : IIIFAssetControllerBase
     }
 
     /// <summary>
-    /// IIIF Authorization Flow 2.0 ProbeService. The probe service is used by the client to understand whether the user
-    /// has access to the access-controlled resource for which the probe service is declared.
+    /// IIIF Authorization Flow 2.0 ProbeService for an asset. The probe service is used by the client to understand
+    /// whether the user has access to the access-controlled resource for which the probe service is declared.
     /// </summary>
     /// <param name="customer">Customer Id</param>
     /// <param name="space">Space Id</param>
@@ -157,6 +157,27 @@ public class AuthController : IIIFAssetControllerBase
         CancellationToken cancellationToken = default)
         => GenerateIIIFDescriptionResource(
             () => new ProbeService(customer, space, image), cacheTtl: 0, cancellationToken: cancellationToken);
+
+    /// <summary>
+    /// IIIF Authorization Flow 2.0 ProbeService for an adjunct. The probe service is used by the client to understand
+    /// whether the user has access to the access-controlled resource for which the probe service is declared.
+    /// </summary>
+    /// <param name="customer">Customer Id</param>
+    /// <param name="space">Space Id</param>
+    /// <param name="image">Id of the parent Asset the adjunct belongs to</param>
+    /// <param name="adjunctId">Id of the adjunct</param>
+    /// <remarks>https://iiif.io/api/auth/2.0/#probe-service</remarks>
+    [Route("v2/probe/{customer}/{space}/{image}/{adjunctId}")]
+    [HttpGet]
+    public Task<IActionResult> AdjunctProbeService(
+        [FromRoute] int customer,
+        [FromRoute] int space,
+        [FromRoute] string image,
+        [FromRoute] string adjunctId,
+        CancellationToken cancellationToken = default)
+        => GenerateIIIFDescriptionResource(
+            () => new AdjunctProbeService(customer, space, image, adjunctId), cacheTtl: 0,
+            cancellationToken: cancellationToken);
 
     private HttpStatusCode GetStatusCodeForAccessTokenError(AccessTokenErrorConditions conditions)
         => conditions switch

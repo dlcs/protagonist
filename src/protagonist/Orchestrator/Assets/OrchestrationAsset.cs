@@ -10,7 +10,7 @@ namespace Orchestrator.Assets;
 /// <summary>
 /// Represents an asset during orchestration.
 /// </summary>
-public class OrchestrationAsset : IOriginItem
+public class OrchestrationAsset : IOriginItem, IAccessControlledOrchestrationItem
 {
     /// <summary>
     /// Get or set the AssetId for tracked Asset
@@ -25,8 +25,11 @@ public class OrchestrationAsset : IOriginItem
     /// <summary>
     /// Gets list of roles associated with Asset
     /// </summary>
-    public List<string> Roles { get; set; } = new();
-    
+    public IReadOnlyList<string> Roles { get; set; } = [];
+
+    /// <inheritdoc/>
+    public DeliverableId DeliverableId => new(AssetId);
+
     /// <summary>
     /// Get or set Asset origin 
     /// </summary>

@@ -34,9 +34,10 @@ public class IIIFAuth1Builder(
     /// The 'id'/'@id' parameters will the the name of the auth service only
     /// </summary>
     /// <returns><see cref="IService"/> if found, else null</returns>
-    public async Task<IService?> GetAuthServicesForAsset(AssetId assetId, IReadOnlyList<string> roles, CancellationToken cancellationToken = default)
+    public async Task<IService?> GetAuthServices(DeliverableId deliverableId, IReadOnlyList<string> roles, CancellationToken cancellationToken = default)
     {
-        var authServices = await GetAuthServices(assetId, roles, cancellationToken);
+        var assetId = deliverableId.AssetId;
+        var authServices = await GetAuthServicesForRoles(assetId, roles, cancellationToken);
 
         if (authServices.IsNullOrEmpty())
         {
@@ -85,7 +86,7 @@ public class IIIFAuth1Builder(
         return services;
     }
 
-    private async Task<List<AuthService>> GetAuthServices(AssetId assetId, IEnumerable<string> rolesList,
+    private async Task<List<AuthService>> GetAuthServicesForRoles(AssetId assetId, IEnumerable<string> rolesList,
         CancellationToken cancellationToken)
     {
         var authServices = new List<AuthService>();

@@ -67,7 +67,7 @@ public class InfoJson2Constructor(
         CancellationToken cancellationToken)
     {
         var getAuthServicesForAsset = GetAuth2Service(orchestrationImage, cancellationToken);
-        var getAuthCookieService = iiifAuth1Builder.GetAuthServicesForAsset(orchestrationImage.AssetId,
+        var getAuthCookieService = iiifAuth1Builder.GetAuthServices(orchestrationImage.AssetId,
             orchestrationImage.Roles, cancellationToken);
 
         await Task.WhenAll(getAuthServicesForAsset, getAuthCookieService);

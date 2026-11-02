@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DLCS.Core.Exceptions;
 using DLCS.Model.PathElements;
+using IIIF.Exceptions;
 using IIIF.ImageApi;
 using Microsoft.Extensions.Logging;
 
@@ -63,6 +64,11 @@ public partial class AssetDeliveryPathParser : IAssetDeliveryPathParser
         {
             return await Parse<T>(path);
         }
+        catch (Exception ex) when (ex is SizeException or RegionException or RotationException)
+        {
+            logger.LogWarning(ex, "IIIF Parsing exception for '{Path}'", path);
+            throw new HttpException(HttpStatusCode.BadRequest, ex.Message, ex);
+        }
         catch (KeyNotFoundException ex)
         {
             logger.LogError(ex, "Could not find Customer/Space from '{Path}'", path);
@@ -70,12 +76,12 @@ public partial class AssetDeliveryPathParser : IAssetDeliveryPathParser
         }
         catch (FormatException ex)
         {
-            logger.LogError(ex, "Error parsing path '{Path}'", path);
+            logger.LogWarning(ex, "Error parsing path '{Path}'", path);
             throw new HttpException(HttpStatusCode.BadRequest, $"Error parsing path '{path}'", ex);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error parsing path '{Path}'", path);
+            logger.LogWarning(ex, "Error parsing path '{Path}'", path);
             throw new HttpException(HttpStatusCode.BadRequest, $"Error parsing path '{path}'", ex);
         }
     }

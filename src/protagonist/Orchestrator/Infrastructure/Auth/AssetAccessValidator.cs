@@ -1,14 +1,13 @@
-﻿using System.Collections.Generic;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
-using DLCS.Core.Types;
 using DLCS.Model.Assets;
 using DLCS.Web;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Orchestrator.Assets;
 using Orchestrator.Features.Auth;
 
 namespace Orchestrator.Infrastructure.Auth;
@@ -25,30 +24,36 @@ public class AssetAccessValidator(
     ILogger<AssetAccessValidator> logger)
     : IAssetAccessValidator
 {
-    public async Task<AssetAccessResult> TryValidate(AssetId assetId, IReadOnlyList<string> roles, AuthMechanism mechanism, CancellationToken cancellationToken = default)
+    public async Task<AssetAccessResult> TryValidate(IAccessControlledOrchestrationItem orchestrationItem,
+        AuthMechanism mechanism, CancellationToken cancellationToken = default)
     {
+        var roles = orchestrationItem.Roles;
+        var deliverableId = orchestrationItem.DeliverableId;
         if (roles.ContainsOnly(Asset.UnobtainableRole))
         {
-            logger.LogTrace("{AssetId} only has unobtainable role, shortcutting check", assetId);
+            logger.LogTrace("{DeliverableId} only has unobtainable role, shortcutting check", deliverableId);
             return AssetAccessResult.Unauthorized;
         }
-        
-        if (ShouldAttemptAuth1(assetId.Customer, mechanism))
+
+        var customer = deliverableId.AssetId.Customer;
+
+        // Adjuncts can only be validated via Auth2
+        if (!deliverableId.IsAdjunct && ShouldAttemptAuth1(customer, mechanism))
         {
-            var auth1Status = await auth1AccessValidator.TryValidate(assetId, roles, mechanism, cancellationToken);
+            var auth1Status = await auth1AccessValidator.TryValidate(orchestrationItem, mechanism, cancellationToken);
             if (auth1Status == AssetAccessResult.Authorized)
             {
-                logger.LogTrace("{AssetId} can be viewed via Auth1", assetId);
+                logger.LogTrace("{DeliverableId} can be viewed via Auth1", deliverableId);
                 return auth1Status;
             }
         }
 
-        if (HasAuth2Cookie(assetId.Customer))
+        if (HasAuth2Cookie(customer))
         {
-            var auth2Status = await auth2AccessValidator.TryValidate(assetId, roles, mechanism, cancellationToken);
+            var auth2Status = await auth2AccessValidator.TryValidate(orchestrationItem, mechanism, cancellationToken);
             if (auth2Status == AssetAccessResult.Authorized)
             {
-                logger.LogTrace("{AssetId} can be viewed via Auth2", assetId);
+                logger.LogTrace("{DeliverableId} can be viewed via Auth2", deliverableId);
                 return auth2Status;
             }
         }

@@ -186,7 +186,7 @@ public class ImageRequestHandlerTests
     [Theory]
     [InlineData("full/501,")]
     [InlineData("full/,501")]
-    [InlineData("square/pct:51,")]
+    [InlineData("square/pct:51")]
     [InlineData("0,0,512,512/512,")]
     public async Task HandleRequest_Returns403_IfRequestedExceedsMaxWidth(string sizeAndRegion)
     {
@@ -219,14 +219,15 @@ public class ImageRequestHandlerTests
 
         var roles = new List<string> { "role" };
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var orchestrationImage = new OrchestrationImage
+        {
+            Size = new Size(1000, 1000), MaxWidth = 5000, Roles = roles, RequiresAuth = true, 
+            Channels = AvailableDeliveryChannel.Image, S3Location = "s3://"
+        };
         A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(new AssetId(2, 2, "test-image")))
-            .Returns(new OrchestrationImage
-            {
-                Size = new Size(1000, 1000), MaxWidth = 5000, Roles = roles, RequiresAuth = true, 
-                Channels = AvailableDeliveryChannel.Image, S3Location = "s3://"
-            });
-        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).Returns(AssetAccessResult.Unauthorized);
+            .Returns(orchestrationImage);
+        A.CallTo(() => accessValidator.TryValidate(orchestrationImage, AuthMechanism.Cookie, CancellationToken.None))
+            .Returns(AssetAccessResult.Unauthorized);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act
@@ -267,8 +268,10 @@ public class ImageRequestHandlerTests
         // Assert
         result!.Target.Should().Be(ProxyDestination.SpecialServer);
         result.HasPath.Should().BeTrue();
-        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).MustNotHaveHappened();
+        A.CallTo(() =>
+                accessValidator.TryValidate(A<IAccessControlledOrchestrationItem>._, AuthMechanism.Cookie,
+                    CancellationToken.None))
+            .MustNotHaveHappened();
     }
     
     [Theory]
@@ -305,8 +308,10 @@ public class ImageRequestHandlerTests
         // Assert
         result.Target.Should().Be(ProxyDestination.SpecialServer);
         result.HasPath.Should().BeTrue();
-        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).MustNotHaveHappened();
+        A.CallTo(() =>
+                accessValidator.TryValidate(A<IAccessControlledOrchestrationItem>._, AuthMechanism.Cookie,
+                    CancellationToken.None))
+            .MustNotHaveHappened();
     }
 
     [Theory]
@@ -323,15 +328,17 @@ public class ImageRequestHandlerTests
         context.Request.Path = $"/iiif-img/2/2/test-image{iiifRequest}0/default.jpg";
 
         var roles = new List<string> { "role" };
+        var assetId = new AssetId(2, 2, "test-image");
         A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
-        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(new AssetId(2, 2, "test-image")))
-            .Returns(new OrchestrationImage
-            {
-                Roles = roles, OpenFullMax = 900, Size = new Size(1800, 1800), RequiresAuth = true,
-                S3Location = "s3://storage/2/2/test-image", Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000
-            });
-        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).Returns(AssetAccessResult.Unauthorized);
+        var orchestrationImage = new OrchestrationImage
+        {
+            Roles = roles, OpenFullMax = 900, Size = new Size(1800, 1800), RequiresAuth = true,
+            S3Location = "s3://storage/2/2/test-image", Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000
+        };
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(orchestrationImage);
+        A.CallTo(() => accessValidator.TryValidate(orchestrationImage, AuthMechanism.Cookie, CancellationToken.None))
+            .Returns(AssetAccessResult.Unauthorized);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act
@@ -464,8 +471,12 @@ public class ImageRequestHandlerTests
                 RequiresAuth = true, Size = new Size(1000, 1000), OpenFullMax = 300,
                 Channels = AvailableDeliveryChannel.Image, Reingest = true
             });
-        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).Returns(accessResult);
+        A.CallTo(() =>
+                accessValidator.TryValidate(
+                    A<IAccessControlledOrchestrationItem>.That.Matches(a =>
+                        a.DeliverableId.AssetId.Customer == 2 && a.Roles == roles), AuthMechanism.Cookie,
+                    CancellationToken.None))
+            .Returns(accessResult);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act
@@ -496,8 +507,12 @@ public class ImageRequestHandlerTests
                 RequiresAuth = true, Size = new Size(1000, 1000), OpenFullMax = 300,
                 Channels = AvailableDeliveryChannel.Image, Reingest = false
             });
-        A.CallTo(() => accessValidator.TryValidate(A<AssetId>.That.Matches(a => a.Customer == 2), roles,
-            AuthMechanism.Cookie, CancellationToken.None)).Returns(accessResult);
+        A.CallTo(() =>
+                accessValidator.TryValidate(
+                    A<IAccessControlledOrchestrationItem>.That.Matches(a =>
+                        a.DeliverableId.AssetId.Customer == 2 && a.Roles == roles), AuthMechanism.Cookie,
+                    CancellationToken.None))
+            .Returns(accessResult);
         var sut = GetImageRequestHandlerWithMockPathParser();
 
         // Act
@@ -767,6 +782,91 @@ public class ImageRequestHandlerTests
     }
     
     [Theory]
+    [InlineData("/iiif-img/2/2/test-image/full/150,150/0/default.jpg", ProxyDestination.Thumbs, "2_2_test-image.jpg")]
+    [InlineData("/iiif-img/2/2/test-image/full/100,100/0/default.jpg", ProxyDestination.ResizeThumbs, "2_2_test-image.jpg")]
+    [InlineData("/iiif-img/2/2/test-image/5,5,90,90/90,/0/default.png", ProxyDestination.ImageServer, "2_2_test-image.png")]
+    [InlineData("/iiif-img/2/2/test-image/full/max/0/default.jpg", ProxyDestination.SpecialServer, "2_2_test-image.jpg")]
+    public async Task HandleRequest_SetsContentDisposition_IfFilenameIdTemplate(string path, ProxyDestination destination,
+        string expectedFilename)
+    {
+        // Arrange
+        var context = GetContextForFilenameTest(path, "{id}");
+        var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: GetResizeThumbSettings());
+
+        // Act
+        var result = (ProxyActionResult)await sut.HandleRequest(context);
+
+        // Assert
+        result.Target.Should().Be(destination);
+        result.Headers.Should().ContainKey("Content-Disposition")
+            .WhoseValue.ToString().Should()
+            .Be($"attachment; filename={expectedFilename}; filename*=UTF-8''{expectedFilename}");
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("myfile.jpg")]
+    [InlineData("id")]
+    [InlineData("{reference1}")]
+    public async Task HandleRequest_DoesNotSetContentDisposition_IfFilenameMissingOrUnsupported(string filename)
+    {
+        // Arrange
+        var context = GetContextForFilenameTest("/iiif-img/2/2/test-image/full/max/0/default.jpg", filename);
+        var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: GetResizeThumbSettings());
+
+        // Act
+        var result = (ProxyActionResult)await sut.HandleRequest(context);
+
+        // Assert
+        result.Headers.Should().NotContainKey("Content-Disposition");
+    }
+
+    [Theory]
+    [InlineData("Content-Disposition")]
+    [InlineData("content-disposition")]
+    public async Task HandleRequest_ContentDispositionFromFilename_OverridesCustomHeader(string customHeaderKey)
+    {
+        // Arrange
+        var context = GetContextForFilenameTest("/iiif-img/2/2/test-image/full/max/0/default.jpg", "{id}");
+        A.CallTo(() => customHeaderRepository.GetForCustomer(2)).Returns(new List<CustomHeader>
+        {
+            new() { Space = null, Role = null, Key = customHeaderKey, Value = "inline" },
+        });
+        var sut = GetImageRequestHandlerWithMockPathParser(orchestratorSettings: GetResizeThumbSettings());
+
+        // Act
+        var result = (ProxyActionResult)await sut.HandleRequest(context);
+
+        // Assert
+        result.Headers.Should().ContainSingle(h => h.Key.ToLower() == "content-disposition")
+            .Which.Value.ToString().Should().StartWith("attachment;");
+    }
+
+    private DefaultHttpContext GetContextForFilenameTest(string path, string? filename)
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Path = path;
+        if (filename != null) context.Request.QueryString = QueryString.Create("filename", filename);
+
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, OpenThumbs = [[150, 150]], S3Location = "s3://storage/2/2/test-image",
+                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Size = new Size(1000, 1000),
+            });
+        return context;
+    }
+
+    private static OrchestratorSettings GetResizeThumbSettings()
+    {
+        var settings = CreateOrchestratorSettings();
+        settings.Proxy.CanResizeThumbs = true;
+        return settings;
+    }
+
+    [Theory]
     [InlineData("/iiif-img/2/2/test-image/full/90,/0/default.jpg")] // special
     [InlineData("/iiif-img/2/2/test-image/full/!150,150/0/default.jpg")] // thumbs
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.png")] // tile (image-server)
@@ -958,7 +1058,7 @@ public class ImageRequestHandlerTests
     {
         // mockPathParser = true will return A.Fake, else return actual impl with fake repo 
         var requestProcessor = new AssetRequestProcessor(new NullLogger<AssetRequestProcessor>(), assetTracker, adjunctTracker,
-            mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl);
+            mockPathParser ? assetDeliveryPathParser : assetDeliveryPathParserImpl, scopeFactory);
         var settings = Options.Create(orchestratorSettings ?? CreateOrchestratorSettings());
         return new(new NullLogger<ImageRequestHandler>(), requestProcessor, scopeFactory, customHeaderRepository,
             settings,

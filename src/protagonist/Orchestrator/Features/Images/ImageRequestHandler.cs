@@ -11,11 +11,11 @@ using DLCS.Repository.Assets;
 using DLCS.Web.IIIF;
 using DLCS.Web.Requests.AssetDelivery;
 using IIIF;
-using IIIF.ImageApi;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure;
 using Orchestrator.Infrastructure.Auth;
@@ -113,7 +113,7 @@ public class ImageRequestHandler
             return new StatusCodeResult(HttpStatusCode.InternalServerError);
         }
 
-        await SetCustomHeaders(orchestrationImage, result);
+        await SetResponseHeaders(httpContext, orchestrationImage, assetRequest, result);
         return proxyActionResult;
     }
 
@@ -218,8 +218,7 @@ public class ImageRequestHandler
         // IAssetAccessValidator is in container with ServiceLifetime.Scoped
         using var scope = scopeFactory.CreateScope();
         var assetAccessValidator = scope.ServiceProvider.GetRequiredService<IAssetAccessValidator>();
-        var authResult = await assetAccessValidator.TryValidate(assetRequest.GetAssetId(), orchestrationImage.Roles,
-            AuthMechanism.Cookie);
+        var authResult = await assetAccessValidator.TryValidate(orchestrationImage, AuthMechanism.Cookie);
 
         return authResult == AssetAccessResult.Unauthorized;
     }
@@ -311,18 +310,41 @@ public class ImageRequestHandler
             ? requestModel.VersionPathValue.ParseToIIIFImageApiVersion()
             : orchestratorSettings.Value.DefaultIIIFImageVersion;
 
-    private async Task SetCustomHeaders(OrchestrationImage orchestrationImage,
-        ProxyActionResult proxyActionResult)
+    /// <summary>
+    /// Set any headers to be added to response. Order is significant, later headers take precedence:
+    /// customer custom headers, then Content-Disposition (if supported ?filename= template requested), then debug
+    /// headers.
+    /// </summary>
+    private async Task SetResponseHeaders(HttpContext httpContext, OrchestrationImage orchestrationImage,
+        ImageAssetDeliveryRequest assetRequest, ProxyActionResult proxyActionResult)
     {
         var customerHeaders = (await customHeaderRepository.GetForCustomer(orchestrationImage.AssetId.Customer))
             .ToList();
 
         CustomHeaderProcessor.SetProxyImageHeaders(customerHeaders, orchestrationImage, proxyActionResult);
 
+        SetContentDisposition(httpContext, orchestrationImage, assetRequest, proxyActionResult);
+
         if (orchestratorSettings.Value.Proxy.AddProxyDebugHeaders)
         {
             proxyActionResult.WithHeader("x-proxy-destination", proxyActionResult.Target.ToString());
         }
+    }
+
+    /// <summary>
+    /// Set Content-Disposition if supported ?filename= request param specified
+    /// </summary>
+    private void SetContentDisposition(HttpContext httpContext, OrchestrationImage orchestrationImage,
+        ImageAssetDeliveryRequest assetRequest, ProxyActionResult proxyActionResult)
+    {
+        if (!DownloadFilename.TryGetContentDisposition(httpContext.Request.Query, orchestrationImage.AssetId,
+                assetRequest.IIIFImageRequest.Format, out var contentDisposition))
+        {
+            return;
+        }
+
+        logger.LogTrace("Setting content-disposition header {ContentDisposition}", contentDisposition);
+        proxyActionResult.WithHeader(HeaderNames.ContentDisposition, contentDisposition);
     }
 }
 

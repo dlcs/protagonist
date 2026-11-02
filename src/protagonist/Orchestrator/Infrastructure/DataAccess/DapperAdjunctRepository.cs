@@ -49,15 +49,18 @@ public class DapperAdjunctRepository(
             Origin = firstAdjunct.Origin,
             IIIFLink = ((string)firstAdjunct.IIIFLink).GetEnumFromString<IIIFLinkType>(),
             MediaType = firstAdjunct.MediaType,
-            Type = firstAdjunct.Type
+            Type = firstAdjunct.Type,
+            // Adjuncts don't have their own roles, they inherit those of the parent Asset
+            Asset = new Asset { Roles = DapperColumnMapping.SplitDelimited(firstAdjunct.Roles) }
         };
     }
 
     private const string AdjunctSql =
         """
-        SELECT "Id", "AssetId", "Origin", "IIIFLink", "MediaType", "Type"
+        SELECT "Adjuncts"."Id", "Adjuncts"."AssetId", "Adjuncts"."Origin", "Adjuncts"."IIIFLink",
+        "Adjuncts"."MediaType", "Adjuncts"."Type", "Images"."Roles"
         FROM "Adjuncts"
-        WHERE "Id" = @Id AND "AssetId" = @AssetId
+        INNER JOIN "Images" ON "Adjuncts"."AssetId" = "Images"."Id"
+        WHERE "Adjuncts"."Id" = @Id AND "Adjuncts"."AssetId" = @AssetId
         """;
-
 }

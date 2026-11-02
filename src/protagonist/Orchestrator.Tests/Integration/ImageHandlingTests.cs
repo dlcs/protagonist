@@ -707,6 +707,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should()
             .Be("application/ld+json", "application/ld+json as Accept header specified");
     }
@@ -791,6 +792,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
         response.Headers.CacheControl.Public.Should().BeTrue();
         response.Headers.CacheControl.MaxAge.Should().BeGreaterThan(TimeSpan.FromSeconds(2));
+        response.Headers.Vary.Should().Contain("Accept");
         response.Content.Headers.ContentType.ToString().Should().Be(iiif3);
     }
 
@@ -1268,6 +1270,10 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
     [InlineData("iiif-img/99/1/my-image/!200,200/full/0/default.jpg")]
     [InlineData("iiif-img/99/1/my-image/full////max/0/default.jpg")]
     [InlineData("iiif-img/99/1/my-image/full/0/default.jpg")]
+    [InlineData("iiif-img/99/1/my-image/full/!200,/0/default.jpg")]
+    [InlineData("iiif-img/99/1/my-image/full/!,200/0/default.jpg")]
+    [InlineData("iiif-img/99/1/my-image/full/!200/0/default.jpg")]
+    [InlineData("iiif-img/99/1/my-image/info.json/full/200,/0/default.jpg")]
     public async Task Get_MalformedImageRequest_Returns400(string path)
     {
         // Act
@@ -1468,6 +1474,77 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         proxyResponse.Uri.Should().Be(expectedPath);
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
+    }
+
+    [Theory]
+    [InlineData("%7Bid%7D", "encoded")]
+    [InlineData("{id}", "unencoded")]
+    public async Task Get_ImageIsExactThumbMatch_WithFilenameId_SetsContentDisposition(string filename, string postfix)
+    {
+        // Arrange
+        var asset = $"{nameof(Get_ImageIsExactThumbMatch_WithFilenameId_SetsContentDisposition)}_{postfix}";
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"99/1/{asset}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[200,200]]}",
+        });
+
+        var id = AssetIdGenerator.GetAssetId(asset: asset);
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
+            imageDeliveryChannels: deliveryChannelsForImage);
+        await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/{id}/full/!200,200/0/default.jpg?filename={filename}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var contentDisposition = response.Content.Headers.ContentDisposition;
+        contentDisposition.DispositionType.Should().Be("attachment");
+        contentDisposition.FileName.Should().Be($"99_1_{asset}.jpg");
+        contentDisposition.FileNameStar.Should().Be($"99_1_{asset}.jpg");
+    }
+
+    [Theory]
+    [InlineData("", "none")]
+    [InlineData("?filename=myfile.jpg", "unsupported")]
+    public async Task Get_ImageIsExactThumbMatch_WithoutSupportedFilename_DoesNotSetContentDisposition(string query,
+        string postfix)
+    {
+        // Arrange
+        var asset = $"{nameof(Get_ImageIsExactThumbMatch_WithoutSupportedFilename_DoesNotSetContentDisposition)}_{postfix}";
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"99/1/{asset}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[200,200]]}",
+        });
+
+        var id = AssetIdGenerator.GetAssetId(asset: asset);
+        await dbFixture.DbContext.Images.AddTestAsset(id, origin: "/test/space", width: 1000, height: 1000,
+            imageDeliveryChannels: deliveryChannelsForImage);
+        await dbFixture.DbContext.ImageLocations.AddTestImageLocation(id);
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/{id}/full/!200,200/0/default.jpg{query}");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Content.Headers.ContentDisposition.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Get_UnknownImage_WithFilenameId_DoesNotSetContentDisposition()
+    {
+        // Act
+        var response = await httpClient.GetAsync("iiif-img/99/1/not-found/full/max/0/default.jpg?filename=%7Bid%7D");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        response.Content.Headers.ContentDisposition.Should().BeNull();
     }
 
     [Fact]
