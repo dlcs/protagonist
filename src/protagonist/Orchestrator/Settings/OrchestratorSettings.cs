@@ -306,6 +306,12 @@ public class AuthSettings
     /// Settings for identifying requests that came via a CDN, used to determine the client IP
     /// </summary>
     public CdnOriginVerifySettings CdnOriginVerify { get; set; } = new();
+
+    /// <summary>
+    /// Number of proxies between load balancer and Orchestrator that append to x-forwarded-for (e.g. Varnish
+    /// sidecar), used to determine the client IP. All requests must go through these proxies.
+    /// </summary>
+    public int InternalProxyHops { get; set; } = 1;
 }
 
 /// <summary>

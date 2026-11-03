@@ -509,7 +509,7 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         // Act
         var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
-        request.Headers.Add("X-Forwarded-For", "10.0.0.5");
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5, 10.1.0.10");
         var response = await httpClient.SendAsync(request);
 
         // Assert
@@ -534,7 +534,7 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         // Act - via CDN: spoofed entry, viewer added by CDN, CDN edge added by load balancer
         var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
-        request.Headers.Add("X-Forwarded-For", "10.0.0.5, 203.0.113.7, 130.176.0.1");
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5, 203.0.113.7, 130.176.0.1, 10.1.0.10");
         request.Headers.Add("X-Origin-Verify", CdnSecret);
         var response = await httpClient.SendAsync(request);
 
@@ -561,7 +561,7 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
 
         // Act - direct to load balancer: spoofed entry, caller added by load balancer
         var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
-        request.Headers.Add("X-Forwarded-For", "10.0.0.5, 198.51.100.9");
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5, 198.51.100.9, 10.1.0.10");
         var response = await httpClient.SendAsync(request);
 
         // Assert

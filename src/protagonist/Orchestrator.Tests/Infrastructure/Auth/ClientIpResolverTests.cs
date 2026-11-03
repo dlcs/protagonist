@@ -131,6 +131,31 @@ public class ClientIpResolverTests
         sut.GetClientIp().Should().BeNull();
     }
 
+    [Theory]
+    [InlineData("203.0.113.7, 10.1.0.10", false, "203.0.113.7")]
+    [InlineData("10.0.0.5, 198.51.100.9, 10.1.0.10", false, "198.51.100.9")]
+    [InlineData("10.0.0.5, 203.0.113.7, 130.176.0.1, 10.1.0.10", true, "203.0.113.7")]
+    public async Task GetClientIp_SkipsInternalProxyEntry_IfBehindVarnish(string forwardedFor, bool viaCdn,
+        string expected)
+    {
+        // Varnish appends its caller (load balancer) after the load balancer's entry
+        var (sut, _) = await ProcessRequest(forwardedFor, viaCdn ? [Secret] : [], internalProxyHops: 1);
+
+        sut.GetClientIp().Should().Be(IPAddress.Parse(expected));
+    }
+
+    [Fact]
+    public async Task GetClientIp_ReturnsNull_IfBehindVarnish_ButOnlyInternalProxyEntry()
+    {
+        var (sut, _) = await ProcessRequest("10.1.0.10", [], internalProxyHops: 1);
+
+        sut.GetClientIp().Should().BeNull();
+    }
+
+    [Fact]
+    public void InternalProxyHops_DefaultsTo1()
+        => new OrchestratorSettings().Auth.InternalProxyHops.Should().Be(1, "Varnish sidecar is default deployment");
+
     [Fact]
     public void GetClientIp_ReturnsNull_IfCaptureMiddlewareNotRun()
     {
@@ -181,7 +206,7 @@ public class ClientIpResolverTests
     /// </summary>
     private static async Task<(ClientIpResolver Sut, HttpContext Context)> ProcessRequest(string? forwardedFor,
         string[] originVerify, List<string>? secrets = null, string? knownNetwork = null,
-        IPAddress? callerIp = null)
+        IPAddress? callerIp = null, int internalProxyHops = 0)
     {
         var context = new DefaultHttpContext();
         context.Connection.RemoteIpAddress = callerIp;
@@ -190,6 +215,8 @@ public class ClientIpResolverTests
 
         var settings = new OrchestratorSettings();
         settings.Auth.CdnOriginVerify.Secrets = secrets ?? [Secret];
+        // Most tests are direct to load balancer, see GetClientIp_SkipsInternalProxyEntry_IfBehindVarnish
+        settings.Auth.InternalProxyHops = internalProxyHops;
         var forwardedHeadersOptions = CreateForwardedHeadersOptions(knownNetwork);
 
         var forwardedHeaders = new ForwardedHeadersMiddleware(_ => Task.CompletedTask, NullLoggerFactory.Instance,
@@ -197,7 +224,7 @@ public class ClientIpResolverTests
         var capture = new ClientIpCaptureMiddleware(forwardedHeaders.Invoke, Options.Create(settings));
         await capture.Invoke(context);
 
-        return (GetSut(context, forwardedHeadersOptions), context);
+        return (GetSut(context, forwardedHeadersOptions, settings), context);
     }
 
     private static ForwardedHeadersOptions CreateForwardedHeadersOptions(string? knownNetwork)
@@ -213,12 +240,13 @@ public class ClientIpResolverTests
         return options;
     }
 
-    private static ClientIpResolver GetSut(HttpContext context, ForwardedHeadersOptions options)
+    private static ClientIpResolver GetSut(HttpContext context, ForwardedHeadersOptions options,
+        OrchestratorSettings? settings = null)
     {
         // Fake rather than HttpContextAccessor as that uses AsyncLocal, which doesn't flow out of async helper
         var httpContextAccessor = A.Fake<IHttpContextAccessor>();
         A.CallTo(() => httpContextAccessor.HttpContext).Returns(context);
         return new ClientIpResolver(httpContextAccessor, Options.Create(options),
-            NullLogger<ClientIpResolver>.Instance);
+            Options.Create(settings ?? new OrchestratorSettings()), NullLogger<ClientIpResolver>.Instance);
     }
 }

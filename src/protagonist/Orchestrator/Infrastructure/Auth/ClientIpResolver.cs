@@ -48,6 +48,8 @@ public record ReceivedClientRequest(string ForwardedFor, IPAddress? CallerIp, bo
 /// balancer, so the client's position in x-forwarded-for varies:
 /// - via CDN: "[spoof,] viewer, cdn" - client is 2nd from right, added by CDN
 /// - direct: "[spoof,] client" - client is rightmost, added by load balancer
+/// Each proxy between load balancer and Orchestrator (e.g. Varnish sidecar) appends its caller, so the client is a
+/// further <see cref="AuthSettings.InternalProxyHops"/> entries from the right.
 /// Requests that came via the CDN are identified by a secret custom header added by the CDN, see
 /// <see cref="CdnOriginVerifySettings"/>. Without a valid secret the rightmost entry is used, so a direct caller
 /// cannot spoof their IP.
@@ -58,6 +60,7 @@ public record ReceivedClientRequest(string ForwardedFor, IPAddress? CallerIp, bo
 public class ClientIpResolver(
     IHttpContextAccessor httpContextAccessor,
     IOptions<ForwardedHeadersOptions> forwardedHeadersOptions,
+    IOptions<OrchestratorSettings> orchestratorOptions,
     ILogger<ClientIpResolver> logger) : IClientIpResolver
 {
     internal const string ReceivedRequestKey = "__ReceivedClientRequest";
@@ -81,8 +84,8 @@ public class ClientIpResolver(
         var entries = received.ForwardedFor.Split(',',
             StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
-        // CDN adds viewer IP, load balancer then adds CDN IP
-        var positionFromRight = received.ViaCdn ? 2 : 1;
+        // CDN adds viewer IP, load balancer then adds CDN IP, internal proxies (e.g. Varnish) then add their caller
+        var positionFromRight = (received.ViaCdn ? 2 : 1) + orchestratorOptions.Value.Auth.InternalProxyHops;
         if (entries.Length < positionFromRight)
         {
             logger.LogDebug(
