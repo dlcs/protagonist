@@ -39,9 +39,16 @@ public class InfoJsonService(
         if (!infoJson.IsNull())
         {
             // If info.json found in S3, return it
-            JsonLdBase deserialisedInfoJson = version == Version.V2
+            JsonLdBase? deserialisedInfoJson = version == Version.V2
                 ? infoJson.FromJsonStream<ImageService2>()
                 : infoJson.FromJsonStream<ImageService3>();
+            
+            if (deserialisedInfoJson == null)
+            {
+                logger.LogWarning("Found info.json version {Version} for {AssetId} but deser failed", version,
+                    orchestrationImage.AssetId);
+                return null;
+            }
 
             logger.LogTrace("Found info.json version {Version} for {AssetId}", version, orchestrationImage.AssetId);
             return GetInfoJsonResponse(deserialisedInfoJson, false);
@@ -58,7 +65,7 @@ public class InfoJsonService(
         return GetInfoJsonResponse(infoJsonResponse, true);
     }
 
-    private InfoJsonResponse GetInfoJsonResponse(JsonLdBase infoJsonResponse, bool wasOrchestrated)
+    private static InfoJsonResponse GetInfoJsonResponse(JsonLdBase infoJsonResponse, bool wasOrchestrated)
     {
         if (infoJsonResponse is ImageService2 imageService2)
         {

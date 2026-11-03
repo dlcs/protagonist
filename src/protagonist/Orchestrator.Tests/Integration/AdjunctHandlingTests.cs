@@ -35,6 +35,7 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
     private readonly string stubAddress;
     private readonly ApiStub apiStub;
     private readonly IAmazonS3 amazonS3;
+    private const string CdnSecret = "test-cdn-secret";
     private readonly List<ImageDeliveryChannel> deliveryChannelsForFile =
     [
         new()
@@ -56,6 +57,7 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
             .WithConnectionString(dbFixture1.ConnectionString)
             .WithLocalStack(orchestratorFixture.LocalStackFixture)
             .WithConfigValue("Auth:Auth2ServiceRoot", $"{stubAddress}/auth2/")
+            .WithConfigValue("Auth:CdnOriginVerify:Secrets:0", CdnSecret)
             .WithTestServices(services =>
             {
                 services
@@ -150,6 +152,32 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         response.Headers.Should().ContainKey("x-asset-id").WhoseValue.Should().ContainSingle(id.ToString());
     }
     
+    [Fact]
+    public async Task Get_DoesNotForwardCdnOriginVerifyHeader_ToOrigin()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_DoesNotForwardCdnOriginVerifyHeader_ToOrigin);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+            origin: $"{stubAddress}/testfile", imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin:$"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("X-Origin-Verify", CdnSecret);
+        request.Headers.Add("X-Test-Header", "forwarded");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var proxyResponse = await response.Content.ReadFromJsonAsync<ProxyResponse>();
+        proxyResponse.Headers.Keys.Should().Contain(k => k.Equals("X-Test-Header", StringComparison.OrdinalIgnoreCase),
+            "request headers are copied to proxied request");
+        proxyResponse.Headers.Keys.Should().NotContain(k => k.Equals("X-Origin-Verify", StringComparison.OrdinalIgnoreCase),
+            "CDN secret header must never be sent to origin");
+    }
+
     [Fact]
     public async Task Get_OptimisedOrigin_ReturnsFile_AssetNotOptimized()
     {
@@ -462,6 +490,107 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.CacheControl!.Private.Should().BeTrue("authorised adjuncts must not be cached publicly");
+    }
+
+    [Fact]
+    public async Task Get_RequiresAuth_ReturnsAdjunct_IfIpRole_AndAuth2VerifiesAccess_WithoutCookie()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_RequiresAuth_ReturnsAdjunct_IfIpRole_AndAuth2VerifiesAccess_WithoutCookie);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: "ip:reading-room",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+        apiStub.Get($"/auth2/verifyaccess/{id}/{adjunctId}", (_, _) => string.Empty)
+            .IfQueryArg("roles", "ip:reading-room")
+            .IfHeader("X-Forwarded-For", "10.0.0.5");
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5, 10.1.0.10");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        response.Headers.CacheControl!.Private.Should().BeTrue("authorised adjuncts must not be cached publicly");
+    }
+
+    [Fact]
+    public async Task Get_RequiresAuth_ReturnsAdjunct_IfIpRole_AndAuth2VerifiesViewerIp_ViaCdn()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_RequiresAuth_ReturnsAdjunct_IfIpRole_AndAuth2VerifiesViewerIp_ViaCdn);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: "ip:reading-room",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+        apiStub.Get($"/auth2/verifyaccess/{id}/{adjunctId}", (_, _) => string.Empty)
+            .IfQueryArg("roles", "ip:reading-room")
+            .IfHeader("X-Forwarded-For", "203.0.113.7");
+
+        // Act - via CDN: spoofed entry, viewer added by CDN, CDN edge added by load balancer
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5, 203.0.113.7, 130.176.0.1, 10.1.0.10");
+        request.Headers.Add("X-Origin-Verify", CdnSecret);
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task Get_RequiresAuth_Returns401_IfIpRole_AndSpoofedForwardedFor_WithoutCdnSecret()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_RequiresAuth_Returns401_IfIpRole_AndSpoofedForwardedFor_WithoutCdnSecret);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: "ip:reading-room",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+
+        // Auth2 would grant access to the spoofed IP only
+        apiStub.Get($"/auth2/verifyaccess/{id}/{adjunctId}", (_, _) => string.Empty)
+            .IfQueryArg("roles", "ip:reading-room")
+            .IfHeader("X-Forwarded-For", "10.0.0.5");
+
+        // Act - direct to load balancer: spoofed entry, caller added by load balancer
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5, 198.51.100.9, 10.1.0.10");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized, "rightmost IP forwarded, not spoofed entry");
+    }
+
+    [Fact]
+    public async Task Get_RequiresAuth_Returns401_IfNoIpRole_AndNoCookie()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_RequiresAuth_Returns401_IfNoIpRole_AndNoCookie);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: "auth2-role",
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+
+        // Auth2 would grant access, but isn't called as there's no cookie and no IP role
+        apiStub.Get($"/auth2/verifyaccess/{id}/{adjunctId}", (_, _) => string.Empty)
+            .IfQueryArg("roles", "auth2-role");
+
+        // Act
+        var request = new HttpRequestMessage(HttpMethod.Get, $"adjuncts/{id}/{adjunctId}");
+        request.Headers.Add("X-Forwarded-For", "10.0.0.5");
+        var response = await httpClient.SendAsync(request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]

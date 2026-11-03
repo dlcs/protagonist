@@ -25,6 +25,7 @@ using Orchestrator.Features.Files;
 using Orchestrator.Features.Images;
 using Orchestrator.Features.TimeBased;
 using Orchestrator.Infrastructure;
+using Orchestrator.Infrastructure.Auth;
 using Orchestrator.Infrastructure.Mediatr;
 using Orchestrator.Infrastructure.NamedQueries;
 using Orchestrator.Infrastructure.ReverseProxy;
@@ -136,6 +137,7 @@ public class Startup
         app
             .HandlePathBase(pathBase, logger)
             .UseCorrelationId()
+            .UseClientIpCapture()
             .UseForwardedHeaders()
             .UseRouting()
             .UseOptions()

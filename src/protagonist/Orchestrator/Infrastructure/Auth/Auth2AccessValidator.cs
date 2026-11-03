@@ -13,7 +13,7 @@ public class Auth2AccessValidator(IIIFAuth2Client iiifAuth2Client) : IAssetAcces
     public async Task<AssetAccessResult> TryValidate(IAccessControlledOrchestrationItem orchestrationItem,
         AuthMechanism mechanism, CancellationToken cancellationToken = default)
     {
-        // NOTE(DG) - caller of this has checked appropriate cookie exists
+        // NOTE(DG) - caller of this has checked appropriate cookie exists, or roles contain an IP role
         if (mechanism == AuthMechanism.BearerToken) return AssetAccessResult.Unauthorized;
 
         var canAccess = await iiifAuth2Client.VerifyAccess(orchestrationItem, cancellationToken);

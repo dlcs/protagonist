@@ -858,6 +858,51 @@ public class ManifestV3BuilderTests
         manifest.Items!.Single().SeeAlso!.Single().Service.Should().ContainSingle();
     }
 
+    [Fact]
+    public async Task BuildManifest_OrdersAccessServices_ExternalFirst_ThenById()
+    {
+        var clickthroughAsset = GetImageAsset("iiif-img");
+        clickthroughAsset.Roles = ["clickthrough"];
+        var ipAsset = GetImageAsset("iiif-img");
+        ipAsset.Id = AssetIdGenerator.GetAssetId(assetPostfix: "-ip");
+        ipAsset.Roles = ["ip:reading-room"];
+
+        const string activeAccessId = "https://dlcs.test/auth/v2/access/99/a-clickthrough";
+        const string externalAccessId = "https://dlcs.test/auth/v2/access/99/z-reading-room";
+        const string otherActiveAccessId = "https://dlcs.test/auth/v2/access/99/b-oidc";
+        A.CallTo(() => authBuilder.GetAuthServices(clickthroughAsset.Id, A<IReadOnlyList<string>>._,
+                A<CancellationToken>._))
+            .Returns(new AuthProbeService2
+            {
+                Id = $"https://dlcs.test/auth/v2/probe/{clickthroughAsset.Id}",
+                Service =
+                [
+                    new AuthAccessService2 { Id = otherActiveAccessId, Profile = AuthAccessService2.ActiveProfile },
+                    new AuthAccessService2 { Id = activeAccessId, Profile = AuthAccessService2.ActiveProfile }
+                ]
+            });
+        A.CallTo(() => authBuilder.GetAuthServices(ipAsset.Id, A<IReadOnlyList<string>>._,
+                A<CancellationToken>._))
+            .Returns(new AuthProbeService2
+            {
+                Id = $"https://dlcs.test/auth/v2/probe/{ipAsset.Id}",
+                Service =
+                [
+                    new AuthAccessService2 { Id = externalAccessId, Profile = AuthAccessService2.ExternalProfile },
+                    new AuthAccessService2 { Id = activeAccessId, Profile = AuthAccessService2.ActiveProfile }
+                ]
+            });
+        var manifestId = SetupCanvasPaths(clickthroughAsset);
+        SetupCanvasPaths(ipAsset);
+
+        var manifest = await sut.BuildManifest(manifestId, "testLabel", [clickthroughAsset, ipAsset], pathElement,
+            ManifestType.NamedQuery, CancellationToken.None);
+
+        manifest.Services!.OfType<AuthAccessService2>().Select(s => s.Id).Should()
+            .ContainInOrder(externalAccessId, activeAccessId, otherActiveAccessId)
+            .And.HaveCount(3);
+    }
+
     private string SetupCanvasPaths(Asset asset)
     {
         A.CallTo(() => builderUtils.GetFullQualifiedImagePath(asset, pathElement, A<Size>._, false))
