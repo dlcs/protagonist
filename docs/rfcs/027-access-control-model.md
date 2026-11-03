@@ -244,7 +244,7 @@ An appointment is a key that grants one or more `appointment:` roles, for assets
   * has `start ≤ now < end`
   * has `assetPatterns` that match the asset
 
-  Asset patterns are AND across fields and OR within a field, and a null or empty field places no constraint. `string1`–`3` match exactly or as a `/`-separated descendant, so `LIDDLE/WW2/HFIU` matches `LIDDLE/WW2/HFIU/001` but not `LIDDLE/WW2/HFIUX`. `scopes` and `tags` match if any one of the asset's values matches. `customer`, `space` and `number1`–`3` must be equal.
+  Asset patterns are AND across fields and OR within a field, and a null or empty field places no constraint. `string1`–`3` match exactly, or can contain a `*` wildcard at the end to match any value with this prefix, so `LIDDLE/WW2*` matches `LIDDLE/WW2/HFIU/001` or `LIDDLE/WW22` but not `LIDDLE/WW1/HFIUX`. A `*` at any other position is treated as a direct match. `scopes` and `tags` match if any one of the asset's values matches. `customer`, `space` and `number1`–`3` must be equal.
 * Because these conditions are checked per request, **sessions aren't tied to the appointment's end**. Access stops at `end` regardless, and other roles in the same session (e.g. from signing in) aren't cut short. Cancelling or deactivating an appointment takes effect at the next check, subject to caching.
 * "Only in the reading room" is an asset entry that needs both an `appointment:` and an `ip:` role (`ip:dlip-reading-room+appointment:token-based`). It isn't a property of the appointment.
 
