@@ -15,4 +15,8 @@ public record AccessControlledItem(DeliverableId DeliverableId, IReadOnlyList<st
 {
     /// <inheritdoc/>
     public bool RequiresAuth => Roles.Count > 0;
+
+    /// <inheritdoc/>
+    /// <remarks>Not set for named query projections, which cover many assets</remarks>
+    public AssetMetadata? Metadata { get; init; }
 }

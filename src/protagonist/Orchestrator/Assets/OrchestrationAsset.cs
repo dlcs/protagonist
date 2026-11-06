@@ -28,6 +28,9 @@ public class OrchestrationAsset : IOriginItem, IAccessControlledOrchestrationIte
     public IReadOnlyList<string> Roles { get; set; } = [];
 
     /// <inheritdoc/>
+    public AssetMetadata? Metadata { get; set; }
+
+    /// <inheritdoc/>
     public DeliverableId DeliverableId => new(AssetId);
 
     /// <summary>

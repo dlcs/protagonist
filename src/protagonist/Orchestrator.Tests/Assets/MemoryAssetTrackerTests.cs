@@ -378,6 +378,51 @@ public class MemoryAssetTrackerTests
         // Assert
         result!.RequiresAuth.Should().Be(requiresAuth);
     }
+
+    [Fact]
+    public async Task GetOrchestrationAsset_SetsMetadata_IfAppointmentRole()
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, nameof(GetOrchestrationAsset_SetsMetadata_IfAppointmentRole));
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns(new Asset
+        {
+            ImageDeliveryChannels = "iiif-img".GenerateDeliveryChannels(),
+            Roles = ["clickthrough", "https://api.dlcs.io/customers/1/roles/appointment:a"],
+            Manifests = ["m1"], Tags = ["t1"], Reference1 = "LIDDLE/WW2/HFIU/003", Reference2 = "r2",
+            Reference3 = "r3", NumberReference1 = 1, NumberReference2 = 2, NumberReference3 = 3,
+        });
+
+        // Act
+        var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
+
+        // Assert
+        result!.Metadata.Should().BeEquivalentTo(new AssetMetadata
+        {
+            Manifests = ["m1"], Tags = ["t1"], Reference1 = "LIDDLE/WW2/HFIU/003", Reference2 = "r2",
+            Reference3 = "r3", NumberReference1 = 1, NumberReference2 = 2, NumberReference3 = 3,
+        });
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("clickthrough,https://api.dlcs.io/customers/1/roles/ip:reading-room")]
+    public async Task GetOrchestrationAsset_NoMetadata_IfNoAppointmentRole(string roleList)
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, nameof(GetOrchestrationAsset_NoMetadata_IfNoAppointmentRole));
+        A.CallTo(() => assetRepository.GetAsset(assetId, false)).Returns(new Asset
+        {
+            ImageDeliveryChannels = "iiif-img".GenerateDeliveryChannels(),
+            Roles = roleList.Split(',', StringSplitOptions.RemoveEmptyEntries),
+            Manifests = ["m1"], Tags = ["t1"], Reference1 = "r1",
+        });
+
+        // Act
+        var result = await sut.GetOrchestrationAsset<OrchestrationImage>(assetId);
+
+        // Assert
+        result!.Metadata.Should().BeNull("metadata only needed for appointment roles");
+    }
     
     [Theory]
     [InlineData("file")]
@@ -539,6 +584,45 @@ public class MemoryAssetTrackerTests
         result.Should().NotBeNull("mock repo set to return a valid obj");
         result!.Roles.Should().BeEquivalentTo(["clickthrough"], "adjunct inherits roles from parent Asset");
         result.RequiresAuth.Should().BeTrue("adjunct has roles");
+    }
+
+    [Theory]
+    [InlineData("clickthrough", false)]
+    [InlineData("https://api.dlcs.io/customers/1/roles/appointment:a", true)]
+    public async Task GetOrchestrationAdjunct_HasParentMetadata_OnlyIfAppointmentRole(string role,
+        bool hasMetadata)
+    {
+        // Arrange
+        var assetId = new AssetId(1, 1, $"adj-metadata-{hasMetadata}");
+        const string adjunctId = "yup";
+        const string origin = "http://example.com/some-origin";
+        A.CallTo(() => adjunctRepository.GetAdjunct(adjunctId, assetId, false)).Returns(
+            new Adjunct
+            {
+                Id = adjunctId,
+                AssetId = assetId,
+                Origin = origin,
+                MediaType = "application/json",
+                IIIFLink = IIIFLinkType.SeeAlso,
+                Type = "a_type",
+                Asset = new Asset { Roles = [role], Reference1 = "LIDDLE/WW2/HFIU/003", Tags = ["t1"] }
+            });
+        A.CallTo(() => customerOriginStrategyRepository.GetCustomerOriginStrategy(assetId, origin))
+            .Returns(new CustomerOriginStrategy { Id = "_default_", Strategy = OriginStrategyType.Default });
+
+        // Act
+        var result = await sut.GetOrchestrationAdjunct(adjunctId, assetId);
+
+        // Assert
+        if (hasMetadata)
+        {
+            result!.Metadata.Should().BeEquivalentTo(
+                new AssetMetadata { Reference1 = "LIDDLE/WW2/HFIU/003", Tags = ["t1"] });
+        }
+        else
+        {
+            result!.Metadata.Should().BeNull();
+        }
     }
 
     [Fact]

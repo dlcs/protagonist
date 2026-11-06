@@ -35,4 +35,30 @@ public class RoleXTests
     [Fact]
     public void ContainsIpRole_False_IfNull()
         => ((IEnumerable<string>)null).ContainsIpRole().Should().BeFalse();
+
+    [Theory]
+    [InlineData("https://api.dlcs.io/customers/2/roles/appointment:token-based")]
+    [InlineData("https://api.dlcs.io/customers/2/roles/appointment:token-based/")]
+    [InlineData("appointment:token-based")]
+    public void IsAppointmentRole_True_IfLastSegmentHasAppointmentPrefix(string role)
+        => role.IsAppointmentRole().Should().BeTrue();
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("https://api.dlcs.io/customers/2/roles/clickthrough")]
+    [InlineData("https://api.dlcs.io/customers/2/roles/ip:reading-room")]
+    [InlineData("https://api.dlcs.io/customers/2/appointment:roles/x")]
+    [InlineData("https://api.dlcs.io/customers/2/roles/Appointment:x")]
+    public void IsAppointmentRole_False_IfLastSegmentDoesNotHaveAppointmentPrefix(string role)
+        => role.IsAppointmentRole().Should().BeFalse();
+
+    [Fact]
+    public void ContainsAppointmentRole_True_IfAnyAppointmentRole()
+        => new[] { "https://api.dlcs.io/customers/2/roles/clickthrough", "https://api.dlcs.io/customers/2/roles/appointment:a" }
+            .ContainsAppointmentRole().Should().BeTrue();
+
+    [Fact]
+    public void ContainsAppointmentRole_False_IfNull()
+        => ((IEnumerable<string>)null).ContainsAppointmentRole().Should().BeFalse();
 }
