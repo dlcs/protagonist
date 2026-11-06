@@ -36,6 +36,6 @@ public class ProbeServiceHandler(
         return ProbeServiceSupport.HandleProbeRequest(assetId, httpContextAccessor, logger,
             () => assetTracker.GetOrchestrationAsset(assetId),
             (asset, accessToken) =>
-                iiifAuth2Client.GetProbeServiceResult(assetId, asset.Roles, accessToken, cancellationToken));
+                iiifAuth2Client.GetProbeServiceResult(asset, accessToken, cancellationToken));
     }
 }

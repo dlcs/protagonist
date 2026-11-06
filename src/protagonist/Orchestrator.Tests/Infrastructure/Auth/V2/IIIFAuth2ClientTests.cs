@@ -219,7 +219,7 @@ public class IIIFAuth2ClientTests
         };
         
         // Act
-        await sut.GetProbeServiceResult(orchestrationImage.AssetId, orchestrationImage.Roles, "accessToken",
+        await sut.GetProbeServiceResult(orchestrationImage, "accessToken",
             CancellationToken.None);
         
         // Assert
@@ -236,7 +236,7 @@ public class IIIFAuth2ClientTests
         };
         
         // Act
-        await sut.GetProbeServiceResult(orchestrationImage.AssetId, orchestrationImage.Roles, "accessToken",
+        await sut.GetProbeServiceResult(orchestrationImage, "accessToken",
             CancellationToken.None);
         
         // Assert
@@ -248,8 +248,8 @@ public class IIIFAuth2ClientTests
     public async Task GetProbeServiceResult_Adjunct_CallsCorrectPath()
     {
         // Act
-        await sut.GetProbeServiceResult(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"),
-            ["role1", "role2"], "accessToken", CancellationToken.None);
+        await sut.GetProbeServiceResult(
+            new AccessControlledItem(new DeliverableId(AssetId.FromString("99/100/foo"), "mets.xml"), ["role1", "role2"]), "accessToken", CancellationToken.None);
 
         // Assert
         httpHandler.CallsMade.Should()
@@ -264,7 +264,7 @@ public class IIIFAuth2ClientTests
         httpHandler.RegisterCallback(r => request = r);
 
         // Act
-        await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), ["role1"], "accessToken",
+        await sut.GetProbeServiceResult(new AccessControlledItem(AssetId.FromString("99/100/foo"), ["role1"]), "accessToken",
             CancellationToken.None);
 
         // Assert
@@ -281,7 +281,7 @@ public class IIIFAuth2ClientTests
         httpHandler.RegisterCallback(r => request = r);
 
         // Act
-        await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), [IpRole], accessToken,
+        await sut.GetProbeServiceResult(new AccessControlledItem(AssetId.FromString("99/100/foo"), [IpRole]), accessToken,
             CancellationToken.None);
 
         // Assert
@@ -295,7 +295,7 @@ public class IIIFAuth2ClientTests
         string accessToken)
     {
         // Act
-        var result = await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), ["role1"], accessToken,
+        var result = await sut.GetProbeServiceResult(new AccessControlledItem(AssetId.FromString("99/100/foo"), ["role1"]), accessToken,
             CancellationToken.None);
 
         // Assert
@@ -311,7 +311,7 @@ public class IIIFAuth2ClientTests
         httpHandler.RegisterCallback(r => request = r);
 
         // Act
-        await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), ["role1", IpRole], null,
+        await sut.GetProbeServiceResult(new AccessControlledItem(AssetId.FromString("99/100/foo"), ["role1", IpRole]), null,
             CancellationToken.None);
 
         // Assert
@@ -326,7 +326,7 @@ public class IIIFAuth2ClientTests
         httpHandler.RegisterCallback(r => request = r);
 
         // Act
-        await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), ["role1"], "accessToken",
+        await sut.GetProbeServiceResult(new AccessControlledItem(AssetId.FromString("99/100/foo"), ["role1"]), "accessToken",
             CancellationToken.None);
 
         // Assert
@@ -342,7 +342,7 @@ public class IIIFAuth2ClientTests
         clientIp = null;
 
         // Act
-        await sut.GetProbeServiceResult(AssetId.FromString("99/100/foo"), [IpRole], null, CancellationToken.None);
+        await sut.GetProbeServiceResult(new AccessControlledItem(AssetId.FromString("99/100/foo"), [IpRole]), null, CancellationToken.None);
 
         // Assert
         request.Headers.Contains("X-Forwarded-For").Should().BeFalse();
@@ -360,7 +360,7 @@ public class IIIFAuth2ClientTests
         httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError));
 
         // Act
-        var response = await sut.GetProbeServiceResult(orchestrationImage.AssetId, orchestrationImage.Roles, "accessToken",
+        var response = await sut.GetProbeServiceResult(orchestrationImage, "accessToken",
             CancellationToken.None);
 
         // Assert
@@ -382,13 +382,100 @@ public class IIIFAuth2ClientTests
         httpHandler.SetResponse(httpResponseMessage);
 
         // Act
-        var response = await sut.GetProbeServiceResult(orchestrationImage.AssetId, orchestrationImage.Roles, "accessToken",
+        var response = await sut.GetProbeServiceResult(orchestrationImage, "accessToken",
             CancellationToken.None);
 
         // Assert
         response.Should().BeEquivalentTo(probeServiceResult);
     }
     
+    private const string AppointmentRole = "https://api.dlcs.io/customers/99/roles/appointment:token-based";
+
+    private static readonly AssetMetadata Metadata = new()
+    {
+        Manifests = ["m1"], Tags = ["t1", "t2"], Reference1 = "LIDDLE/WW2/HFIU/003", Reference2 = "",
+        Reference3 = " ", NumberReference1 = 0, NumberReference2 = 2,
+    };
+
+    private const string ExpectedAppointmentBody =
+        $$$"""{"roles":["{{{AppointmentRole}}}","role1"],"asset":{"scopes":["m1"],"tags":["t1","t2"],"string1":"LIDDLE/WW2/HFIU/003","number1":0,"number2":2}}""";
+
+    [Fact]
+    public async Task GetProbeServiceResult_PostsRolesAndMetadata_IfAppointmentRole()
+    {
+        // Arrange
+        HttpRequestMessage? request = null;
+        string? body = null;
+        httpHandler.RegisterCallback(r =>
+        {
+            request = r;
+            body = r.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+        });
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = [AppointmentRole, "role1"], Metadata = Metadata
+        };
+
+        // Act
+        await sut.GetProbeServiceResult(orchestrationImage, "accessToken", CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle(s => s == "http://auth-2/probe_internal/99/100/foo");
+        request!.Method.Should().Be(HttpMethod.Post);
+        request.Headers.Authorization!.Parameter.Should().Be("accessToken");
+        body.Should().Be(ExpectedAppointmentBody);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task GetProbeServiceResult_Gets_IfNoAppointmentRoleOrNoMetadata(bool hasAppointmentRole,
+        bool hasMetadata)
+    {
+        // Arrange
+        HttpMethod? method = null;
+        httpHandler.RegisterCallback(r => method = r.Method);
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"),
+            Roles = hasAppointmentRole ? [AppointmentRole] : ["role1"],
+            Metadata = hasMetadata ? Metadata : null
+        };
+
+        // Act
+        await sut.GetProbeServiceResult(orchestrationImage, "accessToken", CancellationToken.None);
+
+        // Assert
+        method.Should().Be(HttpMethod.Get);
+        httpHandler.CallsMade.Should().ContainSingle(s => s.StartsWith("http://auth-2/probe_internal/99/100/foo?roles="));
+    }
+
+    [Fact]
+    public async Task VerifyAccess_PostsRolesAndMetadata_IfAppointmentRole()
+    {
+        // Arrange
+        HttpMethod? method = null;
+        string? body = null;
+        httpHandler.RegisterCallback(r =>
+        {
+            method = r.Method;
+            body = r.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+        });
+        var orchestrationAdjunct = new OrchestrationAdjunct
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Id = "mets.xml", Roles = [AppointmentRole, "role1"],
+            Metadata = Metadata
+        };
+
+        // Act
+        await sut.VerifyAccess(orchestrationAdjunct, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle(s => s == "http://auth-2/verifyaccess/99/100/foo/mets.xml");
+        method.Should().Be(HttpMethod.Post);
+        body.Should().Be(ExpectedAppointmentBody);
+    }
+
     [Fact]
     public async Task VerifyAccess_CallsCorrectPath_SingleRole()
     {

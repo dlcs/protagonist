@@ -50,15 +50,29 @@ public class DapperAdjunctRepository(
             IIIFLink = ((string)firstAdjunct.IIIFLink).GetEnumFromString<IIIFLinkType>(),
             MediaType = firstAdjunct.MediaType,
             Type = firstAdjunct.Type,
-            // Adjuncts don't have their own roles, they inherit those of the parent Asset
-            Asset = new Asset { Roles = DapperColumnMapping.SplitDelimited(firstAdjunct.Roles) }
+            // Adjuncts don't have their own roles, they inherit those of the parent Asset. Metadata is used to
+            // evaluate appointment roles
+            Asset = new Asset
+            {
+                Roles = DapperColumnMapping.SplitDelimited(firstAdjunct.Roles),
+                Tags = DapperColumnMapping.SplitDelimited(firstAdjunct.Tags),
+                Reference1 = firstAdjunct.Reference1,
+                Reference2 = firstAdjunct.Reference2,
+                Reference3 = firstAdjunct.Reference3,
+                NumberReference1 = firstAdjunct.NumberReference1,
+                NumberReference2 = firstAdjunct.NumberReference2,
+                NumberReference3 = firstAdjunct.NumberReference3,
+                Manifests = (firstAdjunct.Manifests as string[])?.ToList(),
+            }
         };
     }
 
     private const string AdjunctSql =
         """
         SELECT "Adjuncts"."Id", "Adjuncts"."AssetId", "Adjuncts"."Origin", "Adjuncts"."IIIFLink",
-        "Adjuncts"."MediaType", "Adjuncts"."Type", "Images"."Roles"
+        "Adjuncts"."MediaType", "Adjuncts"."Type", "Images"."Roles", "Images"."Tags", "Images"."Reference1",
+        "Images"."Reference2", "Images"."Reference3", "Images"."NumberReference1", "Images"."NumberReference2",
+        "Images"."NumberReference3", "Images"."Manifests"
         FROM "Adjuncts"
         INNER JOIN "Images" ON "Adjuncts"."AssetId" = "Images"."Id"
         WHERE "Adjuncts"."Id" = @Id AND "Adjuncts"."AssetId" = @AssetId
