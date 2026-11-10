@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Auth;
 using DLCS.Web;
 using DLCS.Web.Auth;
 using IIIF.Auth.V2;
@@ -22,9 +23,13 @@ namespace Orchestrator.Features.Auth;
 public static class ProbeServiceSupport
 {
     /// <summary>
-    /// Handle a full probe service request for an item (asset or adjunct): checks for a bearer token, looks up the
-    /// item, and evaluates the auth requirements, calling the downstream auth service if required.
+    /// Handle a full probe service request for an item (asset or adjunct): looks up the item, checks for a bearer
+    /// token, and evaluates the auth requirements, calling the downstream auth service if required.
     /// </summary>
+    /// <remarks>
+    /// A bearer token is required unless the item has an IP role, as these are granted by the downstream auth
+    /// service based on client IP
+    /// </remarks>
     /// <param name="deliverableId">Id of the asset or adjunct the request relates to, used for logging</param>
     /// <param name="httpContextAccessor">Used to read the bearer token from the current request</param>
     /// <param name="logger">Logger for the calling handler</param>
@@ -35,17 +40,18 @@ public static class ProbeServiceSupport
         IHttpContextAccessor httpContextAccessor,
         ILogger logger,
         Func<Task<T?>> lookupItem,
-        Func<T, string, Task<AuthProbeResult2>> getDownstreamProbeResult)
+        Func<T, string?, Task<AuthProbeResult2>> getDownstreamProbeResult)
         where T : class, IAccessControlledOrchestrationItem
     {
         var accessToken = GetAccessToken(httpContextAccessor);
-        if (string.IsNullOrWhiteSpace(accessToken))
+        var item = await lookupItem();
+        
+        if (string.IsNullOrWhiteSpace(accessToken) && !(item?.Roles.ContainsIpRole() ?? false))
         {
             logger.LogDebug("ProbeService request for {DeliverableId} has no bearer token", deliverableId);
             return DescriptionResourceResponse.Restricted(AuthProbeResult2Builder.MissingCredentials);
         }
 
-        var item = await lookupItem();
         if (item == null)
         {
             logger.LogDebug("ProbeService request for not-found {DeliverableId}", deliverableId);

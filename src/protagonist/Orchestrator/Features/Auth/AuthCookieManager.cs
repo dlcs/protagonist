@@ -58,6 +58,17 @@ public class AuthCookieManager
     }
 
     /// <summary>
+    /// Get Auth2 Cookie for current customer
+    /// </summary>
+    public string? GetAuth2CookieValueForCustomer(int customer)
+    {
+        var cookieKey = GetAuthCookieKey(authSettings.Auth2CookieNameFormat, customer);
+        return httpContextAccessor.SafeHttpContext().Request.Cookies.TryGetValue(cookieKey, out var cookieValue)
+            ? cookieValue
+            : null;
+    }
+
+    /// <summary>
     /// Check if Cookie for Auth2 exists for current customer
     /// </summary>
     public bool HasAuth2CookieForCustomer(int customer)

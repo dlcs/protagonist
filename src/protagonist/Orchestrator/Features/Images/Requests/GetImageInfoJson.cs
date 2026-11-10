@@ -102,18 +102,17 @@ public class GetImageInfoJsonHandler : IRequestHandler<GetImageInfoJson, Descrip
         var infoJson = infoJsonResponse.InfoJson;
         SetIdProperties(request, infoJson);
 
-        // TODO - handle err codes
-
         ValueTask orchestrationTask = infoJsonResponse.WasOrchestrated
             ? ValueTask.CompletedTask
             : DoOrchestrationIfRequired(asset, request.NoOrchestrationOverride, cancellationToken);
-        
-        if (!asset.RequiresAuth)
+
+        if (!asset.RequiresAuth || !orchestratorSettings.InfoJsonCanBeNon200)
         {
             await orchestrationTask;
             return DescriptionResourceResponse.Open(infoJson);
         }
 
+        logger.LogDebug("{Asset} requires auth and info.json can return non-2xx", assetId);
         var accessResult = await accessValidator.TryValidate(asset, AuthMechanism.BearerToken, cancellationToken);
         await orchestrationTask;
         return accessResult == AssetAccessResult.Authorized

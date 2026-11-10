@@ -493,10 +493,13 @@ public class ManifestV3Builder : ManifestBuilderBase<Manifest>
         IReadOnlyDictionary<DeliverableId, AuthProbeService2> probeServices)
     {
         // Get a list of all _distinct_ access services - these are embedded at Manifest level
-        // Canvases will contain references
+        // Canvases will contain references. Ordered with 'external' first, matching order in individual probe
+        // services, then by id so output is consistent as probeServices are gathered in parallel
         var accessServices = probeServices
             .SelectMany(kvp => kvp.Value.Service?.OfType<AuthAccessService2>() ?? [])
             .DistinctBy(accessService => accessService.Id)
+            .OrderByDescending(accessService => accessService.Profile == AuthAccessService2.ExternalProfile)
+            .ThenBy(accessService => accessService.Id, StringComparer.Ordinal)
             .Cast<IService>()
             .ToList();
         return accessServices;

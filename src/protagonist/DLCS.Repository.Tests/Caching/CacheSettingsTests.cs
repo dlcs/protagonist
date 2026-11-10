@@ -63,6 +63,24 @@ public class CacheSettingsTests
     public void GetTtl_Named_FallsBackToDuration_IfOverrideNotFound(CacheDuration duration, int expected)
         => sut.GetTtl(duration, named: "__notfound__").Should().Be(expected);
 
+    [Theory]
+    [InlineData(CacheDuration.Short)]
+    [InlineData(CacheDuration.Long)]
+    public void GetTtl_Named_UsesDefaultTtl_IfOverrideNotFound(CacheDuration duration)
+        => sut.GetTtl(duration, named: "__notfound__", defaultTtl: 5).Should().Be(5);
+
+    [Fact]
+    public void GetTtl_Named_OverrideTakesPrecedenceOverDefaultTtl()
+        => sut.GetTtl(named: KnownOverride, defaultTtl: 5).Should().Be(50);
+
+    [Fact]
+    public void GetTtl_UsesDefaultTtl_IfNotNamed()
+        => sut.GetTtl(CacheDuration.Long, defaultTtl: 5).Should().Be(5);
+
+    [Fact]
+    public void GetTtl_Named_EmptyInstance_UsesDefaultTtl()
+        => new CacheSettings().GetTtl(named: KnownOverride, defaultTtl: 5).Should().Be(5);
+
     [Fact]
     public void GetTtl_Named_UsesMemoryOverride_IfSourceNotFound()
         => sut.GetTtl(CacheDuration.Long, CacheSource.Distributed, KnownOverride).Should().Be(50);
@@ -113,6 +131,15 @@ public class CacheSettingsTests
         options.AbsoluteExpirationRelativeToNow.Should().Be(TimeSpan.FromSeconds(50));
         options.Size.Should().Be(5);
         options.Priority.Should().Be(CacheItemPriority.High);
+    }
+
+    [Fact]
+    public void GetMemoryCacheOptions_UsesDefaultTtl_IfNoOverrideConfigured()
+    {
+        var options = sut.GetMemoryCacheOptions(CacheDuration.Long, named: "__notfound__", defaultTtl: 5);
+
+        options.AbsoluteExpirationRelativeToNow.Should().Be(TimeSpan.FromSeconds(5));
+        options.Size.Should().Be(1);
     }
 
     /// <summary>

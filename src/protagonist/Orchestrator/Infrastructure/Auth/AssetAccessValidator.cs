@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using DLCS.Core.Collections;
 using DLCS.Core.Strings;
 using DLCS.Model.Assets;
+using DLCS.Model.Auth;
 using DLCS.Web;
 using DLCS.Web.Auth;
 using Microsoft.AspNetCore.Http;
@@ -48,7 +49,8 @@ public class AssetAccessValidator(
             }
         }
 
-        if (HasAuth2Cookie(customer))
+        // IP roles are granted by Auth2 based on client IP so don't require a cookie
+        if (HasAuth2Cookie(customer) || roles.ContainsIpRole())
         {
             var auth2Status = await auth2AccessValidator.TryValidate(orchestrationItem, mechanism, cancellationToken);
             if (auth2Status == AssetAccessResult.Authorized)
