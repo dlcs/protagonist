@@ -30,10 +30,17 @@ public static class RoleX
     public static bool IsIpRole(this string? roleUri) => HasRolePrefix(roleUri, IpRolePrefix);
 
     /// <summary>
-    /// Check if any of the provided role URIs are IP roles
+    /// Check if any role in any of the provided role entries is an IP role
     /// </summary>
-    public static bool ContainsIpRole(this IEnumerable<string>? roles)
-        => roles?.Any(r => r.IsIpRole()) ?? false;
+    public static bool ContainsIpRole(this IEnumerable<string>? entries)
+        => entries?.Any(e => e.GetEntryRoles().Any(r => r.IsIpRole())) ?? false;
+
+    /// <summary>
+    /// Check if any of the provided role entries is made entirely of IP roles, so could grant access without a
+    /// session
+    /// </summary>
+    public static bool HasIpOnlyEntry(this IEnumerable<string>? entries)
+        => entries?.Any(e => e.GetEntryRoles() is { Count: > 0 } roles && roles.All(r => r.IsIpRole())) ?? false;
 
     /// <summary>
     /// Check if role URI is an appointment role, i.e. the final path segment starts with "appointment:"
@@ -46,10 +53,20 @@ public static class RoleX
     public static bool IsAppointmentRole(this string? roleUri) => HasRolePrefix(roleUri, AppointmentRolePrefix);
 
     /// <summary>
-    /// Check if any of the provided role URIs are appointment roles
+    /// Check if any role in any of the provided role entries is an appointment role
     /// </summary>
-    public static bool ContainsAppointmentRole(this IEnumerable<string>? roles)
-        => roles?.Any(r => r.IsAppointmentRole()) ?? false;
+    public static bool ContainsAppointmentRole(this IEnumerable<string>? entries)
+        => entries?.Any(e => e.GetEntryRoles().Any(r => r.IsAppointmentRole())) ?? false;
+
+    /// <summary>
+    /// Get the roles of a role entry. An asset's roles are entries, any one of which grants access if all of its roles
+    /// are met. Roles in an entry are separated by "+" (or whitespace, as an unencoded "+" decodes to a space), e.g.
+    /// "https://api.dlcs.io/customers/2/roles/ip:reading-room+https://api.dlcs.io/customers/2/roles/staff"
+    /// </summary>
+    public static List<string> GetEntryRoles(this string? entry)
+        => string.IsNullOrWhiteSpace(entry)
+            ? []
+            : entry.Replace('+', ' ').Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Distinct().ToList();
 
     private static bool HasRolePrefix(string? roleUri, string prefix)
     {
