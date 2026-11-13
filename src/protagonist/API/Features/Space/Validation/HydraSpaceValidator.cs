@@ -1,3 +1,4 @@
+using API.Infrastructure.Validation;
 using FluentValidation;
 using FluentValidation.Results;
 
@@ -18,6 +19,8 @@ public class HydraSpaceValidator : AbstractValidator<DLCS.HydraModel.Space>
 
     public HydraSpaceValidator()
     {
+        RuleFor(s => s.DefaultRoles).ValidRoleEntries();
+
         RuleSet(CreateRuleSet, () =>
         {
             RuleFor(s => s.Name)

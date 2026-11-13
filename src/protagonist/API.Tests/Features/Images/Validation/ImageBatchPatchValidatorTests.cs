@@ -201,4 +201,12 @@ public class ImageBatchPatchValidatorTests
         var result = sut.TestValidate(model);
         result.ShouldHaveValidationErrorFor("Members[0].DeliveryChannels");
     }
+
+    [Fact]
+    public void Member_Roles_MustBeValidEntries()
+    {
+        var model = new HydraCollection<Image> { Members = [new Image { ModelId = "a", Roles = ["a b"] }] };
+        var result = sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor("Members[0].Roles");
+    }
 }

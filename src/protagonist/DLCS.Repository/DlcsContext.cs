@@ -393,7 +393,7 @@ public partial class DlcsContext : DbContext
 
             entity.Property(e => e.Roles)
                 .IsRequired()
-                .HasMaxLength(1000)
+                .HasColumnType("text")
                 .HasConversion(
                     r => string.Join(",", r),
                     r => r.Split(",", StringSplitOptions.RemoveEmptyEntries),
@@ -605,7 +605,7 @@ public partial class DlcsContext : DbContext
 
             entity.Property(e => e.Roles)
                 .IsRequired()
-                .HasMaxLength(1000)
+                .HasColumnType("text")
                 .HasConversion(
                     v => string.Join(",", v),
                     v => v.Split(",", StringSplitOptions.RemoveEmptyEntries).ToArray(),

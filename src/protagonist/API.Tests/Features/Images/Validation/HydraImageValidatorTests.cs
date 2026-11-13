@@ -398,4 +398,13 @@ public class HydraImageValidatorTests
         result.ShouldNotHaveValidationErrorFor(a => a.MediaType);
         result.ShouldNotHaveValidationErrorFor(a => a.Origin);
     }
+
+    [Fact]
+    public void Roles_MustBeValidEntries()
+    {
+        var model = new Image { Roles = ["a", "a+b"] };
+        var result = Sut.TestValidate(model);
+        result.ShouldHaveValidationErrorFor(a => a.Roles)
+            .WithErrorMessage("Role entry 'a+b' is redundant as it contains all roles of 'a'");
+    }
 }

@@ -19,7 +19,7 @@ namespace DLCS.Repository.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .UseCollation("en_US.UTF-8")
-                .HasAnnotation("ProductVersion", "9.0.3")
+                .HasAnnotation("ProductVersion", "10.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "tablefunc");
@@ -279,8 +279,7 @@ namespace DLCS.Repository.Migrations
 
                     b.Property<string>("Roles")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasColumnType("text");
 
                     b.Property<int>("Space")
                         .HasColumnType("integer");
@@ -997,8 +996,7 @@ namespace DLCS.Repository.Migrations
 
                     b.Property<string>("Roles")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Tags")
                         .IsRequired()

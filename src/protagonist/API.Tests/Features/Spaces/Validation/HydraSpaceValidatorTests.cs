@@ -76,4 +76,15 @@ public class HydraSpaceValidatorTests
 
     private async Task<TestValidationResult<SpaceModel>> ValidateUpdate(SpaceModel space, int routeSpaceId)
         => new(await sut.ValidateUpdateAsync(space, routeSpaceId));
+
+    [Fact]
+    public void DefaultRoles_MustBeValidEntries()
+    {
+        var space = new SpaceModel { Name = "my-test-space", DefaultRoles = ["a", "a+b"] };
+
+        var result = sut.TestValidate(space, options => options.IncludeRuleSets("default", "create"));
+
+        result.ShouldHaveValidationErrorFor(s => s.DefaultRoles)
+            .WithErrorMessage("Role entry 'a+b' is redundant as it contains all roles of 'a'");
+    }
 }
