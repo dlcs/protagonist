@@ -7,9 +7,9 @@ namespace Orchestrator.Infrastructure.Auth.V2;
 /// <summary>
 /// Body of POST requests to IIIF Auth2 probe_internal and verifyaccess endpoints. Serialised camelCase, nulls omitted
 /// </summary>
-/// <param name="Roles">Roles that the item has, any of which grants access</param>
+/// <param name="Roles">Role entries that the item has, any of which grants access if all of its roles are met</param>
 /// <param name="Asset">Asset metadata, used to evaluate appointment roles</param>
-public record AccessCheckRequest(IReadOnlyList<string> Roles, AccessCheckAsset? Asset);
+public record AccessCheckRequest(IReadOnlyList<IReadOnlyList<string>> Roles, AccessCheckAsset? Asset);
 
 /// <summary>
 /// Asset metadata, as named by IIIF Auth2 service. This is matched against the asset patterns of appointments held by

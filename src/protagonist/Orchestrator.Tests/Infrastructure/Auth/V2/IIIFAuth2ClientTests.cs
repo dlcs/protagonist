@@ -130,6 +130,23 @@ public class IIIFAuth2ClientTests
     }
 
     [Fact]
+    public async Task GetAuthServices_CallsCorrectPath_CanonicalEntries()
+    {
+        // Arrange
+        var asset = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = ["role2+role1", "role3", "role1 role2+role1"]
+        };
+
+        // Act
+        await sut.GetAuthServices(asset.AssetId, asset.Roles, CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should()
+            .ContainSingle(s => s == "http://auth-2/services/99/100/foo?roles=role1%2Brole2,role3");
+    }
+
+    [Fact]
     public async Task GetAuthServices_Adjunct_CallsCorrectPath()
     {
         // Act
@@ -398,7 +415,7 @@ public class IIIFAuth2ClientTests
     };
 
     private const string ExpectedAppointmentBody =
-        $$$"""{"roles":["{{{AppointmentRole}}}","role1"],"asset":{"scopes":["m1"],"tags":["t1","t2"],"string1":"LIDDLE/WW2/HFIU/003","number1":0,"number2":2}}""";
+        $$$"""{"roles":[["{{{AppointmentRole}}}"],["role1"]],"asset":{"scopes":["m1"],"tags":["t1","t2"],"string1":"LIDDLE/WW2/HFIU/003","number1":0,"number2":2}}""";
 
     [Fact]
     public async Task GetProbeServiceResult_PostsRolesAndMetadata_IfAppointmentRole()
@@ -424,6 +441,25 @@ public class IIIFAuth2ClientTests
         request!.Method.Should().Be(HttpMethod.Post);
         request.Headers.Authorization!.Parameter.Should().Be("accessToken");
         body.Should().Be(ExpectedAppointmentBody);
+    }
+
+    [Fact]
+    public async Task VerifyAccess_PostsRoleEntries_AsNestedArrays()
+    {
+        // Arrange
+        string? body = null;
+        httpHandler.RegisterCallback(r => body = r.Content?.ReadAsStringAsync().GetAwaiter().GetResult());
+        var orchestrationImage = new OrchestrationImage
+        {
+            AssetId = AssetId.FromString("99/100/foo"), Roles = [$"role1+{AppointmentRole}", "role2"],
+            Metadata = Metadata
+        };
+
+        // Act
+        await sut.VerifyAccess(orchestrationImage, CancellationToken.None);
+
+        // Assert
+        body.Should().StartWith($$$"""{"roles":[["{{{AppointmentRole}}}","role1"],["role2"]],""");
     }
 
     [Theory]
