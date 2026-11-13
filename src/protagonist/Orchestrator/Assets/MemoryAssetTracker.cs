@@ -6,6 +6,7 @@ using DLCS.Core.Guard;
 using DLCS.Core.Strings;
 using DLCS.Core.Types;
 using DLCS.Model.Assets;
+using DLCS.Model.Auth;
 using DLCS.Model.Customers;
 using IIIF;
 using LazyCache;
@@ -175,7 +176,8 @@ public class MemoryAssetTracker(
             IIIFLink = adjunct.IIIFLink,
             MediaType = new StringValues(adjunct.MediaType),
             OptimisedOrigin = cos.Optimised,
-            Roles = adjunct.GetDeliverableRoles()
+            Roles = adjunct.GetDeliverableRoles(),
+            Metadata = GetMetadataIfRequired(adjunct.Asset!),
         };
         
         return  orchestrationAdjunct;
@@ -232,10 +234,17 @@ public class MemoryAssetTracker(
             orchestrationAsset.AssetId = assetId;
             orchestrationAsset.Roles = asset.Roles ?? [];
             orchestrationAsset.RequiresAuth = asset.HasRoles;
+            orchestrationAsset.Metadata = GetMetadataIfRequired(asset);
             return orchestrationAsset;
         }
     }
     
+    /// <summary>
+    /// Metadata is only needed to evaluate appointment roles, so not held for other items as they're cached
+    /// </summary>
+    private static AssetMetadata? GetMetadataIfRequired(Asset asset)
+        => asset.Roles.ContainsAppointmentRole() ? AssetMetadata.From(asset) : null;
+
     private bool GetReingestFlag(Asset asset, ImageLocation? imageLocation)
     {
         // Reingest on the fly if no S3Location and image was created prior to EmptyImageLocationCreatedDate

@@ -37,7 +37,7 @@ public class AdjunctProbeServiceHandler(
 
         return ProbeServiceSupport.HandleProbeRequest(deliverableId, httpContextAccessor, logger,
             () => adjunctTracker.GetOrchestrationAdjunct(request.AdjunctId, request.AssetId),
-            (adjunct, accessToken) => iiifAuth2Client.GetProbeServiceResult(deliverableId, adjunct.Roles,
-                accessToken, cancellationToken));
+            (adjunct, accessToken) =>
+                iiifAuth2Client.GetProbeServiceResult(adjunct, accessToken, cancellationToken));
     }
 }

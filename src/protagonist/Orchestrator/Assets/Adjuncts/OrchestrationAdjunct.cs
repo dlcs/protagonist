@@ -45,6 +45,10 @@ public class OrchestrationAdjunct : IOriginItem, IAccessControlledOrchestrationI
     public IReadOnlyList<string> Roles { get; set; } = [];
 
     /// <inheritdoc/>
+    /// <remarks>Adjuncts don't have their own metadata, this is the parent Asset's</remarks>
+    public AssetMetadata? Metadata { get; set; }
+
+    /// <inheritdoc/>
     public DeliverableId DeliverableId => new(AssetId, Id);
 
     /// <summary>

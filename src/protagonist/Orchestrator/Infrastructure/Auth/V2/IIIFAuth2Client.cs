@@ -4,8 +4,11 @@ using System.Linq;
 using System.Net.Http;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using DLCS.Core.Caching;
@@ -33,7 +36,9 @@ namespace Orchestrator.Infrastructure.Auth.V2;
 /// </summary>
 /// <remarks>
 /// If roles contain an IP role, the client IP is forwarded to the auth service via x-forwarded-for as it is used to
-/// grant IP roles. VerifyAccess results are cached for a short period, see <see cref="VerifyAccess"/>
+/// grant IP roles. If roles contain an appointment role, probe and verifyaccess are POSTed with asset metadata, as it
+/// is used to grant appointment roles; otherwise they are GET requests. VerifyAccess results are cached for a short
+/// period, see <see cref="VerifyAccess"/>
 /// </remarks>
 public class IIIFAuth2Client(
     HttpClient httpClient,
@@ -44,6 +49,11 @@ public class IIIFAuth2Client(
     ILogger<IIIFAuth2Client> logger) : IIIIFAuthBuilder
 {
     private const string ForwardedForHeader = "X-Forwarded-For";
+
+    private static readonly JsonSerializerOptions AccessCheckJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
 
     /// <summary>
     /// Default ttl for granted verifyaccess results, if no <see cref="CacheOverrideKeys.VerifyAccess"/> override
@@ -89,9 +99,11 @@ public class IIIFAuth2Client(
     /// Optional access token, if null no Authorization header is sent. Only used without access token if roles
     /// contain an IP role, otherwise auth service is not called and missing credentials result returned
     /// </param>
-    public async Task<AuthProbeResult2> GetProbeServiceResult(DeliverableId deliverableId, IReadOnlyList<string> roles,
+    public async Task<AuthProbeResult2> GetProbeServiceResult(IAccessControlledOrchestrationItem orchestrationItem,
         string? accessToken, CancellationToken cancellationToken)
     {
+        var deliverableId = orchestrationItem.DeliverableId;
+        var roles = orchestrationItem.Roles;
         if (string.IsNullOrEmpty(accessToken) && !roles.ContainsIpRole())
         {
             logger.LogDebug("No access token and no IP roles for {DeliverableId}, not calling auth service",
@@ -99,11 +111,9 @@ public class IIIFAuth2Client(
             return AuthProbeResult2Builder.MissingCredentials;
         }
 
-        var rolesString = GetRolesString(roles);
-        var path = $"probe_internal/{deliverableId}?roles={rolesString}";
         try
         {
-            var httpRequest = new HttpRequestMessage(HttpMethod.Get, path);
+            var httpRequest = CreateAccessCheckRequest($"probe_internal/{deliverableId}", orchestrationItem);
             if (!string.IsNullOrEmpty(accessToken))
             {
                 httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -120,7 +130,7 @@ public class IIIFAuth2Client(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error getting IIIF Probe Service2 for {DeliverableId}, {Roles}", deliverableId,
-                rolesString);
+                GetRolesString(roles));
             return AuthProbeResult2Builder.UnexpectedError;
         }
     }
@@ -181,10 +191,9 @@ public class IIIFAuth2Client(
         IPAddress? clientIp, CancellationToken cancellationToken)
     {
         var deliverableId = orchestrationItem.DeliverableId;
-        var path = $"verifyaccess/{deliverableId}?roles={GetRolesString(orchestrationItem.Roles)}";
         try
         {
-            var httpRequest = new HttpRequestMessage(HttpMethod.Get, path);
+            var httpRequest = CreateAccessCheckRequest($"verifyaccess/{deliverableId}", orchestrationItem);
             AddForwardedForIfRequired(httpRequest, clientIp);
             var response = await httpClient.SendAsync(httpRequest, cancellationToken);
             if (response.IsSuccessStatusCode) return true;
@@ -203,7 +212,8 @@ public class IIIFAuth2Client(
 
     /// <summary>
     /// Get cache key for verifyaccess result. This includes everything that the result depends on: deliverable,
-    /// roles, client IP (only if roles contain an IP role, as it's only forwarded then) and Auth2 cookie value (hashed)
+    /// roles, client IP (only if roles contain an IP role, as it's only forwarded then) and Auth2 cookie value (hashed).
+    /// Asset metadata isn't included as it's per deliverable
     /// </summary>
     private string GetVerifyAccessCacheKey(IAccessControlledOrchestrationItem orchestrationItem, IPAddress? resolvedIp)
     {
@@ -220,6 +230,27 @@ public class IIIFAuth2Client(
             : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(cookieValue)));
 
         return $"auth2-va:{deliverableId}:{roles}:{clientIp}:{cookieHash}";
+    }
+
+    /// <summary>
+    /// Create probe_internal or verifyaccess request. POST with roles and asset metadata in body if roles contain an
+    /// appointment role and metadata is available, as metadata is only used for appointment roles. Otherwise GET with
+    /// roles in query string
+    /// </summary>
+    private static HttpRequestMessage CreateAccessCheckRequest(string path,
+        IAccessControlledOrchestrationItem orchestrationItem)
+    {
+        var roles = GetCanonicalRoles(orchestrationItem.Roles);
+        if (orchestrationItem.Metadata is not { } metadata || !orchestrationItem.Roles.ContainsAppointmentRole())
+        {
+            return new HttpRequestMessage(HttpMethod.Get, $"{path}?roles={string.Join(",", roles)}");
+        }
+
+        var body = new AccessCheckRequest(roles, AccessCheckAsset.From(metadata));
+        return new HttpRequestMessage(HttpMethod.Post, path)
+        {
+            Content = JsonContent.Create(body, options: AccessCheckJsonOptions)
+        };
     }
 
     /// <summary>
@@ -249,11 +280,14 @@ public class IIIFAuth2Client(
     /// Get canonical, comma-separated roles string. Roles are distinct and ordered so the same set of roles always
     /// results in the same string, the unobtainable role is excluded unless it's the only role
     /// </summary>
-    private static string GetRolesString(IReadOnlyList<string> roles)
-        => string.Join(",", roles
+    private static string GetRolesString(IReadOnlyList<string> roles) => string.Join(",", GetCanonicalRoles(roles));
+
+    private static List<string> GetCanonicalRoles(IReadOnlyList<string> roles)
+        => roles
             .Where(r => roles.Count == 1 || !r.Equals(Asset.UnobtainableRole, StringComparison.OrdinalIgnoreCase))
             .Distinct()
-            .Order(StringComparer.Ordinal));
+            .Order(StringComparer.Ordinal)
+            .ToList();
 
     /// <summary>
     /// Thrown from cache factory when verifyaccess call fails, to prevent result being cached

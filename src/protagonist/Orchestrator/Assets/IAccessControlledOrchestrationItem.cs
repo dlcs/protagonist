@@ -22,4 +22,11 @@ public interface IAccessControlledOrchestrationItem
     /// Identifier for this deliverable
     /// </summary>
     DeliverableId DeliverableId { get; }
+
+    /// <summary>
+    /// Asset metadata. Only loaded when needed.
+    /// </summary>
+    /// <remarks>Currently only populated if <see cref="Roles"/> contain an appointment role, as most items don't need
+    /// it and tracked items are cached</remarks>
+    AssetMetadata? Metadata { get; }
 }
