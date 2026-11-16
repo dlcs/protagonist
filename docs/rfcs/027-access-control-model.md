@@ -154,9 +154,10 @@ Alternative approaches:
 | **Nested arrays**    | `["ccg-pa-2", ["ip:ccg-offices", "ccg-all-staff"]]` | `jsonb` `[["ccg-pa-2"], ["ip:ccg-offices", "ccg-all-staff"]]` | Structural, so no separators. Queryable with a GIN index | Mixed types are awkward in Hydra and typed clients. CSV ingest still needs a text form. Needs a migration |
 | **Normalised table** | either                                              | `AssetRoleEntries(asset, entry, role)`                        | Easiest to query by role                                 | A join on every asset read, including Orchestrator's hot path                                             |
 
-**Between services, structured rather than text.** A literal `+` in a query string is decoded as a space by ASP.NET, so `?roles=a,b+c` would silently become `b c` unless every `+` is sent as `%2B`. Orchestrator should parse the stored form once and send entries structured:
+**Between services, the existing `roles=` parameter, extended.** This keeps the current contract backwards compatible. `?roles=a,b` still means `a` OR `b`. Orchestrator canonicalises the entries (roles sorted within each entry, entries sorted, duplicates removed) so equivalent entries give the same URL and cache key:
 
-* **`/probe_internal/` and `/verifyAccess/`: `POST` with a JSON body.** These now need more than roles anyway (the asset's metadata fields, for appointments; the client IP stays in `X-Forwarded-For`):
+* **Query string (`GET`)**: `,` separates entries (OR) and `%2B` separates roles within an entry (AND), e.g. `?roles=…/ccg-pa-2,…/ip:ccg-offices%2B…/ccg-all-staff`. A literal `+` is decoded as a space by ASP.NET, so IIIF-Auth-V2 also treats whitespace as AND. Role names can't contain whitespace or `,`, and Protagonist validates this on save. Role URIs are not otherwise URL-encoded, as before.
+* **`/probe_internal/` and `/verifyAccess/`** use `GET` as above, unless the asset has an `appointment:` role. Then they use `POST` with a JSON body, because the asset's metadata fields are needed too (the client IP stays in `X-Forwarded-For`). `roles` is an array of entries, each an array of roles. A string element is also accepted as one entry and parsed as in the query string:
 
   ```json
   {
@@ -166,7 +167,7 @@ Alternative approaches:
   }
   ```
 
-* **`/services/`: stays `GET`**, with one entry per repeated parameter, roles in an entry separated by commas and each role URL-encoded: `?entry=…%2Fccg-pa-2&entry=…%2Fip%3Accg-offices,…%2Fccg-all-staff`. Keeping it a `GET` lets the result be cached by URL (see [Caching services descriptions](#caching-services-descriptions)).
+* **`/services/`: stays `GET`**, with the same `roles=` form. Keeping it a `GET` lets the result be cached by URL (see [Caching services descriptions](#caching-services-descriptions)).
 
 ## Role Providers
 
@@ -338,7 +339,7 @@ Today Orchestrator calls `/services/{customer}/{space}/{image}?roles=…`, and I
 
 The suggestion is to split the response, so the part that can be shared has a URL without the asset:
 
-* **IIIF-Auth-V2** returns only the access services for a customer and a set of role entries: `GET /services/{customer}?entry=…&entry=…` -> `[ AuthAccessService2, … ]`. This depends only on the customer, the entries and the customer's configuration.
+* **IIIF-Auth-V2** returns only the access services for a customer and a set of role entries: `GET /services/{customer}?roles=…` -> `[ AuthAccessService2, … ]`. This depends only on the customer, the entries and the customer's configuration.
 * **Orchestrator** wraps the list in the `AuthProbeService2` itself, with the asset's probe `id`. Orchestrator owns the probe endpoint, so it already knows the path.
 * **Cache by URL.** Orchestrator builds the URL in a normalised form (roles sorted within each entry, entries sorted, duplicates removed) so that `[a, b+c]` and `[c+b, a]` share a result. It caches responses in memory (`IAppCache`), keyed by URL. A manifest whose 100 canvases share roles then makes one call. An HTTP cache in front of IIIF-Auth-V2 could do the same.
 * **Freshness.** Services change only when access services, providers or roles are edited, which is rare. A TTL of a few minutes is probably enough; info.json caching already accepts that kind of delay. If edits must show immediately, IIIF-Auth-V2 could add a per-customer configuration version to the response or the URL.
@@ -450,8 +451,8 @@ Migrating existing data:
 
 * **Schema** as above, including migrations.
 * **`/services/`** (`GetServicesDescription`): emission rules as above.
-  * *(Suggestion)* A `GET /services/{customer}?entry=…` form that returns only the access services, so Orchestrator can cache it across assets (see [Caching services descriptions](#caching-services-descriptions)).
-  * *(Suggestion)* Accept role entries as `POST` JSON on `/probe_internal/` and `/verifyAccess/` (see [Storing and transmitting role entries](#storing-and-transmitting-role-entries)).
+  * *(Suggestion)* A `GET /services/{customer}?roles=…` form that returns only the access services, so Orchestrator can cache it across assets (see [Caching services descriptions](#caching-services-descriptions)).
+  * Accept role entries in `roles=` (`,` = OR, `%2B` = AND) and as nested arrays in `POST` JSON on `/probe_internal/` and `/verifyAccess/` (see [Storing and transmitting role entries](#storing-and-transmitting-role-entries)).
 * **`/probe_internal/` and `/verifyAccess/`**: evaluate role entries, using the session's roles, the client IP (`ip:`) and the session's appointments plus the asset's fields (`appointment:`). Evaluate without a token or cookie when there are `ip:` roles. Return 200, 401 or 403 as above, with per-reason wording.
 * **Client IP**: read from `X-Forwarded-For`, trusted only from known proxies.
 * **Sessions accumulate**: a new grant merges roles and appointments into the existing session instead of replacing it. (Known issue, already on the backlog.) Logout ends everything in the session.
