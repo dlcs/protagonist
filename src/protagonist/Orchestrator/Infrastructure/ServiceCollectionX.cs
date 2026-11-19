@@ -37,6 +37,7 @@ using Orchestrator.Infrastructure.IIIF;
 using Orchestrator.Infrastructure.IIIF.Manifests;
 using Orchestrator.Infrastructure.ReverseProxy;
 using Orchestrator.Settings;
+using System.Net.Http;
 using ImageServiceVersion = IIIF.ImageApi.Version;
 using IIIF2 = IIIF.Presentation.V2;
 using IIIF3 = IIIF.Presentation.V3;
@@ -149,6 +150,7 @@ public static class ServiceCollectionX
                 client.BaseAddress = orchestratorSettings.Auth.Auth2ServiceRoot;
                 client.Timeout = TimeSpan.FromSeconds(orchestratorSettings.Auth.AuthTimeoutSecs);
             })
+            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { UseCookies = false })
             .AddHeaderPropagation()
             .AddHttpMessageHandler<TimingHandler>();
         return services;
