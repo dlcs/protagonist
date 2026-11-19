@@ -489,41 +489,6 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
     }
 
     [Fact]
-    public async Task ProbeService_DoesNotSendCookieSetByDownstreamAuthService_OnLaterRequests()
-    {
-        // Arrange
-        var id = AssetIdGenerator.GetAssetId();
-        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "test-role");
-        await dbFixture.DbContext.SaveChangesAsync();
-
-        // Auth service re-issues the session cookie in responses. The HttpClient is shared by all users so it mustn't
-        // store this and send it with another user's request
-        var receivedCookies = new List<string>();
-        apiStub
-            .Get($"probe_internal/{id}?roles=test-role", (req, _) =>
-            {
-                receivedCookies.Add(req.Headers.Cookie.ToString());
-                return new AuthProbeResult2 { Status = 200 }.AsJson();
-            })
-            .Header("Set-Cookie", "dlcs-auth2-99=id=first-user; Path=/");
-
-        var path = $"auth/v2/probe/{id}";
-
-        // Act
-        var firstRequest = new HttpRequestMessage(HttpMethod.Get, path);
-        firstRequest.Headers.Authorization = new AuthenticationHeaderValue("bearer", "first-user");
-        await httpClient.SendAsync(firstRequest);
-
-        var secondRequest = new HttpRequestMessage(HttpMethod.Get, path);
-        secondRequest.Headers.Authorization = new AuthenticationHeaderValue("bearer", "second-user");
-        secondRequest.Headers.Add("Cookie", "dlcs-auth2-99=id=second-user");
-        await httpClient.SendAsync(secondRequest);
-
-        // Assert
-        receivedCookies.Should().Equal(string.Empty, "dlcs-auth2-99=id=second-user");
-    }
-
-    [Fact]
     public async Task AdjunctProbeService_ReturnsProbeResultWith401Status_IfNoAccessToken()
     {
         // Arrange
@@ -637,6 +602,41 @@ public class AuthHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>, 
 
         var probeResult2 = (await result.Content.ReadAsStreamAsync()).FromJsonStream<AuthProbeResult2>();
         probeResult2.Should().BeEquivalentTo(downstreamProbeResult);
+    }
+
+    [Fact]
+    public async Task ProbeService_DoesNotSendCookieSetByDownstreamAuthService_OnLaterRequests()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, roles: "test-role");
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Auth service re-issues the session cookie in responses. The HttpClient is shared by all users so it mustn't
+        // store this and send it with another user's request
+        var receivedCookies = new List<string>();
+        apiStub
+            .Get($"probe_internal/{id}?roles=test-role", (req, _) =>
+            {
+                receivedCookies.Add(req.Headers.Cookie.ToString());
+                return new AuthProbeResult2 { Status = 200 }.AsJson();
+            })
+            .Header("Set-Cookie", "dlcs-auth2-99=id=first-user; Path=/");
+
+        var path = $"auth/v2/probe/{id}";
+
+        // Act
+        var firstRequest = new HttpRequestMessage(HttpMethod.Get, path);
+        firstRequest.Headers.Authorization = new AuthenticationHeaderValue("bearer", "first-user");
+        await httpClient.SendAsync(firstRequest);
+
+        var secondRequest = new HttpRequestMessage(HttpMethod.Get, path);
+        secondRequest.Headers.Authorization = new AuthenticationHeaderValue("bearer", "second-user");
+        secondRequest.Headers.Add("Cookie", "dlcs-auth2-99=id=second-user");
+        await httpClient.SendAsync(secondRequest);
+
+        // Assert
+        receivedCookies.Should().Equal(string.Empty, "dlcs-auth2-99=id=second-user");
     }
 
     private static async Task<JObject> ParseHtmlTokenResponse(HttpResponseMessage response)
