@@ -104,6 +104,7 @@ public class IIIFAuth2Client(
     {
         var deliverableId = orchestrationItem.DeliverableId;
         var roles = orchestrationItem.Roles;
+        // ContainsIpRole, not HasIpOnlyEntry - auth service evaluates IP first and can return a location-specific 403
         if (string.IsNullOrEmpty(accessToken) && !roles.ContainsIpRole())
         {
             logger.LogDebug("No access token and no IP roles for {DeliverableId}, not calling auth service",
@@ -243,7 +244,7 @@ public class IIIFAuth2Client(
         var roles = GetCanonicalRoles(orchestrationItem.Roles);
         if (orchestrationItem.Metadata is not { } metadata || !orchestrationItem.Roles.ContainsAppointmentRole())
         {
-            return new HttpRequestMessage(HttpMethod.Get, $"{path}?roles={string.Join(",", roles)}");
+            return new HttpRequestMessage(HttpMethod.Get, $"{path}?roles={ToQueryString(roles)}");
         }
 
         var body = new AccessCheckRequest(roles, AccessCheckAsset.From(metadata));
@@ -277,16 +278,25 @@ public class IIIFAuth2Client(
     }
 
     /// <summary>
-    /// Get canonical, comma-separated roles string. Roles are distinct and ordered so the same set of roles always
-    /// results in the same string, the unobtainable role is excluded unless it's the only role
+    /// Get canonical roles string for query string: entries comma-separated, roles within an entry separated by an
+    /// encoded "+" (as an unencoded "+" decodes to a space)
     /// </summary>
-    private static string GetRolesString(IReadOnlyList<string> roles) => string.Join(",", GetCanonicalRoles(roles));
+    private static string GetRolesString(IReadOnlyList<string> roles) => ToQueryString(GetCanonicalRoles(roles));
 
-    private static List<string> GetCanonicalRoles(IReadOnlyList<string> roles)
+    private static string ToQueryString(List<List<string>> entries)
+        => string.Join(",", entries.Select(e => string.Join("%2B", e)));
+
+    /// <summary>
+    /// Get canonical role entries. Roles in an entry are distinct and ordered, as are entries, so the same entries
+    /// always result in the same string. The unobtainable role is excluded unless it's the only role
+    /// </summary>
+    private static List<List<string>> GetCanonicalRoles(IReadOnlyList<string> roles)
         => roles
             .Where(r => roles.Count == 1 || !r.Equals(Asset.UnobtainableRole, StringComparison.OrdinalIgnoreCase))
-            .Distinct()
-            .Order(StringComparer.Ordinal)
+            .Select(e => e.GetEntryRoles().Order(StringComparer.Ordinal).ToList())
+            .Where(e => e.Count > 0)
+            .DistinctBy(e => string.Join('+', e))
+            .OrderBy(e => string.Join('+', e), StringComparer.Ordinal)
             .ToList();
 
     /// <summary>

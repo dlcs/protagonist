@@ -1,4 +1,5 @@
-﻿using API.Settings;
+﻿using API.Infrastructure.Validation;
+using API.Settings;
 using DLCS.Core.Collections;
 using FluentValidation;
 using Hydra.Collections;
@@ -39,6 +40,7 @@ public class ImageBatchPatchValidator : AbstractValidator<HydraCollection<DLCS.H
             members.RuleFor(a => a.OpenFullMax).Empty().WithMessage("OpenFullMax cannot be set in a bulk patching operation");
             members.RuleFor(a => a.DeliveryChannels).Empty().WithMessage("Delivery channels cannot be set in a bulk patching operation");
             members.RuleFor(a => a.ThumbnailPolicy).Empty().WithMessage("Thumbnail policy cannot be set in a bulk patching operation");
+            members.RuleFor(a => a.Roles).ValidRoleEntries();
         });
     }
 }

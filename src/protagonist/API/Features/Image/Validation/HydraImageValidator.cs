@@ -1,4 +1,5 @@
-﻿using API.Settings;
+﻿using API.Infrastructure.Validation;
+using API.Settings;
 using DLCS.Core.Collections;
 using DLCS.Model.Assets;
 using FluentValidation;
@@ -54,6 +55,8 @@ public class HydraImageValidator : AbstractValidator<DLCS.HydraModel.Image>
             .WithMessage(
                 $"'maxWidth' must be between {apiSettings.Value.MinimumMaxWidth} and {apiSettings.Value.MaxWidth}.");
         
+        RuleFor(a => a.Roles).ValidRoleEntries();
+
         // Legacy policy fields
         RuleFor(a => a.ImageOptimisationPolicy).Null()
             .WithMessage("'imageOptimisationPolicy' is deprecated. Use 'deliveryChannels' instead.");

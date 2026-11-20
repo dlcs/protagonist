@@ -27,7 +27,7 @@ public static class ProbeServiceSupport
     /// token, and evaluates the auth requirements, calling the downstream auth service if required.
     /// </summary>
     /// <remarks>
-    /// A bearer token is required unless the item has an IP role, as these are granted by the downstream auth
+    /// A bearer token is required unless the item has an IP role, as these are evaluated by the downstream auth
     /// service based on client IP
     /// </remarks>
     /// <param name="deliverableId">Id of the asset or adjunct the request relates to, used for logging</param>
@@ -46,6 +46,8 @@ public static class ProbeServiceSupport
         var accessToken = GetAccessToken(httpContextAccessor);
         var item = await lookupItem();
         
+        // ContainsIpRole, not HasIpOnlyEntry (as AssetAccessValidator uses): access can't be granted without a token
+        // unless an entry is only IP roles, but auth service can return location-specific messages
         if (string.IsNullOrWhiteSpace(accessToken) && !(item?.Roles.ContainsIpRole() ?? false))
         {
             logger.LogDebug("ProbeService request for {DeliverableId} has no bearer token", deliverableId);

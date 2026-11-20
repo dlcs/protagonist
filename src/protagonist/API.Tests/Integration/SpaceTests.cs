@@ -137,6 +137,48 @@ public class SpaceTests : IClassFixture<ProtagonistAppFactory<Startup>>
     }
 
     [Fact]
+    public async Task Patch_Space_Saves_LongRoleEntries()
+    {
+        var customerId = await EnsureCustomerForSpaceTests();
+        await dbContext.Spaces.AddTestSpace(customerId, 2, "Patch Long Roles");
+        await dbContext.SaveChangesAsync();
+        
+        // over the previous varchar(1000) limit
+        var role = $"https://api.dlcs.io/customers/{customerId}/roles/{new string('a', 600)}";
+        var entries = new[] { $"{role}+{role}-b", $"{role}-c" };
+        var patchJson = Newtonsoft.Json.JsonConvert.SerializeObject(new System.Collections.Generic.Dictionary<string, object>
+        {
+            ["@type"] = "Space", ["defaultRoles"] = entries
+        });
+        
+        var patchResponse = await httpClient.AsCustomer(customerId).PatchAsync($"/customers/{customerId}/spaces/2",
+            new StringContent(patchJson, Encoding.UTF8, "application/json"));
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dbSpace = await dbContext.Spaces.AsNoTracking().SingleAsync(s => s.Customer == customerId && s.Id == 2);
+        dbSpace.Roles.Should().BeEquivalentTo(entries, opts => opts.WithStrictOrdering());
+    }
+
+    [Theory]
+    [InlineData(@"[""role1"", ""role1+role2""]")]
+    [InlineData(@"[""role1"", null]")]
+    public async Task Patch_Space_400_IfRoleEntriesInvalid(string defaultRoles)
+    {
+        var customerId = await EnsureCustomerForSpaceTests();
+        await dbContext.Spaces.AddTestSpace(customerId, 3, "Patch Invalid Roles");
+        await dbContext.SaveChangesAsync();
+
+        var patchJson = $@"{{
+  ""@type"": ""Space"",
+  ""defaultRoles"": {defaultRoles}
+}}";
+        var patchResponse = await httpClient.AsCustomer(customerId).PatchAsync($"/customers/{customerId}/spaces/3",
+            new StringContent(patchJson, Encoding.UTF8, "application/json"));
+
+        patchResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task Post_ComplexSpace_Creates_Space()
     {
         // arrange

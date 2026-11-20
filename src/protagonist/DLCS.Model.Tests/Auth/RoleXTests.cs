@@ -61,4 +61,42 @@ public class RoleXTests
     [Fact]
     public void ContainsAppointmentRole_False_IfNull()
         => ((IEnumerable<string>)null).ContainsAppointmentRole().Should().BeFalse();
+
+    private const string Ip = "https://api.dlcs.io/customers/2/roles/ip:rr";
+    private const string Appointment = "https://api.dlcs.io/customers/2/roles/appointment:a";
+    private const string Staff = "https://api.dlcs.io/customers/2/roles/staff";
+
+    [Theory]
+    [InlineData(null, new string[0])]
+    [InlineData(" + ", new string[0])]
+    [InlineData("a", new[] { "a" })]
+    [InlineData("a+b", new[] { "a", "b" })]
+    [InlineData("a b", new[] { "a", "b" })]
+    [InlineData(" a ++ b+a", new[] { "a", "b" })]
+    public void GetEntryRoles_SplitsOnPlusAndWhitespace(string? entry, string[] expected)
+        => entry.GetEntryRoles().Should().Equal(expected);
+
+    [Fact]
+    public void ContainsIpRole_True_IfIpRoleInEntry()
+        => new[] { Staff, $"{Appointment}+{Ip}" }.ContainsIpRole().Should().BeTrue();
+
+    [Fact]
+    public void ContainsAppointmentRole_True_IfAppointmentRoleInEntry()
+        => new[] { $"{Appointment}+{Ip}" }.ContainsAppointmentRole().Should().BeTrue();
+
+    [Fact]
+    public void HasIpOnlyEntry_True_IfAnyEntryAllIpRoles()
+        => new[] { $"{Ip}+{Staff}", $"{Ip}+https://api.dlcs.io/customers/2/roles/ip:other" }
+            .HasIpOnlyEntry().Should().BeTrue();
+
+    [Fact]
+    public void HasIpOnlyEntry_False_IfIpRolesOnlyInMixedEntries()
+        => new[] { $"{Ip}+{Staff}", Appointment }.HasIpOnlyEntry().Should().BeFalse();
+
+    [Fact]
+    public void HasIpOnlyEntry_False_IfNullOrEmptyEntries()
+    {
+        ((IEnumerable<string>)null).HasIpOnlyEntry().Should().BeFalse();
+        new[] { "", " + " }.HasIpOnlyEntry().Should().BeFalse();
+    }
 }

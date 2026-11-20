@@ -618,6 +618,30 @@ public class AdjunctHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Theory]
+    [InlineData("ip:reading-room", HttpStatusCode.OK)]
+    [InlineData("ip:reading-room+auth2-role", HttpStatusCode.Unauthorized)]
+    public async Task Get_NoCookie_OnlyVerifiesAccess_IfEntryOfOnlyIpRoles(string roles, HttpStatusCode expected)
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        const string adjunctId = nameof(Get_NoCookie_OnlyVerifiesAccess_IfEntryOfOnlyIpRoles);
+        await dbContext.Images.AddTestAsset(id, mediaType: "text/plain",
+                origin: $"{stubAddress}/testfile", roles: roles,
+                imageDeliveryChannels: deliveryChannelsForFile)
+            .WithTestAdjunct(adjunctId, origin: $"{stubAddress}/testadjunct");
+        await dbContext.SaveChangesAsync();
+
+        // Grants access if called, so a 401 means verifyaccess wasn't called
+        apiStub.Get($"/auth2/verifyaccess/{id}/{adjunctId}", (_, _) => string.Empty);
+
+        // Act
+        var response = await httpClient.GetAsync($"adjuncts/{id}/{adjunctId}");
+
+        // Assert
+        response.StatusCode.Should().Be(expected);
+    }
+
     [Fact]
     public async Task Get_NoRoles_ReturnsAdjunct_WithoutAuthCheck()
     {

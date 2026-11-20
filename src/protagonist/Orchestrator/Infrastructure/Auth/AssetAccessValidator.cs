@@ -49,8 +49,8 @@ public class AssetAccessValidator(
             }
         }
 
-        // IP roles are granted by Auth2 based on client IP so don't require a cookie
-        if (HasAuth2Cookie(customer) || roles.ContainsIpRole())
+        // IP roles are granted by Auth2 based on client IP, so an entry of only IP roles doesn't require a cookie
+        if (HasAuth2Cookie(customer) || roles.HasIpOnlyEntry())
         {
             var auth2Status = await auth2AccessValidator.TryValidate(orchestrationItem, mechanism, cancellationToken);
             if (auth2Status == AssetAccessResult.Authorized)
