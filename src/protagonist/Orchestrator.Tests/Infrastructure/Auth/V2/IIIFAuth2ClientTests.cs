@@ -321,6 +321,19 @@ public class IIIFAuth2ClientTests
     }
 
     [Fact]
+    public async Task GetProbeServiceResult_CallsAuthService_IfNoAccessToken_AndIpRoleOnlyInMixedEntry()
+    {
+        // Auth service can return a location-specific 403, rather than the 401 missing credentials
+        // Act
+        await sut.GetProbeServiceResult(
+            new AccessControlledItem(AssetId.FromString("99/100/foo"), [$"{IpRole}+role1"]), null,
+            CancellationToken.None);
+
+        // Assert
+        httpHandler.CallsMade.Should().ContainSingle(s => s.Contains("probe_internal/99/100/foo"));
+    }
+
+    [Fact]
     public async Task GetProbeServiceResult_SendsForwardedFor_IfIpRole()
     {
         // Arrange

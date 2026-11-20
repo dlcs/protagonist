@@ -104,6 +104,7 @@ public class IIIFAuth2Client(
     {
         var deliverableId = orchestrationItem.DeliverableId;
         var roles = orchestrationItem.Roles;
+        // ContainsIpRole, not HasIpOnlyEntry - auth service evaluates IP first and can return a location-specific 403
         if (string.IsNullOrEmpty(accessToken) && !roles.ContainsIpRole())
         {
             logger.LogDebug("No access token and no IP roles for {DeliverableId}, not calling auth service",
