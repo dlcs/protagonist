@@ -54,7 +54,8 @@ public class DapperCustomerRepository : IDapperConfigRepository, ICustomerReposi
 
     public async Task<Customer?> GetCustomer(string name)
     {
-        const string sql = CustomerSelect + @" WHERE ""Name""=@name;";
+        // Case-insensitive to match CacheKeys.CustomerByName. CreateCustomer prevents names differing only by case
+        const string sql = CustomerSelect + @" WHERE lower(""Name"")=lower(@name);";
         dynamic? rawCustomer = await this.QuerySingleOrDefaultAsync(sql, new {name});
         return MapRawCustomer(rawCustomer);
     }
