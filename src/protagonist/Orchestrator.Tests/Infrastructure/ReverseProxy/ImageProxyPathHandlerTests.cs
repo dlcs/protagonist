@@ -291,6 +291,8 @@ public class ImageProxyPathHandlerTests
     [InlineData("square/max", 10000, 1122, 1707, "1122,1122")]
     [InlineData("0,0,512,256/max", 10000, 1122, 1707, "512,256")]
     [InlineData("pct:0,0,50,50/max", 10000, 1122, 1707, "561,854")]
+    [InlineData("full/max", 1707, 1122, 1707, "1122,1707")] // maxWidth equal to the long edge
+    [InlineData("1000,1500,500,500/max", 10000, 1122, 1707, "122,207")] // region beyond the image bounds, cropped
     public void GetProxyImageRequest_V2_Max_NeverUpscaled_ConfinedToMaxWidth(string imageRequest, int maxWidth, int w,
         int h, string sizeParameter)
     {
