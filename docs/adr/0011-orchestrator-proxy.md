@@ -1,6 +1,6 @@
 # Orchestrator Proxy Rules
 
-* Status: decided
+* Status: decided, amended 2026-11-23 (v2.1 `/max/`)
 * Deciders: Tom Crane, Donald Gray
 * Date: 2026-02-20
 
@@ -40,7 +40,7 @@ The rules for strict and lax are as below:
 | 2.1             | `/full/`                               | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  |
 | 3.0             | `/full/`                               | *              | 400 BadRequest - `/full/` not valid                                |
 | *               | `/^full/`                              | *              | 400 BadRequest - `/^full/` never valid                             |
-| 2.1             | `/max/`                                | lte `maxWidth` | `/w,h/` where w + h is extracted region scaled up to `maxWidth`    |
+| 2.1             | `/max/`                                | lte `maxWidth` | `/w,h/` where w + h is extracted region (see Amendment)            |
 | 2.1             | `/max/`                                | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  |
 | 3.0             | `/max/`                                | lte `maxWidth` | `/w,h/` where w + h is extracted region                            |
 | 3.0             | `/max/`                                | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  |
@@ -64,7 +64,7 @@ The lax rules are identical to above, with the exception that we support `/full/
 | 3.0             | `/full/`                               | lte `maxWidth` | `/w,h/` where w + h is extracted region                            | Treated like `/max/` |
 | 3.0             | `/full/`                               | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  | Treated like `/max/` |
 | *               | `/^full/`                              | *              | 400 BadRequest - `/^full/` never valid                             |                      |
-| 2.1             | `/max/`                                | lte `maxWidth` | `/w,h/` where w + h is extracted region scaled up to `maxWidth`    |                      |
+| 2.1             | `/max/`                                | lte `maxWidth` | `/w,h/` where w + h is extracted region (see Amendment)            |                      |
 | 2.1             | `/max/`                                | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  |                      |
 | 3.0             | `/max/`                                | lte `maxWidth` | `/w,h/` where w + h is extracted region                            |                      |
 | 3.0             | `/max/`                                | gt `maxWidth`  | `/w,h/` where w + h is extracted region scaled down to `maxWidth`  |                      |
@@ -75,6 +75,22 @@ The lax rules are identical to above, with the exception that we support `/full/
 | *               | `/!w,h/` where max(w,h) gt `maxWidth`  | *              | `/w,h/` where w + h is the largest possible size within `maxWidth` |
 | *               | _other_                                | lte `maxWidth` | Pass size through                                                  |                      |
 | *               | _other_                                | gt `maxWidth`  | 400 BadRequest - `^` not valid                                     |                      |
+
+### Amendment 2026-11-23: v2.1 `/max/` is never upscaled
+
+The tables originally proxied v2.1 `/max/` as the extracted region "scaled up to `maxWidth`". That followed the 2.1
+definition of `max` literally: "the maximum size available, as indicated by `maxWidth`, `maxHeight`, `maxArea` in the
+profile description". In practice every v2.1 `/max/` of an image smaller than `maxWidth` was grown to `maxWidth`. With a
+system `maxWidth` of 10000, a 1122 x 1707 image requested as `/full/max/` was proxied as `/full/6573,10000/` (34x the
+pixels), and bursts of these exhausted the image-server's heap.
+
+v2.1 `/max/` now behaves exactly like v3.0 `/max/`: the extracted region, confined to `maxWidth` if larger, never
+grown. ImageApi 3.0 makes this explicit ("the extracted region is returned at the maximum size available, but will not
+be upscaled"), and it is what image servers did with `/max/` before Orchestrator rewrote sizes. Upscaling to `maxWidth`
+needs v3.0 `/^max/`.
+
+Because the proxied size is now the image's real size, a `/full/max/` of an image whose size matches a stored thumbnail
+can be served by thumbs.
 
 ### Pros and Cons
 
