@@ -315,6 +315,51 @@ public class ImageRequestHandlerTests
     }
 
     [Theory]
+    [InlineData(900, false)] // v2 /max/ is the image's own size (900), within openFullMax - no auth check
+    [InlineData(1800, true)] // v2 /max/ is 1800, larger than openFullMax - auth check, refused
+    public async Task HandleRequest_V2Max_IsImageSize_WhenComparedToOpenFullMax(int imageSize, bool expectUnauthorised)
+    {
+        // Arrange - maxWidth 10000: v2 /max/ was previously grown to 10000, so it always exceeded openFullMax
+        var context = new DefaultHttpContext();
+        context.Request.Path = "/iiif-img/v2/2/2/test-image/full/max/0/default.jpg";
+
+        var roles = new List<string> { "role" };
+        var assetId = new AssetId(2, 2, "test-image");
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, Roles = roles, OpenThumbs = [[150, 150]], MaxWidth = 10000,
+                OpenFullMax = 900, Size = Size.Square(imageSize), RequiresAuth = true,
+                S3Location = "s3://storage/2/2/test-image", Channels = AvailableDeliveryChannel.Image
+            });
+        A.CallTo(() =>
+                accessValidator.TryValidate(A<IAccessControlledOrchestrationItem>._, AuthMechanism.Cookie,
+                    CancellationToken.None))
+            .Returns(AssetAccessResult.Unauthorized);
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        // Act
+        var result = await sut.HandleRequest(context);
+
+        // Assert
+        if (expectUnauthorised)
+        {
+            ((StatusCodeResult)result).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+        else
+        {
+            var proxyResult = (ProxyActionResult)result;
+            proxyResult.Target.Should().Be(ProxyDestination.SpecialServer);
+            proxyResult.Path.Should().EndWith("/full/900,900/0/default.jpg");
+            A.CallTo(() =>
+                    accessValidator.TryValidate(A<IAccessControlledOrchestrationItem>._, AuthMechanism.Cookie,
+                        CancellationToken.None))
+                .MustNotHaveHappened();
+        }
+    }
+
+    [Theory]
     [InlineData("/full/901,901/", "Size too large")]
     [InlineData("/full/max/", "Max size")]
     [InlineData("/0,0,900,900/900,/", "Tiled region")]
