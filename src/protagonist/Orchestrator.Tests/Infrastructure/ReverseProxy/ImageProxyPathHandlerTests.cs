@@ -283,6 +283,30 @@ public class ImageProxyPathHandlerTests
         result.ProxySizeParameter!.ToString().Should().Be(sizeParameter);
     }
 
+    [Theory]
+    [InlineData("full/max", 10000, 1122, 1707, "1122,1707")] // smaller than maxWidth - never upscaled
+    [InlineData("full/max", 10000, 5741, 3532, "5741,3532")]
+    [InlineData("full/max", 5000, 6000, 3000, "5000,2500")] // larger than maxWidth - confined
+    [InlineData("full/max", 5000, 3000, 6000, "2500,5000")]
+    [InlineData("square/max", 10000, 1122, 1707, "1122,1122")]
+    [InlineData("0,0,512,256/max", 10000, 1122, 1707, "512,256")]
+    [InlineData("pct:0,0,50,50/max", 10000, 1122, 1707, "561,854")]
+    [InlineData("full/max", 1707, 1122, 1707, "1122,1707")] // maxWidth equal to the long edge
+    [InlineData("1000,1500,500,500/max", 10000, 1122, 1707, "122,207")] // region beyond the image bounds, cropped
+    public void GetProxyImageRequest_V2_Max_NeverUpscaled_ConfinedToMaxWidth(string imageRequest, int maxWidth, int w,
+        int h, string sizeParameter)
+    {
+        // v2 'max' behaves like v3 'max': the extracted region, confined to maxWidth but never grown to it
+        foreach (var strictMode in new[] { true, false })
+        {
+            var parsed = ImageRequest.Parse($"asset/{imageRequest}/0/default.jpg", "");
+            var result = parsed.GetProxyImageRequest(Version.V2, new Size(w, h), maxWidth, strictMode);
+            result.IsValid.Should().BeTrue(imageRequest);
+            result.ProxySizeParameter!.ToString().Should().Be(sizeParameter, imageRequest);
+            result.ProxySizeParameter.Upscaled.Should().BeFalse(imageRequest);
+        }
+    }
+
     #endregion
     
     #region Image V3
@@ -653,17 +677,18 @@ public class ImageProxyPathHandlerTests
         /// <summary>
         /// V2 specific requests for portrait images. maxWidth is 5000.
         /// </summary>
+        /// <remarks>v2 'max' behaves like v3 'max' - it is never upscaled, even if maxWidth is larger</remarks>
         public static TheoryData<string, Size, Size, string> PortraitV2 =>
             new()
             {
-                { "0,0,512,256/max", PortraitSize, new Size(5000, 2500), "5000,2500" },
-                { "pct:10,10,25,50/max", PortraitSize, new Size(1250, 5000), "1250,5000" },
+                { "0,0,512,256/max", PortraitSize, new Size(512, 256), "512,256" },
+                { "pct:10,10,25,50/max", PortraitSize, new Size(250, 1000), "250,1000" },
                 { "0,0,512,256/full", PortraitSize, new Size(512, 256), "512,256" },
                 { "square/pct:250", PortraitSize, Size.Square(2500), "pct:250" },
-                { "square/max", PortraitSize, Size.Square(5000), "5000,5000" },
+                { "square/max", PortraitSize, Size.Square(1000), "1000,1000" },
                 { "square/full", PortraitSize, Size.Square(1000), "1000,1000" },
                 { "full/full", PortraitSize, new Size(1000, 2000), "1000,2000" },
-                { "full/max", PortraitSize, new Size(2500, 5000), "2500,5000" },
+                { "full/max", PortraitSize, new Size(1000, 2000), "1000,2000" },
             };
         
         /// <summary>
@@ -704,15 +729,16 @@ public class ImageProxyPathHandlerTests
         /// <summary>
         /// V2 specific requests for landscape images. maxWidth is 5000.
         /// </summary>
+        /// <remarks>v2 'max' behaves like v3 'max' - it is never upscaled, even if maxWidth is larger</remarks>
         public static TheoryData<string, Size, Size, string> LandscapeV2 =>
             new()
             {
                 { "0,0,512,256/full", LandscapeSize, new Size(512, 256), "512,256" },
-                { "0,0,512,256/max", LandscapeSize, new Size(5000,2500), "5000,2500" },
+                { "0,0,512,256/max", LandscapeSize, new Size(512, 256), "512,256" },
                 { "square/full", LandscapeSize, Size.Square(1000), "1000,1000" },
-                { "square/max", LandscapeSize, Size.Square(5000), "5000,5000" },
+                { "square/max", LandscapeSize, Size.Square(1000), "1000,1000" },
                 { "full/full", LandscapeSize, new Size(2000, 1000), "2000,1000" },
-                { "full/max", LandscapeSize, new Size(5000,2500), "5000,2500" },
+                { "full/max", LandscapeSize, new Size(2000, 1000), "2000,1000" },
             };
         
         /// <summary>
