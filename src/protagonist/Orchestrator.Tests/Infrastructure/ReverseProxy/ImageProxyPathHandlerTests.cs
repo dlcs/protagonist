@@ -594,8 +594,9 @@ public class ImageProxyPathHandlerTests
     }
     #endregion
     
-    // ---- allowUpscaling false (OrchestratorSettings.AllowUpscaling, the default): sizes larger than the region are
-    // forwarded at the region's own size, keeping the requested aspect ratio (see ADR 0011) ----
+    // ---- allowUpscaling false (OrchestratorSettings.AllowUpscaling, the default; see ADR 0011): v2 sizes larger than
+    // the region are forwarded at the region's own size, keeping the requested aspect ratio; v3 '^' sizes larger than
+    // the region are a 400 (info.json does not list 'sizeUpscaling'); v3 '^max' is 'max' ----
 
     [Theory]
     // v2 explicit sizes. ',10000' of a 1425x2722 page: the request that took specialserver tasks down in Nov 2026
@@ -606,10 +607,9 @@ public class ImageProxyPathHandlerTests
     [InlineData("V2", "full/!1000,1000", 600, 600, 5000, 600, 600, "600,600")]
     [InlineData("V2", "square/pct:250", 1000, 2000, 5000, 1000, 1000, "1000,1000")]
     [InlineData("V2", "0,0,512,512/1024,", 1000, 2000, 5000, 512, 512, "512,512")]  // the region's size, not the image's
-    // v3 '^' sizes
-    [InlineData("V3", "full/^,10000", 1425, 2722, 10000, 1425, 2722, "1425,2722")]
-    [InlineData("V3", "full/^max", 1000, 2000, 5000, 1000, 2000, "1000,2000")]       // ^max is max
-    [InlineData("V3", "square/^pct:250", 1000, 2000, 5000, 1000, 1000, "1000,1000")]
+    // v3 '^max' is 'max'
+    [InlineData("V3", "full/^max", 1000, 2000, 5000, 1000, 2000, "1000,2000")]
+    [InlineData("V3", "0,0,512,256/^max", 1000, 2000, 5000, 512, 256, "512,256")]
     public void GetProxyImageRequest_NoUpscaling_ClampsToTheRegion(string version, string request, int w, int h,
         int maxWidth, int expectedW, int expectedH, string expectedProxySize)
     {
@@ -636,6 +636,21 @@ public class ImageProxyPathHandlerTests
         without.IsValid.Should().BeTrue(request);
         without.RequestedSize.Should().BeEquivalentTo(withUpscaling.RequestedSize, request);
         without.ProxySizeParameter!.ToString().Should().Be(withUpscaling.ProxySizeParameter!.ToString(), request);
+    }
+
+    [Theory]
+    [InlineData("full/^,10000", 1425, 2722)]
+    [InlineData("full/^2000,", 1000, 2000)]
+    [InlineData("square/^pct:250", 1000, 2000)]
+    [InlineData("square/^!6000,6000", 1000, 1000)]
+    [InlineData("0,0,100,100/^!5120,5120", 1000, 1000)]
+    public void GetProxyImageRequest_NoUpscaling_V3CaretLargerThanRegion_Is400(string request, int w, int h)
+    {
+        var parsed = ImageRequest.Parse($"asset/{request}/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, new Size(w, h), 10000, false, allowUpscaling: false);
+        result.IsValid.Should().BeFalse(request);
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest, request);
+        result.ErrorMessage.Should().Contain("sizeUpscaling", request);
     }
 
     [Fact]
