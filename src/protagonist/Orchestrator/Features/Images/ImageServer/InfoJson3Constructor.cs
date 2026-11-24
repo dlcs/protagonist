@@ -5,8 +5,10 @@ using DLCS.Model.Assets;
 using IIIF;
 using IIIF.ImageApi.V3;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
+using Orchestrator.Settings;
 using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Features.Images.ImageServer;
@@ -22,9 +24,10 @@ public class InfoJson3Constructor(
     IImageServerClient imageServerClient,
     IThumbRepository thumbRepository,
     IAssetTracker assetTracker,
+    IOptions<OrchestratorSettings> orchestratorSettings,
     ILogger<InfoJson3Constructor> logger)
     : InfoJsonConstructorTemplate<ImageService3>(imageServerClient, thumbRepository, iiifAuthBuilder, assetTracker,
-        logger)
+        orchestratorSettings, logger)
 {
     protected override Version ImageApiVersion => Version.V3;
 
@@ -47,7 +50,7 @@ public class InfoJson3Constructor(
     {
         imageService.MaxArea = null;
         imageService.MaxHeight = null;
-        imageService.MaxWidth = orchestrationImage.MaxWidth;
+        imageService.MaxWidth = GetAdvertisedMaxWidth(orchestrationImage);
     }
 
     protected override void SetImageServiceStubId(ImageService3 imageService, OrchestrationImage orchestrationImage)

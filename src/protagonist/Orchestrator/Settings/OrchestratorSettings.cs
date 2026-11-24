@@ -32,6 +32,15 @@ public class OrchestratorSettings
     public bool StrictImageRequestParsing { get; set; } = true;
 
     /// <summary>
+    /// Whether an image request may be served larger than the region it asks for. Default false: a size larger than
+    /// the region (an IIIF v2 explicit size, or a v3 '^' size) is forwarded to the image server at the region's own
+    /// size instead, and info.json only advertises a maxWidth smaller than the image. An upscale renders a canvas many
+    /// times the image for no extra detail; info.json does not advertise sizeAboveFull (v2) or sizeUpscaling (v3), so
+    /// clients are not offered it. See ADR 0011.
+    /// </summary>
+    public bool AllowUpscaling { get; set; } = false;
+
+    /// <summary>
     /// Which image-server is handling downstream tile requests
     /// </summary>
     /// <remarks>

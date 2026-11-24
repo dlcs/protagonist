@@ -39,6 +39,7 @@ public class ImageRequestHandler
     private readonly Dictionary<string, CompiledRegexThumbUpscaleConfig> upscaleConfig;
     private readonly bool haveUpscaleRules;
     private readonly bool strictImageRequests;
+    private readonly bool allowUpscaling;
 
     public ImageRequestHandler(
         ILogger<ImageRequestHandler> logger,
@@ -61,6 +62,7 @@ public class ImageRequestHandler
                         new Dictionary<string, CompiledRegexThumbUpscaleConfig>();
         haveUpscaleRules = upscaleConfig.Count > 0;
         strictImageRequests = orchestratorSettings.Value.StrictImageRequestParsing;
+        allowUpscaling = orchestratorSettings.Value.AllowUpscaling;
     }
 
     /// <summary>
@@ -134,7 +136,7 @@ public class ImageRequestHandler
         // Parse the incoming request to get proxy result, based in image + requested size only
         var incomingImageRequest = assetRequest.IIIFImageRequest;
         var proxyRequest = incomingImageRequest.GetProxyImageRequest(imageApiVersion.Value, imageSize,
-            orchestrationImage.MaxWidth, strictImageRequests);
+            orchestrationImage.MaxWidth, strictImageRequests, allowUpscaling);
         if (!proxyRequest.IsValid)
         {
             logger.LogDebug(

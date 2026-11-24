@@ -1,6 +1,6 @@
 # Orchestrator Proxy Rules
 
-* Status: decided, amended 2026-11-23 (v2.1 `/max/`)
+* Status: decided, amended 2026-11-23 (v2.1 `/max/`), 2026-11-24 (no upscaling)
 * Deciders: Tom Crane, Donald Gray
 * Date: 2026-02-20
 
@@ -91,6 +91,32 @@ needs v3.0 `/^max/`.
 
 Because the proxied size is now the image's real size, a `/full/max/` of an image whose size matches a stored thumbnail
 can be served by thumbs.
+
+### Amendment 2026-11-24: no upscaling by default
+
+`OrchestratorSettings.AllowUpscaling` (default `false`) decides whether any request is served larger than the region it
+asks for. When `false`:
+
+* A size larger than the extracted region is forwarded at the region's own size, keeping the requested aspect ratio. This
+  covers a v2.1 explicit size (`w,`, `,h`, `w,h`, `pct:n`, `!w,h`) and a v3.0 `^` size. For example, a v2.1
+  `/full/,10000/` of a 1425 x 2722 image is proxied as `/full/1425,2722/`. The client gets the image at its full size
+  instead of an enlargement. v3.0 `/^max/` behaves as `/max/`.
+* v3.0 sizes larger than the region without `^` are still a `400`, and anything beyond `maxWidth` is still a `403`.
+* info.json advertises `maxWidth` only when it is smaller than the image's larger dimension.
+
+Why: after the 2026-11-23 amendment, image-server tasks kept failing with out-of-memory errors.
+
+* Most failures were explicit `/full/,10000/` requests for ordinary pages, mostly from crawlers. Each was an upscale of
+  2-4 times whose image arrays the image-server could not place.
+* Clients asked for that size because info.json advertised `maxWidth` 10000, larger than the image. IIIF reads a lone
+  `maxWidth` as a square box, so it reads as an offer.
+* Neither version's info.json advertises upscaling (`sizeAboveFull` in 2.1, `sizeUpscaling` in 3.0), so clients are not
+  entitled to it.
+* Clamping, rather than refusing, keeps the occasional website request for a width above a small image's own working;
+  the browser scales the image it gets.
+
+`AllowUpscaling` `true` keeps the earlier behaviour: v2.1 explicit sizes and v3.0 `^` sizes enlarge up to `maxWidth`,
+and info.json always advertises `maxWidth`.
 
 ### Pros and Cons
 
