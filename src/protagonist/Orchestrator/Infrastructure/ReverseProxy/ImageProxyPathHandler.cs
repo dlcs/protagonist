@@ -33,7 +33,8 @@ public static class ImageProxyPathHandler
     /// <param name="allowUpscaling">
     /// If false, no request is forwarded larger than its extracted region: a v2 size larger than the region is forwarded
     /// at the region's own size (keeping the requested aspect ratio); a v3 '^' size larger than the region is a 400 (the
-    /// info.json does not list 'sizeUpscaling'); v3 '^max' is 'max'. See ADR 0011.
+    /// info.json does not list 'sizeUpscaling'); v3 '^max' is a 400 if maxWidth permits more than the region (the
+    /// spec defines '^max' as that upscale), else the region confined to maxWidth. See ADR 0011.
     /// </param>
     public static ProxyImageRequest GetProxyImageRequest(this ImageRequest imageRequest, Version imageVersion,
         Size imageSize, int maxWidth, bool strictMode = true, bool allowUpscaling = true)
@@ -122,6 +123,17 @@ public static class ImageProxyPathHandler
             
             // If here, it's /full/ or /max/ size. In which case we will change size parameter in proxy request to be
             // the explicitly requested size (e.g. /full/ or /max/ => /1049,2033/ or /^1049,2033/)
+
+            // v3 '^max' is "scaled to the maximum size permitted by maxWidth ... If the resulting dimensions are greater
+            // than the extracted region, the extracted region is upscaled". Without upscaling that is a 400 - unless
+            // maxWidth permits no more than the region, when '^max' is the region confined to maxWidth
+            if (!isV2 && sizeParameter.Upscaled && !allowUpscaling && maxWidth > extractedRegionSize.MaxDimension)
+            {
+                return ProxyImageRequest.Invalid(
+                    $"Invalid size '{sizeParameter}': upscaling is not supported ('sizeUpscaling' is not listed)",
+                    HttpStatusCode.BadRequest);
+            }
+
             if (!IsUpscalingAllowed(isV2, sizeParameter, allowUpscaling))
             {
                 // If no upscaling then we can just confine the size to maxWidth without attempting to grow
