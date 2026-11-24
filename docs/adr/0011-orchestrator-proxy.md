@@ -102,7 +102,9 @@ asks for. When `false`:
   image is proxied as `/full/1425,2722/`, and the client gets the image at its full size instead of an enlargement.
   Upscaling is ill-defined in 2.1, so clamping is not an error.
 * **v3.0:** upscaling is explicit. A `^` size larger than the region is a `400`, and info.json does not list the
-  `sizeUpscaling` extra feature, whatever the image-server's own info.json says. `/^max/` behaves as `/max/`.
+  `sizeUpscaling` extra feature, whatever the image-server's own info.json says. `/^max/` is defined as "scaled to the
+  maximum size permitted by maxWidth ... the extracted region is upscaled", so it is a `400` too, unless `maxWidth`
+  permits no more than the region; then it is the region confined to `maxWidth`.
 * Unchanged: v3.0 sizes larger than the region without `^` are still a `400`, and anything beyond `maxWidth` is still a
   `403`.
 * info.json advertises `maxWidth` only when it is smaller than the image's larger dimension.

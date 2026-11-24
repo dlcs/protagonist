@@ -572,7 +572,6 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/v2/2/2/test-image/full/full/0/default.jpg", "full/1000,1000/0/default.jpg", true)] // /full/full - v2
     [InlineData("/iiif-img/v2/2/2/test-image/full/max/0/default.jpg", "full/1000,1000/0/default.jpg", true)] // /full/max - v2, never upscaled
     [InlineData("/iiif-img/2/2/test-image/full/max/0/default.jpg", "full/1000,1000/0/default.jpg", false)] // /full/max - v3
-    [InlineData("/iiif-img/2/2/test-image/full/^max/0/default.jpg", "full/1000,1000/0/default.jpg", false)] // /full/^max - v3: max without upscaling (AllowUpscaling false)
     [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/default.png", "full/100,100/0/default.png", false)] // png
     [InlineData("/iiif-img/2/2/test-image/full/!100,150/0/default.tif", "full/100,100/0/default.tif", false)] // tif
     [InlineData("/iiif-img/2/2/test-image/full/!100,150/90/default.jpg", "full/100,100/90/default.jpg", false)] // rotation
@@ -620,6 +619,8 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/2/2/test-image/square/^!6000,6000/0/bitonal.tif")]
     [InlineData("/iiif-img/2/2/test-image/0,0,100,100/^!5120,5120/0/gray.png")]
     [InlineData("/iiif-img/2/2/test-image/full/^2000,/0/default.jpg")]
+    [InlineData("/iiif-img/2/2/test-image/full/^max/0/default.jpg")]          // ^max: the upscale to maxWidth (5000)
+    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/^max/0/default.jpg")]
     public async Task HandleRequest_Returns400_ForV3UpscaleRequest_IfUpscalingNotAllowed(string path)
     {
         // Arrange
@@ -753,7 +754,6 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/v2/2/2/test-image/0,0,512,512/full/0/default.jpg", true, "0,0,512,512/512,512/0/default.jpg", true)] // /full
     [InlineData("/iiif-img/v2/2/2/test-image/0,0,512,512/max/0/default.jpg", true, "0,0,512,512/512,512/0/default.jpg", true)] // v2 /max, never upscaled
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/max/0/default.jpg", true, "0,0,512,512/512,512/0/default.jpg", false)] // v3 /max
-    [InlineData("/iiif-img/2/2/test-image/0,0,512,512/^max/0/default.jpg", true, "0,0,512,512/512,512/0/default.jpg", false)] // v3 /^max: max without upscaling
     [InlineData("/iiif-img/v2/2/2/test-image/pct:0,0,50,50/full/0/default.jpg", true, "pct:0,0,50,50/500,500/0/default.jpg", true)] // pct: full v2
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.png", false, "0,0,512,512/100,100/0/default.png", false)] // png
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/default.tif", false, "0,0,512,512/100,100/0/default.tif", false)] // tif
