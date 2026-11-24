@@ -92,10 +92,11 @@ needs v3.0 `/^max/`.
 Because the proxied size is now the image's real size, a `/full/max/` of an image whose size matches a stored thumbnail
 can be served by thumbs.
 
-### Amendment 2026-11-24: no upscaling by default
+### Amendment 2026-11-24: an option to stop upscaling
 
-`OrchestratorSettings.AllowUpscaling` (default `false`) decides whether any request is served larger than the region it
-asks for. When `false`:
+`OrchestratorSettings.AllowUpscaling` decides whether any request is served larger than the region it asks for. It
+defaults to `true`, the behaviour before this amendment, so a deployment opts in to the change by setting it to `false`
+(Wellcome's deployment does, through the SSM parameter `/protagonist_new/AllowUpscaling`). When `false`:
 
 * **v2.1:** a size larger than the extracted region is forwarded at the region's own size, keeping the requested aspect
   ratio. This covers explicit sizes (`w,`, `,h`, `w,h`, `pct:n`, `!w,h`). For example, `/full/,10000/` of a 1425 x 2722
@@ -121,7 +122,7 @@ Why: after the 2026-11-23 amendment, image-server tasks kept failing with out-of
   image's own (a few a fortnight at Wellcome), and the browser scales the image it gets. `^` requests are rare (9 in four
   weeks at Wellcome, all on the v2 route), so refusing v3 upscales costs nothing.
 
-`AllowUpscaling` `true` keeps the earlier behaviour: v2.1 explicit sizes and v3.0 `^` sizes enlarge up to `maxWidth`,
+`AllowUpscaling` `true` (the default) keeps the earlier behaviour: v2.1 explicit sizes and v3.0 `^` sizes enlarge up to `maxWidth`,
 info.json always advertises `maxWidth`, and v3.0 info.json lists `sizeUpscaling`.
 
 ### Pros and Cons
