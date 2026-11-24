@@ -357,7 +357,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         infoJson.MaxWidth.Should().Be(5000, "Fallback to system-default");
     }
 
-    // Without upscaling (OrchestratorSettings.AllowUpscaling, default false) an image smaller than maxWidth gets no
+    // Without upscaling (OrchestratorSettings.AllowUpscaling false, set for this class) an image smaller than maxWidth gets no
     // maxWidth: one above the image's size reads as an offer of larger sizes (ADR 0011)
     [Fact]
     public async Task GetInfoJsonV2_NoMaxWidth_IfImageSmallerThanMaxWidth()

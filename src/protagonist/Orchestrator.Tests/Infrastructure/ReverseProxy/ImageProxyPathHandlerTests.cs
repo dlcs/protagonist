@@ -594,7 +594,7 @@ public class ImageProxyPathHandlerTests
     }
     #endregion
     
-    // ---- allowUpscaling false (OrchestratorSettings.AllowUpscaling, the default; see ADR 0011): v2 sizes larger than
+    // ---- allowUpscaling false (OrchestratorSettings.AllowUpscaling, set false by a deployment; see ADR 0011): v2 sizes larger than
     // the region are forwarded at the region's own size, keeping the requested aspect ratio; v3 '^' sizes larger than
     // the region are a 400 (info.json does not list 'sizeUpscaling'), and so is v3 '^max' when maxWidth permits more
     // than the region ----
@@ -608,6 +608,8 @@ public class ImageProxyPathHandlerTests
     [InlineData("V2", "full/!1000,1000", 600, 600, 5000, 600, 600, "600,600")]
     [InlineData("V2", "square/pct:250", 1000, 2000, 5000, 1000, 1000, "1000,1000")]
     [InlineData("V2", "0,0,512,512/1024,", 1000, 2000, 5000, 512, 512, "512,512")]  // the region's size, not the image's
+    [InlineData("V2", "full/,2800", 1425, 2722, 10000, 1425, 2722, "1425,2722")]    // exactly the region, not a pixel short
+    [InlineData("V2", "full/,20000", 1425, 2722, 10000, 1425, 2722, "1425,2722")]   // beyond maxWidth, but clamped to an image within it: served, not 403
     // v3 '^max' when maxWidth permits no more than the region: the region confined to maxWidth, not an upscale
     [InlineData("V3", "full/^max", 6000, 3000, 5000, 5000, 2500, "5000,2500")]
     [InlineData("V3", "full/^max", 5000, 2500, 5000, 5000, 2500, "5000,2500")]

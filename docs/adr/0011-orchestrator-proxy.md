@@ -106,8 +106,10 @@ defaults to `true`, the behaviour before this amendment, so a deployment opts in
   `sizeUpscaling` extra feature, whatever the image-server's own info.json says. `/^max/` is defined as "scaled to the
   maximum size permitted by maxWidth ... the extracted region is upscaled", so it is a `400` too, unless `maxWidth`
   permits no more than the region; then it is the region confined to `maxWidth`.
-* Unchanged: v3.0 sizes larger than the region without `^` are still a `400`, and anything beyond `maxWidth` is still a
-  `403`.
+* Unchanged: v3.0 sizes larger than the region without `^` are still a `400`, and a size beyond `maxWidth` is still a
+  `403` - except a v2.1 size that the clamp first brings within the region: `/full/,20000/` of a 1425 x 2722 image is
+  served at 1425 x 2722. A v2.1 `w,`, `,h`, `pct:` or `!w,h` clamps to exactly the region's size; an explicit `w,h` keeps
+  its own aspect ratio, shrunk to fit.
 * info.json advertises `maxWidth` only when it is smaller than the image's larger dimension.
 
 Why: after the 2026-11-23 amendment, image-server tasks kept failing with out-of-memory errors.

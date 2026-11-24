@@ -57,11 +57,15 @@ public class InfoJson3Constructor(
     // it a '^' size larger than the region is a 400, so the image server's own listing (Cantaloupe may list it) is
     // replaced. See ADR 0011.
     protected override void SetImageServiceUpscaling(ImageService3 imageService)
+        => SetSizeUpscaling(imageService, AllowUpscaling);
+
+    /// <summary>List 'sizeUpscaling' in extraFeatures exactly when upscaling is allowed, replacing any listing.</summary>
+    public static void SetSizeUpscaling(ImageService3 imageService, bool allowUpscaling)
     {
         const string sizeUpscaling = "sizeUpscaling";
         imageService.ExtraFeatures ??= [];
         imageService.ExtraFeatures.RemoveAll(f => f == sizeUpscaling);
-        if (AllowUpscaling) imageService.ExtraFeatures.Add(sizeUpscaling);
+        if (allowUpscaling) imageService.ExtraFeatures.Add(sizeUpscaling);
         if (imageService.ExtraFeatures.Count == 0) imageService.ExtraFeatures = null;
     }
 

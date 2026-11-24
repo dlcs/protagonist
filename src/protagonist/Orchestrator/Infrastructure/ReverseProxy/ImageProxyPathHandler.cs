@@ -106,7 +106,13 @@ public static class ImageProxyPathHandler
                             HttpStatusCode.BadRequest);
                     }
 
-                    requestedSize = Size.Confine(extractedRegionSize, requestedSize);
+                    // w, ,h pct: and !w,h keep the region's aspect ratio, so the answer is the region itself (Confine
+                    // would round from an already-truncated size and can come out a pixel short); an explicit w,h may be
+                    // distorted, so it keeps its own aspect ratio, shrunk to fit the region
+                    var explicitWidthAndHeight = sizeParameter is { Width: not null, Height: not null, Confined: false };
+                    requestedSize = explicitWidthAndHeight
+                        ? Size.Confine(extractedRegionSize, requestedSize)
+                        : extractedRegionSize;
                     proxySizeParameter = CreateExactSizeParameter(requestedSize, false);
                 }
 
