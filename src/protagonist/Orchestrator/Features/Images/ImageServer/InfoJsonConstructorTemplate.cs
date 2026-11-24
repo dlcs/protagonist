@@ -29,7 +29,8 @@ public abstract class InfoJsonConstructorTemplate<T>(
     IOptions<OrchestratorSettings> orchestratorSettings,
     ILogger logger) : IInfoJsonConstructor where T : JsonLdBase
 {
-    private readonly bool allowUpscaling = orchestratorSettings.Value.AllowUpscaling;
+    /// <summary>Whether upscaling is allowed (<see cref="OrchestratorSettings.AllowUpscaling"/>).</summary>
+    protected readonly bool AllowUpscaling = orchestratorSettings.Value.AllowUpscaling;
 
     protected abstract IIIF.ImageApi.Version ImageApiVersion { get; }
     protected readonly ILogger Logger = logger;
@@ -88,6 +89,9 @@ public abstract class InfoJsonConstructorTemplate<T>(
         // Set the maxWidth - we will always have a value, regardless of asset specified or system default
         SetImageServiceMaxWidth(imageService, orchestrationImage);
 
+        // Whether upscaling is advertised (v3 'sizeUpscaling'), whatever the image server's own info.json said
+        SetImageServiceUpscaling(imageService);
+
         if (orchestrationImage.RequiresAuth)
         {
             // If the only role is the internal 'unobtainable' role, don't add auth-services as we won't advertise this
@@ -125,13 +129,21 @@ public abstract class InfoJsonConstructorTemplate<T>(
     protected abstract void SetImageServiceMaxWidth(T imageService, OrchestrationImage orchestrationImage);
 
     /// <summary>
+    /// Advertise upscaling only when it is allowed. Default: nothing - IIIF v2.1 upscaling is ill-defined, and without
+    /// it the Orchestrator clamps v2 sizes to the region rather than refusing them.
+    /// </summary>
+    protected virtual void SetImageServiceUpscaling(T imageService)
+    {
+    }
+
+    /// <summary>
     /// The maxWidth to advertise. Without upscaling (<see cref="OrchestratorSettings.AllowUpscaling"/> false) only when
     /// it is smaller than the image's larger dimension: a maxWidth above the image's size reads as an offer of larger
     /// sizes (IIIF reads a lone maxWidth as a square box), and crawlers take it - in November 2026 info.json advertising
     /// maxWidth 10000 drew /full/,10000/ requests for ordinary pages. See ADR 0011.
     /// </summary>
     protected int? GetAdvertisedMaxWidth(OrchestrationImage orchestrationImage) =>
-        allowUpscaling || orchestrationImage.Size.MaxDimension > orchestrationImage.MaxWidth
+        AllowUpscaling || orchestrationImage.Size.MaxDimension > orchestrationImage.MaxWidth
             ? orchestrationImage.MaxWidth
             : null;
 

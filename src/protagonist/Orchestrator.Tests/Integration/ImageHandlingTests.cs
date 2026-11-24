@@ -404,6 +404,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         // Assert
         var infoJson = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService3>();
         infoJson.MaxWidth.Should().BeNull("image is smaller than the system maxWidth of 5000");
+        (infoJson.ExtraFeatures ?? []).Should().NotContain("sizeUpscaling", "upscaling is not allowed");
     }
     
     [Fact]
@@ -1711,7 +1712,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
-        var response = await httpClient.GetAsync($"iiif-img/{id}/0,0,100,100/^200,200/0/default.jpg");
+        var response = await httpClient.GetAsync($"iiif-img/{id}/0,0,100,100/^100,100/0/default.jpg");
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);

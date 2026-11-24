@@ -582,7 +582,6 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/2/2/test-image/square/!100,150/0/bitonal.tif", "square/100,100/0/bitonal.tif", false)] // square
     [InlineData("/iiif-img/2/2/test-image/square/!5000,5000/0/bitonal.tif", "square/1000,1000/0/bitonal.tif", false)] // confined larger than maxWidth
     [InlineData("/iiif-img/v2/2/2/test-image/square/!5000,5000/0/bitonal.tif", "square/1000,1000/0/bitonal.tif", true)] // confined larger than the image v2: clamped (AllowUpscaling false)
-    [InlineData("/iiif-img/2/2/test-image/square/^!6000,6000/0/bitonal.tif", "square/1000,1000/0/bitonal.tif", false)] // ^ confined larger than the image v3: clamped (AllowUpscaling false)
     [InlineData("/iiif-img/v2/2/2/test-image/full/,10000/0/default.jpg", "full/1000,1000/0/default.jpg", true)] // explicit upscale v2: clamped (AllowUpscaling false)
     public async Task HandleRequest_ProxiesToSpecialServer_ForAllLargeFull_RewritingIfRequired(string path, string expectedProxyPath, bool version2)
     {
@@ -614,6 +613,36 @@ public class ImageRequestHandlerTests
         result.Path.Should().Be(expected);
     }
     
+
+    // Without upscaling (AllowUpscaling false, the default) a v3 '^' size larger than the region is a 400: info.json does
+    // not list 'sizeUpscaling'. (v2 sizes are clamped instead - see above.)
+    [Theory]
+    [InlineData("/iiif-img/2/2/test-image/square/^!6000,6000/0/bitonal.tif")]
+    [InlineData("/iiif-img/2/2/test-image/0,0,100,100/^!5120,5120/0/gray.png")]
+    [InlineData("/iiif-img/2/2/test-image/full/^2000,/0/default.jpg")]
+    public async Task HandleRequest_Returns400_ForV3UpscaleRequest_IfUpscalingNotAllowed(string path)
+    {
+        // Arrange
+        var context = new DefaultHttpContext();
+        context.Request.Path = path;
+
+        A.CallTo(() => customerRepository.GetCustomerPathElement("2")).Returns(new CustomerPathElement(2, "Test-Cust"));
+        var assetId = new AssetId(2, 2, "test-image");
+        var sut = GetImageRequestHandlerWithMockPathParser();
+
+        A.CallTo(() => assetTracker.GetOrchestrationAsset<OrchestrationImage>(assetId))
+            .Returns(new OrchestrationImage
+            {
+                AssetId = assetId, OpenThumbs = [[150, 150]], S3Location = "s3://storage/2/2/test-image",
+                Channels = AvailableDeliveryChannel.Image, MaxWidth = 5000, Size = new Size(1000, 1000),
+            });
+
+        // Act
+        var result = await sut.HandleRequest(context);
+
+        // Assert
+        result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
 
     // With AllowUpscaling true (the behaviour before it was added), upscales are forwarded as requested, up to maxWidth
     [Theory]
@@ -733,7 +762,6 @@ public class ImageRequestHandlerTests
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/bitonal.jpg", false, "0,0,512,512/100,100/0/bitonal.jpg", false)] // bitonal
     [InlineData("/iiif-img/2/2/test-image/0,0,512,512/!100,150/0/gray.jpg", false, "0,0,512,512/100,100/0/gray.jpg", false)] // gray
     [InlineData("/iiif-img/2/2/test-image/0,0,100,100/!512,512/0/gray.png", false, "0,0,100,100/100,100/0/gray.png", false)] // largest possible under maxWidth
-    [InlineData("/iiif-img/2/2/test-image/0,0,100,100/^!5120,5120/0/gray.png", false, "0,0,100,100/100,100/0/gray.png", false)] // ^ larger than the region: clamped
     public async Task HandleRequest_ProxiesToImageServer_ForAllTileRequests(string path, bool knownThumb, string expectedProxyPath, bool version2)
     {
         // Arrange
@@ -770,7 +798,7 @@ public class ImageRequestHandlerTests
     [InlineData(ImageServer.Cantaloupe, "/iiif-img/v3/2/2/test-image/full/90,/0/default.jpg", "cantaloupe-3", ProxyDestination.SpecialServer)]
     [InlineData(ImageServer.IIPImage, "/iiif-img/v2/2/2/test-image/full/90,/0/default.jpg", "cantaloupe-2", ProxyDestination.SpecialServer)]
     [InlineData(ImageServer.Cantaloupe, "/iiif-img/v2/2/2/test-image/5,5,5,5/90,/0/default.jpg", "cantaloupe-2", ProxyDestination.ImageServer)]
-    [InlineData(ImageServer.Cantaloupe, "/iiif-img/v3/2/2/test-image/5,5,5,5/^90,/0/default.jpg", "cantaloupe-3", ProxyDestination.ImageServer)]
+    [InlineData(ImageServer.Cantaloupe, "/iiif-img/v3/2/2/test-image/5,5,5,5/^5,/0/default.jpg", "cantaloupe-3", ProxyDestination.ImageServer)]
     [InlineData(ImageServer.IIPImage, "/iiif-img/v2/2/2/test-image/5,5,5,5/90,/0/default.jpg", "iip", ProxyDestination.ImageServer)]
     public async Task HandleRequest_ProxiesToCorrectImageServerEndpoint_ForVersionedRequests(ImageServer imageServer,
         string path, string startsWith, ProxyDestination proxyDestination)

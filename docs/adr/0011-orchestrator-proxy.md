@@ -97,11 +97,14 @@ can be served by thumbs.
 `OrchestratorSettings.AllowUpscaling` (default `false`) decides whether any request is served larger than the region it
 asks for. When `false`:
 
-* A size larger than the extracted region is forwarded at the region's own size, keeping the requested aspect ratio. This
-  covers a v2.1 explicit size (`w,`, `,h`, `w,h`, `pct:n`, `!w,h`) and a v3.0 `^` size. For example, a v2.1
-  `/full/,10000/` of a 1425 x 2722 image is proxied as `/full/1425,2722/`. The client gets the image at its full size
-  instead of an enlargement. v3.0 `/^max/` behaves as `/max/`.
-* v3.0 sizes larger than the region without `^` are still a `400`, and anything beyond `maxWidth` is still a `403`.
+* **v2.1:** a size larger than the extracted region is forwarded at the region's own size, keeping the requested aspect
+  ratio. This covers explicit sizes (`w,`, `,h`, `w,h`, `pct:n`, `!w,h`). For example, `/full/,10000/` of a 1425 x 2722
+  image is proxied as `/full/1425,2722/`, and the client gets the image at its full size instead of an enlargement.
+  Upscaling is ill-defined in 2.1, so clamping is not an error.
+* **v3.0:** upscaling is explicit. A `^` size larger than the region is a `400`, and info.json does not list the
+  `sizeUpscaling` extra feature, whatever the image-server's own info.json says. `/^max/` behaves as `/max/`.
+* Unchanged: v3.0 sizes larger than the region without `^` are still a `400`, and anything beyond `maxWidth` is still a
+  `403`.
 * info.json advertises `maxWidth` only when it is smaller than the image's larger dimension.
 
 Why: after the 2026-11-23 amendment, image-server tasks kept failing with out-of-memory errors.
@@ -112,11 +115,12 @@ Why: after the 2026-11-23 amendment, image-server tasks kept failing with out-of
   `maxWidth` as a square box, so it reads as an offer.
 * Neither version's info.json advertises upscaling (`sizeAboveFull` in 2.1, `sizeUpscaling` in 3.0), so clients are not
   entitled to it.
-* Clamping, rather than refusing, keeps the occasional website request for a width above a small image's own working;
-  the browser scales the image it gets.
+* v2.1 sizes are clamped rather than refused because a website's `srcset` occasionally asks for a width above a small
+  image's own (a few a fortnight at Wellcome), and the browser scales the image it gets. `^` requests are rare (9 in four
+  weeks at Wellcome, all on the v2 route), so refusing v3 upscales costs nothing.
 
 `AllowUpscaling` `true` keeps the earlier behaviour: v2.1 explicit sizes and v3.0 `^` sizes enlarge up to `maxWidth`,
-and info.json always advertises `maxWidth`.
+info.json always advertises `maxWidth`, and v3.0 info.json lists `sizeUpscaling`.
 
 ### Pros and Cons
 

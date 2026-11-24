@@ -31,8 +31,9 @@ public static class ImageProxyPathHandler
     /// <see cref="ProxyImageRequest"/> containing effective size, validity and proxy <see cref="SizeParameter"/>
     /// </returns>
     /// <param name="allowUpscaling">
-    /// If false, a size larger than the extracted region is forwarded at the region's own size (keeping the requested
-    /// aspect ratio), and v3 '^max' is 'max'. See ADR 0011.
+    /// If false, no request is forwarded larger than its extracted region: a v2 size larger than the region is forwarded
+    /// at the region's own size (keeping the requested aspect ratio); a v3 '^' size larger than the region is a 400 (the
+    /// info.json does not list 'sizeUpscaling'); v3 '^max' is 'max'. See ADR 0011.
     /// </param>
     public static ProxyImageRequest GetProxyImageRequest(this ImageRequest imageRequest, Version imageVersion,
         Size imageSize, int maxWidth, bool strictMode = true, bool allowUpscaling = true)
@@ -90,12 +91,20 @@ public static class ImageProxyPathHandler
             {
                 var (requestedSize, proxySizeParameter) = GetRequestedSize(isV2, sizeParameter, extractedRegionSize, maxWidth);
 
-                // Without upscaling, a size larger than the region (v2 explicit, v3 '^') is clamped to the region's
-                // own size, keeping the requested aspect ratio: e.g. v2 /full/,10000/ of a 1425x2722 image is
-                // forwarded as /full/1425,2722/. The image server never renders an enlargement.
+                // Without upscaling no size larger than the region is forwarded, so the image server never renders an
+                // enlargement. v2 (where upscaling is ill-defined): clamped to the region's own size, keeping the
+                // requested aspect ratio - e.g. /full/,10000/ of a 1425x2722 image is forwarded as /full/1425,2722/.
+                // v3: '^' is explicit, and info.json does not list the 'sizeUpscaling' feature, so it is a 400.
                 if (!allowUpscaling && (requestedSize.Width > extractedRegionSize.Width ||
                                         requestedSize.Height > extractedRegionSize.Height))
                 {
+                    if (!isV2)
+                    {
+                        return ProxyImageRequest.Invalid(
+                            $"Invalid size '{sizeParameter}': upscaling is not supported ('sizeUpscaling' is not listed)",
+                            HttpStatusCode.BadRequest);
+                    }
+
                     requestedSize = Size.Confine(extractedRegionSize, requestedSize);
                     proxySizeParameter = CreateExactSizeParameter(requestedSize, false);
                 }

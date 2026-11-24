@@ -53,6 +53,18 @@ public class InfoJson3Constructor(
         imageService.MaxWidth = GetAdvertisedMaxWidth(orchestrationImage);
     }
 
+    // IIIF 3.0 'sizeUpscaling' (an extra feature, not part of level 2): listed exactly when AllowUpscaling is true. Without
+    // it a '^' size larger than the region is a 400, so the image server's own listing (Cantaloupe may list it) is
+    // replaced. See ADR 0011.
+    protected override void SetImageServiceUpscaling(ImageService3 imageService)
+    {
+        const string sizeUpscaling = "sizeUpscaling";
+        imageService.ExtraFeatures ??= [];
+        imageService.ExtraFeatures.RemoveAll(f => f == sizeUpscaling);
+        if (AllowUpscaling) imageService.ExtraFeatures.Add(sizeUpscaling);
+        if (imageService.ExtraFeatures.Count == 0) imageService.ExtraFeatures = null;
+    }
+
     protected override void SetImageServiceStubId(ImageService3 imageService, OrchestrationImage orchestrationImage)
         => imageService.Id = $"v3/{orchestrationImage.AssetId}";
 
