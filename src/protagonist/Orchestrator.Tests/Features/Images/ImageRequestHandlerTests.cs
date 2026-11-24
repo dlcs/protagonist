@@ -52,9 +52,12 @@ public class ImageRequestHandlerTests
         A.CallTo(() => scope.ServiceProvider.GetService(typeof(IAssetAccessValidator))).Returns(accessValidator);
     }
 
+    // AllowUpscaling false: these tests pin the no-upscaling rules (ADR 0011, 2026-11-24); the default (true) keeps the
+    // earlier behaviour, tested by HandleRequest_ProxiesToSpecialServer_Upscaling_IfAllowed.
     private static OrchestratorSettings CreateOrchestratorSettings() =>
         new()
         {
+            AllowUpscaling = false,
             Proxy = new(),
             ImageServerPathConfig = new Dictionary<ImageServer, ImageServerConfig>
             {
@@ -644,6 +647,12 @@ public class ImageRequestHandlerTests
         // Assert
         result.Should().BeOfType<StatusCodeResult>().Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
+
+    // AllowUpscaling defaults to true - the behaviour before it existed - so a deployment opts in to no-upscaling
+    // (ADR 0011, 2026-11-24). Changing the default changes every deployment that upgrades.
+    [Fact]
+    public void OrchestratorSettings_AllowUpscaling_DefaultsToTrue()
+        => new OrchestratorSettings().AllowUpscaling.Should().BeTrue();
 
     // With AllowUpscaling true (the behaviour before it was added), upscales are forwarded as requested, up to maxWidth
     [Theory]

@@ -55,6 +55,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithConfigValue("OrchestrateOnInfoJson", "true")
+            .WithConfigValue("AllowUpscaling", "false")  // the no-upscaling rules (ADR 0011, 2026-11-24)
             .WithLocalStack(storageFixture.LocalStackFixture)    
             .WithTestServices(services =>
             {
