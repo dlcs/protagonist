@@ -10,8 +10,10 @@ using DLCS.Model.Assets;
 using IIIF;
 using IIIF.ImageApi;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
+using Orchestrator.Settings;
 
 namespace Orchestrator.Features.Images.ImageServer;
 
@@ -24,8 +26,11 @@ public abstract class InfoJsonConstructorTemplate<T>(
     IThumbRepository thumbRepository,
     IIIIFAuthBuilder iiifAuthBuilder,
     IAssetTracker assetTracker,
+    IOptions<OrchestratorSettings> orchestratorSettings,
     ILogger logger) : IInfoJsonConstructor where T : JsonLdBase
 {
+    private readonly bool allowUpscaling = orchestratorSettings.Value.AllowUpscaling;
+
     protected abstract IIIF.ImageApi.Version ImageApiVersion { get; }
     protected readonly ILogger Logger = logger;
 
@@ -118,6 +123,17 @@ public abstract class InfoJsonConstructorTemplate<T>(
     /// Set maxWidth property on ImageService
     /// </summary>
     protected abstract void SetImageServiceMaxWidth(T imageService, OrchestrationImage orchestrationImage);
+
+    /// <summary>
+    /// The maxWidth to advertise. Without upscaling (<see cref="OrchestratorSettings.AllowUpscaling"/> false) only when
+    /// it is smaller than the image's larger dimension: a maxWidth above the image's size reads as an offer of larger
+    /// sizes (IIIF reads a lone maxWidth as a square box), and crawlers take it - in November 2026 info.json advertising
+    /// maxWidth 10000 drew /full/,10000/ requests for ordinary pages. See ADR 0011.
+    /// </summary>
+    protected int? GetAdvertisedMaxWidth(OrchestrationImage orchestrationImage) =>
+        allowUpscaling || orchestrationImage.Size.MaxDimension > orchestrationImage.MaxWidth
+            ? orchestrationImage.MaxWidth
+            : null;
 
     /// <summary>
     /// Set the stub Id property, this will be overwritten further downstream
