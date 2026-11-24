@@ -616,7 +616,7 @@ public class ImageRequestHandlerTests
     }
     
 
-    // Without upscaling (AllowUpscaling false, the default) a v3 '^' size larger than the region is a 400: info.json does
+    // Without upscaling (AllowUpscaling false) a v3 '^' size larger than the region is a 400: info.json does
     // not list 'sizeUpscaling'. (v2 sizes are clamped instead - see above.)
     [Theory]
     [InlineData("/iiif-img/2/2/test-image/square/^!6000,6000/0/bitonal.tif")]
