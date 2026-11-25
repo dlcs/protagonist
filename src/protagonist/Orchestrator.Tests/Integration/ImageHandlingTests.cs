@@ -55,6 +55,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         httpClient = factory
             .WithConnectionString(dbFixture.ConnectionString)
             .WithConfigValue("OrchestrateOnInfoJson", "true")
+            .WithConfigValue("AllowUpscaling", "false")  // the no-upscaling rules (ADR 0011, 2026-11-24)
             .WithLocalStack(storageFixture.LocalStackFixture)    
             .WithTestServices(services =>
             {
@@ -354,6 +355,57 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         infoJson.MaxArea.Should().BeNull();
         infoJson.MaxHeight.Should().BeNull();
         infoJson.MaxWidth.Should().Be(5000, "Fallback to system-default");
+    }
+
+    // Without upscaling (OrchestratorSettings.AllowUpscaling false, set for this class) an image smaller than maxWidth gets no
+    // maxWidth: one above the image's size reads as an offer of larger sizes (ADR 0011)
+    [Fact]
+    public async Task GetInfoJsonV2_NoMaxWidth_IfImageSmallerThanMaxWidth()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, openFullMax: 500, width: 1000, height: 2000,
+            imageDeliveryChannels: deliveryChannelsForImage);
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[400,400],[200,200]]}"
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/v2/{id}/info.json");
+
+        // Assert
+        var infoJson = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService2>();
+        infoJson.ProfileDescription.MaxWidth.Should().BeNull("image is smaller than the system maxWidth of 5000");
+    }
+
+    [Fact]
+    public async Task GetInfoJson_NoMaxWidth_IfImageSmallerThanMaxWidth()
+    {
+        // Arrange
+        var id = AssetIdGenerator.GetAssetId();
+        await dbFixture.DbContext.Images.AddTestAsset(id, openFullMax: 500, width: 1000, height: 2000,
+            imageDeliveryChannels: deliveryChannelsForImage);
+
+        await amazonS3.PutObjectAsync(new PutObjectRequest
+        {
+            Key = $"{id}/s.json",
+            BucketName = LocalStackFixture.ThumbsBucketName,
+            ContentBody = "{\"o\": [[400,400],[200,200]]}"
+        });
+        await dbFixture.DbContext.SaveChangesAsync();
+
+        // Act
+        var response = await httpClient.GetAsync($"iiif-img/{id}/info.json");
+
+        // Assert
+        var infoJson = (await response.Content.ReadAsStreamAsync()).FromJsonStream<ImageService3>();
+        infoJson.MaxWidth.Should().BeNull("image is smaller than the system maxWidth of 5000");
+        (infoJson.ExtraFeatures ?? []).Should().NotContain("sizeUpscaling", "upscaling is not allowed");
     }
     
     [Fact]
@@ -1661,7 +1713,7 @@ public class ImageHandlingTests : IClassFixture<ProtagonistAppFactory<Startup>>
         await dbFixture.DbContext.SaveChangesAsync();
 
         // Act
-        var response = await httpClient.GetAsync($"iiif-img/{id}/0,0,100,100/^200,200/0/default.jpg");
+        var response = await httpClient.GetAsync($"iiif-img/{id}/0,0,100,100/^100,100/0/default.jpg");
         
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.InternalServerError);
