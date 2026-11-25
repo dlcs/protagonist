@@ -5,8 +5,10 @@ using DLCS.Model.Assets;
 using IIIF;
 using IIIF.ImageApi.V2;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
+using Orchestrator.Settings;
 using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Features.Images.ImageServer;
@@ -23,9 +25,10 @@ public class InfoJson2Constructor(
     IImageServerClient imageServerClient,
     IThumbRepository thumbRepository,
     IAssetTracker assetTracker,
+    IOptions<OrchestratorSettings> orchestratorSettings,
     ILogger<InfoJson2Constructor> logger)
     : InfoJsonConstructorTemplate<ImageService2>(imageServerClient, thumbRepository, iiifAuthBuilder, assetTracker,
-        logger)
+        orchestratorSettings, logger)
 {
     // We want to include both Auth1 + 2 on info.json to allow for transition to auth2
 
@@ -48,7 +51,7 @@ public class InfoJson2Constructor(
         imageService.ProfileDescription ??= new ProfileDescription();
         imageService.ProfileDescription.MaxArea = null;
         imageService.ProfileDescription.MaxHeight = null;
-        imageService.ProfileDescription.MaxWidth = orchestrationImage.MaxWidth;
+        imageService.ProfileDescription.MaxWidth = GetAdvertisedMaxWidth(orchestrationImage);
     }
 
     protected override void SetImageServiceStubId(ImageService2 imageService, OrchestrationImage orchestrationImage)

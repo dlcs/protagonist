@@ -594,6 +594,89 @@ public class ImageProxyPathHandlerTests
     }
     #endregion
     
+    // ---- allowUpscaling false (OrchestratorSettings.AllowUpscaling, set false by a deployment; see ADR 0011): v2 sizes larger than
+    // the region are forwarded at the region's own size, keeping the requested aspect ratio; v3 '^' sizes larger than
+    // the region are a 400 (info.json does not list 'sizeUpscaling'), and so is v3 '^max' when maxWidth permits more
+    // than the region ----
+
+    [Theory]
+    // v2 explicit sizes. ',10000' of a 1425x2722 page: the request that took specialserver tasks down in Nov 2026
+    [InlineData("V2", "full/,10000", 1425, 2722, 10000, 1425, 2722, "1425,2722")]
+    [InlineData("V2", "full/2048,", 1600, 1200, 10000, 1600, 1200, "1600,1200")]     // a srcset width above the image
+    [InlineData("V2", "full/101,", 100, 100, 500, 100, 100, "100,100")]
+    [InlineData("V2", "full/2000,100", 1000, 500, 5000, 1000, 50, "1000,50")]       // distorted: aspect kept, shrunk
+    [InlineData("V2", "full/!1000,1000", 600, 600, 5000, 600, 600, "600,600")]
+    [InlineData("V2", "square/pct:250", 1000, 2000, 5000, 1000, 1000, "1000,1000")]
+    [InlineData("V2", "0,0,512,512/1024,", 1000, 2000, 5000, 512, 512, "512,512")]  // the region's size, not the image's
+    [InlineData("V2", "full/,2800", 1425, 2722, 10000, 1425, 2722, "1425,2722")]    // exactly the region, not a pixel short
+    [InlineData("V2", "full/,20000", 1425, 2722, 10000, 1425, 2722, "1425,2722")]   // beyond maxWidth, but clamped to an image within it: served, not 403
+    // v3 '^max' when maxWidth permits no more than the region: the region confined to maxWidth, not an upscale
+    [InlineData("V3", "full/^max", 6000, 3000, 5000, 5000, 2500, "5000,2500")]
+    [InlineData("V3", "full/^max", 5000, 2500, 5000, 5000, 2500, "5000,2500")]
+    public void GetProxyImageRequest_NoUpscaling_ClampsToTheRegion(string version, string request, int w, int h,
+        int maxWidth, int expectedW, int expectedH, string expectedProxySize)
+    {
+        var parsed = ImageRequest.Parse($"asset/{request}/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(System.Enum.Parse<Version>(version), new Size(w, h), maxWidth, false,
+            allowUpscaling: false);
+        result.IsValid.Should().BeTrue(request);
+        result.RequestedSize.Should().BeEquivalentTo(new Size(expectedW, expectedH), request);
+        result.ProxySizeParameter!.ToString().Should().Be(expectedProxySize, request);
+    }
+
+    [Theory]
+    [InlineData("V2", "full/500,")]
+    [InlineData("V2", "full/,1000")]
+    [InlineData("V2", "full/max")]
+    [InlineData("V3", "full/500,")]
+    [InlineData("V3", "full/^500,")]
+    public void GetProxyImageRequest_NoUpscaling_LeavesSizesWithinTheRegion(string version, string request)
+    {
+        var parsed = ImageRequest.Parse($"asset/{request}/0/default.jpg", "");
+        var withUpscaling = parsed.GetProxyImageRequest(System.Enum.Parse<Version>(version), new Size(1000, 2000), 5000, false);
+        var without = parsed.GetProxyImageRequest(System.Enum.Parse<Version>(version), new Size(1000, 2000), 5000, false,
+            allowUpscaling: false);
+        without.IsValid.Should().BeTrue(request);
+        without.RequestedSize.Should().BeEquivalentTo(withUpscaling.RequestedSize, request);
+        without.ProxySizeParameter!.ToString().Should().Be(withUpscaling.ProxySizeParameter!.ToString(), request);
+    }
+
+    [Theory]
+    [InlineData("full/^,10000", 1425, 2722)]
+    [InlineData("full/^2000,", 1000, 2000)]
+    [InlineData("square/^pct:250", 1000, 2000)]
+    [InlineData("square/^!6000,6000", 1000, 1000)]
+    [InlineData("0,0,100,100/^!5120,5120", 1000, 1000)]
+    [InlineData("full/^max", 1000, 2000)]                // '^max' is defined as the upscale to maxWidth (10000 here)
+    [InlineData("0,0,512,256/^max", 1000, 2000)]
+    public void GetProxyImageRequest_NoUpscaling_V3CaretLargerThanRegion_Is400(string request, int w, int h)
+    {
+        var parsed = ImageRequest.Parse($"asset/{request}/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, new Size(w, h), 10000, false, allowUpscaling: false);
+        result.IsValid.Should().BeFalse(request);
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest, request);
+        result.ErrorMessage.Should().Contain("sizeUpscaling", request);
+    }
+
+    [Fact]
+    public void GetProxyImageRequest_NoUpscaling_V3WithoutCaret_StillRefused()
+    {
+        var parsed = ImageRequest.Parse("asset/full/2000,/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V3, new Size(1000, 2000), 5000, allowUpscaling: false);
+        result.IsValid.Should().BeFalse();
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public void GetProxyImageRequest_NoUpscaling_ClampedSizeBeyondMaxWidth_StillForbidden()
+    {
+        // The region itself is larger than maxWidth: clamping does not get round maxWidth
+        var parsed = ImageRequest.Parse("asset/full/7000,/0/default.jpg", "");
+        var result = parsed.GetProxyImageRequest(Version.V2, new Size(6000, 3000), 5000, allowUpscaling: false);
+        result.IsValid.Should().BeFalse();
+        result.ErrorStatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
     private class SizeData
     {
         private static readonly Size PortraitSize = new(1000, 2000);

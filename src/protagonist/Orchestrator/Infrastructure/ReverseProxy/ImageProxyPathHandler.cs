@@ -30,8 +30,14 @@ public static class ImageProxyPathHandler
     /// <returns>
     /// <see cref="ProxyImageRequest"/> containing effective size, validity and proxy <see cref="SizeParameter"/>
     /// </returns>
+    /// <param name="allowUpscaling">
+    /// If false, no request is forwarded larger than its extracted region: a v2 size larger than the region is forwarded
+    /// at the region's own size (keeping the requested aspect ratio); a v3 '^' size larger than the region is a 400 (the
+    /// info.json does not list 'sizeUpscaling'); v3 '^max' is a 400 if maxWidth permits more than the region (the
+    /// spec defines '^max' as that upscale), else the region confined to maxWidth. See ADR 0011.
+    /// </param>
     public static ProxyImageRequest GetProxyImageRequest(this ImageRequest imageRequest, Version imageVersion,
-        Size imageSize, int maxWidth, bool strictMode = true)
+        Size imageSize, int maxWidth, bool strictMode = true, bool allowUpscaling = true)
     {
         // Safety first - gather values + validate, only carrying on with main logic if good to proceed
         var isV2 = imageVersion == Version.V2;
@@ -40,7 +46,7 @@ public static class ImageProxyPathHandler
         var failedValidationError = GetValidationFailure(imageRequest, isV2, isExplicitFull, strictMode);
         if (failedValidationError != null) return failedValidationError;
         
-        return HandleProxyLogic(imageRequest, imageSize, maxWidth, isV2);
+        return HandleProxyLogic(imageRequest, imageSize, maxWidth, isV2, allowUpscaling);
     }
 
     private static ProxyImageRequest? GetValidationFailure(ImageRequest imageRequest, bool isV2, bool isExplicitFull,
@@ -69,7 +75,7 @@ public static class ImageProxyPathHandler
     }
 
     private static ProxyImageRequest HandleProxyLogic(ImageRequest imageRequest, Size imageSize,
-        int maxWidth, bool isV2)
+        int maxWidth, bool isV2, bool allowUpscaling)
     {
         try
         {
@@ -85,6 +91,31 @@ public static class ImageProxyPathHandler
             if (!sizeParameter.Max)
             {
                 var (requestedSize, proxySizeParameter) = GetRequestedSize(isV2, sizeParameter, extractedRegionSize, maxWidth);
+
+                // Without upscaling no size larger than the region is forwarded, so the image server never renders an
+                // enlargement. v2 (where upscaling is ill-defined): clamped to the region's own size, keeping the
+                // requested aspect ratio - e.g. /full/,10000/ of a 1425x2722 image is forwarded as /full/1425,2722/.
+                // v3: '^' is explicit, and info.json does not list the 'sizeUpscaling' feature, so it is a 400.
+                if (!allowUpscaling && (requestedSize.Width > extractedRegionSize.Width ||
+                                        requestedSize.Height > extractedRegionSize.Height))
+                {
+                    if (!isV2)
+                    {
+                        return ProxyImageRequest.Invalid(
+                            $"Invalid size '{sizeParameter}': upscaling is not supported ('sizeUpscaling' is not listed)",
+                            HttpStatusCode.BadRequest);
+                    }
+
+                    // w, ,h pct: and !w,h keep the region's aspect ratio, so the answer is the region itself (Confine
+                    // would round from an already-truncated size and can come out a pixel short); an explicit w,h may be
+                    // distorted, so it keeps its own aspect ratio, shrunk to fit the region
+                    var explicitWidthAndHeight = sizeParameter is { Width: not null, Height: not null, Confined: false };
+                    requestedSize = explicitWidthAndHeight
+                        ? Size.Confine(extractedRegionSize, requestedSize)
+                        : extractedRegionSize;
+                    proxySizeParameter = CreateExactSizeParameter(requestedSize, false);
+                }
+
                 if (requestedSize.MaxDimension > maxWidth)
                 {
                     return ProxyImageRequest.Invalid(
@@ -98,7 +129,18 @@ public static class ImageProxyPathHandler
             
             // If here, it's /full/ or /max/ size. In which case we will change size parameter in proxy request to be
             // the explicitly requested size (e.g. /full/ or /max/ => /1049,2033/ or /^1049,2033/)
-            if (!IsUpscalingAllowed(isV2, sizeParameter))
+
+            // v3 '^max' is "scaled to the maximum size permitted by maxWidth ... If the resulting dimensions are greater
+            // than the extracted region, the extracted region is upscaled". Without upscaling that is a 400 - unless
+            // maxWidth permits no more than the region, when '^max' is the region confined to maxWidth
+            if (!isV2 && sizeParameter.Upscaled && !allowUpscaling && maxWidth > extractedRegionSize.MaxDimension)
+            {
+                return ProxyImageRequest.Invalid(
+                    $"Invalid size '{sizeParameter}': upscaling is not supported ('sizeUpscaling' is not listed)",
+                    HttpStatusCode.BadRequest);
+            }
+
+            if (!IsUpscalingAllowed(isV2, sizeParameter, allowUpscaling))
             {
                 // If no upscaling then we can just confine the size to maxWidth without attempting to grow
                 return GetProxyImageRequest(proxyRegionParameter, Size.Confine(maxWidth, extractedRegionSize),
@@ -121,11 +163,12 @@ public static class ImageProxyPathHandler
         }
     }
 
-    // Upscaling is only allowed for v3 '^max'. v2 'max' behaves like v3 'max': the extracted region, confined to
-    // maxWidth but never grown (see ADR 0011). ImageApi 2.1 defines 'max' as the "maximum size available, as indicated
-    // by maxWidth..." - read literally, that grew every v2 '/max/' up to maxWidth.
-    private static bool IsUpscalingAllowed(bool isVersion2, SizeParameter sizeParameter) =>
-        sizeParameter.Upscaled && !isVersion2;
+    // Upscaling is only allowed for v3 '^max', and only if the deployment allows upscaling at all. v2 'max' behaves
+    // like v3 'max': the extracted region, confined to maxWidth but never grown (see ADR 0011). ImageApi 2.1 defines
+    // 'max' as the "maximum size available, as indicated by maxWidth..." - read literally, that grew every v2 '/max/'
+    // up to maxWidth.
+    private static bool IsUpscalingAllowed(bool isVersion2, SizeParameter sizeParameter, bool allowUpscaling) =>
+        allowUpscaling && sizeParameter.Upscaled && !isVersion2;
 
     private static (Size Size, SizeParameter SizeParameter) GetRequestedSize(bool isVersion2,
         SizeParameter sizeParameter, Size extractedRegionSize, int maxWidth)

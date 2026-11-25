@@ -5,8 +5,10 @@ using DLCS.Model.Assets;
 using IIIF;
 using IIIF.ImageApi.V3;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orchestrator.Assets;
 using Orchestrator.Infrastructure.IIIF;
+using Orchestrator.Settings;
 using Version = IIIF.ImageApi.Version;
 
 namespace Orchestrator.Features.Images.ImageServer;
@@ -22,9 +24,10 @@ public class InfoJson3Constructor(
     IImageServerClient imageServerClient,
     IThumbRepository thumbRepository,
     IAssetTracker assetTracker,
+    IOptions<OrchestratorSettings> orchestratorSettings,
     ILogger<InfoJson3Constructor> logger)
     : InfoJsonConstructorTemplate<ImageService3>(imageServerClient, thumbRepository, iiifAuthBuilder, assetTracker,
-        logger)
+        orchestratorSettings, logger)
 {
     protected override Version ImageApiVersion => Version.V3;
 
@@ -47,7 +50,23 @@ public class InfoJson3Constructor(
     {
         imageService.MaxArea = null;
         imageService.MaxHeight = null;
-        imageService.MaxWidth = orchestrationImage.MaxWidth;
+        imageService.MaxWidth = GetAdvertisedMaxWidth(orchestrationImage);
+    }
+
+    // IIIF 3.0 'sizeUpscaling' (an extra feature, not part of level 2): listed exactly when AllowUpscaling is true. Without
+    // it a '^' size larger than the region is a 400, so the image server's own listing (Cantaloupe may list it) is
+    // replaced. See ADR 0011.
+    protected override void SetImageServiceUpscaling(ImageService3 imageService)
+        => SetSizeUpscaling(imageService, AllowUpscaling);
+
+    /// <summary>List 'sizeUpscaling' in extraFeatures exactly when upscaling is allowed, replacing any listing.</summary>
+    public static void SetSizeUpscaling(ImageService3 imageService, bool allowUpscaling)
+    {
+        const string sizeUpscaling = "sizeUpscaling";
+        imageService.ExtraFeatures ??= [];
+        imageService.ExtraFeatures.RemoveAll(f => f == sizeUpscaling);
+        if (allowUpscaling) imageService.ExtraFeatures.Add(sizeUpscaling);
+        if (imageService.ExtraFeatures.Count == 0) imageService.ExtraFeatures = null;
     }
 
     protected override void SetImageServiceStubId(ImageService3 imageService, OrchestrationImage orchestrationImage)

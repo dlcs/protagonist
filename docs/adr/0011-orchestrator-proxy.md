@@ -1,6 +1,6 @@
 # Orchestrator Proxy Rules
 
-* Status: decided, amended 2026-11-23 (v2.1 `/max/`)
+* Status: decided, amended 2026-11-23 (v2.1 `/max/`), 2026-11-24 (no upscaling)
 * Deciders: Tom Crane, Donald Gray
 * Date: 2026-02-20
 
@@ -91,6 +91,41 @@ needs v3.0 `/^max/`.
 
 Because the proxied size is now the image's real size, a `/full/max/` of an image whose size matches a stored thumbnail
 can be served by thumbs.
+
+### Amendment 2026-11-24: an option to stop upscaling
+
+`OrchestratorSettings.AllowUpscaling` decides whether any request is served larger than the region it asks for. It
+defaults to `true`, the behaviour before this amendment, so a deployment opts in to the change by setting it to `false`
+(Wellcome's deployment does, through the SSM parameter `/protagonist_new/AllowUpscaling`). When `false`:
+
+* **v2.1:** a size larger than the extracted region is forwarded at the region's own size, keeping the requested aspect
+  ratio. This covers explicit sizes (`w,`, `,h`, `w,h`, `pct:n`, `!w,h`). For example, `/full/,10000/` of a 1425 x 2722
+  image is proxied as `/full/1425,2722/`, and the client gets the image at its full size instead of an enlargement.
+  Upscaling is ill-defined in 2.1, so clamping is not an error.
+* **v3.0:** upscaling is explicit. A `^` size larger than the region is a `400`, and info.json does not list the
+  `sizeUpscaling` extra feature, whatever the image-server's own info.json says. `/^max/` is defined as "scaled to the
+  maximum size permitted by maxWidth ... the extracted region is upscaled", so it is a `400` too, unless `maxWidth`
+  permits no more than the region; then it is the region confined to `maxWidth`.
+* Unchanged: v3.0 sizes larger than the region without `^` are still a `400`, and a size beyond `maxWidth` is still a
+  `403` - except a v2.1 size that the clamp first brings within the region: `/full/,20000/` of a 1425 x 2722 image is
+  served at 1425 x 2722. A v2.1 `w,`, `,h`, `pct:` or `!w,h` clamps to exactly the region's size; an explicit `w,h` keeps
+  its own aspect ratio, shrunk to fit.
+* info.json advertises `maxWidth` only when it is smaller than the image's larger dimension.
+
+Why: after the 2026-11-23 amendment, image-server tasks kept failing with out-of-memory errors.
+
+* Most failures were explicit `/full/,10000/` requests for ordinary pages, mostly from crawlers. Each was an upscale of
+  2-4 times whose image arrays the image-server could not place.
+* Clients asked for that size because info.json advertised `maxWidth` 10000, larger than the image. IIIF reads a lone
+  `maxWidth` as a square box, so it reads as an offer.
+* Neither version's info.json advertises upscaling (`sizeAboveFull` in 2.1, `sizeUpscaling` in 3.0), so clients are not
+  entitled to it.
+* v2.1 sizes are clamped rather than refused because a website's `srcset` occasionally asks for a width above a small
+  image's own (a few a fortnight at Wellcome), and the browser scales the image it gets. `^` requests are rare (9 in four
+  weeks at Wellcome, all on the v2 route), so refusing v3 upscales costs nothing.
+
+`AllowUpscaling` `true` (the default) keeps the earlier behaviour: v2.1 explicit sizes and v3.0 `^` sizes enlarge up to `maxWidth`,
+info.json always advertises `maxWidth`, and v3.0 info.json lists `sizeUpscaling`.
 
 ### Pros and Cons
 
